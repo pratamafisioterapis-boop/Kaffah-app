@@ -21,7 +21,6 @@ import { format, parseISO, addDays } from 'date-fns';
 import { constructAppointmentDateTime, formatTimeIndonesia } from '@/lib/utils';
 import { id as idLocale } from 'date-fns/locale';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import TherapistPageHeader from '@/components/therapist/TherapistPageHeader';
 
 const TherapistAppointmentScheduler = ({ therapist }) => {
   const { toast } = useToast();
@@ -238,12 +237,7 @@ const TherapistAppointmentScheduler = ({ therapist }) => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
-       <TherapistPageHeader
-        title="Jadwalkan Pasien"
-        description="Buat appointment baru untuk pasien Anda."
-      />
-
-       <div className="grid md:grid-cols-2 gap-6">
+<div className="grid md:grid-cols-2 gap-6">
           {/* Left: Date & Slot Selection */}
           <div className="space-y-6">
              <Card>

@@ -15,7 +15,6 @@ import { format, subMonths } from 'date-fns';
 import { downloadCSV, isValidUUID, cn, getTherapistPeriodRange, formatTherapistPeriodLabel } from '@/lib/utils';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { validatePatientId } from '@/lib/validationHelpers';
-import TherapistPageHeader from '@/components/therapist/TherapistPageHeader';
 
 const formatLocalDate = (date) => {
   const y = date.getFullYear();
@@ -288,13 +287,6 @@ const paginatedList = sortedList.slice(
 
   return (
     <div className={isOwnerView ? "space-y-3" : "space-y-6"}>
-      {!isOwnerView && (
-        <TherapistPageHeader
-          title="Evaluasi Harian"
-          description="Monitoring kelengkapan SOAP berdasarkan kunjungan pasien."
-          meta={therapist ? [{ label: 'Periode saya', value: formatTherapistPeriodLabel(therapist) }] : []}
-        />
-      )}
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
         <div className="flex items-center gap-2 ml-auto">

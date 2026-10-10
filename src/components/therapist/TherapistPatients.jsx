@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { getTherapistPatientsFromRecaps } from '@/lib/therapistDataUtils';
 import { normalizePatient } from '@/lib/patientHelpers';
 import { useNavigate } from 'react-router-dom';
-import TherapistPageHeader from '@/components/therapist/TherapistPageHeader';
 
 const TherapistPatients = ({ therapist }) => {
   const [patients, setPatients] = useState([]);
@@ -45,11 +44,7 @@ const TherapistPatients = ({ therapist }) => {
 
   return (
     <div className="space-y-6">
-      <TherapistPageHeader
-        title="Pasien Saya"
-        description={loading ? 'Memuat data pasien...' : `Daftar ${patients.length} pasien yang pernah Anda tangani.`}
-        actions={
-          <div className="relative w-full sm:w-72">
+      <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
           <Input 
             placeholder="Cari nama atau No. RM..." 
@@ -58,8 +53,6 @@ const TherapistPatients = ({ therapist }) => {
             className="pl-10"
           />
         </div>
-        }
-      />
 
       {loading ? (
         <div className="flex justify-center p-12"><Loader2 className="animate-spin text-app-accent" /></div>

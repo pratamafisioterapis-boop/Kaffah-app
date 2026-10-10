@@ -21,7 +21,6 @@ import {
   ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight,
   RefreshCcw, History
 } from 'lucide-react';
-import TherapistPageHeader from '@/components/therapist/TherapistPageHeader';
 
 const QUICK_FILTERS = [
   { key: 'period', label: 'Periode Saya' },
@@ -242,18 +241,7 @@ const TherapistPatientHistory = ({ therapist }) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <TherapistPageHeader
-        title="Riwayat Pasien"
-        description="Rekam jejak terapi dan diagnosa pasien Anda"
-        meta={[
-          { label: 'Kunjungan', value: stats.totalVisits },
-          { label: 'Pasien unik', value: stats.uniquePatients },
-          { label: 'Periode saya', value: periodLabel },
-        ]}
-      />
-
-      {/* Filter Toolbar */}
+{/* Filter Toolbar */}
       <Card className="p-4 space-y-4">
         <div className="flex flex-wrap gap-2">
           {QUICK_FILTERS.map((f) => (

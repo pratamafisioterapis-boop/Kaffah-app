@@ -8,7 +8,6 @@ import PayrollAuthGate from '@/components/therapist/PayrollAuthGate';
 import TherapistMouList from '@/components/therapist/TherapistMouList';
 import MouAuthGate from '@/components/therapist/MouAuthGate';
 import TherapistWarningLetterList from '@/components/therapist/TherapistWarningLetterList';
-import TherapistPageHeader from '@/components/therapist/TherapistPageHeader';
 
 const ACTIVE_TAB_KEY = 'kaffah_therapist_documents_tab';
 const VALID_TABS = ['upload_konten', 'sharing_media', 'payroll', 'mou', 'sp'];
@@ -32,11 +31,7 @@ const TherapistDocuments = ({ therapist }) => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      <TherapistPageHeader
-        title="Dokumen"
-        description="Upload konten, media, payroll, MOU, dan surat peringatan Anda."
-      />
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+<Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="flex flex-wrap h-auto gap-1.5 bg-slate-100 p-1.5 rounded-app-lg border border-slate-200">
           <TabsTrigger value="upload_konten" className="data-[state=active]:bg-white data-[state=active]:text-app-accent data-[state=active]:shadow-sm rounded-app py-2 px-3 flex gap-1.5 items-center text-xs font-medium">
             <UploadCloud className="w-3.5 h-3.5" /> Upload Konten

@@ -24,7 +24,6 @@ import SlotBookingForm from '@/components/admin/booking/SlotBookingForm';
 import ManualBookingForm from '@/components/admin/booking/ManualBookingForm';
 import BookedSlotDetailModal from '@/components/admin/booking/BookedSlotDetailModal';
 import ScheduleTemplateModal from '@/components/admin/booking/ScheduleTemplateModal';
-import TherapistPageHeader from '@/components/therapist/TherapistPageHeader';
 
 const TherapistBookingCalendar = ({ therapist }) => {
   const [date, setDate] = useState(new Date());
@@ -160,13 +159,6 @@ const [historyLoading, setHistoryLoading] = useState(false);
 
   return (
     <div className={cn("w-full mx-auto space-y-3 pb-12", isPWA ? "max-w-full" : "max-w-5xl space-y-6")}>
-
-      {!isPWA && (
-        <TherapistPageHeader
-          title="Booking Calendar Saya"
-          description="Kelola jadwal dan booking pasien"
-        />
-      )}
 
       {/* ── Toolbar Desktop (sembunyikan di PWA) ── */}
       {!isPWA && (

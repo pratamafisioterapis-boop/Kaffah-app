@@ -30,7 +30,6 @@ import TherapistSundaySwap from '@/components/therapist/TherapistSundaySwap';
 import SundaySwapReview from '@/components/shared/SundaySwapReview';
 import { usePendingLeaveRequestCount } from '@/hooks/useTherapistLeaveRequests';
 import { useClinicOperatingHours } from '@/hooks/useClinicOperatingHours';
-import TherapistPageHeader from '@/components/therapist/TherapistPageHeader';
 import { confirmAction } from '@/lib/confirmAction';
 
 const DAY_KEY = 'yyyy-MM-dd';
@@ -821,12 +820,7 @@ const TherapistLeaveRequests = ({ therapist }) => {
 
   return (
     <div className="space-y-5">
-      <TherapistPageHeader
-        title="Izin"
-        description="Ajukan izin, lalu tentukan kapan Anda mengganti jam kerjanya."
-      />
-
-      {therapist?.work_start_time && therapist?.work_end_time && (
+{therapist?.work_start_time && therapist?.work_end_time && (
         <div className="rounded-app border border-sky-200 bg-sky-50 px-4 py-3 flex items-center gap-3">
           <Clock3 className="w-5 h-5 text-sky-600 shrink-0" />
           <div className="min-w-0">
