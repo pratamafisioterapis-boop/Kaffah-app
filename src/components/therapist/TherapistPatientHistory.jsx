@@ -265,18 +265,18 @@ const TherapistPatientHistory = ({ therapist }) => {
           </Button>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-3 md:items-end">
-          <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-2 rounded-app-sm border border-slate-200">
-            <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 shrink-0">
-              <CalendarRange className="w-3.5 h-3.5" />Periode:
-            </div>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1.2fr)_13rem] md:items-end">
+          <div className="space-y-1 min-w-0">
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+              <CalendarRange className="w-3.5 h-3.5" />Periode
+            </label>
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <div className="relative flex-1 min-w-0">
                 <Input
                   value={displayDateID(dateRange.start)}
                   onChange={(e) => handleCustomDate('start', parseDateFromDisplay(e.target.value) || '')}
                   onClick={() => setShowStartCalendar(true)}
-                  className="w-full min-w-0 text-xs h-8 px-2 bg-white border-slate-200"
+                  className="w-full min-w-0 h-10 px-3 bg-white"
                   placeholder="dd/MM/yyyy"
                 />
                 {showStartCalendar && (
@@ -295,7 +295,7 @@ const TherapistPatientHistory = ({ therapist }) => {
                   value={displayDateID(dateRange.end)}
                   onChange={(e) => handleCustomDate('end', parseDateFromDisplay(e.target.value) || '')}
                   onClick={() => setShowEndCalendar(true)}
-                  className="w-full min-w-0 text-xs h-8 px-2 bg-white border-slate-200"
+                  className="w-full min-w-0 h-10 px-3 bg-white"
                   placeholder="dd/MM/yyyy"
                 />
                 {showEndCalendar && (
@@ -311,7 +311,7 @@ const TherapistPatientHistory = ({ therapist }) => {
             </div>
           </div>
 
-          <div className="flex-1 space-y-1">
+          <div className="space-y-1 min-w-0">
             <label className="text-xs font-semibold text-slate-500">Cari Pasien / Diagnosa</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
@@ -324,7 +324,7 @@ const TherapistPatientHistory = ({ therapist }) => {
             </div>
           </div>
 
-          <div className="w-full md:w-52 space-y-1">
+          <div className="space-y-1 min-w-0">
             <label className="text-xs font-semibold text-slate-500">Tipe Pasien</label>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger><SelectValue placeholder="Semua Tipe" /></SelectTrigger>
