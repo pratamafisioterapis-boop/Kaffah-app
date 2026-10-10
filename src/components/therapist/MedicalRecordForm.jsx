@@ -51,6 +51,9 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
   const [progressDialog, setProgressDialog] = useState(false);
   const [templateDialog, setTemplateDialog] = useState(null); // 'subjective' | 'objective' | null
   const [templateCache, setTemplateCache] = useState({});
+  // Varian template per diagnosa (mis. HNP menjalar / tidak menjalar): dipilih di Subjective, Objective ikut.
+  const [variantSel, setVariantSel] = useState({});
+  const handleVariantSel = (key, name) => setVariantSel((prev) => ({ ...prev, [key]: name }));
   const [templateVariables, setTemplateVariables] = useState({});
   // Assessment disusun otomatis (format ICF) begitu S & O terisi, selama belum diedit manual.
   const [assessmentAuto, setAssessmentAuto] = useState(true);
@@ -695,6 +698,8 @@ if (isCreate) {
                         embedded
                         templates={templatesOf(field.key)}
                         variables={templateVariables}
+                        variantSel={variantSel}
+                        onVariantSel={handleVariantSel}
                         currentText={formData[field.key]}
                         onApply={handleApplyTemplate(field.key)}
                         mode={field.key}
@@ -796,6 +801,8 @@ if (isCreate) {
                   embedded
                   templates={tpls}
                   variables={templateVariables}
+                  variantSel={variantSel}
+                  onVariantSel={handleVariantSel}
                   currentText={formData[key]}
                   onApply={(text, opts) => { handleApplyTemplate(key)(text, opts); setTemplateDialog(null); }}
                   mode={key}
