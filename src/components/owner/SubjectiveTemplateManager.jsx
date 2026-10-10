@@ -20,7 +20,6 @@ import {
   updateDiagnosisSubjectiveTemplate,
 } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import TherapistPageHeader from '@/components/therapist/TherapistPageHeader';
 import { confirmAction } from '@/lib/confirmAction';
 
 const KIND_META = {
@@ -412,14 +411,7 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
 
   return (
     <div className="space-y-4">
-      {requestMode ? (
-        <TherapistPageHeader
-          title="Template SOAP"
-          description="Usulkan perubahan template Subjective dan Objective. Perubahan baru berlaku setelah disetujui owner."
-          meta={[{ label: 'Diagnosa bertemplate', value: `${withTemplate}/${diagnoses.length}` }]}
-        />
-      ) : (
-        <div>
+      <div>
           <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900"><Wand2 className="h-5 w-5 text-app-accent" /> Template SOAP</h3>
           <p className="text-sm text-slate-500">
             {requestMode
@@ -428,7 +420,6 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
             <span className="ml-1 text-slate-500">({withTemplate}/{diagnoses.length} diagnosa punya template)</span>
           </p>
         </div>
-      )}
 
       {!requestMode && (
         <RequestsReviewPanel requests={requests} diagnoses={diagnoses} onReviewed={load} />
