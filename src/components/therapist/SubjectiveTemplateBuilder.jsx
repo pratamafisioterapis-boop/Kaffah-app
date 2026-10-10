@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, ClipboardCheck, Minus, Pencil, Plus, RotateCcw, Sparkles, Stethoscope, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import FunctionalFormDialog from '@/components/therapist/FunctionalFormDialog';
@@ -293,11 +293,13 @@ const tokenSignature = (sentence) => JSON.stringify([sentence.kind, sentence.tok
  * @param currentText isi Subjective saat ini (untuk menentukan ganti / tambahkan)
  * @param onApply     (text, { replace }) => void
  */
-const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, onApply, compact = false, variables, previewOnly = false, defaultOpen = true, mode = 'subjective', embedded = false }) => {
+const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, onApply, compact = false, variables, previewOnly = false, defaultOpen = true, mode = 'subjective', embedded = false, variantSel, onVariantSel }) => {
   const [activeKey, setActiveKey] = useState(rawTemplates[0]?.key);
   const [valuesByKey, setValuesByKey] = useState({});
   // Diagnosa dengan beberapa varian template: terapis memilih varian, template yang dipakai = varian itu.
-  const [variantByKey, setVariantByKey] = useState({});
+  // Bisa dikendalikan induk (variantSel/onVariantSel) agar Subjective & Objective memakai varian yang sama.
+  const [localVariantSel, setLocalVariantSel] = useState({});
+  const variantByKey = variantSel || localVariantSel;
   const variantsOf = useMemo(
     () => Object.fromEntries(rawTemplates.map((t) => [t.key, splitVariants(t.template)])),
     [rawTemplates]
@@ -305,7 +307,7 @@ const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, onApp
   const templates = useMemo(
     () => rawTemplates.map((t) => {
       const list = variantsOf[t.key];
-      return { ...t, template: (list[variantByKey[t.key]] || list[0])?.text };
+      return { ...t, template: (list.find((v) => v.name === variantByKey[t.key]) || list[0])?.text };
     }),
     [rawTemplates, variantsOf, variantByKey]
   );
@@ -325,13 +327,25 @@ const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, onApp
 
   const active = templates.find((t) => t.key === activeKey) || templates[0];
   const activeVariants = variantsOf[active?.key] || [];
-  const activeVariantIdx = variantByKey[active?.key] || 0;
-  const chooseVariant = (idx) => {
-    if (idx === activeVariantIdx) return;
-    setVariantByKey((prev) => ({ ...prev, [active.key]: idx }));
-    // Id isian berbeda tiap varian, jadi isian lama dikosongkan.
-    setValuesByKey((prev) => ({ ...prev, [active.key]: {} }));
+  const activeVariantName = (activeVariants.find((v) => v.name === variantByKey[active?.key]) || activeVariants[0])?.name;
+  const chooseVariant = (name) => {
+    if (name === activeVariantName) return;
+    if (onVariantSel) onVariantSel(active.key, name);
+    else setLocalVariantSel((prev) => ({ ...prev, [active.key]: name }));
   };
+  // Id isian berbeda tiap varian, jadi isian lama dikosongkan setiap varian berganti
+  // (termasuk saat berganti dari Subjective lewat induk).
+  const seenVariants = useRef({});
+  const variantSig = templates.map((t) => `${t.key}=${(variantsOf[t.key].find((v) => v.name === variantByKey[t.key]) || variantsOf[t.key][0])?.name}`).join('|');
+  useEffect(() => {
+    const changed = [];
+    templates.forEach((t) => {
+      const name = (variantsOf[t.key].find((v) => v.name === variantByKey[t.key]) || variantsOf[t.key][0])?.name;
+      if (t.key in seenVariants.current && seenVariants.current[t.key] !== name) changed.push(t.key);
+      seenVariants.current[t.key] = name;
+    });
+    if (changed.length) setValuesByKey((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => !changed.includes(k))));
+  }, [variantSig]); // eslint-disable-line react-hooks/exhaustive-deps
   const fullParsed = useMemo(() => parseTemplate(active?.template, variables), [active?.template, variables]);
   const values = valuesByKey[active?.key] || {};
 
@@ -512,15 +526,15 @@ const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, onApp
           {activeVariants.length > 1 && (
             <div role="group" aria-label="Varian template" className="flex flex-wrap items-center gap-1.5">
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Varian:</span>
-              {activeVariants.map((v, idx) => (
+              {activeVariants.map((v) => (
                 <button
                   key={v.name}
                   type="button"
-                  aria-pressed={idx === activeVariantIdx}
-                  onClick={() => chooseVariant(idx)}
+                  aria-pressed={v.name === activeVariantName}
+                  onClick={() => chooseVariant(v.name)}
                   className={cn(
                     'rounded-full border px-4 py-2 text-sm font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-xs',
-                    idx === activeVariantIdx
+                    v.name === activeVariantName
                       ? 'border-app-accent bg-app-accent text-white'
                       : 'border-slate-200 bg-white text-slate-600 hover:border-app-accent/40'
                   )}
