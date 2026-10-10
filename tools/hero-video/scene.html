@@ -1,0 +1,875 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Kaffah Hero Motion</title>
+<style>
+  html, body { margin: 0; background: #030a1a; overflow: hidden; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+/*
+ * Kaffah Physiotherapy — hero motion graphics (15 s seamless loop).
+ * Deterministic: render(t) draws the frame at time t (seconds).
+ * Open with ?w=1920&h=1080 (landscape) or ?w=1080&h=1920 (portrait).
+ * ?preview=1 plays it in real time in the browser.
+ */
+const Q = new URLSearchParams(location.search);
+const W = +Q.get('w') || 1920, H = +Q.get('h') || 1080;
+const DUR = 15;
+const PORTRAIT = H > W;
+const U = Math.min(W, H) / 1080;
+// Focus point: right side on desktop (left stays calm for HTML headline + CTA),
+// upper centre on portrait (lower part stays calm).
+const F = PORTRAIT ? { x: W * 0.5, y: H * 0.37 } : { x: W * 0.665, y: H * 0.5 };
+const HB = PORTRAIT ? H * 0.34 : H * 0.64;   // figure height
+const R = PORTRAIT ? W * 0.5 : H * 0.46;      // ignite radius
+const GROUND = F.y + HB * 0.5;
+
+const cv = document.getElementById('c');
+cv.width = W; cv.height = H;
+const ctx = cv.getContext('2d');
+const mk = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; return c; };
+const bodyCv = mk(), bctx = bodyCv.getContext('2d');
+const tmpCv = mk(), tctx = tmpCv.getContext('2d');
+
+const C = {
+  bg0: '#020817', bg1: '#071a3d', navy: '#0b2353',
+  light: '#9fd0ff', white: '#f4f9ff', elec: '#1f8fff', elec2: '#3fc6ff', cyan: '#5fe0ff',
+};
+
+// ---------- math ----------
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const ss = k => k * k * (3 - 2 * k);
+const eIO = k => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+const eOut = k => 1 - Math.pow(1 - k, 3);
+const eExpo = k => k >= 1 ? 1 : 1 - Math.pow(2, -10 * k);
+const eIn = k => k * k * k;
+const eBack = k => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2); };
+const fract = x => x - Math.floor(x);
+const TAU = Math.PI * 2;
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const rand = rng(20261010);
+const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${n >> 8 & 255},${n & 255},${a})`; };
+
+// Hermite spline through keyframes with C1-continuous velocity (zero at ends).
+function spline(keys, t) {
+  const n = keys.length;
+  if (t <= keys[0][0]) return keys[0][1];
+  if (t >= keys[n - 1][0]) return keys[n - 1][1];
+  let i = 0; while (keys[i + 1][0] < t) i++;
+  const [t0, p0] = keys[i], [t1, p1] = keys[i + 1], dt = t1 - t0, u = (t - t0) / dt;
+  const tan = j => (j <= 0 || j >= n - 1) ? null : keys[j];
+  const m = (j, v0) => {
+    if (j <= 0 || j >= n - 1) return Array.isArray(v0) ? v0.map(() => 0) : 0;
+    const a = keys[j - 1], b = keys[j + 1], d = b[0] - a[0];
+    return Array.isArray(v0) ? b[1].map((v, q) => (v - a[1][q]) / d) : (b[1] - a[1]) / d;
+  };
+  const h00 = 2 * u ** 3 - 3 * u * u + 1, h10 = u ** 3 - 2 * u * u + u, h01 = -2 * u ** 3 + 3 * u * u, h11 = u ** 3 - u * u;
+  const m0 = m(i, p0), m1 = m(i + 1, p1);
+  if (Array.isArray(p0)) return p0.map((v, q) => h00 * v + h10 * dt * m0[q] + h01 * p1[q] + h11 * dt * m1[q]);
+  return h00 * p0 + h10 * dt * m0 + h01 * p1 + h11 * dt * m1;
+}
+
+// ---------- camera ----------
+// [zoom, rot, panX, panY] (pan in HB units). Identical at t=0 and t=15 for the loop.
+const CAM = [
+  [0, [1, 0, 0, 0]], [2.9, [1.07, 0.015, 0, 0.02]], [4.7, [1, 0, 0, 0]], [6.0, [1.0, -0.012, 0, 0]],
+  [7.15, [1.3, 0.028, 0.02, -0.2]], [8.3, [1.04, -0.02, 0, -0.02]], [9.5, [1, 0.004, 0, 0]],
+  [10.4, [1, 0, 0, 0]], [15, [1, 0, 0, 0]],
+];
+let cam = { z: 1, r: 0, px: 0, py: 0 };
+function setCam(t) { const v = spline(CAM, t); cam = { z: v[0], r: v[1], px: v[2] * HB, py: v[3] * HB }; }
+function camMatrix(k = 1) { // k = parallax factor
+  const z = lerp(1, cam.z, k), r = cam.r * k, px = cam.px * k, py = cam.py * k;
+  const c = Math.cos(r) * z, s = Math.sin(r) * z;
+  // screen = F + M (world - F - pan)
+  const ox = -(F.x + px), oy = -(F.y + py);
+  return [c, s, -s, c, F.x + c * ox - s * oy, F.y + s * ox + c * oy];
+}
+function applyCam(g, k = 1) { const m = camMatrix(k); g.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]); }
+function toScreen(p, k = 1) { const m = camMatrix(k); return { x: m[0] * p.x + m[2] * p.y + m[4], y: m[1] * p.x + m[3] * p.y + m[5] }; }
+
+// ---------- figure ----------
+// Angles from straight down, + = forward (+x). Knees: negative = flexion.
+const POSES = {
+  coil:   { lean: .62, arch: -.25, neck: .25, shN: -.45, elN: .55, shF: -.2, elF: .7, hipN: 1.45, knN: -2.05, hipF: 1.05, knF: -1.75, ftN: 0, ftF: .1, lift: 0 },
+  rise:   { lean: .14, arch: .02, neck: 0, shN: .75, elN: 1.1, shF: -.55, elF: .9, hipN: .3, knN: -.45, hipF: -.12, knF: -.18, ftN: 0, ftF: 0, lift: 0 },
+  reach:  { lean: -.1, arch: .4, neck: -.28, shN: 2.75, elN: .08, shF: 2.5, elF: .14, hipN: .04, knN: -.04, hipF: -.85, knF: -.12, ftN: 0, ftF: .5, lift: 0 },
+  stride: { lean: .28, arch: .05, neck: .05, shN: -.95, elN: 1.55, shF: 1.05, elF: 1.4, hipN: 1.35, knN: -1.45, hipF: -.6, knF: -.55, ftN: .2, ftF: .6, lift: .07 },
+  leap:   { lean: .16, arch: .3, neck: -.1, shN: 2.05, elN: .1, shF: 2.35, elF: .12, hipN: 1.3, knN: -.12, hipF: -.95, knF: -.35, ftN: .4, ftF: .5, lift: .14 },
+  open:   { lean: -.05, arch: .28, neck: -.22, shN: 2.45, elN: .05, shF: 2.2, elF: .06, hipN: .1, knN: -.08, hipF: -.28, knF: -.2, ftN: 0, ftF: .2, lift: 0 },
+};
+const PKEYS = ['lean', 'arch', 'neck', 'shN', 'elN', 'shF', 'elF', 'hipN', 'knN', 'hipF', 'knF', 'ftN', 'ftF', 'lift'];
+const toArr = p => PKEYS.map(k => p[k]);
+const POSE_KEYS = [
+  [2.7, toArr(POSES.coil)], [4.55, toArr(POSES.rise)], [6.05, toArr(POSES.reach)],
+  [7.35, toArr(POSES.stride)], [8.5, toArr(POSES.leap)], [9.7, toArr(POSES.open)], [11, toArr(POSES.open)],
+];
+function poseAt(t) { const a = spline(POSE_KEYS, t); const p = {}; PKEYS.forEach((k, i) => p[k] = a[i]); return p; }
+
+const L = { torso: .30, neck: .045, head: .068, ua: .165, fa: .15, hand: .065, th: .245, sh: .245, ft: .09 };
+const dirD = a => ({ x: Math.sin(a), y: Math.cos(a) });
+const add = (p, d, l) => ({ x: p.x + d.x * l * HB, y: p.y + d.y * l * HB });
+
+function skeleton(t) {
+  const p = poseAt(t);
+  const P0 = { x: 0, y: 0 };
+  const up = { x: Math.sin(p.lean), y: -Math.cos(p.lean) };
+  const back = { x: -Math.cos(p.lean), y: -Math.sin(p.lean) };
+  const N0 = add(P0, up, L.torso);
+  const mid = { x: (P0.x + N0.x) / 2 + back.x * p.arch * L.torso * .32 * HB, y: (P0.y + N0.y) / 2 + back.y * p.arch * L.torso * .32 * HB };
+  const q = s => ({ x: (1 - s) ** 2 * P0.x + 2 * (1 - s) * s * mid.x + s * s * N0.x, y: (1 - s) ** 2 * P0.y + 2 * (1 - s) * s * mid.y + s * s * N0.y });
+  const spine = []; for (let i = 0; i <= 18; i++) spine.push(q(i / 18));
+  const waist = q(.42), chest = q(.78), sh = q(.93);
+  const nAng = p.lean + p.neck;
+  const nUp = { x: Math.sin(nAng), y: -Math.cos(nAng) };
+  const neckTop = add(N0, nUp, L.neck);
+  const head = add(neckTop, nUp, L.head);
+  const fwd = { x: -back.x, y: -back.y };
+  const shN = add(sh, fwd, .012), shF = add(sh, fwd, -.016);
+  const elN = add(shN, dirD(p.shN), L.ua), wrN = add(elN, dirD(p.shN + p.elN), L.fa), hdN = add(wrN, dirD(p.shN + p.elN), L.hand);
+  const elF = add(shF, dirD(p.shF), L.ua), wrF = add(elF, dirD(p.shF + p.elF), L.fa), hdF = add(wrF, dirD(p.shF + p.elF), L.hand);
+  const hpN = add(P0, fwd, .012), hpF = add(P0, fwd, -.012);
+  const knN = add(hpN, dirD(p.hipN), L.th), anN = add(knN, dirD(p.hipN + p.knN), L.sh), toN = add(anN, dirD(p.hipN + p.knN + Math.PI / 2 + p.ftN), L.ft);
+  const knF = add(hpF, dirD(p.hipF), L.th), anF = add(knF, dirD(p.hipF + p.knF), L.sh), toF = add(anF, dirD(p.hipF + p.knF + Math.PI / 2 + p.ftF), L.ft);
+  const J = { P: P0, waist, chest, sh, N: N0, neckTop, head, shN, shF, elN, wrN, hdN, elF, wrF, hdF, hpN, hpF, knN, anN, toN, knF, anF, toF, spine, lean: p.lean, nAng };
+  // stand on ground: lowest foot point touches GROUND
+  const low = Math.max(anN.y + .028 * HB, toN.y + .012 * HB, anF.y + .028 * HB, toF.y + .012 * HB);
+  const dx = F.x - .02 * HB, dy = GROUND - low - p.lift * HB;
+  for (const k in J) {
+    if (k === 'spine') J.spine = J.spine.map(v => ({ x: v.x + dx, y: v.y + dy }));
+    else if (J[k] && typeof J[k] === 'object') J[k] = { x: J[k].x + dx, y: J[k].y + dy };
+  }
+  return J;
+}
+
+function capsules(J) {
+  const c = (a, b, ra, rb, g) => ({ a, b, ra: ra * HB, rb: rb * HB, g });
+  const hd = { x: Math.sin(J.nAng), y: -Math.cos(J.nAng) };
+  return [
+    // far side (behind)
+    c(J.hpF, J.knF, .06, .041, 0), c(J.knF, J.anF, .041, .023, 0), c(J.anF, J.toF, .021, .013, 0),
+    c(J.shF, J.elF, .035, .027, 0), c(J.elF, J.wrF, .028, .019, 0), c(J.wrF, J.hdF, .019, .012, 0),
+    // torso
+    c(J.P, J.waist, .078, .064, 1), c(J.waist, J.chest, .064, .084, 1), c(J.chest, J.N, .084, .048, 1),
+    c(J.shF, J.shN, .05, .05, 1), c(J.N, J.neckTop, .028, .026, 1),
+    c(add(J.head, hd, -.014), add(J.head, hd, .016), .052, .056, 1),
+    // near side (front)
+    c(J.hpN, J.knN, .062, .042, 2), c(J.knN, J.anN, .042, .024, 2), c(J.anN, J.toN, .022, .013, 2),
+    c(J.shN, J.elN, .037, .028, 2), c(J.elN, J.wrN, .029, .02, 2), c(J.wrN, J.hdN, .02, .012, 2),
+  ];
+}
+
+function capPath(g, cp, grow = 0) {
+  const { a, b } = cp, ra = cp.ra + grow, rb = cp.rb + grow;
+  const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1e-3;
+  const th = Math.atan2(dy, dx), off = Math.acos(clamp((ra - rb) / len, -1, 1));
+  g.moveTo(a.x + ra * Math.cos(th + off), a.y + ra * Math.sin(th + off));
+  g.arc(a.x, a.y, ra, th + off, th + TAU - off);
+  g.arc(b.x, b.y, rb, th - off, th + off);
+  g.closePath();
+}
+
+// Body silhouette with rim light, sheen and anatomical line-work (in bodyCv).
+function drawBody(J, t, caps) {
+  const g = bctx;
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, H);
+  applyCam(g);
+  const top = J.head.y - .1 * HB, bot = GROUND;
+  const rim = g.createLinearGradient(F.x - HB * .4, top, F.x + HB * .4, bot);
+  rim.addColorStop(0, C.cyan); rim.addColorStop(.5, C.elec); rim.addColorStop(1, C.light);
+  const fill = g.createLinearGradient(0, top, 0, bot);
+  fill.addColorStop(0, '#12306b'); fill.addColorStop(.55, '#0a2150'); fill.addColorStop(1, '#061433');
+  for (let grp = 0; grp < 3; grp++) {
+    const list = caps.filter(c => c.g === grp);
+    g.beginPath(); list.forEach(c => capPath(g, c, 2.4 * U)); g.fillStyle = rim; g.globalAlpha = grp === 0 ? .55 : 1; g.fill();
+    g.globalAlpha = 1;
+    g.beginPath(); list.forEach(c => capPath(g, c)); g.fillStyle = grp === 0 ? '#081a40' : fill; g.fill();
+  }
+  // everything below stays inside the silhouette
+  g.globalCompositeOperation = 'source-atop';
+  // muscle fibre lines along limbs
+  g.lineWidth = 1.1 * U; g.strokeStyle = rgba(C.light, .22);
+  caps.forEach((c, idx) => {
+    if (idx >= 6 && idx <= 11) return;
+    const dx = c.b.x - c.a.x, dy = c.b.y - c.a.y, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len;
+    for (const v of [-.45, 0, .45]) {
+      g.beginPath();
+      for (let i = 0; i <= 10; i++) {
+        const u = i / 10, r = lerp(c.ra, c.rb, u) * v * Math.sin(Math.PI * (.15 + .7 * u));
+        const x = c.a.x + dx * u + nx * r, y = c.a.y + dy * u + ny * r;
+        i ? g.lineTo(x, y) : g.moveTo(x, y);
+      }
+      g.stroke();
+    }
+  });
+  // spine: vertebrae chain echoing the logo
+  const back = { x: -Math.cos(J.lean), y: -Math.sin(J.lean) };
+  for (let i = 1; i < J.spine.length - 1; i++) {
+    const p = J.spine[i], q = J.spine[i + 1], ang = Math.atan2(q.y - p.y, q.x - p.x);
+    const w = (.022 + .006 * Math.sin(i / 18 * Math.PI)) * HB, x = p.x + back.x * .03 * HB, y = p.y + back.y * .03 * HB;
+    g.save(); g.translate(x, y); g.rotate(ang + Math.PI / 2);
+    g.fillStyle = rgba(C.white, .55); g.beginPath(); g.ellipse(0, 0, w * .55, w * .2, 0, 0, TAU); g.fill();
+    g.fillStyle = rgba(C.cyan, .35); g.beginPath(); g.ellipse(-w * .55, 0, w * .2, w * .08, -.5, 0, TAU); g.fill();
+    g.restore();
+  }
+  // moving sheen
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  const sx = lerp(-W * .2, W * 1.2, fract(t / 2.6));
+  const sh = g.createLinearGradient(sx - 220 * U, 0, sx + 220 * U, H * .3);
+  sh.addColorStop(0, 'rgba(120,200,255,0)'); sh.addColorStop(.5, 'rgba(120,200,255,0.28)'); sh.addColorStop(1, 'rgba(120,200,255,0)');
+  g.fillStyle = sh; g.fillRect(0, 0, W, H);
+  g.globalCompositeOperation = 'source-over';
+}
+
+// ---------- ignite curves ----------
+const CURVES = [];
+(function () {
+  CURVES.push((s, τ) => ({ x: F.x + R * (.13 * Math.sin(s * TAU * 1.05 + .6 + τ * .4)), y: F.y + R * (s * 2.3 - 1.15) }));
+  for (let k = 0; k < 4; k++) {
+    const cy = F.y - R * (.5 - k * .2), rx = R * (.32 + .07 * k), ry = R * (.12 + .02 * k);
+    CURVES.push((s, τ) => { const a = Math.PI * (.08 + .84 * s); return { x: F.x + rx * Math.cos(a + Math.PI) * (k % 2 ? -1 : 1), y: cy + ry * Math.sin(a) + Math.sin(τ * .7 + k) * 4 * U }; });
+  }
+  for (let k = 0; k < 4; k++) {
+    const rx = R * (.95 + .14 * k), ry = R * (.28 + .06 * k), rot = -.45 + k * .32;
+    CURVES.push((s, τ) => { const a = s * TAU + k; const x = rx * Math.cos(a), y = ry * Math.sin(a), r = rot + τ * .05 * (k % 2 ? 1 : -1); return { x: F.x + x * Math.cos(r) - y * Math.sin(r), y: F.y + x * Math.sin(r) + y * Math.cos(r) }; });
+  }
+  for (let k = 0; k < 5; k++) {
+    const o = { x: F.x - R * .25, y: F.y - R * .62 }, e = { x: F.x + R * (.15 + k * .14), y: F.y + R * (.05 + k * .1) }, c = { x: F.x + R * (.35 - k * .05), y: F.y - R * (.45 - k * .05) };
+    CURVES.push((s, τ) => { const w = Math.sin(τ * .9 + k) * 6 * U; return { x: (1 - s) ** 2 * o.x + 2 * (1 - s) * s * c.x + s * s * e.x + w, y: (1 - s) ** 2 * o.y + 2 * (1 - s) * s * c.y + s * s * e.y }; });
+  }
+  for (let k = 0; k < 2; k++) {
+    CURVES.push((s, τ) => ({ x: F.x + R * (s * 3.4 - 1.7), y: F.y + R * (.42 + k * .14) * Math.sin(s * 5 + τ * .8 + k * 2) + R * (k ? .25 : -.2) }));
+  }
+})();
+const STREAKS = CURVES.flatMap((f, i) => [0, 1].map(j => ({ c: i, ph: rand(), sp: .22 + rand() * .25, len: .16 + rand() * .14, w: (1 + rand() * 1.6) * U })));
+
+function drawIgnite(τ, env, reveal) {
+  if (env <= 0.001 && reveal <= 0) return;
+  const g = ctx;
+  // faint full paths, drawn on
+  g.lineWidth = 1 * U; g.strokeStyle = rgba(C.light, .07 * env);
+  CURVES.forEach(f => {
+    g.beginPath();
+    const n = 90, m = Math.floor(n * reveal);
+    for (let i = 0; i <= m; i++) { const p = f(i / n, τ); i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y); }
+    g.stroke();
+  });
+  // light streaks
+  g.globalCompositeOperation = 'lighter';
+  STREAKS.forEach(st => {
+    const f = CURVES[st.c], head = fract(st.ph + τ * st.sp) * (1 + st.len);
+    const segs = 22;
+    for (let i = 0; i < segs; i++) {
+      const s0 = head - st.len * (1 - i / segs), s1 = head - st.len * (1 - (i + 1) / segs);
+      if (s1 < 0 || s0 > 1) continue;
+      const a = f(clamp(s0), τ), b = f(clamp(s1), τ), k = (i + 1) / segs;
+      g.strokeStyle = rgba(k > .85 ? C.white : C.elec2, env * k * k * .9);
+      g.lineWidth = st.w * (0.4 + k);
+      g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke();
+    }
+  });
+  g.globalCompositeOperation = 'source-over';
+}
+
+// geometric construction: concentric rings, axes, crosshairs (ignite)
+const CROSS = Array.from({ length: 7 }, () => ({ x: F.x + (rand() - .5) * R * 2.2, y: F.y + (rand() - .5) * R * 1.6, d: rand() * .8 }));
+function drawGeometry(t) {
+  const a = (prog(t, .15, .9) - prog(t, 2.9, 4.0)) * (t < 5 ? 1 : 0);
+  if (a <= 0) return;
+  const g = ctx;
+  g.lineWidth = 1.2 * U;
+  [.38, .72, 1.08].forEach((r, i) => {
+    const p = eIO(prog(t, .2 + i * .18, 1.5 + i * .18));
+    const rot = t * (i % 2 ? .25 : -.18);
+    g.strokeStyle = rgba(i === 1 ? C.elec : C.light, .16 * a);
+    g.setLineDash(i === 2 ? [2 * U, 9 * U] : []);
+    g.beginPath(); g.arc(F.x, F.y, r * R, rot, rot + TAU * p); g.stroke();
+  });
+  g.setLineDash([]);
+  // ticks on the middle ring
+  const tp = prog(t, .8, 1.8);
+  for (let i = 0; i < 72; i++) {
+    if (i / 72 > tp) break;
+    const an = i / 72 * TAU - t * .18, r0 = .72 * R, r1 = r0 + (i % 6 ? 6 : 14) * U;
+    g.strokeStyle = rgba(C.light, .22 * a);
+    g.beginPath(); g.moveTo(F.x + Math.cos(an) * r0, F.y + Math.sin(an) * r0); g.lineTo(F.x + Math.cos(an) * r1, F.y + Math.sin(an) * r1); g.stroke();
+  }
+  // diagonal axes from centre
+  const ap = eExpo(prog(t, .55, 1.6));
+  [-.42, .42, Math.PI / 2].forEach(an => {
+    const dx = Math.cos(an) * R * 1.25 * ap, dy = Math.sin(an) * R * 1.25 * ap;
+    g.strokeStyle = rgba(C.light, .09 * a);
+    g.beginPath(); g.moveTo(F.x - dx, F.y - dy); g.lineTo(F.x + dx, F.y + dy); g.stroke();
+  });
+  // crosshairs
+  CROSS.forEach(c => {
+    const k = eBack(prog(t, .5 + c.d, .9 + c.d)), s = 7 * U * k;
+    if (k <= 0) return;
+    g.strokeStyle = rgba(C.white, .35 * a);
+    g.beginPath(); g.moveTo(c.x - s, c.y); g.lineTo(c.x + s, c.y); g.moveTo(c.x, c.y - s); g.lineTo(c.x, c.y + s); g.stroke();
+  });
+}
+
+// ---------- joints, bones, ROM arcs, trails ----------
+const JOINTS = ['head', 'sh', 'shN', 'elN', 'wrN', 'elF', 'wrF', 'P', 'hpN', 'knN', 'anN', 'knF', 'anF', 'chest'];
+const BONES = [['head', 'neckTop'], ['neckTop', 'sh'], ['sh', 'chest'], ['chest', 'waist'], ['waist', 'P'], ['shN', 'elN'], ['elN', 'wrN'], ['shF', 'elF'], ['elF', 'wrF'], ['hpN', 'knN'], ['knN', 'anN'], ['anN', 'toN'], ['hpF', 'knF'], ['knF', 'anF'], ['anF', 'toF']];
+function drawJoints(J, t) {
+  const appear = j => eBack(prog(t, .35 + j * .11, .75 + j * .11));
+  const a = 1 - .62 * ss(prog(t, 4.2, 5.4));
+  const out = 1 - prog(t, 9.9, 10.4);
+  if (out <= 0 || t < .3) return;
+  const g = ctx; applyCam(g);
+  // bones draw on
+  const bp = eIO(prog(t, 1.4, 2.8)) * (1 - ss(prog(t, 4.0, 5.0)));
+  if (bp > 0) {
+    g.lineWidth = 1.6 * U; g.strokeStyle = rgba(C.light, .55 * bp * out);
+    BONES.forEach(([p, q]) => { const A = J[p], B = J[q]; g.beginPath(); g.moveTo(A.x, A.y); g.lineTo(lerp(A.x, B.x, bp), lerp(A.y, B.y, bp)); g.stroke(); });
+  }
+  JOINTS.forEach((k, j) => {
+    const s = appear(j); if (s <= 0) return;
+    const p = J[k], r = (k === 'head' ? .07 : .02) * HB * s;
+    g.lineWidth = 1.5 * U;
+    g.strokeStyle = rgba(C.white, .8 * a * out);
+    g.beginPath(); g.arc(p.x, p.y, r, 0, TAU); g.stroke();
+    g.fillStyle = rgba(C.elec2, .9 * a * out); g.beginPath(); g.arc(p.x, p.y, 2.2 * U * s, 0, TAU); g.fill();
+    if (k !== 'head') {
+      const rot = t * (j % 2 ? 1.4 : -1.1) + j;
+      g.strokeStyle = rgba(C.elec2, .55 * a * out);
+      g.beginPath(); g.arc(p.x, p.y, r * 1.9, rot, rot + 1.6); g.stroke();
+      g.beginPath(); g.arc(p.x, p.y, r * 1.9, rot + Math.PI, rot + Math.PI + .7); g.stroke();
+    }
+  });
+  // range-of-motion arcs at elbow / knee / hip
+  const ra = ss(prog(t, 4.6, 5.4)) * out;
+  if (ra > 0) {
+    [['shN', 'elN', 'wrN'], ['hpN', 'knN', 'anN'], ['sh', 'hpN', 'knN'], ['hpF', 'knF', 'anF']].forEach(([p, q, s]) => {
+      const A = J[p], B = J[q], Cc = J[s];
+      const a1 = Math.atan2(A.y - B.y, A.x - B.x), a2 = Math.atan2(Cc.y - B.y, Cc.x - B.x);
+      let d = a2 - a1; while (d > Math.PI) d -= TAU; while (d < -Math.PI) d += TAU;
+      const rr = .06 * HB;
+      g.fillStyle = rgba(C.elec, .16 * ra); g.beginPath(); g.moveTo(B.x, B.y); g.arc(B.x, B.y, rr, a1, a1 + d, d < 0); g.closePath(); g.fill();
+      g.strokeStyle = rgba(C.cyan, .75 * ra); g.lineWidth = 1.4 * U; g.beginPath(); g.arc(B.x, B.y, rr, a1, a1 + d, d < 0); g.stroke();
+    });
+  }
+  g.setTransform(1, 0, 0, 1, 0, 0);
+}
+
+function drawTrails(t) {
+  const a = ss(prog(t, 4.4, 5.2)) * (1 - ss(prog(t, 9.8, 10.3)));
+  if (a <= 0) return;
+  const g = ctx; applyCam(g);
+  g.globalCompositeOperation = 'lighter';
+  const n = 26, dt = .022, pts = {};
+  const keys = ['hdN', 'hdF', 'toN', 'toF', 'head', 'elN', 'knN'];
+  keys.forEach(k => pts[k] = []);
+  for (let i = 0; i < n; i++) { const J = skeleton(t - i * dt); keys.forEach(k => pts[k].push(J[k])); }
+  keys.forEach((k, ki) => {
+    const P = pts[k], main = ki < 4;
+    for (let i = n - 1; i > 0; i--) {
+      const kk = 1 - i / n;
+      g.strokeStyle = rgba(i < 3 ? C.white : (ki % 2 ? C.elec : C.elec2), a * kk * kk * (main ? .85 : .4));
+      g.lineWidth = (main ? 5 : 2.4) * U * kk + .5;
+      g.lineCap = 'round';
+      g.beginPath(); g.moveTo(P[i].x, P[i].y); g.lineTo(P[i - 1].x, P[i - 1].y); g.stroke();
+      // echo lines: kinetic parallel strokes
+      if (main && i % 2 === 0) {
+        const dx = P[i - 1].x - P[i].x, dy = P[i - 1].y - P[i].y, l = Math.hypot(dx, dy) || 1, ox = -dy / l * 12 * U, oy = dx / l * 12 * U;
+        g.strokeStyle = rgba(C.light, a * kk * .3); g.lineWidth = 1 * U;
+        g.beginPath(); g.moveTo(P[i].x + ox, P[i].y + oy); g.lineTo(P[i - 1].x + ox, P[i - 1].y + oy); g.stroke();
+      }
+    }
+  });
+  g.lineCap = 'butt';
+  g.globalCompositeOperation = 'source-over';
+  g.setTransform(1, 0, 0, 1, 0, 0);
+}
+
+// ---------- 3D gyroscope (range-of-motion sphere) ----------
+function gyroPoints(t, J) {
+  const c = { x: J.chest.x * .5 + J.P.x * .5, y: J.chest.y * .5 + J.P.y * .5 };
+  const Rg = .62 * HB, foc = Rg * 3.2;
+  const rings = [];
+  for (let i = 0; i < 3; i++) {
+    const tiltX = 1.15 + i * .55 + Math.sin(t * .5 + i) * .15, rotY = t * (.55 + i * .18) + i * 2.1, rotZ = .3 * i - .2;
+    const draw = eIO(prog(t, 5.7 + i * .2, 6.9 + i * .2));
+    const pts = [];
+    for (let k = 0; k <= 120; k++) {
+      const an = k / 120 * TAU * draw;
+      let x = Math.cos(an) * Rg, y = Math.sin(an) * Rg, z = 0;
+      // tilt around X
+      let y2 = y * Math.cos(tiltX) - z * Math.sin(tiltX), z2 = y * Math.sin(tiltX) + z * Math.cos(tiltX);
+      // rotate around Y
+      let x3 = x * Math.cos(rotY) + z2 * Math.sin(rotY), z3 = -x * Math.sin(rotY) + z2 * Math.cos(rotY);
+      // rotate around Z (screen)
+      let x4 = x3 * Math.cos(rotZ) - y2 * Math.sin(rotZ), y4 = x3 * Math.sin(rotZ) + y2 * Math.cos(rotZ);
+      const sc = foc / (foc + z3);
+      pts.push({ x: c.x + x4 * sc, y: c.y + y4 * sc, z: z3 / Rg });
+    }
+    rings.push(pts);
+  }
+  return rings;
+}
+function drawGyro(rings, t, front) {
+  const a = ss(prog(t, 5.6, 6.6)) * (1 - ss(prog(t, 9.7, 10.3)));
+  if (a <= 0) return;
+  const g = ctx; applyCam(g);
+  g.globalCompositeOperation = 'lighter';
+  rings.forEach((pts, i) => {
+    for (let k = 1; k < pts.length; k++) {
+      const p = pts[k - 1], q = pts[k], z = (p.z + q.z) / 2;
+      if (front ? z > 0 : z <= 0) continue;
+      const d = front ? 1 : .35;
+      g.strokeStyle = rgba(i === 1 ? C.cyan : C.light, a * d * (.3 + .25 * (1 - z)));
+      g.lineWidth = (front ? 1.8 : 1) * U;
+      g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(q.x, q.y); g.stroke();
+      if (k % 10 === 0) { g.fillStyle = rgba(C.white, a * d * .8); g.beginPath(); g.arc(q.x, q.y, (front ? 2.4 : 1.4) * U, 0, TAU); g.fill(); }
+    }
+  });
+  g.globalCompositeOperation = 'source-over';
+  g.setTransform(1, 0, 0, 1, 0, 0);
+}
+
+// ---------- silk ribbons ----------
+const RIBBONS = [
+  { p: [[-.15, .78], [.25, .35], [.62, 1.05], [1.12, .2]], amp: .05, ph: 0, col: C.elec },
+  { p: [[.35, -.08], [.55, .55], [.95, .25], [1.1, .95]], amp: .04, ph: 2, col: C.light },
+];
+function drawRibbons(t) {
+  const head = eIO(prog(t, 5.3, 7.0)), tail = eIO(prog(t, 9.4, 10.6));
+  if (head <= tail) return;
+  const g = ctx; applyCam(g, .6);
+  g.globalCompositeOperation = 'lighter';
+  RIBBONS.forEach(rb => {
+    const P = PORTRAIT ? rb.p.map(([x, y]) => [lerp(.0, 1.0, y * .9), lerp(.1, .6, x)]) : rb.p.map(([x, y]) => [lerp(.38, 1.0, x), y]);
+    const pt = s => {
+      const u = 1 - s, k = [u ** 3, 3 * u * u * s, 3 * u * s * s, s ** 3];
+      return { x: W * k.reduce((a, w, i) => a + w * P[i][0], 0), y: H * k.reduce((a, w, i) => a + w * P[i][1], 0) };
+    };
+    for (let l = 0; l < 22; l++) {
+      g.strokeStyle = rgba(rb.col, .09 + .05 * Math.sin(l * .7 + t * 2));
+      g.lineWidth = .9 * U;
+      g.beginPath();
+      const n = 70;
+      for (let i = 0; i <= n; i++) {
+        const s = lerp(tail, head, i / n), p = pt(s), q = pt(Math.min(1, s + .01));
+        const dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy) || 1;
+        const off = (l - 11) * 3.2 * U * Math.cos(s * 6 + t * 1.3 + rb.ph) + Math.sin(s * 9 - t * 1.7 + l * .12) * rb.amp * H;
+        const x = p.x - dy / d * off, y = p.y + dx / d * off;
+        i ? g.lineTo(x, y) : g.moveTo(x, y);
+      }
+      g.stroke();
+    }
+  });
+  g.globalCompositeOperation = 'source-over';
+  g.setTransform(1, 0, 0, 1, 0, 0);
+}
+
+// ---------- typography ----------
+const FONT = '"Inter Display", "Inter", sans-serif';
+const WORDS = [['MOBILITY', 6.05], ['RECOVERY', 7.05], ['STRENGTH', 8.05], ['FREEDOM', 9.05]];
+let WORD_SIZE = 100;
+function letters(text, size, weight, track) {
+  ctx.font = `${weight} ${size}px ${FONT}`;
+  const out = []; let x = 0;
+  for (const ch of text) { const w = ctx.measureText(ch).width; out.push({ ch, x, w }); x += w + track * size; }
+  return { list: out, width: x - track * size };
+}
+function drawWords(t) {
+  const g = ctx;
+  WORDS.forEach(([w, t0]) => {
+    const lt = t - t0; if (lt < 0 || lt > 1.0) return;
+    const L1 = letters(w, WORD_SIZE, 900, .02);
+    const c = toScreen({ x: F.x, y: F.y - HB * .02 }, .45);
+    const x0 = c.x - L1.width / 2, base = c.y + WORD_SIZE * .36;
+    const capH = WORD_SIZE * .74;
+    g.font = `900 ${WORD_SIZE}px ${FONT}`;
+    // fill sweep gradient (dynamic mask)
+    const sx = lerp(x0 - L1.width * .4, x0 + L1.width * 1.4, lt);
+    const gr = g.createLinearGradient(sx - L1.width * .35, 0, sx + L1.width * .35, 0);
+    gr.addColorStop(0, rgba(C.elec, .06)); gr.addColorStop(.5, rgba(C.elec2, .42)); gr.addColorStop(1, rgba(C.elec, .06));
+    L1.list.forEach((l, i) => {
+      const inK = eExpo(prog(lt, i * .028, .36 + i * .028)), outK = eIn(prog(lt, .7 + i * .018, .95 + i * .018));
+      const dy = (1 - inK) * WORD_SIZE * .95 - outK * WORD_SIZE * .95;
+      if (inK <= 0) return;
+      g.save();
+      g.beginPath(); g.rect(x0 + l.x - 4 * U, base - capH - 6 * U, l.w + 8 * U, capH + 14 * U); g.clip();
+      g.fillStyle = gr; g.fillText(l.ch, x0 + l.x, base + dy);
+      g.lineWidth = 1.6 * U; g.strokeStyle = rgba(C.light, .55); g.strokeText(l.ch, x0 + l.x, base + dy);
+      g.restore();
+    });
+    // index line
+    const lp = eExpo(prog(lt, .05, .5)) - eIn(prog(lt, .72, .98));
+    g.fillStyle = rgba(C.elec2, .8);
+    g.fillRect(x0, base + 22 * U, L1.width * Math.max(0, lp), 2 * U);
+  });
+}
+
+let ID = null;
+function layoutIdentity() {
+  const cx = PORTRAIT ? W / 2 : F.x, maxW = PORTRAIT ? W * .8 : W * .42;
+  ctx.font = `900 100px ${FONT}`;
+  const kw = letters('KAFFAH', 100, 900, .04).width;
+  const ks = 100 * maxW / kw;
+  const kL = letters('KAFFAH', ks, 900, .04);
+  // physiotherapy: tracked so it matches KAFFAH width
+  const ps = ks * .17, track = .38;
+  const tg = ks * (PORTRAIT ? .2 : .18);
+  const top = (PORTRAIT ? F.y : F.y) - ks * .55;
+  ID = { cx, ks, kL, ps, track, tg, kBase: top + ks * .74, pBase: top + ks * 1.1, uY: top + ks * 1.34, tBase: top + ks * 1.34 + tg * 1.7 };
+}
+function drawIdentity(t) {
+  if (t < 10.1 || t > 13.1) return;
+  const g = ctx, I = ID, x0 = I.cx - I.kL.width / 2;
+  const exitK = k => eIn(prog(t, 12.55 + k, 12.95 + k));
+  // KAFFAH
+  g.font = `900 ${I.ks}px ${FONT}`;
+  const capH = I.ks * .74;
+  const kg = g.createLinearGradient(x0, I.kBase - capH, x0 + I.kL.width, I.kBase);
+  kg.addColorStop(0, C.white); kg.addColorStop(.6, '#dcecff'); kg.addColorStop(1, C.light);
+  I.kL.list.forEach((l, i) => {
+    const k = eExpo(prog(t, 10.3 + i * .065, 10.95 + i * .065)), o = exitK(i * .025);
+    if (k <= 0 || o >= 1) return;
+    g.save(); g.beginPath(); g.rect(x0 + l.x - 6 * U, I.kBase - capH - 10 * U, l.w + 12 * U, capH + 20 * U); g.clip();
+    g.fillStyle = kg; g.fillText(l.ch, x0 + l.x, I.kBase + (1 - k) * I.ks * .85 - o * I.ks * .85);
+    g.restore();
+  });
+  // PHYSIOTHERAPY (tracking expands)
+  const pk = eOut(prog(t, 10.75, 11.7)), po = exitK(.08);
+  if (pk > 0 && po < 1) {
+    const tr = lerp(.08, I.track, pk);
+    const L2 = letters('PHYSIOTHERAPY', I.ps, 600, tr);
+    g.font = `600 ${I.ps}px ${FONT}`;
+    g.fillStyle = rgba(C.light, pk * (1 - po));
+    const px = I.cx - L2.width / 2;
+    L2.list.forEach(l => g.fillText(l.ch, px + l.x, I.pBase - po * I.ps * 1.2));
+  }
+  // underline: drawn from the particle stream
+  const uk = eIO(prog(t, 10.55, 11.2)), uo = eIn(prog(t, 12.6, 12.95));
+  if (uk > 0) {
+    const w = I.kL.width, xa = x0 + w * uo, xb = x0 + w * uk;
+    const ug = g.createLinearGradient(x0, 0, x0 + w, 0);
+    ug.addColorStop(0, rgba(C.elec, 0)); ug.addColorStop(.25, C.elec); ug.addColorStop(.75, C.elec2); ug.addColorStop(1, rgba(C.elec2, 0));
+    g.fillStyle = ug; g.fillRect(xa, I.uY - 1.5 * U, Math.max(0, xb - xa), 3 * U);
+    const gx = lerp(x0, x0 + w, fract((t - 10.5) / 1.4));
+    if (gx > xa && gx < xb) { const gg = g.createRadialGradient(gx, I.uY, 0, gx, I.uY, 18 * U); gg.addColorStop(0, 'rgba(255,255,255,.8)'); gg.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gg; g.fillRect(gx - 18 * U, I.uY - 18 * U, 36 * U, 36 * U); }
+  }
+  // tagline
+  g.font = `500 ${I.tg}px ${FONT}`;
+  const p1 = 'Move Better.', p2 = 'Recover Stronger.';
+  const w1 = g.measureText(p1 + ' ').width, w2 = g.measureText(p2).width, tx = I.cx - (w1 + w2) / 2;
+  [[p1, tx, 11.15, C.white], [p2, tx + w1, 11.4, C.elec2]].forEach(([s, x, t0, col], i) => {
+    const k = eExpo(prog(t, t0, t0 + .7)), o = exitK(.12 + i * .04);
+    if (k <= 0 || o >= 1) return;
+    g.save(); g.beginPath(); g.rect(x - 4 * U, I.tBase - I.tg * 1.05, g.measureText(s).width + 8 * U, I.tg * 1.4); g.clip();
+    g.fillStyle = col; g.fillText(s, x, I.tBase + (1 - k) * I.tg * 1.3 - o * I.tg * 1.3);
+    g.restore();
+  });
+}
+
+// ---------- logo signature ----------
+const IMG = {};
+const TINT = {};
+function loadImg(name) { return new Promise(r => { const i = new Image(); i.onload = () => { IMG[name] = i; r(); }; i.src = `assets/${name}.png`; }); }
+function tint(img, stops, vertical) {
+  const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+  const g = c.getContext('2d');
+  const gr = vertical ? g.createLinearGradient(0, 0, 0, c.height) : g.createLinearGradient(0, c.height, c.width, 0);
+  stops.forEach(([o, col]) => gr.addColorStop(o, col));
+  g.fillStyle = gr; g.fillRect(0, 0, c.width, c.height);
+  g.globalCompositeOperation = 'destination-in'; g.drawImage(img, 0, 0);
+  return c;
+}
+// lockup positions in source half-scale px (from the original artwork)
+const LOCK = { k: [857, 560], sp: [857, 560], ka: [535, 1210], ph: [540, 1430], w: 1009, h: 916 };
+function drawLogo(t) {
+  if (t < 12.85 || t > 15) return;
+  const g = ctx;
+  const s = PORTRAIT ? W * .74 / LOCK.w : H * .5 / LOCK.h;
+  const cy = PORTRAIT ? F.y - 20 * U : F.y - 30 * U;
+  const cx = PORTRAIT ? W / 2 : F.x;
+  const ox = cx - (LOCK.w / 2 + 535) * s, oy = cy - (LOCK.h / 2 + 560) * s;
+  const out = eIn(prog(t, 14.25, 14.85));
+  const scale = 1 + .05 * eOut(prog(t, 12.9, 14.9));
+  g.save();
+  g.translate(cx, cy); g.scale(scale, scale); g.translate(-cx, -cy);
+  g.globalAlpha = 1 - out;
+  if (out > 0) g.filter = `blur(${out * 14 * U}px)`;
+  // K: diagonal wipe
+  const kk = eExpo(prog(t, 12.95, 13.65));
+  if (kk > 0) {
+    const kx = ox + LOCK.k[0] * s, ky = oy + LOCK.k[1] * s, kw = TINT.k.width * s, kh = TINT.k.height * s;
+    g.save(); g.beginPath();
+    const d = (kw + kh) * kk * 1.05;
+    g.moveTo(kx, ky + kh); g.lineTo(kx + d, ky + kh); g.lineTo(kx, ky + kh - d); g.closePath(); g.clip();
+    g.drawImage(TINT.k, kx, ky + (1 - kk) * 30 * U, kw, kh);
+    g.restore();
+  }
+  // spine: vertebrae stack from bottom to top, glint
+  const sk = eIO(prog(t, 13.1, 13.85));
+  if (sk > 0) {
+    const sx = ox + LOCK.sp[0] * s, sy = oy + LOCK.sp[1] * s, sw = TINT.sp.width * s, sh = TINT.sp.height * s;
+    tctx.setTransform(1, 0, 0, 1, 0, 0); tctx.clearRect(0, 0, W, H);
+    tctx.drawImage(TINT.sp, sx, sy, sw, sh);
+    tctx.globalCompositeOperation = 'source-atop';
+    const gy = lerp(sy + sh, sy - sh * .2, prog(t, 13.3, 14.2));
+    const gg = tctx.createLinearGradient(0, gy - 60 * U, 0, gy + 60 * U);
+    gg.addColorStop(0, 'rgba(95,224,255,0)'); gg.addColorStop(.5, 'rgba(95,224,255,1)'); gg.addColorStop(1, 'rgba(95,224,255,0)');
+    tctx.fillStyle = gg; tctx.fillRect(sx, gy - 60 * U, sw, 120 * U);
+    tctx.globalCompositeOperation = 'source-over';
+    g.save(); g.beginPath(); g.rect(sx - 10, sy + sh * (1 - sk), sw + 20, sh * sk + 10); g.clip();
+    g.drawImage(tmpCv, 0, 0);
+    g.restore();
+  }
+  // wordmark
+  [['ka', 13.35], ['ph', 13.55]].forEach(([n, t0]) => {
+    const k = eExpo(prog(t, t0, t0 + .6)); if (k <= 0) return;
+    const im = TINT[n], x = ox + LOCK[n][0] * s, y = oy + LOCK[n][1] * s, w = im.width * s, h = im.height * s;
+    g.save(); g.beginPath(); g.rect(x - 10, y, w + 20, h + 6); g.clip();
+    g.drawImage(im, x, y + (1 - k) * h, w, h);
+    g.restore();
+  });
+  // url
+  const uk = eOut(prog(t, 13.75, 14.4));
+  if (uk > 0) {
+    const us = (PORTRAIT ? 40 : 30) * U;
+    const L3 = letters('kaffahphysio.id', us, 500, lerp(.05, .16, uk));
+    g.font = `500 ${us}px ${FONT}`; g.fillStyle = rgba(C.light, uk);
+    const uy = oy + (LOCK.h + 560 + 100) * s, ux = cx - L3.width / 2;
+    L3.list.forEach(l => g.fillText(l.ch, ux + l.x, uy));
+    const lw = 40 * U * uk;
+    g.fillStyle = rgba(C.elec2, uk); g.fillRect(cx - lw / 2, uy - us * 1.6, lw, 2 * U);
+  }
+  g.restore();
+  g.filter = 'none';
+}
+
+// ---------- particles ----------
+const NP = PORTRAIT ? 1100 : 1400;
+let PARTS = [];
+function initParticles() {
+  const caps = capsules(skeleton(5.5));
+  const area = caps.map(c => (c.ra + c.rb) * Math.hypot(c.b.x - c.a.x, c.b.y - c.a.y) + 2 * c.ra * c.ra);
+  const tot = area.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < NP; i++) {
+    let r = rand() * tot, ci = 0; while (r > area[ci]) r -= area[ci++];
+    const edge = rand() < .55;
+    PARTS.push({
+      c: Math.floor(rand() * CURVES.length), s0: rand(), sp: (.03 + rand() * .06) * (rand() < .5 ? 1 : -1), jit: (rand() - .5) * 14 * U,
+      cap: ci, u: rand(), v: edge ? (rand() < .5 ? -1 : 1) * (.85 + rand() * .15) : (rand() * 2 - 1) * .8,
+      size: (.7 + rand() * 1.5) * U, br: .5 + rand() * .5, d: rand(), sw: rand() * TAU, sr: .3 + rand(),
+      lx: rand(), ly: (rand() - .5) * 2, oa: rand() * TAU, or: .35 + rand() * .75, os: (.04 + rand() * .06) * (rand() < .5 ? 1 : -1),
+    });
+  }
+}
+function ignitePos(p, τ) {
+  const f = CURVES[p.c], s = fract(p.s0 + τ * p.sp), a = f(s, τ), b = f(Math.min(1, s + .004), τ);
+  const dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy) || 1;
+  return { x: a.x - dy / l * p.jit, y: a.y + dx / l * p.jit, a: Math.pow(Math.sin(Math.PI * s), .6) };
+}
+let SPRITE;
+function makeSprite() {
+  const c = document.createElement('canvas'); c.width = c.height = 32;
+  const g = c.getContext('2d'), gr = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.25, 'rgba(150,215,255,.85)'); gr.addColorStop(.6, 'rgba(40,140,255,.25)'); gr.addColorStop(1, 'rgba(40,140,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 32, 32); SPRITE = c;
+}
+function drawParticles(t, caps, J) {
+  const g = ctx;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalCompositeOperation = 'lighter';
+  const swirl = Math.sin(Math.PI * prog(t, 8.25, 9.45));
+  const ctr = { x: (J.chest.x + J.P.x) / 2, y: (J.chest.y + J.P.y) / 2 };
+  const I = ID, tw = I.kL.width;
+  const P0 = 0.5;
+  PARTS.forEach((p, i) => {
+    let x, y, a;
+    // ignite stream (τ wraps across the loop)
+    const τ = t > 12 ? t - DUR : t;
+    const ig = ignitePos(p, τ);
+    x = ig.x; y = ig.y; a = P0 * ig.a;
+    // morph into body
+    const m = eIO(prog(t, 2.9 + p.d * .9, 4.2 + p.d * .9));
+    if (t > 2.9 && t < 14) {
+      const c = caps[p.cap], dx = c.b.x - c.a.x, dy = c.b.y - c.a.y, l = Math.hypot(dx, dy) || 1;
+      const r = lerp(c.ra, c.rb, p.u) * p.v;
+      let bx = c.a.x + dx * p.u - dy / l * r, by = c.a.y + dy * p.u + dx / l * r;
+      if (swirl > 0) {
+        const vx = bx - ctr.x, vy = by - ctr.y, an = swirl * p.sr * 1.3 * (p.v > 0 ? 1 : -1), rr = 1 + swirl * p.sr * .9;
+        bx = ctr.x + (vx * Math.cos(an) - vy * Math.sin(an)) * rr; by = ctr.y + (vx * Math.sin(an) + vy * Math.cos(an)) * rr;
+      }
+      const bs = toScreen({ x: bx, y: by });
+      const ba = lerp(.95, .3, ss(prog(t, 4.4, 5.6))) + swirl * .6;
+      x = lerp(x, bs.x, m); y = lerp(y, bs.y, m); a = lerp(a, ba, m);
+      // stream into the underline
+      const ln = eIO(prog(t, 9.95 + p.lx * .25, 10.75 + p.lx * .25));
+      if (ln > 0) {
+        const lxp = I.cx - tw / 2 + tw * p.lx, lyp = I.uY + p.ly * 3 * U;
+        x = lerp(x, lxp, ln); y = lerp(y, lyp, ln); a = lerp(a, 1, ln);
+      }
+      // ambient dust orbit around the lockup
+      const du = ss(prog(t, 10.9 + p.d * .4, 11.9 + p.d * .4));
+      if (du > 0) {
+        const an = p.oa + t * p.os, rx = (PORTRAIT ? W * .48 : W * .3) * p.or, ry = (PORTRAIT ? H * .22 : H * .36) * p.or;
+        const dx2 = I.cx + Math.cos(an) * rx, dy2 = F.y + Math.sin(an) * ry;
+        x = lerp(x, dx2, du); y = lerp(y, dy2, du); a = lerp(a, .22 + .15 * Math.sin(t * 3 + i), du);
+      }
+    }
+    // back into the ignite streams for a seamless loop
+    const back = eIO(prog(t, 13.9 + p.d * .3, 14.75 + p.d * .2));
+    if (back > 0 && t > 12) { x = lerp(x, ig.x, back); y = lerp(y, ig.y, back); a = lerp(a, P0 * ig.a, back); }
+    if (a <= .01) return;
+    const sz = p.size * 7 * (1 + swirl * .4);
+    g.globalAlpha = clamp(a * p.br);
+    g.drawImage(SPRITE, x - sz / 2, y - sz / 2, sz, sz);
+  });
+  g.globalAlpha = 1;
+  g.globalCompositeOperation = 'source-over';
+}
+
+// ---------- background ----------
+const DUST = Array.from({ length: 70 }, () => ({ x: rand() * W, y: rand() * H, z: .15 + rand() * .7, r: (.6 + rand() * 1.6) * U, ph: rand() * TAU }));
+const BOKEH = Array.from({ length: 9 }, () => ({ x: rand() * W, y: rand() * H, z: .1 + rand() * .3, r: (60 + rand() * 160) * U, ph: rand() * TAU }));
+function drawBackground(t) {
+  const g = ctx;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.fillStyle = C.bg0; g.fillRect(0, 0, W, H);
+  const pulse = .5 + .5 * Math.cos(t / DUR * TAU);
+  const rg = g.createRadialGradient(F.x, F.y, 0, F.x, F.y, Math.max(W, H) * .75);
+  rg.addColorStop(0, '#0d2a5e'); rg.addColorStop(.35, '#081c42'); rg.addColorStop(1, C.bg0);
+  g.fillStyle = rg; g.fillRect(0, 0, W, H);
+  // secondary cool glow that slowly orbits
+  const ga = t / DUR * TAU, gx = F.x + Math.cos(ga) * R * .6, gy = F.y + Math.sin(ga) * R * .35;
+  const rg2 = g.createRadialGradient(gx, gy, 0, gx, gy, R * 1.1);
+  rg2.addColorStop(0, `rgba(31,143,255,${.07 + .03 * pulse})`); rg2.addColorStop(1, 'rgba(31,143,255,0)');
+  g.fillStyle = rg2; g.fillRect(0, 0, W, H);
+  // bokeh + dust with parallax
+  BOKEH.forEach(b => {
+    const p = toScreen({ x: b.x + Math.sin(t / DUR * TAU + b.ph) * 30 * U, y: b.y + Math.cos(t / DUR * TAU + b.ph) * 20 * U }, b.z);
+    const gr = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, b.r);
+    gr.addColorStop(0, 'rgba(70,150,255,0.05)'); gr.addColorStop(1, 'rgba(70,150,255,0)');
+    g.fillStyle = gr; g.fillRect(p.x - b.r, p.y - b.r, b.r * 2, b.r * 2);
+  });
+  DUST.forEach(d => {
+    const p = toScreen({ x: d.x + Math.sin(t / DUR * TAU * 2 + d.ph) * 14 * U, y: d.y - Math.sin(t / DUR * TAU + d.ph) * 18 * U }, d.z);
+    g.fillStyle = rgba(C.light, .1 + .25 * d.z * (.5 + .5 * Math.sin(t * 2 + d.ph)));
+    g.beginPath(); g.arc(p.x, p.y, d.r, 0, TAU); g.fill();
+  });
+}
+function drawGround(t, J) {
+  const a = ss(prog(t, 3.4, 4.6)) * (1 - ss(prog(t, 9.9, 10.5)));
+  if (a <= 0) return;
+  const g = ctx; applyCam(g, .9);
+  const cx = (J.anN.x + J.anF.x) / 2, w = HB * .75;
+  const lg = g.createLinearGradient(cx - w, 0, cx + w, 0);
+  lg.addColorStop(0, rgba(C.elec, 0)); lg.addColorStop(.5, rgba(C.light, .55 * a)); lg.addColorStop(1, rgba(C.elec, 0));
+  g.fillStyle = lg; g.fillRect(cx - w, GROUND, w * 2, 1.5 * U);
+  g.save(); g.translate(cx, GROUND); g.scale(1, .12);
+  const rg = g.createRadialGradient(0, 0, 0, 0, 0, w * .7);
+  rg.addColorStop(0, rgba(C.elec, .35 * a)); rg.addColorStop(1, rgba(C.elec, 0));
+  g.fillStyle = rg; g.beginPath(); g.arc(0, 0, w * .7, 0, TAU); g.fill();
+  g.restore();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+}
+function drawVignette() {
+  const g = ctx; g.setTransform(1, 0, 0, 1, 0, 0);
+  const vg = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .35, W / 2, H / 2, Math.max(W, H) * .78);
+  vg.addColorStop(0, 'rgba(2,8,23,0)'); vg.addColorStop(1, 'rgba(2,8,23,0.75)');
+  g.fillStyle = vg; g.fillRect(0, 0, W, H);
+}
+
+// ---------- frame ----------
+function bodyVisibility(t) { return ss(prog(t, 3.9, 5.0)) * (1 - .55 * Math.sin(Math.PI * prog(t, 8.25, 9.45))); }
+function render(t) {
+  t = ((t % DUR) + DUR) % DUR;
+  setCam(t);
+  const J = skeleton(t), caps = capsules(J);
+  drawBackground(t);
+  drawGround(t, J);
+  // ignite layer (wraps: also runs at the end of the loop with negative local time)
+  const τ = t > 12 ? t - DUR : t;
+  const env = ss(prog(τ, 0, .7)) * (1 - ss(prog(τ, 2.7, 3.9)));
+  drawIgnite(τ, env, eIO(prog(τ, .15, 1.8)) * (1 - prog(τ, 3.2, 4.2)));
+  drawGeometry(t);
+  drawRibbons(t);
+  drawWords(t);
+  const rings = gyroPoints(t, J);
+  drawGyro(rings, t, false);
+  // body silhouette + reflection
+  const bv = bodyVisibility(t);
+  const wipe = eIO(prog(t, 9.95, 10.6));
+  if (bv > 0 && wipe < 1) {
+    drawBody(J, t, caps);
+    const ys = toScreen({ x: F.x, y: GROUND }).y;
+    // reflection
+    tctx.setTransform(1, 0, 0, 1, 0, 0); tctx.clearRect(0, 0, W, H);
+    tctx.save(); tctx.translate(0, ys * 2); tctx.scale(1, -1); tctx.drawImage(bodyCv, 0, 0); tctx.restore();
+    tctx.globalCompositeOperation = 'destination-in';
+    const rg = tctx.createLinearGradient(0, ys, 0, ys + HB * .3); rg.addColorStop(0, 'rgba(0,0,0,.28)'); rg.addColorStop(1, 'rgba(0,0,0,0)');
+    tctx.fillStyle = rg; tctx.fillRect(0, ys, W, HB * .3); tctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = bv * (1 - wipe); ctx.drawImage(tmpCv, 0, 0);
+    // reveal from the ground up; dissolve from the feet up
+    const top = toScreen(J.head).y - HB * .12;
+    const yReveal = lerp(ys + 10, top, eIO(prog(t, 3.85, 5.0)));
+    const yWipe = lerp(ys + 10, top, wipe);
+    ctx.save(); ctx.beginPath(); ctx.rect(0, Math.max(0, yReveal - 2), W, Math.max(0, Math.min(ys + 10, yWipe) - yReveal + 2)); ctx.clip();
+    // glow pass
+    ctx.globalAlpha = bv * .55; ctx.filter = `blur(${18 * U}px)`; ctx.globalCompositeOperation = 'lighter';
+    ctx.drawImage(bodyCv, 0, 0);
+    ctx.filter = 'none'; ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = bv; ctx.drawImage(bodyCv, 0, 0);
+    ctx.restore();
+    // scan line at the reveal / wipe edge
+    const edge = t < 6 ? (prog(t, 3.85, 5.0) > 0 && prog(t, 3.85, 5.0) < 1 ? yReveal : null) : (wipe > 0 ? yWipe : null);
+    if (edge !== null) {
+      const lg = ctx.createLinearGradient(F.x - HB * .5, 0, F.x + HB * .5, 0);
+      lg.addColorStop(0, 'rgba(95,224,255,0)'); lg.addColorStop(.5, 'rgba(200,240,255,.9)'); lg.addColorStop(1, 'rgba(95,224,255,0)');
+      ctx.fillStyle = lg; ctx.fillRect(F.x - HB * .5, edge - 1, HB, 2 * U);
+    }
+    ctx.globalAlpha = 1;
+  }
+  drawJoints(J, t);
+  drawTrails(t);
+  drawGyro(rings, t, true);
+  drawParticles(t, caps, J);
+  // ignite flash
+  const fl = Math.sin(Math.PI * prog(t, 2.75, 3.35));
+  if (fl > 0) {
+    const c = toScreen(J.chest);
+    const fg = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, HB * .7);
+    fg.addColorStop(0, `rgba(160,220,255,${.35 * fl})`); fg.addColorStop(1, 'rgba(160,220,255,0)');
+    ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = fg; ctx.fillRect(0, 0, W, H); ctx.globalCompositeOperation = 'source-over';
+  }
+  drawIdentity(t);
+  drawLogo(t);
+  drawVignette();
+}
+
+async function init() {
+  await Promise.all(['mark-k', 'mark-spine', 'word-kaffah', 'word-physio'].map(loadImg));
+  await Promise.all([900, 600, 500].map(w => document.fonts.load(`${w} 100px "Inter Display"`)));
+  TINT.k = tint(IMG['mark-k'], [[0, '#1f8fff'], [1, '#5fe0ff']]);
+  TINT.sp = tint(IMG['mark-spine'], [[0, '#ffffff'], [1, '#cfe7ff']], true);
+  TINT.ka = tint(IMG['word-kaffah'], [[0, '#ffffff'], [1, '#e2f0ff']]);
+  TINT.ph = tint(IMG['word-physio'], [[0, '#9fd0ff'], [1, '#bfe2ff']]);
+  ctx.font = `900 100px ${FONT}`;
+  const maxW = PORTRAIT ? W * .94 : W * .6;
+  WORD_SIZE = Math.min(...WORDS.map(([w]) => 100 * maxW / letters(w, 100, 900, .02).width), PORTRAIT ? 220 * U : 260 * U);
+  layoutIdentity();
+  makeSprite();
+  initParticles();
+  window.render = render;
+  window.ready = true;
+  if (Q.get('preview')) { const t0 = performance.now(); const loop = () => { render(((performance.now() - t0) / 1000) % DUR); requestAnimationFrame(loop); }; loop(); }
+  else if (Q.get('t')) render(+Q.get('t'));
+}
+init();
+</script>
+</body>
+</html>
