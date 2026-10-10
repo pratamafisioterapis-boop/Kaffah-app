@@ -105,7 +105,9 @@ const LeaveRequestCard = ({ request, showTherapist = false, footer = null }) => 
         {request.revoked_at && (
           <p className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-app-sm px-3 py-2">
             Persetujuan dibatalkan{request.revoked_by_name ? ` oleh ${request.revoked_by_name}` : ''}
-            {request.revoke_note ? `: ${request.revoke_note}` : ''}. Libur dan jadwal pengganti sudah dikembalikan.
+            {request.revoke_note ? `: ${request.revoke_note}` : ''}. {isSundayDate(request.leave_date) && !request.is_partial
+              ? 'Jadwal pengganti dikembalikan; periksa libur mingguan Senin / Selasa terapis di Jadwal Libur.'
+              : 'Libur dan jadwal pengganti sudah dikembalikan.'}
           </p>
         )}
 
