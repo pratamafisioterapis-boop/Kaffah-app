@@ -7,7 +7,8 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { getLeaveRequests, reviewLeaveRequest, revokeLeaveRequest } from '@/lib/api';
+import { getLeaveRequests, reviewLeaveRequest, revokeLeaveRequest, getWeeklyOffAfterSunday } from '@/lib/api';
+import { isSundayDate, formatLongDate } from '@/lib/leaveRequestUtils';
 import LeaveRequestCard from '@/components/shared/LeaveRequestCard';
 
 // Daftar pengajuan izin untuk owner / terapis kepala: setujui atau tolak,
@@ -73,11 +74,17 @@ const LeaveRequestReview = ({ onChanged, className = '' }) => {
       toast({ variant: 'destructive', title: 'Gagal membatalkan izin', description: error.message });
       return;
     }
-    toast({
-      title: 'Persetujuan izin dibatalkan',
-      description: `Libur dan jadwal pengganti ${revoking.therapist_name || 'terapis'} sudah dikembalikan.`
-        + (stillBooked > 0 ? ` Perhatian: ${stillBooked} booking di tanggal pengganti masih aktif, mohon dijadwalkan ulang.` : ''),
-    });
+    const name = revoking.therapist_name || 'terapis';
+    let description = `Jadwal ${name} sudah dikembalikan.`;
+    // Izin Minggu seharian membatalkan libur Senin / Selasa: periksa apakah liburnya benar-benar kembali.
+    if (isSundayDate(revoking.leave_date) && !revoking.is_partial) {
+      const { data: offDates } = await getWeeklyOffAfterSunday(revoking.therapist_id, revoking.leave_date);
+      description += offDates.length > 0
+        ? ` Libur mingguan kembali: ${offDates.map(formatLongDate).join(', ')}.`
+        : ' Perhatian: tidak ada libur mingguan Senin / Selasa yang tercatat setelah Minggu itu. Tambahkan manual di Jadwal Libur terapis bila perlu.';
+    }
+    if (stillBooked > 0) description += ` Perhatian: ${stillBooked} booking di tanggal pengganti masih aktif, mohon dijadwalkan ulang.`;
+    toast({ title: 'Persetujuan izin dibatalkan', description });
     setRevoking(null);
     setRevokeNote('');
     await load();

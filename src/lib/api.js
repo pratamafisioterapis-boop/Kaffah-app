@@ -1523,6 +1523,27 @@ export const revokeLeaveRequest = async (id, note = null) => {
   return { data: data ?? 0, error };
 };
 
+// Libur mingguan (Senin / Selasa) yang tercatat setelah satu hari Minggu; dipakai untuk memeriksa
+// apakah libur kembali setelah izin Minggu dibatalkan. data = daftar tanggal 'yyyy-MM-dd'.
+export const getWeeklyOffAfterSunday = async (therapistId, sundayDate) => {
+  const from = new Date(`${sundayDate}T00:00:00`);
+  const fmt = (offset) => {
+    const d = new Date(from);
+    d.setDate(d.getDate() + offset);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const { data, error } = await supabase
+    .from('therapist_time_off')
+    .select('start_date')
+    .eq('therapist_id', therapistId)
+    .eq('leave_type', 'weekly_off')
+    .is('start_time', null)
+    .gte('start_date', fmt(1))
+    .lte('start_date', fmt(2))
+    .order('start_date');
+  return { data: (data || []).map((r) => r.start_date), error };
+};
+
 // ── Tukar shift terapis (tanggal yang sama; disetujui owner / terapis kepala) ──
 const SHIFT_SWAP_COLUMNS = 'id, therapist_id, therapist_name, swap_date, from_shift_name, from_start_time, from_end_time, to_shift_name, to_start_time, to_end_time, notes, status, requested_by, reviewed_by_name, review_note, reviewed_at, created_at, revoked_at, revoked_by_name, revoke_note';
 
