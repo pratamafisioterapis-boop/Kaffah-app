@@ -6,8 +6,9 @@ import {
 import { Button } from '@/components/ui/button';
 import {
   Loader2, Calendar, ChevronDown, ChevronUp, Stethoscope, Users,
-  History, FileText, User, Clock,
+  History, FileText, User, Clock, PlusCircle,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { getPatientClinicalHistory, getMedicalRecords, getPatientOnsetInfo } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -32,7 +33,8 @@ const formatVisitDate = (dateStr) => {
   return format(new Date(`${dateStr}T00:00:00`), 'dd MMMM yyyy', { locale: idLocale });
 };
 
-const PatientClinicalHistoryDrawer = ({ isOpen, onClose, patient, currentTherapist, todayISO }) => {
+const PatientClinicalHistoryDrawer = ({ isOpen, onClose, patient, currentTherapist, todayISO, basePath = '/therapist/records' }) => {
+  const navigate = useNavigate();
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
@@ -97,6 +99,11 @@ const PatientClinicalHistoryDrawer = ({ isOpen, onClose, patient, currentTherapi
   const firstVisitDate = visits.length > 0 ? visits[visits.length - 1].recap_date : null;
 
   const toggleExpand = (id) => setExpandedId((prev) => (prev === id ? null : id));
+
+  const handleCreateSoap = (visit) => {
+    onClose();
+    navigate(`${basePath}/new/${patient.id}?date=${visit.recap_date}&dailyRecapId=${visit.id}`);
+  };
 
   if (!patient) return null;
 
@@ -271,9 +278,18 @@ const PatientClinicalHistoryDrawer = ({ isOpen, onClose, patient, currentTherapi
                               </p>
                             </div>
                           )) : (
-                            <p className="text-xs text-slate-500 italic text-center py-2">
-                              Belum ada catatan SOAP untuk kunjungan ini.
-                            </p>
+                            <div className="flex flex-col items-center gap-3 py-2">
+                              <p className="text-xs text-slate-500 italic text-center">
+                                Belum ada catatan SOAP untuk kunjungan ini.
+                              </p>
+                              <Button
+                                size="sm"
+                                onClick={() => handleCreateSoap(visit)}
+                                className="rounded-app bg-app-accent hover:bg-app-accent-hover"
+                              >
+                                <PlusCircle className="w-4 h-4 mr-1.5" /> Buat SOAP
+                              </Button>
+                            </div>
                           )}
                         </div>
                       </motion.div>
