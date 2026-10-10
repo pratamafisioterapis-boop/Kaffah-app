@@ -121,6 +121,10 @@ const SlotUtilizationChart = () => {
   // (Terapis Aktif, Slot Kosong, Pasien Baru, Pasien Lama) di atasnya.
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
+  // Busur mulai dari jam 12 searah jarum jam. Pangkal busur diputar -90° lewat
+  // transform (bukan strokeDashoffset, yang membuat pola dash terbungkus dan
+  // menggambar busur di posisi yang salah), dan ujungnya butt supaya panjang busur
+  // persis sebanding dengan persentase — round cap menambah ~strokeWidth/2 di tiap sisi.
   const isFull = metrics.utilization >= 100;
   const strokeDash = (metrics.utilization / 100) * circumference;
 
@@ -177,9 +181,8 @@ const SlotUtilizationChart = () => {
                     fill="none"
                     stroke={utilizationColor}
                     strokeWidth="10"
-                    strokeLinecap="round"
                     strokeDasharray={`${strokeDash} ${circumference}`}
-                    strokeDashoffset={circumference / 4}
+                    transform="rotate(-90 50 50)"
                     style={{ transition: 'stroke-dasharray 0.8s ease, stroke 0.8s ease' }}
                   />
                 )}
