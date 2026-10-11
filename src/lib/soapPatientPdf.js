@@ -9,9 +9,10 @@ import { collectGlossary, findGlossaryEntry, explainTestResult } from '@/lib/soa
 // ditata agar mudah dibaca orang awam: istilah medis tetap dipakai, tetapi diberi arti sederhana
 // (kolom penjelasan hasil tes, penjelasan tiap tindakan, dan kamus istilah di akhir dokumen).
 
-const NAVY = [16, 52, 102];
-const TEAL = [13, 148, 172];
-const TEAL_SOFT = [224, 242, 246];
+const NAVY = [4, 70, 135];
+const TEAL = [0, 169, 232];
+const TEAL_SOFT = [224, 243, 252];
+const MINT = [125, 211, 252];
 const INK = [30, 41, 59];
 const MUTED = [100, 116, 139];
 const LINE = [226, 232, 240];
@@ -264,7 +265,7 @@ class Layout {
 const drawLogo = (doc, logo, x, y, size) => {
   if (!logo) return;
   try {
-    doc.addImage(logo, 'PNG', x, y, size, size);
+    doc.addImage(logo, /^data:image\/png/i.test(logo) ? 'PNG' : 'JPEG', x, y, size, size);
   } catch (_e) {
     /* logo opsional */
   }
@@ -277,16 +278,8 @@ const drawSquares = (doc, x, y, color = TEAL) => {
 };
 
 const drawCover = (doc, { patientName, visitDate, diagnosisText, logo }) => {
-  // Bagian atas: logo & nama klinik
-  drawLogo(doc, logo, MARGIN, 16, 34);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(17);
-  doc.setTextColor(...NAVY);
-  doc.text(BUSINESS.name, MARGIN + 38, 31);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9.5);
-  doc.setTextColor(...MUTED);
-  doc.text('Klinik Fisioterapi - Balikpapan', MARGIN + 38, 37);
+  // Bagian atas: logo (sudah memuat nama klinik)
+  drawLogo(doc, logo, MARGIN - 4, 10, 58);
 
   // Judul
   doc.setFont('helvetica', 'bold');
@@ -382,7 +375,7 @@ const drawBackCover = (doc, logo) => {
   const block = (label, lines, y) => {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
-    doc.setTextColor(...[94, 234, 212]);
+    doc.setTextColor(...MINT);
     doc.text(label, MARGIN, y);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(11);
@@ -398,24 +391,22 @@ const drawBackCover = (doc, logo) => {
   y = block('Instagram', [`@${BUSINESS.instagramUrl.split('/').filter(Boolean).pop()}`], y);
   y = block('Email', [BUSINESS.email], y);
 
-  drawLogo(doc, logo, MARGIN, 232, 30);
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(MARGIN, 238, 42, 42, 3, 3, 'F');
+  drawLogo(doc, logo, MARGIN + 1, 239, 40);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
   doc.setTextColor(255, 255, 255);
-  doc.text(BUSINESS.name, MARGIN + 34, 245);
+  doc.text(BUSINESS.name, MARGIN + 50, 257);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
   doc.setTextColor(186, 230, 253);
-  doc.text(BUSINESS.url.replace('https://', ''), MARGIN + 34, 251);
+  doc.text(BUSINESS.url.replace('https://', ''), MARGIN + 50, 263);
 };
 
 const drawPageChrome = (doc, logo, pageNo, totalPages) => {
   doc.setPage(pageNo + 1); // halaman isi dimulai setelah sampul
-  drawLogo(doc, logo, MARGIN, 7, 13);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
-  doc.setTextColor(...NAVY);
-  doc.text(BUSINESS.name, MARGIN + 16, 14);
+  drawLogo(doc, logo, MARGIN, 4, 17);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(...MUTED);
@@ -548,7 +539,7 @@ export const generateSoapPatientPDF = (data) => {
     doc.setFillColor(...NAVY);
     doc.roundedRect(MARGIN, top, CONTENT_W, h, 2, 2, 'F');
     L.y += 3;
-    L.text('DIAGNOSIS KLINIS', MARGIN + 6, 7.5, { bold: true, color: [94, 234, 212] });
+    L.text('DIAGNOSIS KLINIS', MARGIN + 6, 7.5, { bold: true, color: MINT });
     L.y += 5;
     lines.forEach((l) => {
       L.text(l, MARGIN + 6, 11, { bold: true, color: [255, 255, 255] });

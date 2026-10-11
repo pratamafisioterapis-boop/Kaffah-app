@@ -13,7 +13,7 @@ import { id as idLocale } from 'date-fns/locale';
 
 const loadLogo = async () => {
   try {
-    const res = await fetch('/logo.png');
+    const res = await fetch('/kaffah-logo.jpg');
     if (!res.ok) return null;
     const blob = await res.blob();
     return await new Promise((resolve) => {
