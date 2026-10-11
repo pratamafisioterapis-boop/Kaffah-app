@@ -10,7 +10,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 // Mobile Chrome's embedded PDF viewer frequently refuses to render blob:
 // URLs inside an iframe and shows a generic "open externally" file card
 // instead — rendering to canvas ourselves sidesteps that entirely.
-const PdfPreviewModal = ({ open, onClose, url, title = 'Preview Dokumen' }) => {
+const PdfPreviewModal = ({ open, onClose, url, title = 'Preview Dokumen', footer = null }) => {
   const containerRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -88,6 +88,7 @@ const PdfPreviewModal = ({ open, onClose, url, title = 'Preview Dokumen' }) => {
           {error && <p className="text-center text-sm text-red-600 py-10">{error}</p>}
           <div ref={containerRef} />
         </div>
+        {footer && <div className="shrink-0 border-t border-slate-200 bg-white p-3">{footer}</div>}
       </DialogContent>
     </Dialog>
   );
