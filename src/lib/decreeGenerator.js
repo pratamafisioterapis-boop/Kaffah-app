@@ -6,7 +6,7 @@ import { id as idLocale } from 'date-fns/locale';
 const INK = [26, 30, 41];
 const NAVY = [11, 76, 140];
 const GOLD = [0, 169, 233];
-const LOGO_URL = '/kaffah-logo.png';
+const LOGO_URL = '/kaffah-logo-kop.png';
 const LOGO_RATIO = 700 / 663;
 const MUTED = [100, 106, 122];
 const PAGE_W = 210;
