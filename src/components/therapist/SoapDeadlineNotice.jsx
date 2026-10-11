@@ -34,11 +34,11 @@ const SoapDeadlineNotice = ({ therapist }) => {
       <p>
         Masa percobaan pengisian SOAP tepat waktu berlaku sampai <strong>{fmtDate(notice.deadline_end)}</strong>.
         Minggu ini ada keringanan: SOAP setiap sesi boleh diisi sampai <strong>pukul 23.59</strong> di hari sesi.
-        Lewat dari itu, <strong>Booking Calendar akan dikunci</strong> sampai SOAP yang terlambat diisi.
+        Lewat dari itu, <strong>Booking Calendar akan dikunci</strong> sampai SOAP yang terlambat diisi. SOAP hari-hari sebelumnya di periode Anda yang belum terisi juga harus segera diisi.
       </p>
       {locked && (
         <p className="mt-2 font-semibold">
-          Booking Calendar Anda sedang terkunci: {notice.overdue_count} SOAP melewati batas. Segera lengkapi di menu Evaluasi Pasien.
+          Booking Calendar Anda sedang terkunci: {notice.overdue_count} SOAP (termasuk hari-hari sebelumnya di periode Anda) belum diisi dan melewati batas. Segera lengkapi di menu Evaluasi Pasien.
         </p>
       )}
       {!locked && notice.today_unfilled_count > 0 && (
