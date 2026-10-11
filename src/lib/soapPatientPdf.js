@@ -281,7 +281,7 @@ const drawCover = (doc, { patientName, visitDate, diagnosisText, logo }) => {
   doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, PAGE_W, PAGE_H, 'F');
   // Bagian atas: logo (sudah memuat nama klinik)
-  drawLogo(doc, logo, MARGIN - 4, 10, 58);
+  drawLogo(doc, logo, MARGIN - 3, 14, 38);
 
   // Judul
   doc.setFont('helvetica', 'bold');
@@ -360,21 +360,21 @@ const drawBackCover = (doc, logo) => {
   doc.rect(0, 10, PAGE_W, 2, 'F');
 
   // Logo di atas latar putih (tanpa kotak) agar proporsional dan menyatu
-  drawLogo(doc, logo, cx - 32, 24, 64);
+  drawLogo(doc, logo, cx - 20, 28, 40);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(25);
   doc.setTextColor(...NAVY);
-  doc.text('Jadwalkan Kontrol Berikutnya', cx, 108, { align: 'center' });
+  doc.text('Jadwalkan Kontrol Berikutnya', cx, 88, { align: 'center' });
   doc.setFillColor(...TEAL);
-  doc.roundedRect(cx - 14, 113, 28, 1.6, 0.8, 0.8, 'F');
+  doc.roundedRect(cx - 14, 93, 28, 1.6, 0.8, 0.8, 'F');
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10.5);
   doc.setTextColor(...MUTED);
   doc.text(
     doc.splitTextToSize('Terapi yang rutin dan terukur membantu pemulihan Anda lebih cepat dan hasilnya lebih bertahan lama.', 130),
     cx,
-    124,
+    104,
     { align: 'center' }
   );
 
@@ -394,7 +394,7 @@ const drawBackCover = (doc, logo) => {
     return { label, wrapped, h: Math.max(wrapped.length * 5.2, 5.2) + 6 };
   });
   const cardH = laid.reduce((sum, r) => sum + r.h, 0) + 8;
-  const cardY = 146;
+  const cardY = 128;
   doc.setFillColor(...TEAL_SOFT);
   doc.roundedRect(MARGIN, cardY, CONTENT_W, cardH, 3, 3, 'F');
   let y = cardY + 6;
