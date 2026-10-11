@@ -4,6 +4,8 @@
 // prop — importing from here instead of hand-copying the list keeps them
 // from drifting out of sync and losing menu items over time.
 
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
+
 export const OWNER_NAV_ITEMS = [
   { label: 'Dashboard', path: '/owner/dashboard', icon: 'Home' },
   { label: 'Presentasi Direksi', path: '/owner/presentation', icon: 'MonitorPlay' },
@@ -30,6 +32,7 @@ export const OWNER_NAV_ITEMS = [
       { label: 'Admin Management', path: '/owner/admin-management', icon: 'ShieldCheck' },
       { label: 'Owner Management', path: '/owner/owner-management', icon: 'Crown' },
       { label: 'Absensi Karyawan', path: '/owner/attendance', icon: 'Clock' },
+      { label: 'SK Pimpinan', path: '/owner/decrees', icon: 'FileText', clinicOnly: KAFFAH_CLINIC_ID },
     ],
   },
   {

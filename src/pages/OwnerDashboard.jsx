@@ -45,6 +45,7 @@ import PromoUsageWidget from '@/components/owner/operational/PromoUsageWidget';
 import PromoDiscountWidget from '@/components/owner/PromoDiscountWidget';
 import { OWNER_NAV_ITEMS } from '@/lib/navItems';
 const AttendanceManagement = React.lazy(lazyRetry(() => import('@/pages/admin/AttendanceManagement'), 'AttendanceManagement'));
+const OwnerDecreesPage = React.lazy(lazyRetry(() => import('@/pages/owner/OwnerDecreesPage'), 'OwnerDecreesPage'));
 const ClinicalDocuments = React.lazy(lazyRetry(() => import('@/pages/admin/ClinicalDocuments'), 'ClinicalDocuments'));
 
 // Reused for clinics where the owner is also the therapist (see
@@ -577,6 +578,7 @@ const OwnerDashboard = () => {
         <Route path="/owner-management" element={<OwnerManagementPage />} />
         <Route path="/attendance" element={<AttendanceManagement />} />
         <Route path="/clinical-documents" element={<ClinicalDocuments />} />
+        <Route path="/decrees" element={<OwnerDecreesPage />} />
         
 
         {/* Fallback for old routes */}

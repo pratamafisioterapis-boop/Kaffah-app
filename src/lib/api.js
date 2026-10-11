@@ -9503,3 +9503,61 @@ export const getAttendanceScheduleLookup = async () => {
     return { data: therapists, success: true, error: null };
   }, 'getAttendanceScheduleLookup');
 };
+// ============================================
+// SURAT KEPUTUSAN (SK) PIMPINAN
+// ============================================
+export const getClinicDecrees = async () => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('clinic_leadership_decrees')
+      .select('*')
+      .order('decree_date', { ascending: false })
+      .order('created_at', { ascending: false });
+    if (error) return { error };
+    return { data: data || [], success: true, error: null };
+  }, 'getClinicDecrees', { retry: true });
+};
+
+export const upsertClinicDecree = async (payload) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const record = {
+      clinic_id: payload.clinic_id,
+      decree_number: payload.decree_number,
+      title: payload.title,
+      decree_date: payload.decree_date,
+      letter_city: payload.letter_city,
+      considerations: payload.considerations || [],
+      decisions: payload.decisions || [],
+      closing: payload.closing || null,
+      updated_at: new Date().toISOString(),
+    };
+    const result = payload.id
+      ? await supabase.from('clinic_leadership_decrees').update(record).eq('id', payload.id).select().single()
+      : await supabase.from('clinic_leadership_decrees').insert({ ...record, created_by: userId || null }).select().single();
+    if (result.error) return { error: result.error };
+    return { data: result.data, success: true, error: null };
+  }, 'upsertClinicDecree');
+};
+
+export const setClinicDecreeStatus = async (id, status) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('clinic_leadership_decrees')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'setClinicDecreeStatus');
+};
+
+export const deleteClinicDecree = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.from('clinic_leadership_decrees').delete().eq('id', id);
+    if (error) return { error };
+    return { success: true, error: null };
+  }, 'deleteClinicDecree');
+};

@@ -188,6 +188,11 @@ const isPWA =
     // disabled) until we actually know its disabled-feature list.
     if (!clinicFeaturesLoaded) return [];
     let processed = processNavItems(navItems);
+    // Menu khusus satu klinik (clinicOnly = id klinik) disembunyikan di klinik lain.
+    const clinicAllowed = (it) => !it.clinicOnly || it.clinicOnly === clinicInfo?.id;
+    processed = processed
+      .filter(clinicAllowed)
+      .map((it) => (it.submenu ? { ...it, submenu: it.submenu.filter(clinicAllowed) } : it));
     if (role === 'admin' && isLightLoadModeEnabled()) {
       processed = processed.filter((item) => LIGHT_LOAD_ALLOWED_PATHS.includes(item.path));
     }
