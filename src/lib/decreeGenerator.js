@@ -2,11 +2,12 @@ import { jsPDF } from 'jspdf';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
-// Palet & kop sama dengan warningLetterGenerator.js supaya dokumen resmi
-// klinik (SP, MOU, SK) satu keluarga visual.
+// Palet mengikuti logo Kaffah (biru langit + biru tua).
 const INK = [26, 30, 41];
-const NAVY = [30, 41, 82];
-const GOLD = [163, 130, 63];
+const NAVY = [11, 76, 140];
+const GOLD = [0, 169, 233];
+const LOGO_URL = '/kaffah-logo.png';
+const LOGO_RATIO = 700 / 663;
 const MUTED = [100, 106, 122];
 const PAGE_W = 210;
 const PAGE_H = 297;
@@ -46,7 +47,7 @@ export const generateDecreePDF = async (decree = {}, clinic = {}) => {
   const doc = new jsPDF('p', 'mm', 'a4');
   let y = MTOP;
   const clinicName = clinic.name || 'Klinik Fisioterapi';
-  const logo = await loadImage(clinic.logo_url || '/clinara-logo.png');
+  const logo = (await loadImage(LOGO_URL)) || (await loadImage(clinic.logo_url));
 
   const ensure = (h) => { if (y + h > PAGE_H - MBOTTOM) { doc.addPage(); y = MTOP; } };
 
@@ -77,40 +78,41 @@ export const generateDecreePDF = async (decree = {}, clinic = {}) => {
     y += 1.6;
   };
 
-  // Kop
+  // Kop surat: logo di kiri, identitas klinik rata tengah, garis ganda biru.
   doc.setFillColor(...NAVY);
   doc.rect(0, 0, PAGE_W, 4, 'F');
-  const logoSize = 20;
-  const top = 12;
-  const tx = logo ? MX + logoSize + 8 : MX;
-  const tw = logo ? CW - logoSize - 8 : CW;
+  const logoH = 24;
+  const logoW = logoH * LOGO_RATIO;
+  const top = 10;
+  const tx = logo ? MX + logoW + 6 : MX;
+  const tw = logo ? CW - logoW - 6 : CW;
   const cx = tx + tw / 2;
   if (logo) {
-    try { doc.addImage(logo, imgFormat(logo), MX, top, logoSize, logoSize); } catch (_e) { /* tanpa logo */ }
+    try { doc.addImage(logo, imgFormat(logo), MX, top, logoW, logoH); } catch (_e) { /* tanpa logo */ }
   }
-  y = top + 2;
+  y = top + 8;
   doc.setFont('times', 'bold');
-  doc.setFontSize(15.5);
+  doc.setFontSize(17);
   doc.setTextColor(...NAVY);
-  doc.text(clinicName.toUpperCase(), cx, y, { align: 'center' });
-  y += 5.2;
+  doc.text('KAFFAH PHYSIOTHERAPY', cx, y, { align: 'center' });
+  y += 5.5;
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
+  doc.setFontSize(8.5);
   doc.setTextColor(...GOLD);
   doc.text('KLINIK FISIOTERAPI', cx, y, { align: 'center' });
-  y += 4.2;
+  y += 5;
   const contact = [clinic.address, clinic.phone, clinic.email].filter(Boolean).join('  •  ');
   if (contact) {
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.1);
+    doc.setFontSize(8);
     doc.setTextColor(...MUTED);
-    doc.splitTextToSize(contact, tw).forEach((l) => { doc.text(l, cx, y, { align: 'center' }); y += 3.8; });
+    doc.splitTextToSize(contact, tw).forEach((l) => { doc.text(l, cx, y, { align: 'center' }); y += 3.6; });
   }
-  y = Math.max(y, top + logoSize) + 3;
+  y = Math.max(y, top + logoH) + 3;
   doc.setDrawColor(...NAVY);
-  doc.setLineWidth(0.7);
+  doc.setLineWidth(0.8);
   doc.line(MX, y, PAGE_W - MX, y);
-  y += 1.4;
+  y += 1.3;
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(0.35);
   doc.line(MX, y, PAGE_W - MX, y);
