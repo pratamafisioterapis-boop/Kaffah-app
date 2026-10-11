@@ -278,6 +278,8 @@ const drawSquares = (doc, x, y, color = TEAL) => {
 };
 
 const drawCover = (doc, { patientName, visitDate, diagnosisText, logo }) => {
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, PAGE_W, PAGE_H, 'F');
   // Bagian atas: logo (sudah memuat nama klinik)
   drawLogo(doc, logo, MARGIN - 4, 10, 58);
 
@@ -349,59 +351,73 @@ const drawCover = (doc, { patientName, visitDate, diagnosisText, logo }) => {
 
 const drawBackCover = (doc, logo) => {
   doc.addPage();
+  const cx = PAGE_W / 2;
+
+  // Pita atas
   doc.setFillColor(...NAVY);
-  doc.rect(0, 0, PAGE_W, PAGE_H, 'F');
+  doc.rect(0, 0, PAGE_W, 10, 'F');
   doc.setFillColor(...TEAL);
-  doc.rect(0, 0, PAGE_W, 3, 'F');
-  drawSquares(doc, PAGE_W - 40, 24, TEAL);
+  doc.rect(0, 10, PAGE_W, 2, 'F');
+
+  // Logo di atas latar putih (tanpa kotak) agar proporsional dan menyatu
+  drawLogo(doc, logo, cx - 32, 24, 64);
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(32);
-  doc.setTextColor(255, 255, 255);
-  doc.text('Jadwalkan', MARGIN, 60);
-  doc.text('Kontrol Berikutnya', MARGIN, 74);
+  doc.setFontSize(25);
+  doc.setTextColor(...NAVY);
+  doc.text('Jadwalkan Kontrol Berikutnya', cx, 108, { align: 'center' });
   doc.setFillColor(...TEAL);
-  doc.roundedRect(MARGIN, 80, 28, 1.6, 0.8, 0.8, 'F');
-
+  doc.roundedRect(cx - 14, 113, 28, 1.6, 0.8, 0.8, 'F');
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
-  doc.setTextColor(186, 230, 253);
+  doc.setFontSize(10.5);
+  doc.setTextColor(...MUTED);
   doc.text(
     doc.splitTextToSize('Terapi yang rutin dan terukur membantu pemulihan Anda lebih cepat dan hasilnya lebih bertahan lama.', 130),
-    MARGIN,
-    94
+    cx,
+    124,
+    { align: 'center' }
   );
 
-  const block = (label, lines, y) => {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(...MINT);
-    doc.text(label, MARGIN, y);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
-    doc.setTextColor(255, 255, 255);
-    const wrapped = lines.flatMap((l) => doc.splitTextToSize(clean(l), 120));
-    doc.text(wrapped, MARGIN, y + 6);
-    return y + 6 + wrapped.length * 5.5 + 8;
-  };
-  let y = 124;
-  y = block('Alamat', [BUSINESS.addressDisplay], y);
-  y = block('Jam Operasional', BUSINESS.hoursDisplay.map((h) => `${h.days}: ${h.hours} WITA`), y);
-  y = block('WhatsApp', [BUSINESS.whatsappDisplay], y);
-  y = block('Instagram', [`@${BUSINESS.instagramUrl.split('/').filter(Boolean).pop()}`], y);
-  y = block('Email', [BUSINESS.email], y);
-
-  doc.setFillColor(255, 255, 255);
-  doc.roundedRect(MARGIN, 238, 42, 42, 3, 3, 'F');
-  drawLogo(doc, logo, MARGIN + 1, 239, 40);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.setTextColor(255, 255, 255);
-  doc.text(BUSINESS.name, MARGIN + 50, 257);
+  // Kartu kontak
+  const rows = [
+    ['Alamat', [BUSINESS.addressDisplay]],
+    ['Jam Operasional', BUSINESS.hoursDisplay.map((h) => `${h.days}: ${h.hours} WITA`)],
+    ['WhatsApp', [BUSINESS.whatsappDisplay]],
+    ['Instagram', [`@${BUSINESS.instagramUrl.split('/').filter(Boolean).pop()}`]],
+    ['Email', [BUSINESS.email]],
+    ['Website', [BUSINESS.url.replace('https://', '')]],
+  ];
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9.5);
-  doc.setTextColor(186, 230, 253);
-  doc.text(BUSINESS.url.replace('https://', ''), MARGIN + 50, 263);
+  doc.setFontSize(10.5);
+  const laid = rows.map(([label, lines]) => {
+    const wrapped = lines.flatMap((l) => doc.splitTextToSize(clean(l), CONTENT_W - 62));
+    return { label, wrapped, h: Math.max(wrapped.length * 5.2, 5.2) + 6 };
+  });
+  const cardH = laid.reduce((sum, r) => sum + r.h, 0) + 8;
+  const cardY = 146;
+  doc.setFillColor(...TEAL_SOFT);
+  doc.roundedRect(MARGIN, cardY, CONTENT_W, cardH, 3, 3, 'F');
+  let y = cardY + 6;
+  laid.forEach((r) => {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.setTextColor(...NAVY);
+    doc.text(r.label, MARGIN + 8, y + 4);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...INK);
+    doc.text(r.wrapped, MARGIN + 54, y + 4);
+    y += r.h;
+  });
+
+  // Pita bawah
+  doc.setFillColor(...NAVY);
+  doc.rect(0, PAGE_H - 22, PAGE_W, 22, 'F');
+  doc.setFillColor(...TEAL);
+  doc.rect(0, PAGE_H - 22, PAGE_W, 1.5, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(255, 255, 255);
+  doc.text('Pulih bersama, bergerak lebih baik.', cx, PAGE_H - 10, { align: 'center' });
 };
 
 const drawPageChrome = (doc, logo, pageNo, totalPages) => {
