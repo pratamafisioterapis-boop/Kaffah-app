@@ -575,25 +575,6 @@ const finalizeDoc = ({ doc, L, record, exercises, eduList, diagnoses, logo, pati
     renderBlocks(L, subjective);
   }
 
-  // ── Penjelasan kondisi (Assessment + edukasi diagnosa) ──
-  const assessmentBlocks = parseClinicalText(record.assessment).filter((b) => {
-    // Jika assessment hanya mengulang nama diagnosa, tidak perlu ditampilkan lagi.
-    const t = (b.text || b.label || '').toLowerCase().trim();
-    return !diagnoses.some((d) => clean(d).toLowerCase().trim() === t);
-  });
-  const hasEduInfo = eduList.some((e) => e.what || e.cause || e.recovery);
-  if (assessmentBlocks.length || hasEduInfo) {
-    L.section('Tentang Kondisi Anda', 'Penilaian terapis (Assessment) dan penjelasan sederhananya');
-    if (assessmentBlocks.length) renderBlocks(L, assessmentBlocks);
-    eduList.forEach((e) => {
-      if (!(e.what || e.cause || e.recovery)) return;
-      if (eduList.length > 1 && e.name) L.subheading(e.name);
-      if (e.what) { L.para('Apa itu?', { bold: true, color: TEAL, after: 0.5 }); L.para(e.what); }
-      if (e.cause) { L.para('Penyebab atau pemicu', { bold: true, color: TEAL, after: 0.5 }); L.para(e.cause); }
-      if (e.recovery) { L.para('Perkiraan pemulihan', { bold: true, color: TEAL, after: 0.5 }); L.para(e.recovery); }
-    });
-  }
-
   // ── Pemeriksaan (Objective) ──
   const objective = parseClinicalText(record.objective);
   if (objective.length) {
