@@ -19,6 +19,7 @@ import ObjectiveProgressUpdate from '@/components/therapist/ObjectiveProgressUpd
 import PlanChecklist from '@/components/therapist/PlanChecklist';
 import LabRadiologyUpload from '@/components/therapist/LabRadiologyUpload';
 import SOAPHistoryModal from '@/components/therapist/SOAPHistoryModal';
+import SoapPatientPdfButton from '@/components/therapist/SoapPatientPdfButton';
 import { isValidUUID } from '@/lib/utils';
 import { validatePatientId, handleUndefinedPatientId } from '@/lib/validationHelpers';
 import { format } from 'date-fns';
@@ -552,6 +553,12 @@ if (isCreate) {
             )}
           </div>
         </div>
+        {isKaffahClinic && recordId && isValidUUID(recordId) && (
+          <SoapPatientPdfButton
+            record={{ id: recordId, patient_id: formData.patient_id }}
+            className="shrink-0 gap-1.5 rounded-app border-emerald-200 text-xs text-emerald-700 hover:bg-emerald-50"
+          />
+        )}
         {formData.patient_id && isValidUUID(formData.patient_id) && latestRecord && (
           <div className="flex items-center gap-2 shrink-0">
             <Button

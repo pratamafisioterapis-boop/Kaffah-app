@@ -11,9 +11,14 @@ import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { FileText, Edit, CheckCircle2, AlertCircle, PlusCircle, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { KAFFAH_CLINIC_ID } from '@/lib/subjectiveTemplate';
+import SoapPatientPdfButton from './SoapPatientPdfButton';
 
 const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose, basePath = '/therapist/records' }) => {
   const navigate = useNavigate();
+  const { userDetails } = useAuth();
+  const isKaffahClinic = userDetails?.clinic_id === KAFFAH_CLINIC_ID;
 
   if (!patient) return null;
 
@@ -104,7 +109,14 @@ const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose, bas
                 </div>
               </div>
 
-              <div className="shrink-0">
+              <div className="shrink-0 flex items-center gap-1.5">
+                {item.status === 'filled' && isKaffahClinic && (
+                  <SoapPatientPdfButton
+                    record={item.record}
+                    patient={patient}
+                    className="h-8 text-xs rounded-app border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                  />
+                )}
                 {item.status === 'filled' ? (
                   <Button
                     size="sm"
