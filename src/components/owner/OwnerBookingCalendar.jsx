@@ -452,7 +452,7 @@ const OwnerBookingCalendar = () => {
   className="flex-1 min-w-0 max-w-full justify-center text-center font-medium bg-transparent hover:bg-white shadow-none focus:ring-0 px-1 overflow-hidden"
 >
   <CalendarIcon className="mr-1 h-3.5 w-3.5 text-slate-500 shrink-0 hidden sm:block" />
-  <span className="text-[10px] sm:text-sm font-semibold leading-tight truncate tracking-tight text-slate-700">
+  <span className="text-[10px] sm:text-sm font-semibold leading-tight break-words sm:truncate tracking-tight text-slate-700">
     {format(date, "EEEE, dd MMMM yyyy", { locale: idLocale })}
   </span>
 </Button>

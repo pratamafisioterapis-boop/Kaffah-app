@@ -127,7 +127,7 @@ const DetailedTable = ({ title, data, type }) => {
                                         <td className="px-6 py-3 text-slate-700 font-medium">
                                             {item.category || '-'}
                                         </td>
-                                        <td className="px-6 py-3 text-slate-500 max-w-[300px] truncate" title={item.description}>
+                                        <td className="px-6 py-3 text-slate-500 max-w-[300px] break-words sm:truncate" title={item.description}>
                                             {item.description || '-'}
                                         </td>
                                         <td className={cn("px-6 py-3 text-right font-bold", isIncome ? "text-emerald-600" : "text-rose-600")}>

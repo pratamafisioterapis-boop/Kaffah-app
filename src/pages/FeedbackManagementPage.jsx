@@ -143,7 +143,7 @@ export const FeedbackManagementContent = () => {
           {links.slice(0, 15).map((link) => (
             <div key={link.id} className="py-3 flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-sm font-medium text-slate-800 truncate">{link.patient_name || 'Tanpa nama'}</p>
+                <p className="text-sm font-medium text-slate-800 break-words sm:truncate">{link.patient_name || 'Tanpa nama'}</p>
                 <p className="text-xs text-slate-500">{formatDateIndonesian(link.created_at)}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">

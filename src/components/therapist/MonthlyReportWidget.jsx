@@ -351,7 +351,7 @@ const handleOpenSoapModal = () => {
                         <div key={type} className="flex items-center gap-3">
                           <div className="flex-1 min-w-0">
                             <div className="flex justify-between items-center mb-0.5">
-                              <span className="text-xs text-slate-600 truncate">{type}</span>
+                              <span className="text-xs text-slate-600 break-words sm:truncate">{type}</span>
                               <span className="text-xs font-semibold text-slate-700 ml-2 shrink-0">
                                 {count} <span className="text-slate-500 font-normal">({pct}%)</span>
                               </span>
@@ -465,7 +465,7 @@ const handleOpenSoapModal = () => {
                       : "hover:bg-white"
                   )}
                 >
-                  <p className="text-xs font-semibold text-slate-700 truncate">{recap.patient_name}</p>
+                  <p className="text-xs font-semibold text-slate-700 break-words sm:truncate">{recap.patient_name}</p>
                   <div className="flex items-center gap-1 mt-0.5">
                     <Calendar className="w-3 h-3 text-slate-500 shrink-0" />
                     <span className="text-xs text-slate-500">
@@ -473,7 +473,7 @@ const handleOpenSoapModal = () => {
                     </span>
                   </div>
                   {recap.medical_record_number && recap.medical_record_number !== '-' && (
-                    <p className="text-xs text-slate-500 truncate mt-0.5">{recap.medical_record_number}</p>
+                    <p className="text-xs text-slate-500 break-words sm:truncate mt-0.5">{recap.medical_record_number}</p>
                   )}
                 </button>
               ))}

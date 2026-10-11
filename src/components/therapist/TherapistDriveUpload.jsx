@@ -217,7 +217,7 @@ const TherapistDriveUpload = () => {
             <div className="flex items-center justify-between gap-2 text-xs bg-blue-50 border border-blue-100 text-blue-700 rounded-app-sm px-3 py-2 mt-1">
               <span className="flex items-center gap-1.5 min-w-0">
                 <Paperclip className="w-3.5 h-3.5 flex-shrink-0" />
-                <span className="truncate">{file.name}</span>
+                <span className="break-words sm:truncate">{file.name}</span>
                 <span className="text-app-accent-bright flex-shrink-0">({formatFileSize(file.size)})</span>
               </span>
               <button aria-label="Tutup" type="button" onClick={handleClearFile} disabled={uploading} className="text-app-accent-bright hover:text-app-accent flex-shrink-0">
@@ -263,7 +263,7 @@ const TherapistDriveUpload = () => {
                 <div className="flex items-center gap-2 min-w-0">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-700 truncate">{item.file_name}</p>
+                    <p className="text-sm font-medium text-slate-700 break-words sm:truncate">{item.file_name}</p>
                   </div>
                 </div>
                 {item.web_view_link && (

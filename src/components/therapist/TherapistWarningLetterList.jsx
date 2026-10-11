@@ -94,7 +94,7 @@ const TherapistWarningLetterList = ({ therapist }) => {
                 className="flex items-center justify-between gap-3 p-3 rounded-app-sm border border-slate-100 hover:border-slate-300 transition-colors"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-700 truncate">
+                  <p className="text-sm font-medium text-slate-700 break-words sm:truncate">
                     {r.letter_number} · {format(new Date(r.letter_date), 'dd MMM yyyy', { locale: idLocale })}
                   </p>
                   <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold ${LEVEL_BADGE_CLASS[r.level]}`}>

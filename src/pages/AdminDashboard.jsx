@@ -656,7 +656,7 @@ setTrendPatients(trendArray);
             {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "🏅"}
           </div>
 
-         <p className="text-sm font-semibold text-slate-800 line-clamp-1">
+         <p className="text-sm font-semibold text-slate-800 line-clamp-2 sm:line-clamp-1">
   {d.name}
 </p>
         </div>
@@ -695,7 +695,7 @@ setTrendPatients(trendArray);
             {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "🏅"}
           </div>
 
-          <p className="text-sm font-semibold text-slate-800 line-clamp-1">
+          <p className="text-sm font-semibold text-slate-800 line-clamp-2 sm:line-clamp-1">
   {s.name}
 </p>
         </div>

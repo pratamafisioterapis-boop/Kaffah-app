@@ -746,8 +746,8 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
                             <UserIcon className="w-4 h-4" />
                           </span>
                           <span className="min-w-0">
-                            <span className="block text-sm font-medium text-app-ink truncate">{p.full_name}</span>
-                            <span className="block text-xs text-app-muted truncate">{p.medical_record_number || 'Pasien'}</span>
+                            <span className="block text-sm font-medium text-app-ink break-words sm:truncate">{p.full_name}</span>
+                            <span className="block text-xs text-app-muted break-words sm:truncate">{p.medical_record_number || 'Pasien'}</span>
                           </span>
                         </button>
                       ))}
@@ -767,8 +767,8 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
                             <CalendarIcon className="w-4 h-4" />
                           </span>
                           <span className="min-w-0">
-                            <span className="block text-sm font-medium text-app-ink truncate">{a.patients?.full_name || a.guest_name || 'Tamu'}</span>
-                            <span className="block text-xs text-app-muted truncate">{formatApptDate(a.appointment_date)}</span>
+                            <span className="block text-sm font-medium text-app-ink break-words sm:truncate">{a.patients?.full_name || a.guest_name || 'Tamu'}</span>
+                            <span className="block text-xs text-app-muted break-words sm:truncate">{formatApptDate(a.appointment_date)}</span>
                           </span>
                         </button>
                       ))}
@@ -788,8 +788,8 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
                             <PackageIcon className="w-4 h-4" />
                           </span>
                           <span className="min-w-0">
-                            <span className="block text-sm font-medium text-app-ink truncate">{pkg.package_name} · {pkg.patients?.full_name}</span>
-                            <span className="block text-xs text-app-muted truncate">
+                            <span className="block text-sm font-medium text-app-ink break-words sm:truncate">{pkg.package_name} · {pkg.patients?.full_name}</span>
+                            <span className="block text-xs text-app-muted break-words sm:truncate">
                               {pkg.sessions_used}/{pkg.total_sessions} sesi · {pkg.status || '-'}
                             </span>
                           </span>
@@ -811,8 +811,8 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
                             <FileTextIcon className="w-4 h-4" />
                           </span>
                           <span className="min-w-0">
-                            <span className="block text-sm font-medium text-app-ink truncate">{mr.patients?.full_name || 'Pasien'}</span>
-                            <span className="block text-xs text-app-muted truncate">
+                            <span className="block text-sm font-medium text-app-ink break-words sm:truncate">{mr.patients?.full_name || 'Pasien'}</span>
+                            <span className="block text-xs text-app-muted break-words sm:truncate">
                               {formatShortDate(mr.daily_recap?.recap_date || mr.created_at)}
                               {mr.therapist_name ? ` · ${mr.therapist_name}` : ''}
                             </span>

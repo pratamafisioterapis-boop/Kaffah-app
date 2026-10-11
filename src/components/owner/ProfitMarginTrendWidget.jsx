@@ -244,7 +244,7 @@ const ProfitMarginTrendWidget = () => {
                 <Trophy className="w-3 h-3" /> Bulan Terbaik
               </p>
               <p className="text-xl font-black leading-none text-emerald-600">{summary.best?.margin ?? 0}%</p>
-              <p className="text-xs text-slate-500 mt-1 truncate">{summary.best?.monthLabel ?? '-'}</p>
+              <p className="text-xs text-slate-500 mt-1 break-words sm:truncate">{summary.best?.monthLabel ?? '-'}</p>
             </div>
 
             <div className="rounded-app border border-amber-100 bg-amber-50/60 p-3.5">
@@ -252,7 +252,7 @@ const ProfitMarginTrendWidget = () => {
                 <TrendingDownIcon className="w-3 h-3" /> Bulan Terlemah
               </p>
               <p className="text-xl font-black leading-none text-amber-600">{summary.worst?.margin ?? 0}%</p>
-              <p className="text-xs text-slate-500 mt-1 truncate">{summary.worst?.monthLabel ?? '-'}</p>
+              <p className="text-xs text-slate-500 mt-1 break-words sm:truncate">{summary.worst?.monthLabel ?? '-'}</p>
             </div>
           </div>
 

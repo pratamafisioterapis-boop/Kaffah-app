@@ -617,7 +617,7 @@ const OwnerFinanceDashboard = () => {
                         ? <span className="px-2 py-0.5 rounded-md text-xs font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.subcategory.subcategory_name}</span>
                         : <span style={{ color: '#cbd5e1' }}>—</span>
                       },
-                      { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[180px]' },
+                      { header: 'Deskripsi', accessor: 'description', className: 'break-words sm:truncate max-w-[180px]' },
                       { header: 'Bank', accessor: 'bank_accounts', render: row => row.bank_accounts?.bank_name
                         ? <span className="px-2 py-0.5 rounded-md text-xs font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.bank_accounts.bank_name}</span>
                         : <span style={{ color: '#cbd5e1' }}>—</span>
@@ -660,7 +660,7 @@ const OwnerFinanceDashboard = () => {
                         ? <span className="px-2 py-0.5 rounded-md text-xs font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.sub_category}</span>
                         : <span style={{ color: '#cbd5e1' }}>—</span>
                       },
-                      { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[180px]' },
+                      { header: 'Deskripsi', accessor: 'description', className: 'break-words sm:truncate max-w-[180px]' },
                       { header: 'Bank', accessor: 'bank_accounts', render: row => row.bank_accounts?.bank_name
                         ? <span className="px-2 py-0.5 rounded-md text-xs font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.bank_accounts.bank_name}</span>
                         : <span style={{ color: '#cbd5e1' }}>—</span>
@@ -698,7 +698,7 @@ const OwnerFinanceDashboard = () => {
                       { header: 'Nama', accessor: 'custom_name', render: row => (
                         <span className="font-semibold text-slate-700">{row.custom_name}</span>
                       )},
-                      { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[180px]' },
+                      { header: 'Deskripsi', accessor: 'description', className: 'break-words sm:truncate max-w-[180px]' },
                       { header: 'Status', accessor: 'status', render: row => {
                         const labels = { pending: 'Belum Lunas', paid: 'Lunas', cancelled: 'Dibatalkan' };
                         const colors = {
@@ -781,7 +781,7 @@ const OwnerFinanceDashboard = () => {
                           )}
                         </span>
                       )},
-                      { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[200px]' },
+                      { header: 'Deskripsi', accessor: 'description', className: 'break-words sm:truncate max-w-[200px]' },
                       { header: 'Bank', accessor: 'bank_accounts', render: row => row.bank_accounts?.bank_name
                         ? <span className="px-2 py-0.5 rounded-md text-xs font-semibold" style={{ background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>{row.bank_accounts.bank_name}</span>
                         : <span style={{ color: '#cbd5e1' }}>—</span>
@@ -811,7 +811,7 @@ const OwnerFinanceDashboard = () => {
                     columns={[
                       { header: 'Tanggal', accessor: 'transaction_date', render: row => formatDate(row.transaction_date || row.date) },
                       { header: 'Sub Kategori', accessor: 'sub_category', className: 'text-slate-500' },
-                      { header: 'Deskripsi', accessor: 'description', className: 'truncate max-w-[160px]' },
+                      { header: 'Deskripsi', accessor: 'description', className: 'break-words sm:truncate max-w-[160px]' },
                       { header: 'Metode Pembayaran', accessor: 'source', render: row => {
                         const val = row.source || row.category;
                         return val

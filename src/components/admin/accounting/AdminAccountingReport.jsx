@@ -150,7 +150,7 @@ const AdminAccountingReport = ({ data, dateRange }) => {
                 <div key={idx} className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="w-2 h-2 rounded-full bg-red-500 shrink-0"></div>
-                    <span className="text-sm font-medium text-gray-700 truncate">{cat}</span>
+                    <span className="text-sm font-medium text-gray-700 break-words sm:truncate">{cat}</span>
                   </div>
                   <span className="text-sm font-bold text-gray-900 shrink-0 whitespace-nowrap">Rp {amount.toLocaleString('id-ID')}</span>
                 </div>
@@ -178,7 +178,7 @@ const AdminAccountingReport = ({ data, dateRange }) => {
                 <div key={idx} className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="w-2 h-2 rounded-full bg-green-500 shrink-0"></div>
-                    <span className="text-sm font-medium text-gray-700 truncate">{source}</span>
+                    <span className="text-sm font-medium text-gray-700 break-words sm:truncate">{source}</span>
                   </div>
                   <span className="text-sm font-bold text-gray-900 shrink-0 whitespace-nowrap">Rp {amount.toLocaleString('id-ID')}</span>
                 </div>

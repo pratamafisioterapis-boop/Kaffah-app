@@ -379,7 +379,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="text-xs font-black text-slate-500 w-4 shrink-0">#{i + 1}</span>
-                        <span className="text-xs font-semibold text-slate-700 truncate">{t.name}</span>
+                        <span className="text-xs font-semibold text-slate-700 break-words sm:truncate">{t.name}</span>
                       </div>
                       <span className="text-xs font-black text-slate-800 shrink-0">{fmtShort(t.revenue)}</span>
                     </div>
@@ -415,7 +415,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
                         <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                        <span className="text-xs font-semibold text-slate-700 truncate">{p.type}</span>
+                        <span className="text-xs font-semibold text-slate-700 break-words sm:truncate">{p.type}</span>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-xs font-black text-slate-800">{fmtShort(p.revenue)}</span>
@@ -452,7 +452,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
                     }
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-slate-800 truncate">{tx.label}</p>
+                    <p className="text-xs font-semibold text-slate-800 break-words sm:truncate">{tx.label}</p>
                     <p className="text-xs text-slate-500 mt-0.5">{format(parseISO(tx.date), 'dd MMM yyyy', { locale: idLocale })}</p>
                   </div>
                   <p className={`text-xs font-black shrink-0 ${tx.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -489,7 +489,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: EXPENSE_COLORS[i % EXPENSE_COLORS.length] }} />
-                      <span className="text-xs font-semibold text-slate-700 truncate">{e.cat}</span>
+                      <span className="text-xs font-semibold text-slate-700 break-words sm:truncate">{e.cat}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-xs font-black text-slate-800">{fmtShort(e.amt)}</span>

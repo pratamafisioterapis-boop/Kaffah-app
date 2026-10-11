@@ -2025,7 +2025,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                 <label className="flex items-center gap-2 cursor-pointer px-4 py-2.5 rounded-app-sm border-2 border-dashed border-slate-300 hover:border-app-accent-bright hover:bg-app-soft transition-[color,background-color,border-color,box-shadow,transform,opacity] text-sm font-medium text-slate-600">
                   <Upload className="w-4 h-4 text-app-accent-bright" />
                   {fileName
-                    ? <span className="text-app-accent-hover truncate max-w-[220px]">{fileName}</span>
+                    ? <span className="text-app-accent-hover break-words sm:truncate max-w-[220px]">{fileName}</span>
                     : <span>Pilih file CSV mutasi BSI</span>}
                   <input type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
                 </label>
@@ -2095,7 +2095,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                           <td className="px-4 py-2"><TypeBadge tipe={row.tipe} /></td>
                           <td className="px-4 py-2 text-xs text-slate-600">{row.masukDateStr}</td>
                           <td className="px-4 py-2 text-xs">{row.tipe === 'qris' ? <span className="text-emerald-700 font-medium">{row.qrisTrxDateStr}</span> : <span className="text-slate-500">= masuk</span>}</td>
-                          <td className="px-4 py-2 text-xs font-mono truncate max-w-[200px]" title={row.deskripsi}>{row.deskripsi}</td>
+                          <td className="px-4 py-2 text-xs font-mono break-words sm:truncate max-w-[200px]" title={row.deskripsi}>{row.deskripsi}</td>
                           <td className="px-4 py-2 text-right font-bold text-slate-800 text-xs">{formatRp(row.amount)}</td>
                         </tr>
                       ))}
@@ -2322,7 +2322,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                                   : <span className="text-slate-500">= Tgl masuk</span>}
                               </td>
                               <td className="px-4 py-3 max-w-[220px]">
-                                <div className="truncate font-mono text-xs text-slate-700" title={row.deskripsi}>{row.deskripsi}</div>
+                                <div className="break-words sm:truncate font-mono text-xs text-slate-700" title={row.deskripsi}>{row.deskripsi}</div>
                                 {row.nama_pengirim && <div className="text-xs text-slate-500 mt-0.5">dari: {row.nama_pengirim}</div>}
                               </td>
                               <td className="px-4 py-3 text-right font-bold text-slate-800 whitespace-nowrap text-xs">{formatRp(row.nominal || row.amount)}</td>
@@ -2410,7 +2410,7 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
                           <td className="px-4 py-2 text-xs">
                             {row.tipe === 'qris' ? <span className="text-emerald-700 font-medium">{row.tgl_transaksi}</span> : <span className="text-slate-500">= masuk</span>}
                           </td>
-                          <td className="px-4 py-2 text-xs font-mono truncate max-w-[200px]" title={row.deskripsi}>{row.deskripsi}</td>
+                          <td className="px-4 py-2 text-xs font-mono break-words sm:truncate max-w-[200px]" title={row.deskripsi}>{row.deskripsi}</td>
                           <td className="px-4 py-2 text-right font-bold text-slate-800 text-xs">{formatRp(row.nominal)}</td>
                         </tr>
                       ))}

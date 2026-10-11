@@ -256,9 +256,9 @@ const WeeklyScheduleView = ({
   const renderItem = (item, dayDate, compact = false, fill = false) => {
     const { color, t } = meta[item.therapistId];
     const tag = multi && (
-      <span className={cn('inline-flex items-center gap-1 max-w-full text-[9px] font-bold px-1.5 py-0.5 rounded-full truncate', color.tag)}>
+      <span className={cn('inline-flex items-center gap-1 max-w-full text-[9px] font-bold px-1.5 py-0.5 rounded-full break-words sm:truncate', color.tag)}>
         <span className={cn('h-1.5 w-1.5 rounded-full shrink-0', color.dot)} />
-        <span className="truncate">{shortName(t.name)}</span>
+        <span className="break-words sm:truncate">{shortName(t.name)}</span>
       </span>
     );
 
@@ -346,7 +346,7 @@ const WeeklyScheduleView = ({
           </div>
           <div className="flex-1 min-w-0 text-left">
             <p className="text-[10px] uppercase tracking-widest text-slate-500 leading-none">Terapis</p>
-            <p className="text-sm font-bold text-slate-800 truncate leading-tight mt-0.5">
+            <p className="text-sm font-bold text-slate-800 break-words sm:truncate leading-tight mt-0.5">
               {selectedTherapists.length === therapists.length && therapists.length > 1
                 ? 'Semua terapis'
                 : multi
@@ -384,7 +384,7 @@ const WeeklyScheduleView = ({
               >
                 <Avatar t={t} size="h-9 w-9" className={cn(on && 'ring-2 ring-offset-1', on && color.ring)} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-800 truncate">{t.name}</p>
+                  <p className="text-sm font-semibold text-slate-800 break-words sm:truncate">{t.name}</p>
                   <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
                     <span className={cn('h-2 w-2 rounded-full', color.dot)} /> Warna penanda
                   </p>

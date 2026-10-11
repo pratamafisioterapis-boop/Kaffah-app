@@ -270,7 +270,7 @@ const TherapistStatusCards = ({
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <h3 className="font-bold text-slate-900 text-sm truncate">{therapist.name}</h3>
+                        <h3 className="font-bold text-slate-900 text-sm break-words sm:truncate">{therapist.name}</h3>
                         <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${badge}`}>{label}</span>
                       </div>
                       <div className="flex items-center gap-3 mt-1.5">

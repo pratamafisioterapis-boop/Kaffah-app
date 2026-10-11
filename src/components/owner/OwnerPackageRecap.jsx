@@ -725,9 +725,9 @@ const OwnerPackageRecap = () => {
                   <div key={pkg.id} className="p-4 space-y-2" onClick={() => handleRowClick(pkg)}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="font-bold text-slate-900 truncate">{pkg.patient_name || 'Nama tidak tersedia'}</p>
+                        <p className="font-bold text-slate-900 break-words sm:truncate">{pkg.patient_name || 'Nama tidak tersedia'}</p>
                         <p className="text-xs text-slate-500 font-mono">{pkg.medical_record_number || '-'}</p>
-                        <p className="text-sm text-slate-600 truncate mt-0.5">{pkg.package_name}</p>
+                        <p className="text-sm text-slate-600 break-words sm:truncate mt-0.5">{pkg.package_name}</p>
                       </div>
                       <div className="flex gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                         <Button variant="ghost" size="sm" onClick={(e) => handleManualStatusUpdate(e, pkg.id)} className="h-8 w-8 p-0 hover:bg-slate-200 rounded-full" title="Hitung Ulang Status" disabled={updatingStatusId === pkg.id}>

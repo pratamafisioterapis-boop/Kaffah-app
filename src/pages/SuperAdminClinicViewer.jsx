@@ -23,7 +23,7 @@ const StatCard = ({ icon: Icon, label, value, color }) => (
       <Icon className="w-6 h-6 text-white" />
     </div>
     <div className="min-w-0">
-      <p className="text-2xl font-bold text-slate-800 truncate">{value}</p>
+      <p className="text-2xl font-bold text-slate-800 break-words sm:truncate">{value}</p>
       <p className="text-sm text-slate-500">{label}</p>
     </div>
   </div>

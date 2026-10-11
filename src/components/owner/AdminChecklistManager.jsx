@@ -200,7 +200,7 @@ const AdminChecklistManager = () => {
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-slate-800 text-sm sm:text-base truncate">{item.title}</p>
+                  <p className="font-semibold text-slate-800 text-sm sm:text-base break-words sm:truncate">{item.title}</p>
                   {item.description && (
                     <p className="text-xs sm:text-sm text-slate-500 mt-0.5 line-clamp-1">{item.description}</p>
                   )}

@@ -290,7 +290,7 @@ const packageRisk = getPackageRisk();
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               <h3
-                className="font-semibold text-sm sm:text-base text-slate-900 truncate max-w-full"
+                className="font-semibold text-sm sm:text-base text-slate-900 break-words sm:truncate max-w-full"
                 title={patientName}
               >
                 {patientName}
@@ -367,7 +367,7 @@ const packageRisk = getPackageRisk();
             <div className="flex items-center flex-wrap text-xs text-slate-600 mt-2 gap-x-3 gap-y-1">
               <span className="flex items-center gap-1 min-w-0 shrink-0">
                 <Phone className="w-3 h-3 shrink-0" />
-                <span className="truncate">{patientPhone}</span>
+                <span className="break-words sm:truncate">{patientPhone}</span>
               </span>
 
               {medicalRecordNumber && (

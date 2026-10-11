@@ -227,7 +227,7 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, childr
         className="max-w-[1000px] w-full max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 bg-slate-100"
       >
         <div className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b bg-white z-10 shrink-0">
-          <h2 className="text-base sm:text-lg font-semibold text-slate-900 truncate min-w-0 flex-1">{title}</h2>
+          <h2 className="text-base sm:text-lg font-semibold text-slate-900 break-words sm:truncate min-w-0 flex-1">{title}</h2>
           <div className="flex items-center gap-2 shrink-0">
             <Button variant="outline" size="sm" onClick={handlePrint}>
               <Printer className="w-4 h-4 sm:mr-2" />

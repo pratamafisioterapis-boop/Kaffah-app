@@ -141,7 +141,7 @@ const CalendarView = ({ appointments, currentDate, onDateChange, onEventClick, t
                              <div className="flex items-center gap-1">
                                <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", getStatusIndicator(apt.status))} />
                                <span className="font-bold">{formatTimeIndonesia(apt.appointment_date)}</span>
-                               <span className="truncate flex-1">{apt.patient?.full_name || apt.guest_name || 'Nama tidak tersedia'}</span>
+                               <span className="break-words sm:truncate flex-1">{apt.patient?.full_name || apt.guest_name || 'Nama tidak tersedia'}</span>
                              </div>
                            </button>
                         </TooltipTrigger>

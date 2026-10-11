@@ -40,7 +40,7 @@ const ImpersonationBanner = () => {
   return (
     <div className="sticky top-0 z-[9999] w-full bg-amber-500 text-amber-950 px-3 py-2 flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm font-medium shadow-md">
       <ShieldAlert className="w-4 h-4 shrink-0" />
-      <span className="truncate max-w-[70vw] sm:max-w-none">
+      <span className="break-words sm:truncate max-w-[70vw] sm:max-w-none">
         Mode {originLabel} — melihat sebagai <strong>{targetLabel}</strong>
         {impersonationOrigin?.admin_email ? (
           <span className="hidden sm:inline"> (oleh {impersonationOrigin.admin_email})</span>

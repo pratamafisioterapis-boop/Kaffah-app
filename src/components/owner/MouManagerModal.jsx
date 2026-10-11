@@ -465,7 +465,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
                 <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 rounded-app-sm border border-slate-200 p-2 bg-white">
                   {form.compensation.patient_type_rates.map((row, idx) => (
                     <div key={`${row.label}-${idx}`} className="flex items-center gap-2">
-                      <span className="flex-1 text-xs text-slate-600 truncate">{row.label}</span>
+                      <span className="flex-1 text-xs text-slate-600 break-words sm:truncate">{row.label}</span>
                       <Input
                         type="number"
                         value={row.rate}

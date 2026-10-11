@@ -138,7 +138,7 @@ const SlotGrid = ({
                                                     </div>
                                                 ) : (
                                                     <div className="text-xs mt-1">
-                                                        <div className="font-semibold text-slate-900 truncate">
+                                                        <div className="font-semibold text-slate-900 break-words sm:truncate">
                                                             {app?.patient?.full_name || app?.guest_name || 'Unknown'}
                                                         </div>
                                                         <div className={`text-[10px] ${status === 'booked' ? 'text-red-600' : 'text-yellow-600'}`}>

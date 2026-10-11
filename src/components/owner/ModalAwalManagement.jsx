@@ -291,7 +291,7 @@ const ModalAwalManagement = () => {
                     >
                       <Landmark className="w-3.5 h-3.5" style={{ color: style.color }} />
                     </div>
-                    <span className="text-xs font-bold text-slate-500 truncate">{opt.label}</span>
+                    <span className="text-xs font-bold text-slate-500 break-words sm:truncate">{opt.label}</span>
                   </div>
                   <p className="text-sm md:text-base font-bold tabular-nums text-slate-800 break-words">
                     {formatCurrency(value)}
@@ -386,7 +386,7 @@ const ModalAwalManagement = () => {
                           </span>
                         )}
                         {item.description && (
-                          <span className="text-xs px-2 py-0.5 rounded-md truncate max-w-[200px]" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                          <span className="text-xs px-2 py-0.5 rounded-md break-words sm:truncate max-w-[200px]" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
                             {item.description}
                           </span>
                         )}
@@ -451,7 +451,7 @@ const ModalAwalManagement = () => {
                             <td className="px-5 py-3.5 whitespace-nowrap text-slate-500">
                               {item.bank_account ? `${item.bank_account.bank_name} - ${item.bank_account.account_number}` : '-'}
                             </td>
-                            <td className="px-5 py-3.5 text-slate-500 truncate max-w-[220px]">{item.description || '-'}</td>
+                            <td className="px-5 py-3.5 text-slate-500 break-words sm:truncate max-w-[220px]">{item.description || '-'}</td>
                             <td className="px-5 py-3.5 whitespace-nowrap text-right font-bold tabular-nums text-emerald-600">
                               {formatCurrency(item.amount)}
                             </td>

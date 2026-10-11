@@ -431,7 +431,7 @@ setExpandedServices({});
                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                   {serviceDiagnoses.map(diagnosis => (
                                     <div key={diagnosis.id} className="group flex items-center justify-between p-3 bg-white border border-slate-200 rounded-app-sm hover:border-app-accent/40 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity]">
-                                       <span className="text-sm text-slate-700 font-medium truncate pr-2" title={diagnosis.label}>
+                                       <span className="text-sm text-slate-700 font-medium break-words sm:truncate pr-2" title={diagnosis.label}>
                                           {diagnosis.label}
                                           {diagnosis.is_active === false && (
                                             <Badge variant="outline" className="ml-2 text-xs text-slate-500 border-slate-200">Nonaktif</Badge>

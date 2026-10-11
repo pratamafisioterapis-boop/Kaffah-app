@@ -111,7 +111,7 @@ const OperationalDashboardUI = ({
               <p className="text-xl md:text-4xl font-black text-slate-900 tracking-tight leading-none tabular-nums">
                 {kpi.value.toLocaleString('id-ID')}
               </p>
-              <p className="text-xs md:text-sm font-medium text-slate-500 mt-1 leading-tight truncate">{kpi.label}</p>
+              <p className="text-xs md:text-sm font-medium text-slate-500 mt-1 leading-tight break-words md:truncate">{kpi.label}</p>
             </div>
           </motion.div>
         ))}
@@ -123,16 +123,16 @@ const OperationalDashboardUI = ({
           <motion.div
             key={i}
             {...cardEntrance(i + 3, 10, reduceMotion)}
-            className={`rounded-app-lg border shadow-sm ${HOVER_LIFT_SM} transition-shadow duration-200 p-4 md:p-5 flex items-center gap-3 md:gap-4 ${
+            className={`rounded-app-lg border shadow-sm ${HOVER_LIFT_SM} transition-shadow duration-200 p-3 md:p-5 flex items-center gap-2.5 md:gap-4 ${
               kpi.variant === 'danger'  ? 'bg-rose-50 border-rose-100' :
               kpi.variant === 'warning' ? 'bg-orange-50 border-orange-100' :
               'bg-white border-slate-100'
             }`}
           >
-            <div className={`w-10 h-10 md:w-12 md:h-12 rounded-app ${kpi.iconBg} flex items-center justify-center shrink-0`}>
+            <div className={`w-9 h-9 md:w-12 md:h-12 rounded-app ${kpi.iconBg} flex items-center justify-center shrink-0`}>
               <kpi.icon className={`w-5 h-5 md:w-6 md:h-6 ${kpi.iconColor}`} />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className={`text-xl md:text-3xl font-black leading-none tracking-tight tabular-nums ${
                 kpi.variant === 'danger'  ? 'text-rose-700' :
                 kpi.variant === 'warning' ? 'text-orange-700' :
@@ -140,7 +140,7 @@ const OperationalDashboardUI = ({
               }`}>
                 {kpi.value.toLocaleString('id-ID')}
               </p>
-              <p className={`text-xs md:text-sm font-medium mt-1 truncate ${
+              <p className={`text-xs md:text-sm font-medium mt-1 leading-tight break-words md:truncate ${
                 kpi.variant === 'danger'  ? 'text-rose-400' :
                 kpi.variant === 'warning' ? 'text-orange-400' :
                 'text-slate-500'

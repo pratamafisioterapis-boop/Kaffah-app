@@ -339,9 +339,9 @@ const OwnerPackageStatusManagement = () => {
                       onCheckedChange={(checked) => handleSelectOne(pkg.id, checked)}
                     />
                     <div className="min-w-0">
-                      <p className="font-medium text-slate-900 truncate">{pkg.patient?.full_name}</p>
+                      <p className="font-medium text-slate-900 break-words sm:truncate">{pkg.patient?.full_name}</p>
                       <p className="text-xs text-slate-500 font-mono">{pkg.patient?.rm_number}</p>
-                      <p className="text-sm text-slate-600 truncate mt-0.5">{pkg.package_name}</p>
+                      <p className="text-sm text-slate-600 break-words sm:truncate mt-0.5">{pkg.package_name}</p>
                     </div>
                   </div>
                   <DropdownMenu>
@@ -373,7 +373,7 @@ const OwnerPackageStatusManagement = () => {
                 <div className="flex items-center justify-between text-xs text-slate-500 gap-2">
                   <span className="flex items-center gap-1 min-w-0">
                     <Calendar className="w-3 h-3 shrink-0" />
-                    <span className="truncate">{pkg.formatted_start_date}</span>
+                    <span className="break-words sm:truncate">{pkg.formatted_start_date}</span>
                   </span>
                   <span className="flex items-center gap-1 shrink-0 whitespace-nowrap">
                     <Clock className="w-3 h-3" />

@@ -466,7 +466,7 @@ const handleViewRecord = (record) => {
                           style={{ background: '#f0fdf4', color: '#059669' }}>
                           {record.therapist_name.charAt(0).toUpperCase()}
                         </div>
-                        <span className="truncate max-w-[120px]">{record.therapist_name.split(',')[0]}</span>
+                        <span className="break-words sm:truncate max-w-[120px]">{record.therapist_name.split(',')[0]}</span>
                       </div>
                     )}
                   </div>

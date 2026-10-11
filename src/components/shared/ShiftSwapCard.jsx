@@ -17,7 +17,7 @@ const ShiftSwapCard = ({ request, showTherapist = false, footer = null }) => {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             {showTherapist && (
-              <p className="text-sm font-bold text-slate-900 truncate">{request.therapist_name || 'Terapis'}</p>
+              <p className="text-sm font-bold text-slate-900 break-words sm:truncate">{request.therapist_name || 'Terapis'}</p>
             )}
             <p className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
               <Repeat className="w-4 h-4 text-app-accent-bright shrink-0" />

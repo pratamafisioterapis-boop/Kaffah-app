@@ -313,7 +313,7 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
                 <div key={i} className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-slate-800 truncate">{item.name}</p>
+                      <p className="text-sm font-bold text-slate-800 break-words sm:truncate">{item.name}</p>
                       <p className="text-xs text-slate-500 mt-0.5">{item.periodLabel}</p>
                     </div>
                     <div className="text-right shrink-0">

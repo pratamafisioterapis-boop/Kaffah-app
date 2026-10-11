@@ -674,7 +674,7 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
                           className="w-full justify-between bg-white font-normal"
                         >
                           {selectedReferrer ? (
-                            <span className="truncate">
+                            <span className="break-words sm:truncate">
                               {selectedReferrer.full_name}
                               {selectedReferrer.medical_record_number ? ` · ${selectedReferrer.medical_record_number}` : ''}
                             </span>

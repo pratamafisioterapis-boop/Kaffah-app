@@ -70,8 +70,8 @@ const StepCard = ({ step, icon: Icon, title, subtitle, tone = 'indigo', children
             {step ? <span className="text-white font-extrabold text-sm">{step}</span> : <Icon className="w-5 h-5 text-white" />}
           </div>
           <div className="min-w-0 text-left">
-            <p className="font-bold text-slate-800 text-sm sm:text-[15px] leading-tight truncate">{title}</p>
-            {subtitle && <p className="text-[11px] sm:text-xs text-slate-400 truncate">{subtitle}</p>}
+            <p className="font-bold text-slate-800 text-sm sm:text-[15px] leading-tight break-words sm:truncate">{title}</p>
+            {subtitle && <p className="text-[11px] sm:text-xs text-slate-400 break-words sm:truncate">{subtitle}</p>}
           </div>
         </div>
       </AccordionTrigger>
@@ -179,7 +179,7 @@ const KategoriEntryEditor = ({ kategoriList, entries, onChange, withJenis, withP
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
         {kategoriList.map((kat) => (
           <div key={kat} className="rounded-xl border border-slate-200/70 bg-gradient-to-br from-white to-slate-50 p-3 shadow-sm">
-            <p className="text-[10px] uppercase font-semibold tracking-wide text-slate-400 truncate">{kat}</p>
+            <p className="text-[10px] uppercase font-semibold tracking-wide text-slate-400 break-words sm:truncate">{kat}</p>
             <p className="text-sm font-extrabold text-slate-800 tabular-nums mt-0.5">{formatRupiah(totals[kat])}</p>
           </div>
         ))}
@@ -244,7 +244,7 @@ const EselonEntryEditor = ({ eselonList, entries, onChange }) => {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
         {eselonList.map((es) => (
           <div key={es} className="rounded-xl border border-slate-200/70 bg-gradient-to-br from-white to-slate-50 p-3 shadow-sm">
-            <p className="text-[10px] uppercase font-semibold tracking-wide text-slate-400 truncate">{es}</p>
+            <p className="text-[10px] uppercase font-semibold tracking-wide text-slate-400 break-words sm:truncate">{es}</p>
             <p className="text-sm font-extrabold text-slate-800 tabular-nums mt-0.5">{formatRupiah(totals[es])}</p>
           </div>
         ))}
@@ -487,7 +487,7 @@ const InsentifBulananPage = () => {
           <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
             {KATEGORI_SEBELUM_SETELAH.map((kat) => (
               <div key={kat} className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-violet-50 p-3 shadow-sm">
-                <p className="text-[10px] uppercase font-semibold tracking-wide text-indigo-400 truncate">Persen PPH {kat}</p>
+                <p className="text-[10px] uppercase font-semibold tracking-wide text-indigo-400 break-words sm:truncate">Persen PPH {kat}</p>
                 <p className="text-sm font-extrabold text-indigo-700 mt-0.5">{((totalPphPerKategori[kat]?.persenPph || 0) * 100).toFixed(2)}%</p>
               </div>
             ))}
@@ -632,8 +632,8 @@ const InsentifBulananPage = () => {
                 <Trophy className="w-5 h-5 text-white" />
               </div>
               <div className="min-w-0 text-left">
-                <p className="font-bold text-slate-800 text-sm sm:text-[15px] leading-tight truncate">7. Laporan Final</p>
-                <p className="text-[11px] sm:text-xs text-slate-400 truncate">Rekap akhir pembagian ke seluruh roster</p>
+                <p className="font-bold text-slate-800 text-sm sm:text-[15px] leading-tight break-words sm:truncate">7. Laporan Final</p>
+                <p className="text-[11px] sm:text-xs text-slate-400 break-words sm:truncate">Rekap akhir pembagian ke seluruh roster</p>
               </div>
             </div>
           </AccordionTrigger>

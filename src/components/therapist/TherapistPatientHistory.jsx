@@ -355,7 +355,7 @@ const TherapistPatientHistory = ({ therapist }) => {
               <div key={r.id} className="bg-white rounded-app-lg border border-slate-100 p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-bold text-slate-800 text-sm truncate">{getPatientName(r)}</p>
+                    <p className="font-bold text-slate-800 text-sm break-words sm:truncate">{getPatientName(r)}</p>
                     <p className="text-xs text-slate-500">{getPatientRM(r)}</p>
                   </div>
                   <Badge variant="outline" className="shrink-0 text-xs border-slate-200 text-slate-600">

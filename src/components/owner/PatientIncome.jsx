@@ -414,12 +414,12 @@ const realIncome = filteredIncomeData.reduce(
                     </span>
                     <span className="font-bold text-green-600 shrink-0 whitespace-nowrap">{formatCurrency(item.totalRevenue)}</span>
                   </div>
-                  <p className="font-medium truncate">{item.patientName}</p>
+                  <p className="font-medium break-words sm:truncate">{item.patientName}</p>
                   <div className="flex items-center justify-between gap-2 text-xs">
                     <span className={`px-2 py-1 rounded font-medium ${item.patientType === 'Paket' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
                       {item.patientType}
                     </span>
-                    <span className="text-slate-500 truncate">{item.paymentMethod || '-'}</span>
+                    <span className="text-slate-500 break-words sm:truncate">{item.paymentMethod || '-'}</span>
                   </div>
                   {item.packagePrice > 0 && (
                     <p className="text-xs text-app-accent font-medium">Harga Paket: {formatCurrency(item.packagePrice)}</p>

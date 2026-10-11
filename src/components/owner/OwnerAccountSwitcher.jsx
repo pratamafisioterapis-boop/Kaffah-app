@@ -173,8 +173,8 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
                     {switchingId === 'owner' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-sm font-medium text-app-ink truncate">Akun Owner</span>
-                    <span className="block text-xs text-app-muted truncate">{impersonationOrigin?.admin_email}</span>
+                    <span className="block text-sm font-medium text-app-ink break-words sm:truncate">Akun Owner</span>
+                    <span className="block text-xs text-app-muted break-words sm:truncate">{impersonationOrigin?.admin_email}</span>
                   </span>
                 </button>
               </div>
@@ -197,8 +197,8 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
                       {switchingId === a.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Icon className="w-4 h-4" />}
                     </span>
                     <span className="min-w-0">
-                      <span className="block text-sm font-medium text-app-ink truncate">{a.full_name || a.email}</span>
-                      <span className="block text-xs text-app-muted truncate">{a.email}</span>
+                      <span className="block text-sm font-medium text-app-ink break-words sm:truncate">{a.full_name || a.email}</span>
+                      <span className="block text-xs text-app-muted break-words sm:truncate">{a.email}</span>
                     </span>
                   </button>
                 ))}

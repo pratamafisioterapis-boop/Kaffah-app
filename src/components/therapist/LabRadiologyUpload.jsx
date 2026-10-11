@@ -82,7 +82,7 @@ const Section = ({ label, clinicId, value, onChange }) => {
           {files.map((f) => (
             <li key={f.path} className="flex items-center gap-2 rounded-app-sm border border-slate-200 bg-white px-2.5 py-1.5 text-xs">
               <FileText className="h-3.5 w-3.5 shrink-0 text-app-accent" />
-              <button type="button" onClick={() => openFile(f.path)} className="min-w-0 flex-1 truncate text-left text-app-accent-hover hover:underline">
+              <button type="button" onClick={() => openFile(f.path)} className="min-w-0 flex-1 break-words sm:truncate text-left text-app-accent-hover hover:underline">
                 {f.name}
               </button>
               <button type="button" onClick={() => remove(f)} aria-label={`Hapus ${f.name}`} className="text-slate-500 hover:text-red-600">

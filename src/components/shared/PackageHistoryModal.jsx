@@ -91,8 +91,8 @@ const PackageHistoryModal = ({ isOpen, onClose, packageData }) => {
                         <div className="sm:hidden">
                             <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0">
-                                    <p className="font-bold text-slate-900 text-base leading-tight truncate">{packageData?.package_name || '-'}</p>
-                                    <p className="text-sm text-slate-500 truncate mt-0.5">{packageData?.patients?.full_name || packageData?.patient_name || '-'}</p>
+                                    <p className="font-bold text-slate-900 text-base leading-tight break-words sm:truncate">{packageData?.package_name || '-'}</p>
+                                    <p className="text-sm text-slate-500 break-words sm:truncate mt-0.5">{packageData?.patients?.full_name || packageData?.patient_name || '-'}</p>
                                 </div>
                                 <Badge variant="outline" className={cn("px-2 py-0.5 rounded-full font-medium border text-xs shrink-0", getStatusStyle(packageData?.status))}>
                                     {packageData?.status || '-'}
@@ -176,12 +176,12 @@ const PackageHistoryModal = ({ isOpen, onClose, packageData }) => {
                                         <div key={item.id} className="px-3.5 py-2.5 flex items-center justify-between gap-3">
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex items-center gap-1.5">
-                                                    <p className="font-semibold text-slate-900 text-sm truncate">{displayPatientName}</p>
+                                                    <p className="font-semibold text-slate-900 text-sm break-words sm:truncate">{displayPatientName}</p>
                                                     {isDifferent && (
                                                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block shrink-0" title="Pasien Kerabat"></span>
                                                     )}
                                                 </div>
-                                                <p className="text-xs text-slate-500 truncate mt-0.5">
+                                                <p className="text-xs text-slate-500 break-words sm:truncate mt-0.5">
                                                     {formatDateIndonesian(item.recap_date)} · {item.therapist_name || '-'}
                                                 </p>
                                             </div>

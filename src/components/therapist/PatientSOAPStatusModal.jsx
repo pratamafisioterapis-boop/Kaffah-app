@@ -62,7 +62,7 @@ const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose, bas
               <FileText className="w-5 h-5 text-slate-600" />
             </div>
             <div className="min-w-0">
-              <h2 className="font-bold text-slate-900 text-base leading-tight truncate">{patient.full_name}</h2>
+              <h2 className="font-bold text-slate-900 text-base leading-tight break-words sm:truncate">{patient.full_name}</h2>
               <p className="text-slate-500 text-xs">{patient.medical_record_number || patient.rm_number || '-'}</p>
             </div>
           </div>
@@ -102,7 +102,7 @@ const PatientSOAPStatusModal = ({ patient, visits, records, isOpen, onClose, bas
                   <Calendar className={`w-4 h-4 ${item.status === 'filled' ? 'text-emerald-500' : 'text-rose-500'}`} />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-slate-800 text-sm truncate">{item.formattedDate}</p>
+                  <p className="font-semibold text-slate-800 text-sm break-words sm:truncate">{item.formattedDate}</p>
                   <p className={`text-xs mt-0.5 ${item.status === 'filled' ? 'text-emerald-600' : 'text-rose-500'}`}>
                     {item.status === 'filled' ? '✓ Catatan medis tersedia' : '✗ Belum ada catatan medis'}
                   </p>

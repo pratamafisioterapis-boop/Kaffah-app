@@ -483,7 +483,7 @@ export const PackageRecapsContent = () => {
                                     <div className="flex flex-col gap-2 border-t border-slate-100 pt-2">
                                         <div className="flex items-center gap-1.5 text-xs text-slate-500 whitespace-nowrap overflow-hidden">
                                             <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                                            <span className="truncate">{pkg.extended_until
+                                            <span className="break-words sm:truncate">{pkg.extended_until
                                                 ? <span className="text-orange-600 font-semibold">{formatDateIndonesian(pkg.extended_until)}</span>
                                                 : (pkg.end_date ? formatDateIndonesian(pkg.end_date) : '-')
                                             }</span>

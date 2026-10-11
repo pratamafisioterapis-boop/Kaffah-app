@@ -455,7 +455,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
                 {incentiveBreakdown.map((item) => (
                   <div key={item.id} className="flex items-center justify-between gap-2 px-3 py-1.5 text-xs">
                     <div className="min-w-0">
-                      <div className="font-medium text-slate-700 truncate">{item.name}</div>
+                      <div className="font-medium text-slate-700 break-words sm:truncate">{item.name}</div>
                       <div className="text-slate-500">
                         {item.date ? format(new Date(item.date), 'dd MMM yyyy', { locale: idLocale }) : '-'}
                         {item.type ? ` • ${item.type}` : ''}

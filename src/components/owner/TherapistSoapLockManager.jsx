@@ -243,7 +243,7 @@ const TherapistSoapLockManager = () => {
                       {(t.name || 'T').charAt(0)}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-semibold text-sm text-slate-800 truncate">{t.name}</p>
+                      <p className="font-semibold text-sm text-slate-800 break-words sm:truncate">{t.name}</p>
                       <p className="text-xs text-slate-500">{RULE_SOURCE_LABEL[source] || '-'}</p>
                     </div>
                   </div>
