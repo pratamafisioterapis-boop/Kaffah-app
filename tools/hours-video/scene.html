@@ -1,0 +1,352 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Kaffah Opening Hours</title>
+<style>html, body { margin: 0; background: #071a3d; overflow: hidden; } canvas { display: block; }</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+/*
+ * Kaffah Physiotherapy — opening-hours reel (15 s, 1080×1920, 120 BPM grid).
+ * Deterministic: render(t). ?preview=1 plays in real time, ?t=5 shows one frame.
+ * Every scene cut lands on a beat (0.5 s) so audio.py can hit it.
+ */
+const Q = new URLSearchParams(location.search);
+const W = 1080, H = 1920, DUR = 15;
+const cv = document.getElementById('c'); cv.width = W; cv.height = H;
+const ctx = cv.getContext('2d');
+const mk = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; return c; };
+const buf = mk(), bg = buf.getContext('2d');
+
+const C = { navy: '#071a3d', deep: '#041230', elec: '#1f8fff', light: '#9fd0ff', white: '#f7fbff', cyan: '#3fc6ff', ink: '#0b2a5c' };
+const FONT = '"Inter Display", "Inter", sans-serif';
+const TAU = Math.PI * 2;
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const eOut = k => 1 - Math.pow(1 - k, 3);
+const eExpo = k => k >= 1 ? 1 : 1 - Math.pow(2, -10 * k);
+const eIn = k => k * k * k;
+const eIO = k => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+const eBack = k => { const c1 = 1.9, c3 = c1 + 1; return 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2); };
+const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${n >> 8 & 255},${n & 255},${a})`; };
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const rand = rng(911);
+
+function font(g, w, s) { g.font = `${w} ${s}px ${FONT}`; }
+function tracked(g, text, x, y, track, align = 'center') {
+  let w = 0; const ws = [...text].map(ch => { const m = g.measureText(ch).width; w += m + track; return m; }); w -= track;
+  let cx = align === 'center' ? x - w / 2 : x;
+  [...text].forEach((ch, i) => { g.fillText(ch, cx, y); cx += ws[i] + track; });
+  return w;
+}
+// text that slides up out of a mask, letter by letter
+function maskUp(g, text, x, y, size, k0, stagger, t, dur = .45, track = 0) {
+  const chars = [...text]; let w = 0; const ws = chars.map(ch => { const m = g.measureText(ch).width; w += m + track; return m; }); w -= track;
+  let cx = x - w / 2;
+  chars.forEach((ch, i) => {
+    const k = eExpo(prog(t, k0 + i * stagger, k0 + i * stagger + dur));
+    if (k > 0) {
+      g.save(); g.beginPath(); g.rect(cx - 4, y - size * .95, ws[i] + 8, size * 1.2); g.clip();
+      g.fillText(ch, cx, y + (1 - k) * size * 1.05); g.restore();
+    }
+    cx += ws[i] + track;
+  });
+}
+function blurText(g, text, x, y, vx, alpha = 1) {
+  const n = Math.min(10, Math.ceil(Math.abs(vx) / 18) + 1);
+  for (let i = n - 1; i >= 0; i--) { g.globalAlpha = alpha * (i === 0 ? 1 : .18 * (1 - i / n)); g.fillText(text, x - vx * i / n, y); }
+  g.globalAlpha = 1;
+}
+function dotGrid(g, col, a, t, step = 54) {
+  g.fillStyle = rgba(col, a);
+  const off = (t * 20) % step;
+  for (let y = -step; y < H + step; y += step) for (let x = 0; x < W + step; x += step) { g.beginPath(); g.arc(x, y + off, 1.6, 0, TAU); g.fill(); }
+}
+
+// ---------- scenes ----------
+// A 0–1.5: dots converge, pulse, then the dot floods the screen
+function sceneA(g, t) {
+  g.fillStyle = C.navy; g.fillRect(0, 0, W, H);
+  dotGrid(g, C.light, .08, t);
+  const cx = W / 2, cy = H * .47;
+  const conv = eIO(prog(t, 0, .45));
+  for (let i = 0; i < 3; i++) {
+    const an = i / 3 * TAU - Math.PI / 2 + conv * 2.2, r = (1 - conv) * 170;
+    if (conv < 1) { g.fillStyle = C.elec; g.beginPath(); g.arc(cx + Math.cos(an) * r, cy + Math.sin(an) * r, 14, 0, TAU); g.fill(); }
+  }
+  [.5, 1.0].forEach(tp => {
+    const k = prog(t, tp, tp + .5); if (k <= 0 || k >= 1) return;
+    g.strokeStyle = rgba(C.cyan, (1 - k) * .8); g.lineWidth = 4 * (1 - k) + 1;
+    g.beginPath(); g.arc(cx, cy, 40 + eOut(k) * 300, 0, TAU); g.stroke();
+  });
+  const pulse = [.5, 1.0].reduce((a, tp) => a + Math.max(0, 1 - Math.abs(t - tp) / .12) * .25, 0);
+  const r = eBack(prog(t, .35, .6)) * 34 * (1 + pulse) * (1 - .25 * eIn(prog(t, 1.0, 1.15)));
+  if (r > 0) { g.fillStyle = C.elec; g.beginPath(); g.arc(cx, cy, r, 0, TAU); g.fill(); }
+  font(g, 600, 34); g.fillStyle = rgba(C.light, eOut(prog(t, .45, .9)));
+  tracked(g, 'KAFFAH PHYSIOTHERAPY', W / 2, H * .25, 10);
+}
+// B 1.5–3: KAPAN / KAMI / BUKA? slam in on the beat
+function sceneB(g, t) {
+  g.fillStyle = C.elec; g.fillRect(0, 0, W, H);
+  g.strokeStyle = rgba(C.white, .12); g.lineWidth = 3;
+  for (let i = 0; i < 3; i++) { const rr = 260 + i * 170, a0 = t * (i % 2 ? .8 : -.6); g.beginPath(); g.arc(W / 2, H * .5, rr, a0, a0 + 4.2); g.stroke(); }
+  [['KAPAN', 1.5], ['KAMI', 2.0], ['BUKA?', 2.5]].forEach(([w, t0], idx) => {
+    const lt = t - t0; if (lt < -.05 || lt > .5) return;
+    font(g, 900, 100); const size = Math.min(330, 100 * W * .86 / g.measureText(w).width); font(g, 900, size);
+    const tw = g.measureText(w).width;
+    const kin = eExpo(prog(lt, -.05, .14)), kout = eIn(prog(lt, .4, .5));
+    const dir = idx % 2 ? -1 : 1;
+    const x = W / 2 - tw / 2 + dir * ((1 - kin) * W * 1.1 - kout * W * 1.1);
+    const vx = dir * ((1 - kin) * 900 + kout * 900);
+    const y = H * .5 + size * .36;
+    g.fillStyle = C.white;
+    if (w === 'BUKA?') {
+      const qw = g.measureText('?').width;
+      blurText(g, 'BUKA', x, y, vx);
+      g.fillStyle = C.navy; blurText(g, '?', x + tw - qw, y, vx);
+    } else blurText(g, w, x, y, vx);
+  });
+  font(g, 600, 30); g.fillStyle = rgba(C.white, .75);
+  tracked(g, 'JADWAL KLINIK', W / 2, H * .3, 10);
+}
+// C 3–4.5: ring becomes a clock, hands spin to 09.00
+const SPIN = [3.1, 4.15];
+function sceneC(g, t) {
+  g.fillStyle = C.navy; g.fillRect(0, 0, W, H);
+  dotGrid(g, C.light, .06, t);
+  const cx = W / 2, cy = H * .46, R = 300;
+  const ring = eIO(prog(t, 2.95, 3.35));
+  g.lineCap = 'round';
+  g.strokeStyle = C.white; g.lineWidth = 12;
+  g.beginPath(); g.arc(cx, cy, R, -Math.PI / 2, -Math.PI / 2 + TAU * ring); g.stroke();
+  for (let i = 0; i < 12; i++) {
+    const k = eBack(prog(t, 3.1 + i * .025, 3.3 + i * .025)); if (k <= 0) continue;
+    const an = i / 12 * TAU - Math.PI / 2, big = i % 3 === 0, r0 = R - 34, r1 = r0 - (big ? 46 : 22) * k;
+    g.strokeStyle = big ? C.white : rgba(C.light, .8); g.lineWidth = big ? 10 : 5;
+    g.beginPath(); g.moveTo(cx + Math.cos(an) * r0, cy + Math.sin(an) * r0); g.lineTo(cx + Math.cos(an) * r1, cy + Math.sin(an) * r1); g.stroke();
+  }
+  const p = prog(t, SPIN[0], SPIN[1]), e = eOut(p);
+  const wob = t > SPIN[1] ? Math.sin((t - SPIN[1]) * 40) * Math.exp(-(t - SPIN[1]) * 12) * .08 : 0;
+  const hands = eBack(prog(t, 3.0, 3.25));
+  const mAng = -Math.PI / 2 + TAU * 9 * e + wob, hAng = -Math.PI / 2 + TAU * .75 * e + wob * .5;
+  if (hands > 0) {
+    g.strokeStyle = C.cyan; g.lineWidth = 16;
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(hAng) * 150 * hands, cy + Math.sin(hAng) * 150 * hands); g.stroke();
+    g.strokeStyle = C.white; g.lineWidth = 10;
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(mAng) * 230 * hands, cy + Math.sin(mAng) * 230 * hands); g.stroke();
+    g.fillStyle = C.elec; g.beginPath(); g.arc(cx, cy, 20, 0, TAU); g.fill();
+  }
+  g.lineCap = 'butt';
+  // speed streaks while spinning
+  if (p > 0 && p < 1) {
+    g.strokeStyle = rgba(C.cyan, .35 * (1 - e)); g.lineWidth = 6;
+    g.beginPath(); g.arc(cx, cy, 200, mAng - .9 * (1 - e), mAng); g.stroke();
+  }
+  font(g, 600, 34); g.fillStyle = rgba(C.light, eOut(prog(t, 3.15, 3.5)));
+  tracked(g, 'JAM BUKA', W / 2, cy - R - 90, 12);
+  font(g, 500, 40); g.fillStyle = rgba(C.light, 1);
+  maskUp(g, 'Buka mulai', W / 2, cy + R + 120, 40, 4.12, .012, t);
+  font(g, 900, 150); g.fillStyle = C.white;
+  maskUp(g, '09.00', W / 2, cy + R + 290, 150, 4.15, .03, t);
+}
+// D / E: schedule cards
+function schedule(g, t, o) {
+  g.fillStyle = o.bg; g.fillRect(0, 0, W, H);
+  // decor: big dashed ring + dot grid
+  dotGrid(g, o.sub, .1, t);
+  g.save(); g.translate(W * .5, H * .55); g.rotate(t * .25 * o.dir);
+  g.setLineDash([4, 22]); g.strokeStyle = rgba(o.sub, .35); g.lineWidth = 4;
+  g.beginPath(); g.arc(0, 0, 470, 0, TAU); g.stroke(); g.setLineDash([]); g.restore();
+  const t0 = o.t0, lt = t - t0;
+  font(g, 600, 32); g.fillStyle = rgba(o.sub, eOut(prog(lt, 0, .3)));
+  tracked(g, o.label, W / 2, H * .2, 12);
+  font(g, 900, 96); g.fillStyle = o.fg;
+  maskUp(g, o.days, W / 2, H * .3, 96, t0 + .05, .02, t, .5, 2);
+  // big times: digits roll up like a reel
+  [[o.open, H * .47, .25], [o.close, H * .655, .4]].forEach(([s, y, d]) => {
+    font(g, 900, 250); g.fillStyle = o.fg;
+    maskUp(g, s, W / 2, y, 250, t0 + d, .045, t, .55);
+  });
+  font(g, 500, 44); g.fillStyle = rgba(o.sub, eOut(prog(lt, .45, .7)));
+  tracked(g, 'sampai', W / 2, H * .528, 4);
+  // 24h timeline bar
+  const bx = W * .1, bw = W * .8, by = H * .74, bh = 18;
+  const bk = eExpo(prog(lt, .5, .9));
+  g.fillStyle = rgba(o.sub, .3); roundRect(g, bx, by, bw * bk, bh, 9); g.fill();
+  font(g, 600, 28); g.fillStyle = rgba(o.sub, bk);
+  [0, 6, 12, 18, 24].forEach(h => { g.textAlign = 'center'; g.fillText(String(h).padStart(2, '0'), bx + bw * h / 24, by + 70); g.fillRect(bx + bw * h / 24 - 1.5, by + 30, 3, 12); });
+  g.textAlign = 'left';
+  const fk = eIO(prog(lt, o.fill[0], o.fill[1]));
+  if (fk > 0) {
+    const xa = bx + bw * o.h0 / 24, xb = xa + bw * (o.h1 - o.h0) / 24 * fk;
+    g.fillStyle = o.accent; roundRect(g, xa, by - 4, xb - xa, bh + 8, 13); g.fill();
+    g.fillStyle = o.fg; g.beginPath(); g.arc(xb, by + bh / 2, 20, 0, TAU); g.fill();
+    g.strokeStyle = o.accent; g.lineWidth = 6; g.stroke();
+  }
+  // badge: total hours
+  const bb = eBack(prog(lt, o.fill[1] + .05, o.fill[1] + .4));
+  if (bb > 0) {
+    g.save(); g.translate(W / 2, H * .83); g.scale(bb, bb);
+    font(g, 800, 40); const tw = g.measureText(o.badge).width + 70;
+    g.fillStyle = o.accent; roundRect(g, -tw / 2, -40, tw, 80, 40); g.fill();
+    g.fillStyle = o.badgeFg; g.textAlign = 'center'; g.fillText(o.badge, 0, 14); g.textAlign = 'left';
+    g.restore();
+  }
+}
+function roundRect(g, x, y, w, h, r) { g.beginPath(); r = Math.min(r, Math.abs(w) / 2, h / 2); g.roundRect(x, y, Math.max(0, w), h, r); }
+const sceneD = (g, t) => schedule(g, t, { t0: 4.5, dir: 1, bg: C.elec, fg: C.white, sub: C.white, accent: C.navy, badgeFg: C.white, label: 'HARI KERJA', days: 'SENIN – JUMAT', open: '09.00', close: '21.00', h0: 9, h1: 21, fill: [.95, 1.75], badge: '12 jam melayani' });
+const sceneE = (g, t) => schedule(g, t, { t0: 7.5, dir: -1, bg: C.white, fg: C.navy, sub: C.ink, accent: C.elec, badgeFg: C.white, label: 'AKHIR PEKAN', days: 'SABTU – MINGGU', open: '09.00', close: '17.00', h0: 9, h1: 17, fill: [.95, 1.7], badge: 'Tetap buka 8 jam' });
+
+// F 10–12: rotating 3D dot spine
+const SPINE = [];
+(function () {
+  for (let k = 0; k < 19; k++) {
+    const u = k / 18, y = lerp(-370, 370, u), z = Math.sin(u * TAU * .95 + .3) * 70, rr = lerp(38, 74, u);
+    for (let j = 0; j < 14; j++) { const a = j / 14 * TAU; SPINE.push({ x: Math.cos(a) * rr, y, z: z + Math.sin(a) * rr * .8, k, s: rand() }); }
+    for (let j = 1; j <= 3; j++) SPINE.push({ x: 0, y: y + j * 6, z: z - rr * .8 - j * 26, k, s: rand() });
+  }
+})();
+function sceneF(g, t) {
+  g.fillStyle = C.deep; g.fillRect(0, 0, W, H);
+  const glow = g.createRadialGradient(W / 2, H * .42, 0, W / 2, H * .42, 700);
+  glow.addColorStop(0, rgba(C.elec, .35)); glow.addColorStop(1, rgba(C.elec, 0));
+  g.fillStyle = glow; g.fillRect(0, 0, W, H);
+  const cx = W / 2, cy = H * .42, rot = (t - 10) * 1.5 + .4, foc = 1400;
+  const pts = SPINE.map(p => {
+    const fly = eIO(prog(t, 9.95 + p.s * .3, 10.55 + p.s * .3));
+    const sx = (p.s - .5) * 1600, sy = Math.sin(p.s * 50) * 900, sz = Math.cos(p.s * 31) * 600;
+    const x0 = lerp(sx, p.x, fly), y0 = lerp(sy, p.y, fly), z0 = lerp(sz, p.z, fly);
+    const x = x0 * Math.cos(rot) + z0 * Math.sin(rot), z = -x0 * Math.sin(rot) + z0 * Math.cos(rot);
+    const sc = foc / (foc + z);
+    return { x: cx + x * sc, y: cy + y0 * sc, z, sc, k: p.k };
+  }).sort((a, b) => b.z - a.z);
+  g.globalCompositeOperation = 'lighter';
+  pts.forEach(p => {
+    const d = clamp((p.z + 150) / 300);
+    g.fillStyle = d > .5 ? rgba(C.elec, .55) : rgba(C.white, .95);
+    g.beginPath(); g.arc(p.x, p.y, 5.5 * p.sc, 0, TAU); g.fill();
+  });
+  g.globalCompositeOperation = 'source-over';
+  font(g, 900, 110); g.fillStyle = C.white;
+  maskUp(g, 'Gerak Lebih', W / 2, H * .77, 110, 10.5, .02, t);
+  g.fillStyle = C.cyan;
+  maskUp(g, 'Nyaman.', W / 2, H * .77 + 125, 110, 10.75, .025, t);
+}
+// G 12–13.5: rotating text ring + WhatsApp
+function sceneG(g, t) {
+  g.fillStyle = C.light; g.fillRect(0, 0, W, H);
+  dotGrid(g, C.navy, .1, t);
+  const cx = W / 2, cy = H * .46, R = 410;
+  const txt = 'FISIOTERAPI • HOME CARE • BOOKING ONLINE • '.repeat(2);
+  font(g, 700, 40); g.fillStyle = C.navy;
+  const chars = [...txt], n = chars.length, rot = (t - 12) * .9 - Math.PI / 2;
+  chars.forEach((ch, i) => {
+    const k = eOut(prog(t, 11.95 + i / n * .45, 12.15 + i / n * .45)); if (k <= 0) return;
+    const an = rot + i / n * TAU;
+    g.save(); g.translate(cx + Math.cos(an) * R, cy + Math.sin(an) * R); g.rotate(an + Math.PI / 2);
+    g.globalAlpha = k; g.textAlign = 'center'; g.fillText(ch, 0, (1 - k) * 30); g.restore();
+  });
+  g.globalAlpha = 1; g.textAlign = 'left';
+  const rk = eIO(prog(t, 12.05, 12.5));
+  g.strokeStyle = rgba(C.navy, .35); g.lineWidth = 3;
+  g.beginPath(); g.arc(cx, cy, R - 55, -Math.PI / 2, -Math.PI / 2 + TAU * rk); g.stroke();
+  const oa = rot * 1.8;
+  g.fillStyle = C.elec; g.beginPath(); g.arc(cx + Math.cos(oa) * (R - 55), cy + Math.sin(oa) * (R - 55), 14 * rk, 0, TAU); g.fill();
+  font(g, 500, 46); g.fillStyle = rgba(C.navy, .8); maskUp(g, 'Booking via', W / 2, cy - 95, 46, 12.15, .015, t);
+  font(g, 900, 120); g.fillStyle = C.navy; maskUp(g, 'WhatsApp', W / 2, cy + 40, 120, 12.25, .025, t);
+  font(g, 800, 66); g.fillStyle = C.elec; maskUp(g, '0812-3333-9435', W / 2, cy + 150, 66, 12.45, .018, t);
+}
+// H 13.5–15: logo lockup
+const IMG = {}, TINT = {};
+const LOCK = { k: [857, 560], sp: [857, 560], ka: [535, 1210], ph: [540, 1430], w: 1009, h: 916 };
+function sceneH(g, t) {
+  g.fillStyle = C.white; g.fillRect(0, 0, W, H);
+  const s = W * .7 / LOCK.w, cx = W / 2, cy = H * .43;
+  const ox = cx - (LOCK.w / 2 + 535) * s, oy = cy - (LOCK.h / 2 + 560) * s;
+  const pop = 1 + .04 * (1 - eOut(prog(t, 13.5, 14.2)));
+  g.save(); g.translate(cx, cy); g.scale(pop, pop); g.translate(-cx, -cy);
+  const kk = eExpo(prog(t, 13.55, 14.1));
+  if (kk > 0) {
+    const x = ox + LOCK.k[0] * s, y = oy + LOCK.k[1] * s, w = TINT.k.width * s, h = TINT.k.height * s, d = (w + h) * kk * 1.05;
+    g.save(); g.beginPath(); g.moveTo(x, y + h); g.lineTo(x + d, y + h); g.lineTo(x, y + h - d); g.closePath(); g.clip();
+    g.drawImage(TINT.k, x, y + (1 - kk) * 30, w, h); g.restore();
+  }
+  const sk = eIO(prog(t, 13.65, 14.3));
+  if (sk > 0) {
+    const x = ox + LOCK.sp[0] * s, y = oy + LOCK.sp[1] * s, w = TINT.sp.width * s, h = TINT.sp.height * s;
+    g.save(); g.beginPath(); g.rect(x - 10, y + h * (1 - sk), w + 20, h * sk + 10); g.clip(); g.drawImage(TINT.sp, x, y, w, h); g.restore();
+  }
+  [['ka', 13.9], ['ph', 14.05]].forEach(([n, t0]) => {
+    const k = eExpo(prog(t, t0, t0 + .5)); if (k <= 0) return;
+    const im = TINT[n], x = ox + LOCK[n][0] * s, y = oy + LOCK[n][1] * s, w = im.width * s, h = im.height * s;
+    g.save(); g.beginPath(); g.rect(x - 10, y, w + 20, h + 6); g.clip(); g.drawImage(im, x, y + (1 - k) * h, w, h); g.restore();
+  });
+  g.restore();
+  const uy = oy + (LOCK.h + 560) * s + 130;
+  const lk = eExpo(prog(t, 14.2, 14.6));
+  g.fillStyle = C.elec; g.fillRect(W / 2 - 50 * lk, uy - 70, 100 * lk, 5);
+  font(g, 700, 54); g.fillStyle = C.navy; maskUp(g, 'kaffahphysio.id', W / 2, uy, 54, 14.25, .012, t);
+  font(g, 500, 34); g.fillStyle = rgba(C.ink, .75); maskUp(g, 'Jl. Telindung, Batu Ampar, Balikpapan Utara', W / 2, uy + 70, 34, 14.4, .006, t);
+}
+
+// ---------- transitions ----------
+const SCENES = [[0, sceneA], [1.5, sceneB], [3, sceneC], [4.5, sceneD], [7.5, sceneE], [10, sceneF], [12, sceneG], [13.5, sceneH]];
+const TRANS = [
+  { at: 1.5, a: 1.15, b: 1.5, mask: (g, k) => { g.arc(W / 2, H * .47, 34 + eIn(k) * 1150, 0, TAU); } },
+  { at: 3, a: 2.85, b: 3.05, mask: (g, k) => { g.rect(0, H * (1 - eExpo(k)), W, H); } },
+  { at: 4.5, a: 4.25, b: 4.5, mask: (g, k) => { g.arc(W / 2, H * .46, 20 + eIn(k) * 1150, 0, TAU); } },
+  { at: 7.5, a: 7.3, b: 7.55, mask: (g, k) => { const d = eIO(k) * (W + H) * 1.05; g.moveTo(0, 0); g.lineTo(d, 0); g.lineTo(0, d); g.closePath(); } },
+  { at: 10, a: 9.8, b: 10.05, mask: (g, k) => { for (let i = 0; i < 8; i++) { const kk = eIO(clamp(k * 1.6 - i * .08)); g.rect(0, i * H / 8, W * kk, H / 8 + 1); } } },
+  { at: 12, a: 11.82, b: 12.02, glitch: true },
+  { at: 13.5, a: 13.3, b: 13.5, mask: (g, k) => { g.arc(W / 2, H * .46, eIn(k) * 1150, 0, TAU); } },
+];
+const SLICES = Array.from({ length: 22 }, () => ({ r: rand(), o: (rand() - .5) * 2 }));
+function sceneAt(t) { let s = SCENES[0][1]; for (const [t0, f] of SCENES) if (t >= t0) s = f; return s; }
+function render(t) {
+  t = clamp(t, 0, DUR - 1e-6);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  sceneAt(t)(ctx, t);
+  for (const tr of TRANS) {
+    if (t < tr.a || t >= tr.b) continue;
+    const k = prog(t, tr.a, tr.b), next = sceneAt(tr.at);
+    bg.setTransform(1, 0, 0, 1, 0, 0); next(bg, t);
+    if (tr.glitch) {
+      // RGB-split slices of the outgoing scene, incoming scene arrives in shuffled bands
+      const sh = H / SLICES.length;
+      SLICES.forEach((s, i) => {
+        if (s.r < k * 1.15) ctx.drawImage(buf, 0, i * sh, W, sh, s.o * (1 - k) * 160, i * sh, W, sh);
+        else if (s.r < k * 1.15 + .3) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .5; ctx.drawImage(cv, 0, i * sh, W, sh, s.o * 60, i * sh, W, sh); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; }
+      });
+    } else {
+      ctx.save(); ctx.beginPath(); tr.mask(ctx, k); ctx.clip(); ctx.drawImage(buf, 0, 0); ctx.restore();
+    }
+  }
+  // fade to the logo's white at the very end is not needed: the last frame holds the lockup
+}
+
+function loadImg(n) { return new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.src = `../hero-video/assets/${n}.png`; }); }
+function tint(img, a, b) {
+  const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+  const g = c.getContext('2d'), gr = g.createLinearGradient(0, c.height, c.width, 0);
+  gr.addColorStop(0, a); gr.addColorStop(1, b); g.fillStyle = gr; g.fillRect(0, 0, c.width, c.height);
+  g.globalCompositeOperation = 'destination-in'; g.drawImage(img, 0, 0); return c;
+}
+async function init() {
+  await Promise.all(['mark-k', 'mark-spine', 'word-kaffah', 'word-physio'].map(loadImg));
+  await Promise.all([900, 800, 700, 600, 500].map(w => document.fonts.load(`${w} 100px "Inter Display"`)));
+  // original logo colours on white
+  TINT.k = tint(IMG['mark-k'], '#00a3e3', '#22b8f0');
+  TINT.sp = tint(IMG['mark-spine'], '#0b4a8a', '#0b4a8a');
+  TINT.ka = tint(IMG['word-kaffah'], '#00a3e3', '#00a3e3');
+  TINT.ph = tint(IMG['word-physio'], '#0b4a8a', '#0b4a8a');
+  window.render = render; window.ready = true;
+  if (Q.get('preview')) { const t0 = performance.now(); const loop = () => { render(((performance.now() - t0) / 1000) % DUR); requestAnimationFrame(loop); }; loop(); }
+  else if (Q.get('t')) render(+Q.get('t'));
+}
+init();
+</script>
+</body>
+</html>
