@@ -174,19 +174,22 @@ const PromoUsageWidget = ({ dateRange }) => {
     fetchData();
   }, [dateRange]);
 
+  // Jumlah sesi yang memakai jenis diskon (bukan seluruh sesi pada periode).
+  const promoSessionCount = data.reduce((sum, s) => sum + s.count, 0);
+
   return (
     <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden h-full">
       {/* Header */}
       <div className="px-5 md:px-6 pt-5 md:pt-6 pb-4">
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-base font-bold text-slate-800">Sesi per Promo</h2>
+            <h2 className="text-base font-bold text-slate-800">Sesi Promo</h2>
             <p className="text-xs text-slate-500 mt-0.5">Pemakaian jenis diskon/reward pada periode ini</p>
           </div>
           {!loading && (
             <div className="text-right">
-              <p className="text-xl font-black text-slate-900 leading-none">{total.toLocaleString('id-ID')}</p>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">Total Sesi</p>
+              <p className="text-xl font-black text-slate-900 leading-none">{promoSessionCount.toLocaleString('id-ID')}</p>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">Sesi Berdiskon</p>
             </div>
           )}
         </div>
