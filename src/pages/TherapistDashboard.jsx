@@ -26,6 +26,7 @@ import { Settings } from 'lucide-react';
 import TherapistSettingsDrawer from '@/components/therapist/TherapistSettingsDrawer';
 import { lazyRetry } from '@/lib/lazyRetry';
 import PageSkeleton from '@/components/shared/PageSkeleton';
+import SoapDeadlineNotice from '@/components/therapist/SoapDeadlineNotice';
 
 const TherapistDashboard = () => {
   const { user, signOut } = useAuth();
@@ -147,6 +148,7 @@ const TherapistDashboard = () => {
         <meta name="description" content="Therapist dashboard" />
       </Helmet>
       <DashboardLayout navItems={navItems} role="therapist" userName={therapistProfile.name}>
+        <SoapDeadlineNotice therapist={therapistProfile} />
         <React.Suspense fallback={<PageSkeleton />}>
         <Routes>
           {/* Grid Layout for Home */}
