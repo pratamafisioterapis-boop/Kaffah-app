@@ -325,7 +325,7 @@ const ServiceRateManager = () => {
                         <Wallet className="w-4 h-4 text-emerald-600" />
                       </div>
                       <div className="min-w-0 flex-1 sm:flex-initial">
-                        <span className="font-medium text-slate-700 truncate block">{label || '(Tanpa nama)'}</span>
+                        <span className="font-medium text-slate-700 break-words sm:truncate block">{label || '(Tanpa nama)'}</span>
                         <p className="text-xs text-slate-500 mt-0.5">
                           {rateRow
                             ? `${formatCurrency(rateRow.rate)} / sesi`

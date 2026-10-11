@@ -273,7 +273,7 @@ const RemunerationManager = () => {
                       <div className="relative flex items-center gap-4">
                         <CircularScore value={score} active={active} size={84} />
                         <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-white text-sm truncate">{t.name}</p>
+                          <p className="font-semibold text-white text-sm break-words sm:truncate">{t.name}</p>
                           <p className="text-xs text-slate-500">{t.specialization || 'Fisioterapis'}</p>
                           {report && (
                             <p className="text-xs text-slate-500 mt-1">
@@ -313,7 +313,7 @@ const RemunerationManager = () => {
                               <Icon className="w-4 h-4" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="text-xs font-semibold text-slate-800 truncate">{row.name}</p>
+                              <p className="text-xs font-semibold text-slate-800 break-words sm:truncate">{row.name}</p>
                               <p className="text-xs text-slate-500">Bobot {row.weight_percent}%</p>
                               {(row.proofUrls || (row.proofUrl ? [row.proofUrl] : [])).length > 0 && (
                                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
@@ -402,7 +402,7 @@ const RemunerationManager = () => {
                       <Icon className="w-5 h-5 text-white" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-slate-900 text-sm truncate">{item.name}</p>
+                      <p className="font-semibold text-slate-900 text-sm break-words sm:truncate">{item.name}</p>
                       <p className="text-xs text-slate-500">{METRIC_LABELS[item.metric_key] || item.metric_key}</p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -422,7 +422,7 @@ const RemunerationManager = () => {
                     </div>
                     <div className="bg-slate-50 rounded-app px-3 py-2 text-center">
                       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Satuan</p>
-                      <p className="text-sm font-bold text-slate-800 mt-0.5 truncate">{item.unit}</p>
+                      <p className="text-sm font-bold text-slate-800 mt-0.5 break-words sm:truncate">{item.unit}</p>
                     </div>
                   </div>
                   <p className="text-xs text-slate-500 mt-2 text-center">{TARGET_MODE_LABELS[item.target_mode]}</p>

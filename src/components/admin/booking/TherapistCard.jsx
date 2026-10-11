@@ -352,7 +352,7 @@ const TherapistCard = ({
                        <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 min-w-0">
                           {isCancelled ? (
-                            <p className="text-sm font-semibold text-slate-800 truncate">
+                            <p className="text-sm font-semibold text-slate-800 break-words sm:truncate">
                               {app.patient?.full_name || app.guest_name || 'Tanpa Nama'}
                             </p>
                           ) : (
@@ -362,7 +362,7 @@ const TherapistCard = ({
     e.stopPropagation();
     onPatientClick?.(app.patient?.id || app.patient_id, app.guest_name, app.guest_phone);
   }}
-  className="text-sm font-semibold text-slate-800 truncate hover:text-app-accent transition-colors text-left"
+  className="text-sm font-semibold text-slate-800 break-words sm:truncate hover:text-app-accent transition-colors text-left"
 >
                               {app.patient?.full_name || app.guest_name || 'Tanpa Nama'}
                             </button>
@@ -373,7 +373,7 @@ const TherapistCard = ({
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-slate-500 truncate">
+                        <p className="text-xs text-slate-500 break-words sm:truncate">
                             {app.duration_minutes} min • {app.status}
                           </p>
                        </div>

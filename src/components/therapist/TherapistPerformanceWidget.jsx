@@ -153,7 +153,7 @@ const TherapistPerformanceWidget = ({ therapist, userId }) => {
           <div className="w-7 h-7 rounded-app-sm bg-app-soft flex items-center justify-center shrink-0">
             <TrendingUp className="w-3.5 h-3.5 text-app-accent-bright" />
           </div>
-          <h3 className="text-sm font-bold text-slate-700 truncate">Performa Bulan Ini</h3>
+          <h3 className="text-sm font-bold text-slate-700 break-words sm:truncate">Performa Bulan Ini</h3>
         </div>
         <span className="text-xs text-slate-500 shrink-0 whitespace-nowrap">
           {format(startPeriod, 'dd MMM', { locale: idLocale })} – {format(endPeriod, 'dd MMM yyyy', { locale: idLocale })}

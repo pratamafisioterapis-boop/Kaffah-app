@@ -758,8 +758,8 @@ const TherapistSettingsDrawer = ({ open, onClose, therapist, onTherapistUpdated,
               }
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-base font-bold text-slate-900 leading-none truncate">Pengaturan</p>
-              <p className="text-xs text-slate-500 mt-0.5 truncate">{therapist?.name}</p>
+              <p className="text-base font-bold text-slate-900 leading-none break-words sm:truncate">Pengaturan</p>
+              <p className="text-xs text-slate-500 mt-0.5 break-words sm:truncate">{therapist?.name}</p>
             </div>
           </div>
 

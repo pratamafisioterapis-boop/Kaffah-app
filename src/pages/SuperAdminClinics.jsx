@@ -556,11 +556,11 @@ const SuperAdminClinics = () => {
             <div key={clinic.id} className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col gap-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-semibold text-slate-800 truncate">{clinic.name}</p>
-                  <p className="text-sm text-slate-500 truncate">{clinic.address || '-'}</p>
+                  <p className="font-semibold text-slate-800 break-words sm:truncate">{clinic.name}</p>
+                  <p className="text-sm text-slate-500 break-words sm:truncate">{clinic.address || '-'}</p>
                   <p className="text-sm text-slate-500">{clinic.phone || '-'}</p>
                   {(clinic.subdomain || clinic.custom_domain) && (
-                    <p className="text-xs text-slate-400 truncate mt-0.5">
+                    <p className="text-xs text-slate-400 break-words sm:truncate mt-0.5">
                       {clinic.subdomain && <span>{clinic.subdomain}.clinara.id</span>}
                       {clinic.subdomain && clinic.custom_domain && <span> &bull; </span>}
                       {clinic.custom_domain && (
@@ -1078,8 +1078,8 @@ const SuperAdminClinics = () => {
                           onChange={() => setSelectedExistingTherapistId(t.id)}
                         />
                         <span className="flex-1 min-w-0">
-                          <span className="block font-medium text-slate-700 truncate">{t.name || '(tanpa nama)'}</span>
-                          <span className="block text-xs text-slate-400 truncate">
+                          <span className="block font-medium text-slate-700 break-words sm:truncate">{t.name || '(tanpa nama)'}</span>
+                          <span className="block text-xs text-slate-400 break-words sm:truncate">
                             {t.email || '-'} {t.user_id ? '· punya login terpisah' : '· belum ada login'} {t.is_active === false ? '· nonaktif' : ''}
                           </span>
                         </span>
@@ -1128,8 +1128,8 @@ const SuperAdminClinics = () => {
                       onChange={() => setSelectedTherapistLoginId(u.id)}
                     />
                     <span className="flex-1 min-w-0">
-                      <span className="block font-medium text-slate-700 truncate">{u.full_name || '(tanpa nama)'}</span>
-                      <span className="block text-xs text-slate-400 truncate">{u.email} {u.is_active === false ? '· nonaktif' : ''}</span>
+                      <span className="block font-medium text-slate-700 break-words sm:truncate">{u.full_name || '(tanpa nama)'}</span>
+                      <span className="block text-xs text-slate-400 break-words sm:truncate">{u.email} {u.is_active === false ? '· nonaktif' : ''}</span>
                     </span>
                   </label>
                 ))}

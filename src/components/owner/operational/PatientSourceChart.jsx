@@ -192,7 +192,7 @@ const PatientSourceChart = ({ dateRange }) => {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
-                      <span className="text-xs font-semibold text-slate-700 truncate">{s.key}</span>
+                      <span className="text-xs font-semibold text-slate-700 break-words sm:truncate">{s.key}</span>
                       {isClickable && (
                         <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
                       )}
@@ -237,7 +237,7 @@ const PatientSourceChart = ({ dateRange }) => {
               {(patientsByLabel[selectedLabel] || []).map((p) => (
                 <div key={p.id} className="px-5 py-3 flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-800 truncate flex items-center gap-1.5">
+                    <p className="text-sm font-semibold text-slate-800 break-words sm:truncate flex items-center gap-1.5">
                       {p.full_name}
                       {p.isGuest && (
                         <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 shrink-0">

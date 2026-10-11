@@ -720,10 +720,10 @@ const headerColorMap = {
                 </div>
                 <div className="pl-[76px] min-h-[64px] flex flex-col justify-center">
                   <div className="flex items-center gap-1.5">
-                    <h3 className="font-bold text-base text-slate-900 truncate">{therapist.name}</h3>
+                    <h3 className="font-bold text-base text-slate-900 break-words sm:truncate">{therapist.name}</h3>
                     {therapist.user_id && <Lock className="w-3 h-3 text-green-500 shrink-0" title="Akun Login Terhubung" />}
                   </div>
-                  <p className="text-slate-500 text-xs font-medium truncate">{therapist.specialization}</p>
+                  <p className="text-slate-500 text-xs font-medium break-words sm:truncate">{therapist.specialization}</p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-1.5 mt-3">
@@ -795,7 +795,7 @@ const headerColorMap = {
 
                 <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-3 min-w-0">
                   <Mail className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                  <span className="truncate">{therapist.email || '-'}</span>
+                  <span className="break-words sm:truncate">{therapist.email || '-'}</span>
                   <span className="text-slate-300 shrink-0">•</span>
                   <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                   <span className="shrink-0">{therapist.phone || '-'}</span>
@@ -803,7 +803,7 @@ const headerColorMap = {
 
                 <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1.5 min-w-0">
                   <CalendarDays className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                  <span className="truncate">
+                  <span className="break-words sm:truncate">
                     Bergabung {(() => {
                       const joinDate = therapist.join_date || therapist.created_at;
                       return joinDate ? format(new Date(joinDate), 'dd MMM yyyy') : '-';
@@ -820,7 +820,7 @@ const headerColorMap = {
                         return (
                           <span
                             key={badge.id}
-                            className="text-xs px-2 py-0.5 rounded-full font-semibold border border-black/5 truncate max-w-[110px]"
+                            className="text-xs px-2 py-0.5 rounded-full font-semibold border border-black/5 break-words sm:truncate max-w-[110px]"
                             style={{ backgroundColor: badge.color }}
                           >
                             {badge.label}
@@ -881,7 +881,7 @@ const headerColorMap = {
                   <div className="flex items-center justify-between gap-3 py-1">
                     <div className="flex items-center gap-2 min-w-0">
                       <UserPlus className="w-3.5 h-3.5 text-app-accent-bright shrink-0" />
-                      <span className="text-sm font-medium text-slate-700 truncate">Akun ini untuk saya sendiri (Owner)</span>
+                      <span className="text-sm font-medium text-slate-700 break-words sm:truncate">Akun ini untuk saya sendiri (Owner)</span>
                     </div>
                     <Switch
                       checked={isOwnerAsTherapist}
@@ -1105,7 +1105,7 @@ const headerColorMap = {
               <div className="flex items-center justify-between gap-3 py-1">
                 <div className="flex items-center gap-2 min-w-0">
                   <Award className="w-3.5 h-3.5 text-violet-500 shrink-0" />
-                  <span className="text-sm font-medium text-slate-700 truncate">Ikutkan dalam program remunerasi</span>
+                  <span className="text-sm font-medium text-slate-700 break-words sm:truncate">Ikutkan dalam program remunerasi</span>
                 </div>
                 <Switch
                   checked={formData.remuneration_enabled}
@@ -1124,7 +1124,7 @@ const headerColorMap = {
               <div className="flex items-center justify-between gap-3 py-1">
                 <div className="flex items-center gap-2 min-w-0">
                   <Monitor className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-                  <span className="text-sm font-medium text-slate-700 truncate">Tampilkan di Landing Page</span>
+                  <span className="text-sm font-medium text-slate-700 break-words sm:truncate">Tampilkan di Landing Page</span>
                 </div>
                 <Switch
                   checked={formData.show_on_landing}
@@ -1134,7 +1134,7 @@ const headerColorMap = {
               <div className="flex items-center justify-between gap-3 py-1 border-t border-slate-100 pt-2.5">
                 <div className="flex items-center gap-2 min-w-0">
                   <Smartphone className="w-3.5 h-3.5 text-violet-500 shrink-0" />
-                  <span className="text-sm font-medium text-slate-700 truncate">Tampilkan di Booking Online</span>
+                  <span className="text-sm font-medium text-slate-700 break-words sm:truncate">Tampilkan di Booking Online</span>
                 </div>
                 <Switch
                   checked={formData.show_on_booking}

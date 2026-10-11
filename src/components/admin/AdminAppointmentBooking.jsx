@@ -520,7 +520,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
       >
         <CalendarIcon className="mr-1 h-3.5 w-3.5 shrink-0 text-slate-500 hidden sm:block" />
 
-        <span className="text-[10px] sm:text-sm font-semibold tracking-tight truncate text-slate-700">
+        <span className="text-[10px] sm:text-sm font-semibold tracking-tight break-words sm:truncate text-slate-700">
   {formattedDateFull}
 </span>
       </Button>

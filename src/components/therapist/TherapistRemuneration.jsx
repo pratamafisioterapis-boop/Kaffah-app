@@ -88,8 +88,8 @@ const ManualMetricUploader = ({ row, draft, onChange, onSave, saving }) => {
         <ul className="space-y-1">
           {draft.files.map((f, i) => (
             <li key={`${f.name}-${i}`} className="flex items-center justify-between gap-1.5 text-xs text-app-accent bg-app-soft/60 rounded-app-sm px-2 py-1">
-              <span className="flex items-center gap-1 min-w-0 truncate">
-                <ImageIcon className="w-3 h-3 shrink-0" /> <span className="truncate">{f.name}</span>
+              <span className="flex items-center gap-1 min-w-0 break-words sm:truncate">
+                <ImageIcon className="w-3 h-3 shrink-0" /> <span className="break-words sm:truncate">{f.name}</span>
               </span>
               <button type="button" onClick={() => removeFile(i)} className="text-app-accent-bright hover:text-app-accent-hover shrink-0">
                 <X className="w-3 h-3" />
@@ -318,8 +318,8 @@ const TherapistRemuneration = ({ therapist }) => {
 
               <div className="flex items-start justify-between pt-1 gap-2">
                 <div className="min-w-0">
-                  <p className="font-semibold text-slate-900 text-sm truncate">{row.name}</p>
-                  <p className="text-xs text-slate-500 truncate">Bobot {row.weight_percent}% • Target {row.targetValue}{row.metric_key === 'target_pasien' ? '' : (row.unit === '%' ? '%' : ` ${row.unit}`)}</p>
+                  <p className="font-semibold text-slate-900 text-sm break-words sm:truncate">{row.name}</p>
+                  <p className="text-xs text-slate-500 break-words sm:truncate">Bobot {row.weight_percent}% • Target {row.targetValue}{row.metric_key === 'target_pasien' ? '' : (row.unit === '%' ? '%' : ` ${row.unit}`)}</p>
                 </div>
                 <span className={cn(
                   "text-xs font-bold px-2 py-1 rounded-app-sm shrink-0",

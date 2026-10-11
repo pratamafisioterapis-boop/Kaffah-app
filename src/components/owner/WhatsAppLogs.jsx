@@ -76,9 +76,9 @@ const WhatsAppLogs = () => {
                             <span className="text-xs text-slate-500 whitespace-nowrap">{format(new Date(log.created_at), 'dd/MM/yyyy HH:mm')}</span>
                             {getStatusBadge(log.status)}
                         </div>
-                        <p className="font-medium text-slate-800 truncate">{log.patient?.full_name || 'Unknown'}</p>
+                        <p className="font-medium text-slate-800 break-words sm:truncate">{log.patient?.full_name || 'Unknown'}</p>
                         <div className="flex items-center justify-between text-xs text-slate-500 gap-2">
-                            <span className="truncate">{log.phone_number}</span>
+                            <span className="break-words sm:truncate">{log.phone_number}</span>
                             <span className="uppercase font-medium shrink-0">{log.category.replace('_', ' ')}</span>
                         </div>
                         {log.status === 'failed' && (

@@ -93,7 +93,7 @@ const TherapistSharedMedia = ({ therapist }) => {
                 </div>
               </div>
               <div className="p-4 flex flex-col flex-grow">
-                <h4 className="font-medium text-slate-900 text-sm truncate mb-2" title={asset.name}>{asset.name}</h4>
+                <h4 className="font-medium text-slate-900 text-sm break-words sm:truncate mb-2" title={asset.name}>{asset.name}</h4>
                 <div className="flex items-center text-xs text-slate-500 gap-2 mb-3">
                   <Calendar className="w-3.5 h-3.5 text-slate-500" />
                   <span>{asset.created_at ? format(new Date(asset.created_at), 'dd MMM yyyy', { locale: idLocale }) : '-'}</span>

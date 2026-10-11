@@ -800,7 +800,7 @@ const OwnerBankAccountManager = () => {
                         <div className="min-w-0">
                           <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Holder</p>
                           {acc.holder_name ? (
-                            <p className="font-medium text-sm text-slate-700 truncate max-w-[120px]" title={acc.holder_name}>{acc.holder_name}</p>
+                            <p className="font-medium text-sm text-slate-700 break-words sm:truncate max-w-[120px]" title={acc.holder_name}>{acc.holder_name}</p>
                           ) : (
                             <p className="text-xs text-slate-500 italic">Belum diisi</p>
                           )}

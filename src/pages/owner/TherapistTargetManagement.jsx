@@ -279,7 +279,7 @@ const TherapistTargetManagement = () => {
                                             <TableCell className="text-center">
                                                 {getStatusBadge(progress.status)}
                                             </TableCell>
-                                            <TableCell className="text-xs text-slate-500 max-w-[150px] truncate" title={Array.isArray(item.excluded_patient_types) ? item.excluded_patient_types.join(', ') : ''}>
+                                            <TableCell className="text-xs text-slate-500 max-w-[150px] break-words sm:truncate" title={Array.isArray(item.excluded_patient_types) ? item.excluded_patient_types.join(', ') : ''}>
                                                 {Array.isArray(item.excluded_patient_types) && item.excluded_patient_types.length > 0 
                                                     ? item.excluded_patient_types.join(', ') 
                                                     : <span className="italic text-slate-500">- None -</span>}

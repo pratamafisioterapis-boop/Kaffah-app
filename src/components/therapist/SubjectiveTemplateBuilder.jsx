@@ -489,7 +489,7 @@ const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, onApp
           </span>
           <span className="min-w-0">
             <span className="block text-sm font-semibold text-slate-800">Isi {noun} Cepat</span>
-            <span className="block truncate text-xs text-slate-500">
+            <span className="block break-words sm:truncate text-xs text-slate-500">
               {open ? 'Klik pilihan & isi titik-titik, bagian kosong tidak ikut tampil' : `Template ${active.label}`}
             </span>
           </span>

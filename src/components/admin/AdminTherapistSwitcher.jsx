@@ -125,8 +125,8 @@ const AdminTherapistSwitcher = ({ clinicId }) => {
                   >
                     <span className="w-8 h-8 rounded-full bg-app-soft flex items-center justify-center text-app-accent flex-shrink-0"><Stethoscope className="w-4 h-4" /></span>
                     <span className="min-w-0">
-                      <span className="block text-sm font-medium text-app-ink truncate">{t.name}</span>
-                      {t.email && <span className="block text-xs text-app-muted truncate">{t.email}</span>}
+                      <span className="block text-sm font-medium text-app-ink break-words sm:truncate">{t.name}</span>
+                      {t.email && <span className="block text-xs text-app-muted break-words sm:truncate">{t.email}</span>}
                     </span>
                   </button>
                 ))}

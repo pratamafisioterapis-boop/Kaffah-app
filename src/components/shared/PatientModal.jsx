@@ -674,7 +674,7 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                                     className="w-full justify-between font-normal border-slate-300"
                                 >
                                     {selectedReferrer ? (
-                                        <span className="truncate">
+                                        <span className="break-words sm:truncate">
                                             {selectedReferrer.full_name}
                                             {selectedReferrer.medical_record_number ? ` · ${selectedReferrer.medical_record_number}` : ''}
                                         </span>

@@ -420,10 +420,10 @@ const TherapistTargetManager = () => {
                         {getInitials(therapistName)}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-semibold text-slate-900 truncate" title={therapistName}>{therapistName}</p>
+                        <p className="font-semibold text-slate-900 break-words sm:truncate" title={therapistName}>{therapistName}</p>
                         <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5 min-w-0">
                           <CalendarDays className="w-3 h-3 shrink-0" />
-                          <span className="truncate">
+                          <span className="break-words sm:truncate">
                             {item.start_date && item.end_date ? `${formatDate(item.start_date)} s/d ${formatDate(item.end_date)}` : '-'}
                           </span>
                         </p>
@@ -442,7 +442,7 @@ const TherapistTargetManager = () => {
                   <div className="flex items-end justify-between mb-2 gap-2">
                     <div className="min-w-0">
                       <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Capaian</p>
-                      <p className="text-2xl font-bold text-slate-900 truncate">
+                      <p className="text-2xl font-bold text-slate-900 break-words sm:truncate">
                         {item.actual_visits || 0}
                         <span className="text-sm font-medium text-slate-500"> / {item.target_visits || 0}</span>
                       </p>
@@ -526,7 +526,7 @@ const TherapistTargetManager = () => {
                         }`}>
                           {getInitials(t.name)}
                         </div>
-                        <span className="text-xs font-medium text-slate-700 truncate w-full">{t.name}</span>
+                        <span className="text-xs font-medium text-slate-700 break-words sm:truncate w-full">{t.name}</span>
                       </button>
                     );
                   })}

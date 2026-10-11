@@ -117,7 +117,7 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
                   {/* Color dot */}
                   <div className={`w-2 h-2 rounded-full shrink-0 ${color.bar}`} />
                   {/* Label */}
-                  <span className="text-xs font-medium text-slate-600 w-24 truncate capitalize">
+                  <span className="text-xs font-medium text-slate-600 w-24 break-words sm:truncate capitalize">
                     {type.toLowerCase()}
                   </span>
                   {/* Bar */}
@@ -176,7 +176,7 @@ const TherapistPatientTypeDistribution = ({ therapist }) => {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-bold text-slate-700 truncate">
+                        <p className="text-sm font-bold text-slate-700 break-words sm:truncate">
                           {item.patients?.full_name || 'Pasien tidak diketahui'}
                         </p>
                         <p className="text-xs text-slate-500 mt-0.5">

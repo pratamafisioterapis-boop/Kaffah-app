@@ -241,7 +241,7 @@ const ScheduleTemplateModal = ({ open, onOpenChange, date, therapists, schedules
                     {isActive && <Check className="w-2.5 h-2.5 text-slate-900" strokeWidth={3} />}
                   </span>
                   <span className={`w-2 h-2 rounded-full shrink-0 ${badgeDotClass[color]}`} />
-                  <span className="truncate">{t.name}</span>
+                  <span className="break-words sm:truncate">{t.name}</span>
                 </button>
               );
             })}

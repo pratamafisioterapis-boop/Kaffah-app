@@ -174,7 +174,7 @@ const ExpenseCategoryWidget = ({ dateRange }) => {
                         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-sm font-semibold text-app-ink truncate">{cat.name}</span>
+                            <span className="text-sm font-semibold text-app-ink break-words sm:truncate">{cat.name}</span>
                             <span className="text-sm font-black text-app-ink tabular-nums shrink-0">{formatShort(cat.value)}</span>
                           </div>
                           <div className="mt-1.5 h-1.5 w-full bg-slate-200/70 rounded-full overflow-hidden">
@@ -204,7 +204,7 @@ const ExpenseCategoryWidget = ({ dateRange }) => {
                               {cat.subcategories.map((sub) => (
                                 <div key={sub.name} className="flex items-center gap-2">
                                   <Receipt className="w-3 h-3 text-slate-500 shrink-0" />
-                                  <span className="text-xs text-slate-500 truncate flex-1">{sub.name}</span>
+                                  <span className="text-xs text-slate-500 break-words sm:truncate flex-1">{sub.name}</span>
                                   <span className="text-xs font-semibold text-app-ink tabular-nums shrink-0">{formatCurrency(sub.amount)}</span>
                                   <span className="text-xs text-slate-500 w-8 text-right shrink-0">{sub.pct}%</span>
                                 </div>

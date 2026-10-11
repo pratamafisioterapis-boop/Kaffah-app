@@ -228,8 +228,8 @@ const AttendanceUploadModal = ({ isOpen, onClose, onSuccess, shiftSettingsByDept
                     <div className="space-y-2">
                       {unmatchedEmployeeNames.map(({ employee_name, department }) => (
                         <div key={employee_name} className="flex items-center gap-2 bg-white border border-slate-200 rounded-app-sm p-2">
-                          <span className="font-medium text-slate-700 w-28 truncate">{employee_name}</span>
-                          <span className="text-slate-500 w-24 truncate">{department || '-'}</span>
+                          <span className="font-medium text-slate-700 w-28 break-words sm:truncate">{employee_name}</span>
+                          <span className="text-slate-500 w-24 break-words sm:truncate">{department || '-'}</span>
                           <Select
                             value={linkingPick[employee_name] || ''}
                             onValueChange={(v) => setLinkingPick((prev) => ({ ...prev, [employee_name]: v }))}

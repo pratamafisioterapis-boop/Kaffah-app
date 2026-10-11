@@ -193,7 +193,7 @@ const MediaAssetGallery = () => {
                 </div>
 
                 <div className="p-4 flex flex-col flex-grow">
-                  <h4 className="font-medium text-slate-900 text-sm truncate mb-3" title={asset.name}>
+                  <h4 className="font-medium text-slate-900 text-sm break-words sm:truncate mb-3" title={asset.name}>
                     {asset.name}
                   </h4>
 
@@ -215,7 +215,7 @@ const MediaAssetGallery = () => {
                     className="mt-3 w-full flex items-center gap-1.5 text-xs text-slate-500 hover:text-app-accent transition-colors border-t border-slate-100 pt-3"
                   >
                     <Users className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">
+                    <span className="break-words sm:truncate">
                       {restricted ? `${restricted} terapis diblokir` : 'Semua terapis dapat melihat'}
                     </span>
                     <span className="ml-auto text-app-accent-bright font-medium shrink-0">Atur</span>
@@ -297,9 +297,9 @@ const MediaAssetGallery = () => {
                       <Square className="w-4 h-4 text-slate-300 shrink-0" />
                     )}
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-800 truncate">{p.name}</p>
+                      <p className="text-sm font-medium text-slate-800 break-words sm:truncate">{p.name}</p>
                       {p.specialization && (
-                        <p className="text-xs text-slate-500 truncate">{p.specialization}</p>
+                        <p className="text-xs text-slate-500 break-words sm:truncate">{p.specialization}</p>
                       )}
                     </div>
                   </button>

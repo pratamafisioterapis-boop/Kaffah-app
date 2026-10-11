@@ -177,7 +177,7 @@ const FinanceReportSection = ({ dateRange }) => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-slate-700">{item.category}</td>
-                      <td className="px-6 py-4 text-slate-500 max-w-[300px] truncate" title={item.description}>{item.description || '-'}</td>
+                      <td className="px-6 py-4 text-slate-500 max-w-[300px] break-words sm:truncate" title={item.description}>{item.description || '-'}</td>
                       <td className={cn(
                         "px-6 py-4 text-right font-bold tabular-nums",
                         item.type === 'income' ? "text-emerald-600" : "text-rose-600"

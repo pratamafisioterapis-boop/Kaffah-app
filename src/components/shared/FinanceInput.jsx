@@ -285,10 +285,10 @@ const FinanceInput = ({ role }) => {
                       <span className="font-medium text-red-600 shrink-0 whitespace-nowrap">Rp {parseFloat(ex.amount).toLocaleString('id-ID')}</span>
                     </div>
                     <div className="min-w-0">
-                      <p className="font-medium truncate">{ex.main_category}</p>
-                      <p className="text-xs text-slate-500 truncate">{ex.sub_category}</p>
+                      <p className="font-medium break-words sm:truncate">{ex.main_category}</p>
+                      <p className="text-xs text-slate-500 break-words sm:truncate">{ex.sub_category}</p>
                     </div>
-                    {ex.description && <p className="text-sm text-slate-600 truncate">{ex.description}</p>}
+                    {ex.description && <p className="text-sm text-slate-600 break-words sm:truncate">{ex.description}</p>}
                     <p className="text-xs text-slate-500">{ex.bank_account?.bank_name || 'Cash'}</p>
                   </div>
                 ))
@@ -317,7 +317,7 @@ const FinanceInput = ({ role }) => {
                           <div className="font-medium">{ex.main_category}</div>
                           <div className="text-xs text-slate-500">{ex.sub_category}</div>
                         </TableCell>
-                        <TableCell className="max-w-[200px] truncate">{ex.description || '-'}</TableCell>
+                        <TableCell className="max-w-[200px] break-words sm:truncate">{ex.description || '-'}</TableCell>
                         <TableCell>{ex.bank_account?.bank_name || 'Cash'}</TableCell>
                         <TableCell className="text-right font-medium text-red-600">
                           Rp {parseFloat(ex.amount).toLocaleString('id-ID')}
@@ -349,8 +349,8 @@ const FinanceInput = ({ role }) => {
                       <span className="text-xs text-slate-500 whitespace-nowrap">{format(new Date(inc.transaction_date), 'dd/MM/yyyy')}</span>
                       <span className="font-medium text-green-600 shrink-0 whitespace-nowrap">Rp {parseFloat(inc.amount).toLocaleString('id-ID')}</span>
                     </div>
-                    <p className="font-medium truncate">{inc.source}</p>
-                    {inc.description && <p className="text-sm text-slate-600 truncate">{inc.description}</p>}
+                    <p className="font-medium break-words sm:truncate">{inc.source}</p>
+                    {inc.description && <p className="text-sm text-slate-600 break-words sm:truncate">{inc.description}</p>}
                     <p className="text-xs text-slate-500">{inc.bank_account?.bank_name || 'Cash'}</p>
                   </div>
                 ))
@@ -376,7 +376,7 @@ const FinanceInput = ({ role }) => {
                       <TableRow key={inc.id}>
                         <TableCell>{format(new Date(inc.transaction_date), 'dd/MM/yyyy')}</TableCell>
                         <TableCell className="font-medium">{inc.source}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">{inc.description || '-'}</TableCell>
+                        <TableCell className="max-w-[200px] break-words sm:truncate">{inc.description || '-'}</TableCell>
                         <TableCell>{inc.bank_account?.bank_name || 'Cash'}</TableCell>
                         <TableCell className="text-right font-medium text-green-600">
                           Rp {parseFloat(inc.amount).toLocaleString('id-ID')}
@@ -447,7 +447,7 @@ const FinanceInput = ({ role }) => {
                     <div key={rec.id} className="bg-white rounded-app border border-slate-200 p-4 space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="font-medium truncate">{rec.patient?.full_name}</p>
+                          <p className="font-medium break-words sm:truncate">{rec.patient?.full_name}</p>
                           <p className="text-xs text-slate-500 font-mono">{rec.patient?.rm_number}</p>
                         </div>
                         <span className={`shrink-0 px-2 py-1 rounded-full text-xs font-bold whitespace-nowrap ${

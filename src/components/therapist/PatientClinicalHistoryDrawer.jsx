@@ -123,7 +123,7 @@ const PatientClinicalHistoryDrawer = ({ isOpen, onClose, patient, currentTherapi
               {patient.name?.charAt(0).toUpperCase() || '?'}
             </div>
             <div className="min-w-0">
-              <h2 className="font-bold text-slate-900 text-base leading-tight truncate">{patient.name}</h2>
+              <h2 className="font-bold text-slate-900 text-base leading-tight break-words sm:truncate">{patient.name}</h2>
               <p className="text-slate-500 text-xs">{patient.rm}</p>
             </div>
           </div>

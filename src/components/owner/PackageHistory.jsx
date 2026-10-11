@@ -120,9 +120,9 @@ const PackageHistory = () => {
             <div key={pkg.id} className="bg-white rounded-app border border-slate-200 p-4 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-medium truncate">{pkg.patients?.full_name || 'Unknown'}</p>
+                  <p className="font-medium break-words sm:truncate">{pkg.patients?.full_name || 'Unknown'}</p>
                   <p className="text-xs text-muted-foreground">{pkg.patients?.medical_record_number}</p>
-                  <p className="text-sm text-slate-600 truncate mt-0.5">{pkg.package_name}</p>
+                  <p className="text-sm text-slate-600 break-words sm:truncate mt-0.5">{pkg.package_name}</p>
                 </div>
                 {getStatusBadge(pkg.status)}
               </div>

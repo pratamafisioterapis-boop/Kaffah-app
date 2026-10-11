@@ -483,8 +483,8 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
                 <div key={v.id} className="flex items-center gap-2 rounded-app border border-slate-200 px-3 py-2">
                   <Meta.icon className="h-4 w-4 shrink-0 text-app-accent" />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium text-slate-800">{v.label}</div>
-                    <div className="truncate text-xs text-slate-500">
+                    <div className="break-words sm:truncate text-sm font-medium text-slate-800">{v.label}</div>
+                    <div className="break-words sm:truncate text-xs text-slate-500">
                       <code>{`{{${v.key}}}`}</code>{v.kind === 'choice' && ` · ${(v.options || []).join(', ')}`}
                     </div>
                   </div>
@@ -550,7 +550,7 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
                   d.id === selectedId && 'bg-app-soft font-medium text-app-accent-hover'
                 )}
               >
-                <span className="min-w-0 truncate">
+                <span className="min-w-0 break-words sm:truncate">
                   {d.label}
                   {requestMode && usageById[d.id] > 0 && (
                     <span className="ml-1.5 text-xs font-normal text-slate-500">{usageById[d.id]}×</span>
@@ -578,7 +578,7 @@ const SubjectiveTemplateManager = ({ requestMode = false, requesterName = '', th
                     <ChevronLeft className="h-5 w-5" />
                   </button>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate font-semibold text-slate-900">{selected.label}</div>
+                    <div className="break-words sm:truncate font-semibold text-slate-900">{selected.label}</div>
                     <div className="text-xs text-slate-500">Template {isObjective ? 'Objective' : 'Subjective'}</div>
                   </div>
                 </div>

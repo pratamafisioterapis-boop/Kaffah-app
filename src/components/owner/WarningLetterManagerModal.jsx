@@ -442,10 +442,10 @@ const WarningLetterManagerModal = ({ open, onClose, therapist }) => {
                   className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-app-sm border border-slate-100 hover:border-slate-300 transition-colors"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-700 truncate">
+                    <p className="text-sm font-medium text-slate-700 break-words sm:truncate">
                       {r.letter_number} · {format(new Date(r.letter_date), 'dd MMM yyyy', { locale: idLocale })}
                     </p>
-                    <p className="text-xs text-slate-500 truncate max-w-[320px]">{r.violation_description}</p>
+                    <p className="text-xs text-slate-500 break-words sm:truncate max-w-[320px]">{r.violation_description}</p>
                     <div className="flex items-center gap-1.5 mt-1">
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${LEVEL_BADGE_CLASS[r.level]}`}>
                         {r.level}

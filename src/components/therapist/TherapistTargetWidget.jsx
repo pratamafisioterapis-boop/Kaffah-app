@@ -173,7 +173,7 @@ const TherapistTargetWidget = ({ userId }) => {
                         <div className="min-w-0">
                             <div className="flex items-center gap-2 text-slate-500 text-xs mb-1 min-w-0">
                                 <Calendar className="w-3.5 h-3.5 shrink-0" />
-                                <span className="truncate">
+                                <span className="break-words sm:truncate">
                                     {start_date ? format(parseISO(start_date), 'dd MMM') : '-'} - {end_date ? format(parseISO(end_date), 'dd MMM yyyy', { locale: idLocale }) : '-'}
                                 </span>
                             </div>

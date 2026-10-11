@@ -242,7 +242,7 @@ const AppointmentList = ({ appointments, onUpdate, loading, isAdmin = false }) =
                     </TableCell>
                   )}
                   <TableCell>
-                    <div className="max-w-[150px] truncate text-sm" title={apt.guest_complaint || apt.notes}>
+                    <div className="max-w-[150px] break-words sm:truncate text-sm" title={apt.guest_complaint || apt.notes}>
                       {apt.guest_complaint || apt.notes || '-'}
                     </div>
                   </TableCell>
@@ -252,7 +252,7 @@ const AppointmentList = ({ appointments, onUpdate, loading, isAdmin = false }) =
                         <Phone className="w-3 h-3" /> {apt.guest_phone || apt.patient?.phone}
                       </span>
                       {(apt.guest_address || apt.patient?.address) && (
-                        <span className="flex items-center gap-1 mt-0.5 truncate max-w-[120px]">
+                        <span className="flex items-center gap-1 mt-0.5 break-words sm:truncate max-w-[120px]">
                           <MapPin className="w-3 h-3" /> {apt.guest_address || apt.patient?.address}
                         </span>
                       )}

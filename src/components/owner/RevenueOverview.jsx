@@ -620,7 +620,7 @@ const RevenueOverview = ({ dateRange }) => {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="text-xs font-black text-slate-300 w-5 shrink-0">#{i + 1}</span>
-                      <span className="text-sm font-semibold text-slate-700 truncate">{t.name}</span>
+                      <span className="text-sm font-semibold text-slate-700 break-words sm:truncate">{t.name}</span>
                     </div>
                     <div className="shrink-0">
                       <span className="text-sm font-black text-slate-800">{formatFull(t.revenue)}</span>
@@ -724,7 +724,7 @@ const RevenueOverview = ({ dateRange }) => {
                     </span>
                   </div>
                   <p className={`text-lg font-black leading-none ${style.color}`}>{formatFull(pm.amount)}</p>
-                  <p className="text-xs text-slate-500 font-medium mt-1.5 truncate">{pm.method}</p>
+                  <p className="text-xs text-slate-500 font-medium mt-1.5 break-words sm:truncate">{pm.method}</p>
                 </div>
               );
             })}

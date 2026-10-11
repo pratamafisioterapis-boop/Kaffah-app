@@ -199,7 +199,7 @@ const PatientTable = ({
                                         <TableCell>{patient.formattedAge}</TableCell>
                                         <TableCell>{formatDateIndonesian(patient.birth_date)}</TableCell>
                                         <TableCell>{patient.gender}</TableCell>
-                                        <TableCell className="text-sm text-slate-500 truncate max-w-[150px]">
+                                        <TableCell className="text-sm text-slate-500 break-words sm:truncate max-w-[150px]">
                                             {patient.patient_info_options?.label || '-'}
                                         </TableCell>
                                         <TableCell className="font-mono text-sm text-slate-600">

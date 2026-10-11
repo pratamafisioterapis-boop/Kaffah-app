@@ -435,10 +435,10 @@ const isPWA =
               className="h-10 w-10 rounded-full bg-app-soft border-2 border-white shadow-sm" loading="lazy" decoding="async" />
           </div>
           <div className="overflow-hidden min-w-0">
-            <p className="text-sm font-semibold text-app-ink truncate">
+            <p className="text-sm font-semibold text-app-ink break-words sm:truncate">
               {typeof userName === 'string' ? userName : 'User'}
             </p>
-            <p className="text-xs text-app-muted truncate flex items-center gap-1">
+            <p className="text-xs text-app-muted break-words sm:truncate flex items-center gap-1">
               <span className="w-1.5 h-1.5 bg-[#3FBF80] rounded-full inline-block flex-shrink-0"></span>
               {(role === 'admin' || role === 'owner') && clinicInfo?.name ? clinicInfo.name : (typeof role === 'string' ? <span className="capitalize">{role}</span> : 'User')}
             </p>

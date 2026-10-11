@@ -134,7 +134,7 @@ const ReportTable = ({ title, data, columns, total, type }) => {
                                         onMouseEnter={e => e.currentTarget.style.background = accentLight}
                                         onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? 'white' : accentLight + '80'}>
                                         {columns.map((col, cIdx) => (
-                                            <td key={cIdx} className="px-4 truncate"
+                                            <td key={cIdx} className="px-4 break-words sm:truncate"
                                                 style={{ padding: '9px 16px', color: '#475569', borderBottom: '1px solid #f1f5f9' }}>
                                                 {col.render ? col.render(item) : item[col.accessor]}
                                             </td>
@@ -469,8 +469,8 @@ combinedExpenses.sort((a, b) => {
             <FileText className="w-4 h-4" style={{ color: '#4f46e5' }} />
           </div>
           <div className="min-w-0">
-            <h2 className="text-base font-bold text-slate-800 truncate">Laporan Akuntansi Lengkap</h2>
-            <p className="text-xs text-slate-500 mt-0.5 truncate">
+            <h2 className="text-base font-bold text-slate-800 break-words sm:truncate">Laporan Akuntansi Lengkap</h2>
+            <p className="text-xs text-slate-500 mt-0.5 break-words sm:truncate">
               Periode: {formatDate(dateRange.startDate)} s/d {formatDate(dateRange.endDate)}
             </p>
           </div>
@@ -519,7 +519,7 @@ combinedExpenses.sort((a, b) => {
               <Icon className="w-5 h-5" style={{ color }} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium truncate" style={{ color }}>{label}</p>
+              <p className="text-xs font-medium break-words sm:truncate" style={{ color }}>{label}</p>
               <p className="text-base sm:text-lg font-bold leading-tight break-words" style={{ color }}>
                 Rp {new Intl.NumberFormat('id-ID').format(value)}
               </p>

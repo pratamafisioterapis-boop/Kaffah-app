@@ -28,7 +28,7 @@ const UserChip = ({ label, onLogout }) => (
       <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-[11px] font-bold text-white shrink-0">
         {(label || '?').charAt(0).toUpperCase()}
       </div>
-      <p className="text-xs font-semibold text-slate-200 truncate">{label}</p>
+      <p className="text-xs font-semibold text-slate-200 break-words sm:truncate">{label}</p>
     </div>
     <button
       type="button"
@@ -76,8 +76,8 @@ const KonversiDokterLayout = ({ children }) => {
                 <Icon className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <p className="leading-tight truncate">{label}</p>
-                <p className={`text-[10px] font-normal truncate ${isActive ? 'text-white/70' : 'text-slate-500'}`}>{description}</p>
+                <p className="leading-tight break-words sm:truncate">{label}</p>
+                <p className={`text-[10px] font-normal break-words sm:truncate ${isActive ? 'text-white/70' : 'text-slate-500'}`}>{description}</p>
               </div>
             </>
           )}

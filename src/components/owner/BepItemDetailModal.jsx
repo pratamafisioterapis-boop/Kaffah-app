@@ -46,7 +46,7 @@ const BepItemDetailModal = ({ isOpen, onClose, title, icon, iconClassName, perio
               {rows.map(row => (
                 <div key={row.key} className="py-3 flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-100 truncate">{row.label}</p>
+                    <p className="text-sm font-medium text-slate-100 break-words sm:truncate">{row.label}</p>
                     {row.sublabel && <p className="text-xs text-slate-500 mt-0.5">{row.sublabel}</p>}
                     {row.date && <p className="text-xs text-slate-500 mt-0.5">{formatDate(row.date)}</p>}
                   </div>

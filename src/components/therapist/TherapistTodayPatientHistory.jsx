@@ -172,7 +172,7 @@ const TherapistTodayPatientHistory = ({ therapist }) => {
           <div className="w-7 h-7 rounded-app-sm bg-app-soft flex items-center justify-center shrink-0">
             <Stethoscope className="w-3.5 h-3.5 text-app-accent-bright" />
           </div>
-          <h3 className="text-sm font-bold text-slate-700 truncate">Pasien Hari Ini</h3>
+          <h3 className="text-sm font-bold text-slate-700 break-words sm:truncate">Pasien Hari Ini</h3>
         </div>
         <span className="text-xs text-slate-500 shrink-0 whitespace-nowrap">
           {todaysPatients.length} pasien hari ini
@@ -221,7 +221,7 @@ const TherapistTodayPatientHistory = ({ therapist }) => {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <p className="font-semibold text-slate-800 text-sm truncate">{p.name}</p>
+                    <p className="font-semibold text-slate-800 text-sm break-words sm:truncate">{p.name}</p>
                     {p.visits.length > 1 && (
                       <span className="shrink-0 text-xs font-bold bg-app-accent/15 text-app-accent-hover px-1.5 py-0.5 rounded-full">
                         {p.visits.length}x

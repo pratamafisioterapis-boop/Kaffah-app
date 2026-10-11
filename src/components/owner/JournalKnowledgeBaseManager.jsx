@@ -217,7 +217,7 @@ const JournalKnowledgeBaseManager = () => {
                   <div className="flex items-start gap-3 min-w-0">
                     <FileText className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
                     <div className="min-w-0">
-                      <p className="font-medium text-slate-900 truncate">{doc.title}</p>
+                      <p className="font-medium text-slate-900 break-words sm:truncate">{doc.title}</p>
                       <p className="text-xs text-slate-500">
                         {doc.author ? `${doc.author} · ` : ''}{doc.publication_year || ''} · {doc.source_language === 'id' ? 'Indonesia' : 'English'}
                       </p>

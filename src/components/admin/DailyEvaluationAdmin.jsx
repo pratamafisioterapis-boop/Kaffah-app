@@ -133,7 +133,7 @@ setPatientGroups(Array.from(uniquePatientsMap.values()));
                        {group.patient.full_name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-slate-900 truncate pr-2" title={group.patient.full_name}>
+                      <h3 className="font-semibold text-slate-900 break-words sm:truncate pr-2" title={group.patient.full_name}>
                         {group.patient.full_name}
                       </h3>
                       <p className="text-xs text-slate-500 font-mono bg-slate-100 inline-block px-1.5 py-0.5 rounded mt-0.5">
@@ -149,13 +149,13 @@ setPatientGroups(Array.from(uniquePatientsMap.values()));
                 <div className="space-y-2.5 text-sm text-slate-600 mb-5 bg-slate-50 p-3 rounded-app-sm border border-slate-100">
                   <div className="flex items-center gap-2.5">
                     <Calendar className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                    <span className="truncate">
+                    <span className="break-words sm:truncate">
                       Terakhir: <span className="font-medium text-slate-900">{format(new Date(group.lastDate), 'dd MMM yyyy', { locale: id })}</span>
                     </span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <User className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                    <span className="truncate">
+                    <span className="break-words sm:truncate">
                       Oleh: {group.records[0]?.therapist?.full_name || 'Terapis'}
                     </span>
                   </div>

@@ -619,7 +619,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
                       style={{ background: '#ede9fe', color: '#7c3aed' }}>
                       {r.name?.charAt(0)?.toUpperCase()}
                     </div>
-                    <span className="font-semibold flex-1 truncate" style={{ color: '#7c3aed' }}>{r.name}</span>
+                    <span className="font-semibold flex-1 break-words sm:truncate" style={{ color: '#7c3aed' }}>{r.name}</span>
                     <div className="font-bold text-sm shrink-0" style={{ color: '#059669' }}>{fmt(r.total)}</div>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
@@ -686,7 +686,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
                           style={{ background: '#ede9fe', color: '#7c3aed' }}>
                           {r.name?.charAt(0)?.toUpperCase()}
                         </div>
-                        <span className="font-semibold truncate max-w-[130px]" style={{ color: '#7c3aed' }}>{r.name}</span>
+                        <span className="font-semibold break-words sm:truncate max-w-[130px]" style={{ color: '#7c3aed' }}>{r.name}</span>
                       </button>
                     </td>
                     {/* Salary type badge */}

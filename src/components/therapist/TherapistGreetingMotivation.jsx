@@ -82,7 +82,7 @@ const TherapistGreetingMotivation = ({ therapistName }) => {
             </div>
             <div className="min-w-0">
               {clinicName && (
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-300/80 mb-1 truncate">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-300/80 mb-1 break-words sm:truncate">
                   {clinicName}
                 </p>
               )}

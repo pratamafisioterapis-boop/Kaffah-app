@@ -540,7 +540,7 @@ if (isCreate) {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="min-w-0">
-            <h2 className={`font-bold text-slate-900 ${isPWA ? 'text-base' : 'text-xl truncate'}`}>
+            <h2 className={`font-bold text-slate-900 ${isPWA ? 'text-base' : 'text-xl break-words sm:truncate'}`}>
               {isPWA
                 ? (recordId ? 'Edit Catatan' : 'Buat Catatan SOAP')
                 : (recordId ? 'Edit Catatan Medis' : 'Buat Catatan Medis (SOAP)')}

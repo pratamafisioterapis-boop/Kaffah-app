@@ -382,7 +382,7 @@ const paginatedList = sortedList.slice(
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                    <p className="font-bold text-slate-800 text-sm truncate">{item.full_name || 'Tanpa Nama'}</p>
+                    <p className="font-bold text-slate-800 text-sm break-words sm:truncate">{item.full_name || 'Tanpa Nama'}</p>
                     {item.status === 'empty' && (
                       <span className="shrink-0 text-xs font-bold bg-rose-500 text-white px-1.5 py-0.5 rounded-full">
                         {item.missingCount} belum diisi
