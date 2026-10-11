@@ -81,34 +81,32 @@ export const generateDecreePDF = async (decree = {}, clinic = {}) => {
   // Kop surat: logo di kiri, identitas klinik rata tengah, garis ganda biru.
   doc.setFillColor(...NAVY);
   doc.rect(0, 0, PAGE_W, 4, 'F');
-  const logoH = 24;
+  const logoH = 17;
   const logoW = logoH * LOGO_RATIO;
-  const top = 10;
-  const tx = logo ? MX + logoW + 6 : MX;
-  const tw = logo ? CW - logoW - 6 : CW;
+  const top = 9;
+  const tx = logo ? MX + logoW + 5 : MX;
+  const tw = logo ? CW - logoW - 5 : CW;
   const cx = tx + tw / 2;
   if (logo) {
     try { doc.addImage(logo, imgFormat(logo), MX, top, logoW, logoH); } catch (_e) { /* tanpa logo */ }
   }
-  y = top + 8;
+  // Nama + kontak ditengahkan secara vertikal terhadap logo.
+  const contact = [clinic.address, clinic.phone, clinic.email].filter(Boolean).join('  •  ');
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  const contactLines = contact ? doc.splitTextToSize(contact, tw) : [];
+  const blockH = 6 + (contactLines.length ? 1.5 + contactLines.length * 3.6 : 0);
+  y = top + (logoH - blockH) / 2 + 5;
   doc.setFont('times', 'bold');
-  doc.setFontSize(17);
+  doc.setFontSize(16);
   doc.setTextColor(...NAVY);
   doc.text('KAFFAH PHYSIOTHERAPY', cx, y, { align: 'center' });
-  y += 5.5;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
-  doc.setTextColor(...GOLD);
-  doc.text('KLINIK FISIOTERAPI', cx, y, { align: 'center' });
-  y += 5;
-  const contact = [clinic.address, clinic.phone, clinic.email].filter(Boolean).join('  •  ');
-  if (contact) {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(...MUTED);
-    doc.splitTextToSize(contact, tw).forEach((l) => { doc.text(l, cx, y, { align: 'center' }); y += 3.6; });
-  }
-  y = Math.max(y, top + logoH) + 3;
+  y += 6.2;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(...MUTED);
+  contactLines.forEach((l) => { doc.text(l, cx, y, { align: 'center' }); y += 3.6; });
+  y = top + logoH + 3;
   doc.setDrawColor(...NAVY);
   doc.setLineWidth(0.8);
   doc.line(MX, y, PAGE_W - MX, y);
@@ -116,7 +114,7 @@ export const generateDecreePDF = async (decree = {}, clinic = {}) => {
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(0.35);
   doc.line(MX, y, PAGE_W - MX, y);
-  y += 11;
+  y += 10;
 
   // Judul
   doc.setFont('times', 'bold');
