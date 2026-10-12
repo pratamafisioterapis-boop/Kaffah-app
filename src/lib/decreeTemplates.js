@@ -29,7 +29,7 @@ export const soapPolicyDecreeTemplate = (date = new Date()) => {
     decisions: [
       {
         heading: 'KESATU — Masa Percobaan',
-        text: `Pada ${start} sampai dengan ${trialEnd} ditetapkan sebagai masa percobaan. Pada masa ini terapis diberi keringanan untuk mengisi SOAP pasien pada hari yang sama, paling lambat pukul 23.59 WIB. Apabila SOAP belum terisi hingga batas tersebut, Booking Calendar terapis akan dikunci sementara, dan dibuka kembali setelah SOAP yang tertinggal dilengkapi. Penguncian ini bersifat pengingat agar catatan kita selalu rapi, bukan sebagai hukuman.`,
+        text: `Pada ${start} sampai dengan ${trialEnd} ditetapkan sebagai masa percobaan. Pada masa ini terapis diberi keringanan untuk mengisi SOAP pasien pada hari yang sama, paling lambat pukul 23.59 WITA. Apabila SOAP belum terisi hingga batas tersebut, Booking Calendar terapis akan dikunci sementara, dan dibuka kembali setelah SOAP yang tertinggal dilengkapi. Penguncian ini bersifat pengingat agar catatan kita selalu rapi, bukan sebagai hukuman.`,
       },
       {
         heading: 'KEDUA — Ketentuan Mulai Berlaku Penuh',
@@ -37,7 +37,7 @@ export const soapPolicyDecreeTemplate = (date = new Date()) => {
       },
       {
         heading: 'KETIGA — Pasien Paket',
-        text: 'Bagi pasien yang mengambil paket terapi, pada sesi ke-2 sampai dengan sesi terakhir tidak ada pembayaran lagi. Untuk sesi tersebut diberikan tenggang waktu pengisian SOAP pada hari yang sama, paling lambat pukul 23.59 WIB.',
+        text: 'Bagi pasien yang mengambil paket terapi, pada sesi ke-2 sampai dengan sesi terakhir tidak ada pembayaran lagi. Untuk sesi tersebut diberikan tenggang waktu pengisian SOAP pada hari yang sama, paling lambat pukul 23.59 WITA.',
       },
       {
         heading: 'KEEMPAT — Konsekuensi',
