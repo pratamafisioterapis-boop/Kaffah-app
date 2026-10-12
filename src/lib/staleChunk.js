@@ -8,6 +8,9 @@
 //   Safari : "'text/html' is not a valid JavaScript MIME type for module script"
 //            / "Importing a module script failed."
 //   Firefox: "error loading dynamically imported module"
+// Satu lagi varian: modul lama yang sebagian filenya sudah berganti sehingga
+// import-nya menghasilkan undefined, dilaporkan sebagai
+//   "Cannot read properties of undefined (reading 'default')".
 // Satu pengenal bersama supaya semua penangkap error (lazyRetry, ErrorBoundary,
 // AuthErrorBoundary, listener global) mengenali semua varian tersebut.
 const STALE_CHUNK_RE = new RegExp(
@@ -22,6 +25,7 @@ const STALE_CHUNK_RE = new RegExp(
     'not a valid javascript mime type',
     'expected a javascript.*module script',
     "cannot access '.*' before initialization",
+    "cannot read properties of undefined \\(reading 'default'\\)",
   ].join('|'),
   'i'
 );
