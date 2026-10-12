@@ -22,6 +22,9 @@ const STATUS_CLASS = {
   issued: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
 };
 
+const DEFAULT_SIGNER_NAME = 'Adi Pratama, S.Fis., FTR';
+const DEFAULT_SIGNER_POSITION = 'Pimpinan Klinik';
+
 const newForm = (decrees) => {
   const today = new Date();
   return {
@@ -30,6 +33,8 @@ const newForm = (decrees) => {
     decree_date: format(today, 'yyyy-MM-dd'),
     letter_city: 'Balikpapan',
     status: 'draft',
+    signer_name: DEFAULT_SIGNER_NAME,
+    signer_position: DEFAULT_SIGNER_POSITION,
     ...soapPolicyDecreeTemplate(today),
   };
 };
@@ -44,6 +49,8 @@ const fromRecord = (r) => ({
   considerations: Array.isArray(r.considerations) ? r.considerations : [],
   decisions: Array.isArray(r.decisions) ? r.decisions : [],
   closing: r.closing || '',
+  signer_name: r.signer_name || DEFAULT_SIGNER_NAME,
+  signer_position: r.signer_position || DEFAULT_SIGNER_POSITION,
 });
 
 const Field = ({ label, children }) => (
@@ -197,6 +204,11 @@ const OwnerDecreesPage = () => {
             </div>
 
             <Field label="Kalimat penutup"><Textarea rows={4} value={form.closing} onChange={(e) => set({ closing: e.target.value })} /></Field>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field label="Nama penandatangan (beserta gelar)"><Input value={form.signer_name} onChange={(e) => set({ signer_name: e.target.value })} /></Field>
+              <Field label="Jabatan"><Input value={form.signer_position} onChange={(e) => set({ signer_position: e.target.value })} /></Field>
+            </div>
 
             <div className="flex flex-wrap gap-2 pt-1">
               <Button onClick={save} disabled={busy}>{busy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />} Simpan</Button>

@@ -154,8 +154,9 @@ export const generateDecreePDF = async (decree = {}, clinic = {}) => {
     text(decree.closing, { gap: 6, style: 'italic' });
   }
 
-  // Tanda tangan
-  ensure(56);
+  // Tanda tangan: stempel klinik (jika ada) dibubuhkan di sisi kiri garis tanda tangan.
+  const stamp = await loadImage(clinic.stamp_url);
+  ensure(60);
   text(`Ditetapkan di ${decree.letter_city || '-'}`, { align: 'right', gap: 0 });
   text(`pada tanggal ${fmtLong(decree.decree_date)}`, { align: 'right', gap: 5 });
   const sw = 72;
@@ -163,14 +164,17 @@ export const generateDecreePDF = async (decree = {}, clinic = {}) => {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
   doc.setTextColor(...INK);
-  doc.text(clinic.owner_position || 'Pimpinan Klinik', sx + sw / 2, y, { align: 'center' });
+  doc.text(decree.signer_position || clinic.owner_position || 'Pimpinan Klinik', sx + sw / 2, y, { align: 'center' });
   y += 24;
+  if (stamp) {
+    try { doc.addImage(stamp, imgFormat(stamp), sx - 2, y - 24, 24, 24); } catch (_e) { /* tanpa stempel */ }
+  }
   doc.setDrawColor(...INK);
   doc.setLineWidth(0.25);
   doc.line(sx, y, sx + sw, y);
   y += 5;
   doc.setFont('helvetica', 'bold');
-  doc.text(`( ${clinic.owner_full_name || '-'} )`, sx + sw / 2, y, { align: 'center' });
+  doc.text(decree.signer_name || clinic.owner_full_name || '-', sx + sw / 2, y, { align: 'center' });
 
   const pages = doc.internal.getNumberOfPages();
   for (let p = 1; p <= pages; p += 1) {
