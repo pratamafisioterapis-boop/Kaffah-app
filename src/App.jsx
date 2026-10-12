@@ -116,7 +116,7 @@ const LoadingFallback = () => (
 class AuthErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, componentStack: '' };
   }
 
   static getDerivedStateFromError(error) {
@@ -125,6 +125,9 @@ class AuthErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error("Auth Context Error Boundary Caught:", error, errorInfo);
+    // Simpan lokasi komponen/baris kode penyebab supaya tampil di layar error
+    // dan bisa difoto user untuk diagnosis.
+    this.setState({ componentStack: String(errorInfo?.componentStack || '').trim().split('\n').slice(0, 6).join('\n') });
 
     // AuthProvider wraps the whole routed app, so it's the boundary that
     // actually catches stale-chunk errors from lazy-loaded routes/pages
@@ -152,6 +155,11 @@ class AuthErrorBoundary extends React.Component {
             {this.state.error && (
               <p className="mb-6 text-left text-xs font-mono text-red-700 bg-red-50 border border-red-100 rounded-lg p-3 break-words whitespace-pre-wrap">
                 {this.state.error.message || String(this.state.error)}
+              </p>
+            )}
+            {(this.state.componentStack || this.state.error?.stack) && (
+              <p className="mb-6 text-left text-[10px] leading-snug font-mono text-slate-500 bg-slate-50 border border-slate-200 rounded-lg p-3 break-all whitespace-pre-wrap max-h-40 overflow-auto">
+                {[this.state.componentStack, String(this.state.error?.stack || '').split('\n').slice(1, 4).join('\n')].filter(Boolean).join('\n---\n')}
               </p>
             )}
             <div className="space-y-3">
