@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
+import { stripSignatureBackground } from '@/lib/signatureImage';
 
 // Palet mengikuti logo Kaffah (biru langit + biru tua).
 const INK = [26, 30, 41];
@@ -154,8 +155,16 @@ export const generateDecreePDF = async (decree = {}, clinic = {}) => {
     text(decree.closing, { gap: 6, style: 'italic' });
   }
 
-  // Tanda tangan
-  ensure(56);
+  // Tanda tangan: stempel klinik (jika ada) dibubuhkan di sisi kiri garis tanda tangan.
+  const stamp = await loadImage(clinic.stamp_url);
+  // Tanda tangan digital penandatangan (dari data terapis), latar dibersihkan
+  // seperti di invoice supaya tidak ada kotak di belakangnya.
+  let signature = null;
+  if (decree.signature_url) {
+    const cleaned = await stripSignatureBackground(decree.signature_url).catch(() => null);
+    signature = await loadImage(cleaned || decree.signature_url);
+  }
+  ensure(60);
   text(`Ditetapkan di ${decree.letter_city || '-'}`, { align: 'right', gap: 0 });
   text(`pada tanggal ${fmtLong(decree.decree_date)}`, { align: 'right', gap: 5 });
   const sw = 72;
@@ -163,14 +172,25 @@ export const generateDecreePDF = async (decree = {}, clinic = {}) => {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
   doc.setTextColor(...INK);
-  doc.text(clinic.owner_position || 'Pimpinan Klinik', sx + sw / 2, y, { align: 'center' });
+  doc.text(decree.signer_position || clinic.owner_position || 'Pimpinan Klinik', sx + sw / 2, y, { align: 'center' });
   y += 24;
+  if (signature) {
+    try {
+      const props = doc.getImageProperties(signature);
+      const h = Math.min(22, (props.height / props.width) * 48);
+      const w = (props.width / props.height) * h;
+      doc.addImage(signature, imgFormat(signature), sx + (sw - w) / 2, y - h - 0.5, w, h);
+    } catch (_e) { /* tanpa tanda tangan */ }
+  }
+  if (stamp) {
+    try { doc.addImage(stamp, imgFormat(stamp), sx - 9, y - 24, 24, 24); } catch (_e) { /* tanpa stempel */ }
+  }
   doc.setDrawColor(...INK);
   doc.setLineWidth(0.25);
   doc.line(sx, y, sx + sw, y);
   y += 5;
   doc.setFont('helvetica', 'bold');
-  doc.text(`( ${clinic.owner_full_name || '-'} )`, sx + sw / 2, y, { align: 'center' });
+  doc.text(decree.signer_name || clinic.owner_full_name || '-', sx + sw / 2, y, { align: 'center' });
 
   const pages = doc.internal.getNumberOfPages();
   for (let p = 1; p <= pages; p += 1) {

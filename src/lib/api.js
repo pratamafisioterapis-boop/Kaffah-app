@@ -9531,6 +9531,8 @@ export const upsertClinicDecree = async (payload) => {
       considerations: payload.considerations || [],
       decisions: payload.decisions || [],
       closing: payload.closing || null,
+      signer_name: payload.signer_name || null,
+      signer_position: payload.signer_position || null,
       updated_at: new Date().toISOString(),
     };
     const result = payload.id
