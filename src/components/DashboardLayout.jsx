@@ -189,7 +189,7 @@ const isPWA =
     if (!clinicFeaturesLoaded) return [];
     let processed = processNavItems(navItems);
     // Menu khusus satu klinik (clinicOnly = id klinik) disembunyikan di klinik lain.
-    const clinicAllowed = (it) => !it.clinicOnly || it.clinicOnly === clinicInfo?.id;
+    const clinicAllowed = (it) => !it.clinicOnly || it.clinicOnly === userDetails?.clinic_id;
     processed = processed
       .filter(clinicAllowed)
       .map((it) => (it.submenu ? { ...it, submenu: it.submenu.filter(clinicAllowed) } : it));
@@ -207,7 +207,7 @@ const isPWA =
         return isNavItemDisabled(item.label, role, disabledFeatures) ? null : item;
       })
       .filter(Boolean);
-  }, [navItems, role, clinicInfo, clinicFeaturesLoaded]);
+  }, [navItems, role, clinicInfo, clinicFeaturesLoaded, userDetails?.clinic_id]);
 
   const displayedNavItems = useMemo(() => {
     if (role !== 'owner' || !menuSearchQuery.trim()) return finalNavItems;
