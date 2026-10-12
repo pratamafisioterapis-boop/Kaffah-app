@@ -15,6 +15,7 @@ import {
   getClinicDecrees, upsertClinicDecree, setClinicDecreeStatus, deleteClinicDecree, getCurrentClinic,
 } from '@/lib/api';
 import { generateDecreePDF, decreeFileName } from '@/lib/decreeGenerator';
+import { downloadPdfDoc } from '@/lib/pdfDownload';
 import { nextDecreeNumber, soapPolicyDecreeTemplate } from '@/lib/decreeTemplates';
 
 const STATUS_LABEL = { draft: 'Draft', issued: 'Diterbitkan' };
@@ -70,6 +71,7 @@ const OwnerDecreesPage = () => {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewDoc, setPreviewDoc] = useState(null);
   const [physios, setPhysios] = useState([]);
 
   const allowed = userDetails?.clinic_id === KAFFAH_CLINIC_ID;
@@ -115,17 +117,28 @@ const OwnerDecreesPage = () => {
   // (mis. "Adi Pratama, S.Fis., FTR" cocok dengan "Adi Pratama,S.Fis.,Ftr").
   const baseName = (n) => String(n || '').split(',')[0].toLowerCase().replace(/[^a-z]/g, '');
   const signerPhysio = physios.find((p) => baseName(p.name) && baseName(p.name) === baseName(form.signer_name));
-  const makePdf = async () => generateDecreePDF({ ...form, signature_url: signerPhysio?.signature_url || null }, clinic || {});
+  const makePdfFor = async (record) => {
+    const physio = physios.find((p) => baseName(p.name) && baseName(p.name) === baseName(record.signer_name));
+    return generateDecreePDF({ ...record, signature_url: physio?.signature_url || null }, clinic || {});
+  };
+  const makePdf = async () => makePdfFor(form);
 
-  const preview = async () => {
-    const doc = await makePdf();
+  const showPreview = async (record) => {
+    const doc = await makePdfFor(record);
+    setPreviewDoc({ doc, name: decreeFileName(record) });
     setPreviewUrl(URL.createObjectURL(doc.output('blob')));
   };
 
-  const download = async () => {
-    const doc = await makePdf();
-    doc.save(decreeFileName(form));
+  const downloadRecord = async (record) => {
+    try {
+      downloadPdfDoc(await makePdfFor(record), decreeFileName(record));
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Gagal mengunduh PDF', description: e.message });
+    }
   };
+
+  const preview = () => showPreview(form);
+  const download = () => downloadRecord(form);
 
   const toggleIssued = async () => {
     const saved = await save();
@@ -172,6 +185,10 @@ const OwnerDecreesPage = () => {
                 <div className="flex items-center justify-between mt-2">
                   <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_CLASS[d.status]}`}>{STATUS_LABEL[d.status]}</span>
                   <button type="button" onClick={() => remove(d)} className="text-red-500 hover:text-red-700" aria-label="Hapus SK"><Trash2 className="w-4 h-4" /></button>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <Button size="sm" variant="outline" className="flex-1" onClick={() => showPreview(d)}><Eye className="w-3.5 h-3.5 mr-1" /> Lihat</Button>
+                  <Button size="sm" variant="outline" className="flex-1" onClick={() => downloadRecord(d)}><Download className="w-3.5 h-3.5 mr-1" /> Unduh</Button>
                 </div>
               </div>
             ))}
@@ -232,7 +249,17 @@ const OwnerDecreesPage = () => {
           </div>
         </div>
       </div>
-      <PdfPreviewModal open={!!previewUrl} onClose={() => { URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }} url={previewUrl} title="Pratinjau SK Pimpinan" />
+      <PdfPreviewModal
+        open={!!previewUrl}
+        onClose={() => { setPreviewUrl(null); setPreviewDoc(null); }}
+        url={previewUrl}
+        title="Pratinjau SK Pimpinan"
+        footer={previewDoc && (
+          <Button className="w-full" onClick={() => downloadPdfDoc(previewDoc.doc, previewDoc.name)}>
+            <Download className="w-4 h-4 mr-1" /> Unduh PDF
+          </Button>
+        )}
+      />
     </>
   );
 };

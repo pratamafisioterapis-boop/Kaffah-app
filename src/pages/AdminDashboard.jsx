@@ -29,6 +29,8 @@ import PromoUsageWidget from '@/components/owner/operational/PromoUsageWidget';
 const AdminDatabasePatients = React.lazy(lazyRetry(() => import('@/pages/admin/DatabasePatients'), 'AdminDatabasePatients'));
 const AppointmentsPage = React.lazy(lazyRetry(() => import('@/pages/AppointmentsPage'), 'AppointmentsPage'));
 const MedicalRecordsPage = React.lazy(lazyRetry(() => import('@/pages/MedicalRecordsPage'), 'MedicalRecordsPage'));
+import NewDecreeBanner from '@/components/shared/NewDecreeBanner';
+const ClinicDecreesViewer = React.lazy(lazyRetry(() => import('@/pages/shared/ClinicDecreesViewer'), 'ClinicDecreesViewer'));
 const ClinicalDocuments = React.lazy(lazyRetry(() => import('@/pages/admin/ClinicalDocuments'), 'ClinicalDocuments'));
 const AdminPhysiotherapistManagementPage = React.lazy(lazyRetry(() => import('@/pages/admin/AdminPhysiotherapistManagementPage'), 'AdminPhysiotherapistManagementPage'));
 const AdminAccountSettings = React.lazy(lazyRetry(() => import('@/components/admin/AdminAccountSettings'), 'AdminAccountSettings'));
@@ -799,6 +801,7 @@ const AdminDashboard = () => {
   const navItems = ADMIN_NAV_ITEMS;
 return (
     <DashboardLayout navItems={navItems} role="admin" userName="Admin">
+      <NewDecreeBanner to="/admin/decrees" />
       <React.Suspense fallback={<PageSkeleton />}>
         <Routes>
         <Route path="/" element={isLightLoadModeEnabled() ? <Navigate to="/admin/appointments" replace /> : <AdminDashboardHome />} />
@@ -815,6 +818,7 @@ return (
         
         {/* Task 2: Add new route */}
         <Route path="/clinical-documents" element={<ClinicalDocuments />} />
+        <Route path="/decrees" element={<ClinicDecreesViewer />} />
 
         {/* Task 3: Physiotherapist Management */}
         <Route path="/physiotherapist-management" element={<AdminPhysiotherapistManagementPage />} />
