@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { supabase } from '@/lib/customSupabaseClient';
 import PdfPreviewModal from '@/components/shared/PdfPreviewModal';
 import { confirmAction } from '@/lib/confirmAction';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
@@ -69,6 +70,7 @@ const OwnerDecreesPage = () => {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [physios, setPhysios] = useState([]);
 
   const allowed = userDetails?.clinic_id === KAFFAH_CLINIC_ID;
 
@@ -78,6 +80,8 @@ const OwnerDecreesPage = () => {
       const [{ data: c }, { data, error }] = await Promise.all([getCurrentClinic(), getClinicDecrees()]);
       if (error) toast({ variant: 'destructive', title: 'Gagal memuat SK', description: error.message });
       setClinic(c || null);
+      const { data: ph } = await supabase.from('physiotherapists').select('name, signature_url').eq('clinic_id', c?.id || userDetails.clinic_id);
+      setPhysios(ph || []);
       setDecrees(data || []);
       setForm(newForm(data || []));
       setLoading(false);
@@ -107,7 +111,11 @@ const OwnerDecreesPage = () => {
     return data;
   };
 
-  const makePdf = async () => generateDecreePDF({ ...form }, clinic || {});
+  // Tanda tangan penandatangan diambil dari data terapis dengan nama yang sama
+  // (mis. "Adi Pratama, S.Fis., FTR" cocok dengan "Adi Pratama,S.Fis.,Ftr").
+  const baseName = (n) => String(n || '').split(',')[0].toLowerCase().replace(/[^a-z]/g, '');
+  const signerPhysio = physios.find((p) => baseName(p.name) && baseName(p.name) === baseName(form.signer_name));
+  const makePdf = async () => generateDecreePDF({ ...form, signature_url: signerPhysio?.signature_url || null }, clinic || {});
 
   const preview = async () => {
     const doc = await makePdf();
@@ -209,6 +217,9 @@ const OwnerDecreesPage = () => {
               <Field label="Nama penandatangan (beserta gelar)"><Input value={form.signer_name} onChange={(e) => set({ signer_name: e.target.value })} /></Field>
               <Field label="Jabatan"><Input value={form.signer_position} onChange={(e) => set({ signer_position: e.target.value })} /></Field>
             </div>
+            <p className="text-xs text-app-muted -mt-2">
+              {signerPhysio?.signature_url ? 'Tanda tangan digital penandatangan ditemukan dan akan tampil di PDF.' : 'Tanda tangan digital tidak ditemukan untuk nama ini; ruang tanda tangan dibiarkan kosong.'}
+            </p>
 
             <div className="flex flex-wrap gap-2 pt-1">
               <Button onClick={save} disabled={busy}>{busy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />} Simpan</Button>
