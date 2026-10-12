@@ -145,17 +145,21 @@ export const getUnfilledSOAPVisits = async (_unusedName, therapistId, startDate 
     // ambil semua recap therapist dalam periode
     let query = supabase
       .from('daily_recaps')
-      .select('id')
+      .select('id, patient_id, actual_patient_id')
       .eq('therapist_id', therapistId);
 
     if (startDate) query = query.gte('recap_date', startDate);
     if (endDate) query = query.lte('recap_date', endDate);
 
-    const { data: recaps, error: recapsError } = await query;
+    const { data: allRecaps, error: recapsError } = await query;
 
     if (recapsError) throw recapsError;
 
-    if (!recaps || recaps.length === 0) {
+    // Kunjungan guest (tanpa pasien terdaftar) tidak punya SOAP dan tidak tampil
+    // di halaman Catatan, jadi tidak dihitung supaya angkanya konsisten dengan daftar.
+    const recaps = (allRecaps || []).filter(r => r.actual_patient_id || r.patient_id);
+
+    if (recaps.length === 0) {
       return { count: 0, error: null };
     }
 
