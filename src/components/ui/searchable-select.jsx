@@ -255,13 +255,13 @@ const SearchableSelect = ({
         onClick={() => !disabled && (setOpen(true), inputRef.current?.focus())}
       >
         {multiple && selectedValues.length > 0 && (
-            <div className="flex flex-wrap gap-1 mr-1">
+            <div className="contents">
                 {selectedValues.map(val => (
-                <Badge key={val} variant="secondary" className="mr-1 mb-1 bg-slate-100 text-slate-700 hover:bg-slate-200">
+                <Badge key={val} variant="secondary" className="max-w-full bg-slate-100 text-slate-700 hover:bg-slate-200">
                     {getLabel(val)}
                     <button
                       type="button"
-                      className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      className="tap-target ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                       onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
                       onClick={(e) => handleRemoveItem(e, val)}
                     >

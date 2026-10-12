@@ -547,7 +547,7 @@ const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, onApp
 
           <div className="soap-split space-y-4">
           <div className="soap-main min-w-0">
-          <div className="space-y-5">
+          <div className="space-y-4 sm:space-y-5">
             {[
               ...(vitalParsed ? [{ section: sharedVital, shared: 'vital' }] : []),
               ...sharedSections.map((section) => ({ section, shared: 'common' })),
@@ -591,7 +591,7 @@ const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, onApp
                             <div
                               key={si}
                               className={cn(
-                                'flex gap-3 rounded-app border px-3 py-2.5 transition-colors',
+                                'flex gap-2.5 rounded-app border px-3 py-2 transition-colors sm:gap-3 sm:py-2.5',
                                 done ? 'border-app-accent/30 bg-app-soft/40' : 'border-slate-200 bg-white'
                               )}
                             >
@@ -652,7 +652,7 @@ const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, onApp
               value={finalText}
               onChange={(e) => setEdited(e.target.value)}
               placeholder="Teks akan muncul di sini setelah Anda memilih atau mengisi. Bisa diedit langsung."
-              rows={Math.min(14, Math.max(5, finalText.split('\n').length + 1))}
+              rows={Math.min(14, Math.max(4, finalText.split('\n').length + 1))}
               className={cn(
                 'block w-full resize-y rounded-app border px-3 py-2.5 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-app-accent/25',
                 finalText ? 'border-app-accent/15 bg-white text-slate-800' : 'border-dashed border-slate-200 bg-slate-50 text-slate-500'
@@ -661,7 +661,7 @@ const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, onApp
           </div>
           </div>
 
-          <div className="soap-actions sticky bottom-0 z-10 -mx-1 flex items-center gap-3 border-t border-slate-200 bg-white px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-3">
+          <div className="soap-actions sticky bottom-0 z-10 -mx-1 flex items-center gap-2 border-t border-slate-200 bg-white px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2.5 sm:gap-3 sm:pt-3">
             <div className="min-w-0 flex-1">
               <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
                 <div
@@ -669,12 +669,13 @@ const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, onApp
                   style={{ width: total ? `${Math.round((filled / total) * 100)}%` : '0%' }}
                 />
               </div>
-              <div className="mt-1 flex items-center gap-3 text-xs text-slate-500">
-                <span className="tabular-nums">{filled}/{total} terisi</span>
+              <div className="mt-1 flex items-center justify-between gap-2 text-xs text-slate-500">
+                <span className="tabular-nums">{filled}/{total}<span className="max-sm:hidden"> terisi</span></span>
                 <button
                   type="button"
                   onClick={reset}
                   disabled={filled === 0}
+                  aria-label="Reset isian"
                   className="tap-target flex items-center gap-1 hover:text-rose-600 disabled:opacity-40"
                 >
                   <RotateCcw className="h-3 w-3" /> Reset
@@ -686,10 +687,11 @@ const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, onApp
                 type="button"
                 onClick={apply}
                 disabled={!finalText.trim()}
-                className="h-11 shrink-0 gap-2 rounded-app bg-app-accent px-4 text-sm font-semibold hover:bg-app-accent-hover sm:px-6"
+                aria-label={willReplace ? `Masukkan ke ${noun}` : `Tambahkan ke ${noun}`}
+                className="h-11 shrink-0 gap-2 whitespace-nowrap rounded-app bg-app-accent px-4 text-sm font-semibold hover:bg-app-accent-hover sm:px-6"
               >
                 <Check className="h-4 w-4" />
-                {willReplace ? `Masukkan ke ${noun}` : `Tambahkan ke ${noun}`}
+                {willReplace ? 'Masukkan' : 'Tambahkan'}<span className="max-sm:hidden"> ke {noun}</span>
               </Button>
             )}
           </div>

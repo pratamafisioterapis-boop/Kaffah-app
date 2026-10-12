@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Save, Copy, History, CalendarDays, Clock, Wand2, Stethoscope, Sparkles, RefreshCw, TrendingUp } from 'lucide-react';
+import { Loader2, ArrowLeft, Save, Copy, History, CalendarDays, Clock, Wand2, Stethoscope, Sparkles, RefreshCw, TrendingUp, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
 import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus, getPatientOnsetInfo, getDiagnosisOptions, getDiagnosisSubjectiveTemplates, getSubjectiveVariables, getIcfTitles, getEducationForDiagnoses } from '@/lib/api';
@@ -17,6 +17,7 @@ import SearchableSelect from '@/components/ui/searchable-select';
 import SubjectiveTemplateBuilder from '@/components/therapist/SubjectiveTemplateBuilder';
 import ObjectiveProgressUpdate from '@/components/therapist/ObjectiveProgressUpdate';
 import PlanChecklist from '@/components/therapist/PlanChecklist';
+import { SoapContinuationPrompt, SubjectiveProgressNote, applyProgressNote } from '@/components/therapist/SoapContinuation';
 import LabRadiologyUpload from '@/components/therapist/LabRadiologyUpload';
 import SOAPHistoryModal from '@/components/therapist/SOAPHistoryModal';
 import SoapPatientPdfButton from '@/components/therapist/SoapPatientPdfButton';
@@ -27,6 +28,16 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useAssessmentMode } from '@/hooks/useAssessmentMode';
 import { id } from 'date-fns/locale';
+
+// daily_recaps.diagnosis bisa berupa array, string JSON, atau string tunggal.
+const normalizeDiagnosis = (raw) => {
+  let diag = raw || [];
+  if (typeof diag === 'string') {
+    try { diag = JSON.parse(diag); } catch { diag = [diag]; }
+  }
+  if (!Array.isArray(diag)) diag = diag ? [diag] : [];
+  return diag;
+};
 
 const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledByAdmin = false }) => {
   const { patientId: paramPatientId } = useParams();
@@ -62,6 +73,10 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
   const [educationAuto, setEducationAuto] = useState(true);
   const [eduEntries, setEduEntries] = useState({});
   const [homeExercises, setHomeExercises] = useState([]);
+  // Terapi lanjutan: diagnosa kunjungan sebelumnya + jawaban terapis (null | 'same' | 'different').
+  const [prevDiagnosis, setPrevDiagnosis] = useState([]);
+  const [continuation, setContinuation] = useState(null);
+  const [reopenTemplate, setReopenTemplate] = useState({});
   const [formData, setFormData] = useState({
     patient_id: (paramPatientId !== 'select' && isValidUUID(paramPatientId)) ? paramPatientId : '',
     daily_recap_id: null,
@@ -138,12 +153,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
       .eq('id', linkedRecapId)
       .maybeSingle()
       .then(({ data }) => {
-        let diag = data?.diagnosis || [];
-        if (typeof diag === 'string') {
-          try { diag = JSON.parse(diag); } catch { diag = [diag]; }
-        }
-        if (!Array.isArray(diag)) diag = diag ? [diag] : [];
-        setDiagnosis(diag);
+        setDiagnosis(normalizeDiagnosis(data?.diagnosis));
       });
   }, [linkedRecapId]);
 
@@ -465,15 +475,26 @@ if (isCreate) {
   useEffect(() => {
     let cancelled = false;
     setLatestRecord(null);
+    setPrevDiagnosis([]);
+    setContinuation(null);
     if (!formData.patient_id || !isValidUUID(formData.patient_id)) return;
     (async () => {
       try {
         const { data } = await getMedicalRecords({ patientId: formData.patient_id });
         if (cancelled || !data) return;
-        const prev = data
+        const sorted = data
           .filter(r => r.id !== recordId)
-          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
-        setLatestRecord(prev || null);
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        setLatestRecord(sorted[0] || null);
+
+        // Diagnosa tersimpan di daily_recaps; ambil dari kunjungan terbaru yang diagnosanya terisi.
+        const recapIds = [...new Set(sorted.map(r => r.daily_recap_id).filter(isValidUUID))].slice(0, 8);
+        if (recapIds.length === 0) return;
+        const { data: recaps } = await supabase.from('daily_recaps').select('id, diagnosis').in('id', recapIds);
+        if (cancelled) return;
+        const byId = Object.fromEntries((recaps || []).map(r => [r.id, normalizeDiagnosis(r.diagnosis)]));
+        const hit = recapIds.map(rid => byId[rid]).find(d => d && d.length > 0);
+        setPrevDiagnosis(hit || []);
       } catch (err) {
         console.error('Error fetching previous SOAP', err);
       }
@@ -481,28 +502,52 @@ if (isCreate) {
     return () => { cancelled = true; };
   }, [formData.patient_id, recordId]);
 
-  const handleCopySOAP = (record) => {
+  const handleCopySOAP = (record, { continuing = false } = {}) => {
     if (!record) return;
-    setAssessmentAuto(false);
+    setAssessmentAuto(continuing);
     setFormData(prev => ({
       ...prev,
-      subjective: refreshOnsetInSubjective(
+      // Baris perkembangan kunjungan lalu sudah basi; terapis menulis yang baru.
+      subjective: applyProgressNote(refreshOnsetInSubjective(
         record.subjective || '',
         onsetInfo?.complaint_onset_date || deriveOnsetFromSubjective(record.subjective, record.created_at)
-      ),
+      ), ''),
       objective: record.objective || '',
       assessment: record.assessment || '',
       plan: record.plan || '',
       plan_data: record.plan_data || (record.plan ? { notes: record.plan } : null),
     }));
     toast({
-      title: "Data Disalin!",
-      description: "Data SOAP berhasil disalin; durasi onset di Subjective sudah disesuaikan sampai hari ini.",
+      title: continuing ? "Lanjutan terapi siap" : "Data Disalin!",
+      description: continuing
+        ? "Isi perkembangan di Subjective, lalu sesuaikan Objective dan tindakan di Plan."
+        : "Data SOAP berhasil disalin; durasi onset di Subjective sudah disesuaikan sampai hari ini.",
       className: "bg-blue-50 border-blue-200 text-blue-800"
     });
     // Terapi lanjutan: langsung tawarkan update kondisi klinis lewat klik.
     if ((record.objective || '').trim()) setProgressDialog(true);
   };
+
+  const continueSameDiagnosis = () => {
+    setDiagnosis(prevDiagnosis);
+    setContinuation('same');
+    setReopenTemplate({});
+    handleCopySOAP(latestRecord, { continuing: true });
+  };
+  const prevDiagnosisLabels = prevDiagnosis
+    .map((d) => diagnosisOptions.find((o) => o.id === d || o.value === d)?.label || (isValidUUID(d) ? null : d))
+    .filter(Boolean);
+  const chooseDifferentDiagnosis = () => {
+    // Bila sebelumnya memilih "sama" lalu berubah pikiran, buang isian yang disalin otomatis.
+    if (continuation === 'same') {
+      setDiagnosis([]);
+      setAssessmentAuto(true);
+      setFormData((prev) => ({ ...prev, subjective: '', objective: '', assessment: '', plan: '', plan_data: null }));
+    }
+    setContinuation('different');
+  };
+  const isContinuing = continuation === 'same';
+  const askContinuation = !recordId && !!latestRecord && prevDiagnosisLabels.length > 0;
 
   const patientOptions = patients.map(p => ({
     value: p.id,
@@ -528,30 +573,28 @@ if (isCreate) {
     <div className={isPWA ? "space-y-0" : "max-w-3xl mx-auto space-y-5"}>
 
       {/* ── Header ── */}
-      <div className={`flex items-center justify-between gap-3 ${isPWA ? 'px-4 py-3 bg-white border-b' : ''}`}>
-        <div className="flex items-center gap-3 min-w-0">
-          <Button variant="ghost" size="icon" className="shrink-0 rounded-app" onClick={() => {
-            if (window.history.length > 1) {
-              navigate(-1);
-            } else {
-              navigate(basePath);
-            }
-          }}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div className="min-w-0">
-            <h2 className={`font-bold text-slate-900 ${isPWA ? 'text-base' : 'text-xl break-words sm:truncate'}`}>
-              {isPWA
-                ? (recordId ? 'Edit Catatan' : 'Buat Catatan SOAP')
-                : (recordId ? 'Edit Catatan Medis' : 'Buat Catatan Medis (SOAP)')}
-            </h2>
-            {dateParam && (
-              <span className="flex items-center gap-1 text-app-accent font-medium text-xs mt-0.5">
-                <CalendarDays className="w-3.5 h-3.5 shrink-0" />
-                {format(new Date(dateParam), 'dd MMMM yyyy', { locale: id })}
-              </span>
-            )}
-          </div>
+      <div className={`flex items-center gap-2 ${isPWA ? 'px-4 py-3 bg-white border-b' : ''}`}>
+        <Button variant="ghost" size="icon" aria-label="Kembali" className="shrink-0 rounded-app" onClick={() => {
+          if (window.history.length > 1) {
+            navigate(-1);
+          } else {
+            navigate(basePath);
+          }
+        }}>
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <div className="min-w-0 flex-1">
+          <h2 className={`font-bold text-slate-900 truncate ${isPWA ? 'text-base' : 'text-xl'}`}>
+            {isPWA
+              ? (recordId ? 'Edit Catatan' : 'Catatan SOAP')
+              : (recordId ? 'Edit Catatan Medis' : 'Buat Catatan Medis (SOAP)')}
+          </h2>
+          {dateParam && (
+            <span className="flex items-center gap-1 text-app-accent font-medium text-xs mt-0.5">
+              <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+              {format(new Date(dateParam), 'dd MMMM yyyy', { locale: id })}
+            </span>
+          )}
         </div>
         {isKaffahClinic && recordId && isValidUUID(recordId) && (
           <SoapPatientPdfButton
@@ -560,24 +603,28 @@ if (isCreate) {
           />
         )}
         {formData.patient_id && isValidUUID(formData.patient_id) && latestRecord && (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 rounded-app text-xs"
+              title="Salin SOAP terakhir"
+              aria-label="Salin SOAP terakhir"
+              className="h-10 gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 rounded-app text-xs max-sm:w-10 max-sm:px-0"
               onClick={() => handleCopySOAP(latestRecord)}
             >
-              <Copy className="w-3.5 h-3.5" />
-              {isPWA ? 'Salin' : 'Salin SOAP Terakhir'}
+              <Copy className="w-4 h-4" />
+              <span className="max-sm:hidden">Salin SOAP Terakhir</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50 rounded-app text-xs"
+              title="Lihat SOAP sebelumnya"
+              aria-label="Lihat SOAP sebelumnya"
+              className="h-10 gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50 rounded-app text-xs max-sm:w-10 max-sm:px-0"
               onClick={() => setIsHistoryOpen(true)}
             >
-              <History className="w-3.5 h-3.5" />
-              {isPWA ? 'Riwayat' : 'Lihat SOAP Sebelumnya'}
+              <History className="w-4 h-4" />
+              <span className="max-sm:hidden">Lihat SOAP Sebelumnya</span>
             </Button>
           </div>
         )}
@@ -619,6 +666,19 @@ if (isCreate) {
                 );
               })()}
             </div>
+
+            {/* Terapi lanjutan: diagnosa masih sama? */}
+            {askContinuation && (
+              <SoapContinuationPrompt
+                record={latestRecord}
+                diagnosisLabels={prevDiagnosisLabels}
+                decision={continuation}
+                onSame={continueSameDiagnosis}
+                onDifferent={chooseDifferentDiagnosis}
+                onReset={() => setContinuation(null)}
+                onOpenHistory={() => setIsHistoryOpen(true)}
+              />
+            )}
 
             {/* Diagnosa */}
             <div className={`${isPWA ? 'px-4 py-4' : 'px-6 py-5'} border-b bg-white`}>
@@ -689,6 +749,12 @@ if (isCreate) {
                     )}
                   </div>
                   {field.key === 'plan' ? (
+                    <>
+                    {isContinuing && (
+                      <p className="mb-3 rounded-app bg-app-soft/60 px-3 py-2 text-sm leading-snug text-slate-600">
+                        Tindakan disalin dari kunjungan lalu. Tambah atau hapus sesuai terapi hari ini.
+                      </p>
+                    )}
                     <PlanChecklist
                       diagnosisLabels={diagnosisLabels}
                       value={formData.plan_data}
@@ -697,10 +763,29 @@ if (isCreate) {
                         setHomeExercises(names || []);
                       }}
                     />
+                    </>
                   ) : (
                   <>
-                  {isKaffahClinic && (field.key === 'subjective' || field.key === 'objective') && templatesOf(field.key).length > 0 && (
-                    <div className="mb-3 overflow-hidden rounded-app-lg border border-app-accent/15 bg-app-soft/30 p-3">
+                  {isContinuing && field.key === 'subjective' && (
+                    <SubjectiveProgressNote
+                      subjective={formData.subjective}
+                      onChange={(subjective) => setFormData((prev) => ({ ...prev, subjective }))}
+                    />
+                  )}
+                  {isContinuing && (field.key === 'subjective' || field.key === 'objective') && templatesOf(field.key).length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setReopenTemplate((prev) => ({ ...prev, [field.key]: !prev[field.key] }))}
+                      aria-expanded={!!reopenTemplate[field.key]}
+                      className="mb-3 inline-flex h-10 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-600 hover:border-app-accent/40 hover:bg-app-soft"
+                    >
+                      <Wand2 className="h-4 w-4" />
+                      {reopenTemplate[field.key] ? 'Tutup template' : `Ubah ${field.label} lewat template`}
+                      <ChevronDown className={`h-4 w-4 transition-transform ${reopenTemplate[field.key] ? 'rotate-180' : ''}`} />
+                    </button>
+                  )}
+                  {isKaffahClinic && (field.key === 'subjective' || field.key === 'objective') && templatesOf(field.key).length > 0 && (!isContinuing || reopenTemplate[field.key]) && (
+                    <div className="mb-3 overflow-hidden rounded-app-lg border border-app-accent/15 bg-app-soft/30 p-3 max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent max-sm:p-0">
                       <SubjectiveTemplateBuilder
                         embedded
                         templates={templatesOf(field.key)}
@@ -719,7 +804,7 @@ if (isCreate) {
                     className={`bg-slate-50/80 border-slate-200 resize-none rounded-app focus:bg-white focus:border-slate-300 transition-colors ${
                       field.key === 'assessment'
                         ? (isPWA ? 'min-h-[260px] text-base' : 'min-h-[300px]')
-                        : (isPWA ? 'min-h-[100px] text-base' : 'min-h-[130px]')
+                        : (isPWA ? 'min-h-[96px] text-base' : 'min-h-[130px]')
                     }`}
                     value={formData[field.key]}
                     onChange={e => {
