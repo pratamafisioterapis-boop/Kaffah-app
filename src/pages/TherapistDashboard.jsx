@@ -27,6 +27,9 @@ import TherapistSettingsDrawer from '@/components/therapist/TherapistSettingsDra
 import { lazyRetry } from '@/lib/lazyRetry';
 import PageSkeleton from '@/components/shared/PageSkeleton';
 import SoapDeadlineNotice from '@/components/therapist/SoapDeadlineNotice';
+import NewDecreeBanner from '@/components/shared/NewDecreeBanner';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
+const ClinicDecreesViewer = React.lazy(lazyRetry(() => import('@/pages/shared/ClinicDecreesViewer'), 'ClinicDecreesViewer'));
 
 const TherapistDashboard = () => {
   const { user, signOut } = useAuth();
@@ -116,6 +119,7 @@ const TherapistDashboard = () => {
     ...(canRequestLeave ? [{ label: 'Izin', path: '/therapist/leave', icon: 'Calendar' }] : []),
     { label: 'Remunerasi', path: '/therapist/remuneration', icon: 'Award' },
     { label: 'Dokumen', path: '/therapist/drive-upload', icon: 'UploadCloud' },
+    { label: 'SK Pimpinan', path: '/therapist/decrees', icon: 'FileText', clinicOnly: KAFFAH_CLINIC_ID },
     { label: 'Settings', path: '#settings', icon: 'Settings', onClick: () => setSettingsOpen(true) },
   ];
 
@@ -149,6 +153,7 @@ const TherapistDashboard = () => {
       </Helmet>
       <DashboardLayout navItems={navItems} role="therapist" userName={therapistProfile.name}>
         <SoapDeadlineNotice therapist={therapistProfile} />
+        <NewDecreeBanner to="/therapist/decrees" />
         <React.Suspense fallback={<PageSkeleton />}>
         <Routes>
           {/* Grid Layout for Home */}
@@ -166,6 +171,7 @@ const TherapistDashboard = () => {
           <Route path="/patients" element={<TherapistPatients therapist={therapistProfile} />} />
           <Route path="/remuneration" element={<TherapistRemuneration therapist={therapistProfile} />} />
           <Route path="/drive-upload" element={<TherapistDocuments therapist={therapistProfile} />} />
+          <Route path="/decrees" element={<ClinicDecreesViewer />} />
         </Routes>
         </React.Suspense>
       </DashboardLayout>

@@ -58,6 +58,7 @@ export const ADMIN_NAV_ITEMS = [
   { label: 'Follow Up Management', path: '/admin/follow-up-management', icon: 'ClipboardList' },
   { label: 'Feedback Pasien', path: '/admin/feedback', icon: 'Star' },
   { label: 'Clinical Documents', path: '/admin/clinical-documents', icon: 'FileText' },
+  { label: 'SK Pimpinan', path: '/admin/decrees', icon: 'FileText', clinicOnly: KAFFAH_CLINIC_ID },
   { label: 'Accounting System', path: '/admin/accounting', icon: 'DollarSign' },
   { label: 'Ambil Barang Gudang', path: '/admin/inventory-takeout', icon: 'Boxes' },
   { label: 'Absensi Karyawan', path: '/admin/attendance', icon: 'Clock' },
