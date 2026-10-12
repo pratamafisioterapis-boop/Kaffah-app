@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getMedicalRecords } from '@/lib/api';
-import { getTherapistVisits } from '@/lib/therapistDataUtils';
+import { getTherapistVisits, isSoapOpenForVisit } from '@/lib/therapistDataUtils';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -104,7 +104,10 @@ useEffect(() => {
       const uniquePatientsMap = new Map();
       const visitsByPatient = {};
       
+      const now = new Date();
       visits.forEach(visit => {
+        // SOAP belum terbuka sebelum jam appointment dimulai
+        if (!isSoapOpenForVisit(visit.appointment_start, now)) return;
         if (visit.patient && visit.patient.id) {
           if (!uniquePatientsMap.has(visit.patient.id)) { uniquePatientsMap.set(visit.patient.id, visit.patient); }
           if (!visitsByPatient[visit.patient.id]) { visitsByPatient[visit.patient.id] = []; }
