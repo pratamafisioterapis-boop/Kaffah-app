@@ -26,6 +26,53 @@ import { useNavigate } from 'react-router-dom';
 import { cn, getTherapistPeriodRange } from '@/lib/utils';
 
 
+// Kartu statistik seragam: tinggi sama per baris, bar progres selalu menempel di bawah.
+const StatCard = ({
+  label, value, sub, Icon, iconBox, iconColor, onClick, className,
+  tone, surface, labelColor, valueColor,
+  progress, barTrack, barColor
+}) => {
+  const danger = tone === 'danger';
+  const interactive = typeof onClick === 'function';
+  return (
+    <div
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={interactive ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } } : undefined}
+      className={cn(
+        "rounded-app-lg border shadow-sm p-4 flex flex-col h-full min-w-0 transition-shadow [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md",
+        interactive && "cursor-pointer",
+        surface || (danger ? "bg-rose-50 border-rose-200" : "bg-white border-slate-100"),
+        className
+      )}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className={cn(
+          "text-[11px] font-semibold uppercase tracking-wider truncate",
+          labelColor || (danger ? "text-rose-400" : "text-slate-500")
+        )}>
+          {label}
+        </span>
+        <div className={cn("w-8 h-8 shrink-0 rounded-app flex items-center justify-center", iconBox)}>
+          <Icon className={cn("w-4 h-4", iconColor)} />
+        </div>
+      </div>
+      <div className="mt-3 flex-1">
+        <p className={cn("text-3xl font-bold leading-none tabular-nums", valueColor || (danger ? "text-rose-700" : "text-slate-900"))}>
+          {value}
+        </p>
+        <p className={cn("text-xs mt-1.5 leading-snug", danger ? "text-rose-500" : "text-slate-500")}>{sub}</p>
+      </div>
+      {progress !== undefined && (
+        <div className={cn("mt-3 h-1.5 w-full rounded-full overflow-hidden", barTrack)}>
+          <div className={cn("h-full rounded-full transition-[width] duration-300", barColor)} style={{ width: `${progress}%` }} />
+        </div>
+      )}
+    </div>
+  );
+};
+
 const TherapistMetrics = ({ therapist, userId }) => {
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState({
@@ -206,6 +253,14 @@ const rawMonthlyRecaps = recapsRes.data || [];
   const progressColors = getProgressColor(metrics.targetVisitsProgress);
   const progressCapped = Math.min(metrics.targetVisitsProgress, 100);
 
+  const absenceCards = [
+    { key: 'workDays', label: 'Hari Kerja', value: metrics.workDays, sub: 'hari kerja periode ini', Icon: Briefcase, box: 'bg-app-soft', icon: 'text-app-accent', always: true },
+    { key: 'cuti', label: 'Cuti', value: metrics.absence.cuti, sub: 'hari cuti periode ini', Icon: Umbrella, box: 'bg-teal-50', icon: 'text-teal-600' },
+    { key: 'izin', label: 'Izin', value: metrics.absence.izin, sub: 'hari izin periode ini', Icon: FileText, box: 'bg-amber-50', icon: 'text-amber-600' },
+    { key: 'sakit', label: 'Sakit', value: metrics.absence.sakit, sub: 'hari sakit periode ini', Icon: Stethoscope, box: 'bg-rose-50', icon: 'text-rose-600' },
+    { key: 'training', label: 'Training', value: metrics.absence.training, sub: 'hari training periode ini', Icon: GraduationCap, box: 'bg-violet-50', icon: 'text-violet-600' }
+  ].filter(c => c.always || c.value > 0);
+
   return (
     <div className="space-y-5 mb-8">
 
@@ -235,147 +290,87 @@ const rawMonthlyRecaps = recapsRes.data || [];
 
       {/* ── Row 1: stat cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <StatCard
+          label="Hari Ini"
+          value={metrics.todayAppointments}
+          sub="Sesi terapi hari ini"
+          Icon={Calendar}
+          iconBox="bg-emerald-50"
+          iconColor="text-emerald-600"
+          barTrack="bg-slate-100"
+          barColor="bg-emerald-400"
+          progress={Math.min(metrics.todayAppointments * 10, 100)}
+        />
 
-        {/* Card: Jadwal Hari Ini */}
-        <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-4 flex flex-col gap-3 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Hari Ini</span>
-            <div className="w-8 h-8 rounded-app bg-emerald-50 flex items-center justify-center">
-              <Calendar className="w-4 h-4 text-emerald-600" />
-            </div>
-          </div>
-          <div>
-            <p className="text-3xl font-bold text-slate-900 leading-none">{metrics.todayAppointments}</p>
-            <p className="text-xs text-slate-500 mt-1">Sesi terapi hari ini</p>
-          </div>
-          <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
-            <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${Math.min(metrics.todayAppointments * 10, 100)}%` }} />
-          </div>
-        </div>
+        <StatCard
+          label="Pasien"
+          value={metrics.totalPatients}
+          sub="Kunjungan periode ini"
+          Icon={Users}
+          iconBox="bg-app-soft"
+          iconColor="text-app-accent"
+          barTrack="bg-slate-100"
+          barColor="bg-app-accent-bright"
+          progress={Math.min(metrics.totalPatients * 2, 100)}
+        />
 
-        {/* Card: Total Pasien */}
-        <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-4 flex flex-col gap-3 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pasien</span>
-            <div className="w-8 h-8 rounded-app bg-app-soft flex items-center justify-center">
-              <Users className="w-4 h-4 text-app-accent" />
-            </div>
-          </div>
-          <div>
-            <p className="text-3xl font-bold text-slate-900 leading-none">{metrics.totalPatients}</p>
-            <p className="text-xs text-slate-500 mt-1">Kunjungan periode ini</p>
-          </div>
-          <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
-            <div className="h-full bg-app-accent-bright rounded-full" style={{ width: `${Math.min(metrics.totalPatients * 2, 100)}%` }} />
-          </div>
-        </div>
-
-        {/* Card: SOAP Belum Diisi */}
-        <div
+        <StatCard
           onClick={() => navigate('/therapist/records')}
-          className={cn(
-            "rounded-app-lg border shadow-sm p-4 flex flex-col gap-3 cursor-pointer [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow",
-            metrics.unfilledSoapCount > 0
-              ? "bg-rose-50 border-rose-200"
-              : "bg-white border-slate-100"
-          )}
-        >
-          <div className="flex items-center justify-between">
-            <span className={cn("text-xs font-semibold uppercase tracking-wider", metrics.unfilledSoapCount > 0 ? "text-rose-400" : "text-slate-500")}>
-              SOAP
-            </span>
-            <div className={cn("w-8 h-8 rounded-app flex items-center justify-center", metrics.unfilledSoapCount > 0 ? "bg-rose-100" : "bg-slate-50")}>
-              <AlertCircle className={cn("w-4 h-4", metrics.unfilledSoapCount > 0 ? "text-rose-600" : "text-slate-500")} />
-            </div>
-          </div>
-          <div>
-            <p className={cn("text-3xl font-bold leading-none", metrics.unfilledSoapCount > 0 ? "text-rose-700" : "text-slate-900")}>
-              {metrics.unfilledSoapCount}
-            </p>
-            <p className={cn("text-xs mt-1", metrics.unfilledSoapCount > 0 ? "text-rose-500" : "text-slate-500")}>
-              {metrics.unfilledSoapCount > 0 ? "Kunjungan belum tercatat →" : "Semua sudah tercatat ✓"}
-            </p>
-          </div>
-          <div className="h-1 w-full bg-rose-100 rounded-full overflow-hidden">
-            <div
-              className={cn("h-full rounded-full", metrics.unfilledSoapCount > 0 ? "bg-rose-400" : "bg-emerald-400")}
-              style={{ width: metrics.unfilledSoapCount > 0 ? '100%' : '0%' }}
-            />
-          </div>
-        </div>
+          label="SOAP"
+          value={metrics.unfilledSoapCount}
+          sub={metrics.unfilledSoapCount > 0 ? "Kunjungan belum tercatat →" : "Semua sudah tercatat ✓"}
+          Icon={AlertCircle}
+          tone={metrics.unfilledSoapCount > 0 ? 'danger' : undefined}
+          iconBox={metrics.unfilledSoapCount > 0 ? "bg-rose-100" : "bg-slate-50"}
+          iconColor={metrics.unfilledSoapCount > 0 ? "text-rose-600" : "text-slate-500"}
+          barTrack="bg-rose-100"
+          barColor={metrics.unfilledSoapCount > 0 ? "bg-rose-400" : "bg-emerald-400"}
+          progress={metrics.unfilledSoapCount > 0 ? 100 : 0}
+        />
 
-        {/* Card: Target Progress */}
-        <div className={cn("rounded-app-lg border shadow-sm p-4 flex flex-col gap-3 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow", progressColors.bg, progressColors.border)}>
-          <div className="flex items-center justify-between">
-            <span className={cn("text-xs font-semibold uppercase tracking-wider", progressColors.text)}>Target</span>
-            <div className={cn("w-8 h-8 rounded-app bg-white/60 flex items-center justify-center")}>
-              <Target className={cn("w-4 h-4", progressColors.text)} />
-            </div>
-          </div>
-          <div>
-            <p className={cn("text-3xl font-bold leading-none", progressColors.text)}>{progressCapped}%</p>
-            <p className="text-xs text-slate-500 mt-1">
-              {metrics.monthlyVisitsCalculated} / {metrics.targetVisits} kunjungan
-            </p>
-          </div>
-          <div className="h-1.5 w-full bg-white/60 rounded-full overflow-hidden">
-            <div
-              className={cn("h-full rounded-full transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200", progressColors.bar)}
-              style={{ width: `${progressCapped}%` }}
-            />
-          </div>
-        </div>
+        <StatCard
+          label="Target"
+          value={`${progressCapped}%`}
+          sub={`${metrics.monthlyVisitsCalculated} / ${metrics.targetVisits} kunjungan`}
+          Icon={Target}
+          surface={cn(progressColors.bg, progressColors.border)}
+          labelColor={progressColors.text}
+          valueColor={progressColors.text}
+          iconBox="bg-white/60"
+          iconColor={progressColors.text}
+          barTrack="bg-white/60"
+          barColor={progressColors.bar}
+          progress={progressCapped}
+        />
 
-        {/* Card: Sisa Cuti Tahunan */}
-        <div
-          role="button"
-          tabIndex={0}
+        <StatCard
           onClick={() => setLeaveDialogOpen(true)}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setLeaveDialogOpen(true); }}
-          className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-4 flex flex-col gap-3 cursor-pointer [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Cuti Tahunan</span>
-            <div className="w-8 h-8 rounded-app bg-teal-50 flex items-center justify-center">
-              <Umbrella className="w-4 h-4 text-teal-600" />
-            </div>
-          </div>
-          <div>
-            <p className="text-3xl font-bold text-slate-900 leading-none">{metrics.annualLeaveRemaining}</p>
-            <p className="text-xs text-slate-500 mt-1">dari {metrics.annualLeaveQuota} hari tersisa</p>
-          </div>
-          <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-teal-400 rounded-full"
-              style={{ width: `${metrics.annualLeaveQuota ? Math.min((metrics.annualLeaveRemaining / metrics.annualLeaveQuota) * 100, 100) : 0}%` }}
-            />
-          </div>
-        </div>
-
+          label="Cuti Tahunan"
+          value={metrics.annualLeaveRemaining}
+          sub={`dari ${metrics.annualLeaveQuota} hari tersisa`}
+          Icon={Umbrella}
+          iconBox="bg-teal-50"
+          iconColor="text-teal-600"
+          barTrack="bg-slate-100"
+          barColor="bg-teal-400"
+          progress={metrics.annualLeaveQuota ? Math.min((metrics.annualLeaveRemaining / metrics.annualLeaveQuota) * 100, 100) : 0}
+          className="col-span-2 lg:col-span-1"
+        />
       </div>
-
 
       {/* ── Row 2: hari kerja & ketidakhadiran periode (kartu absensi hanya muncul bila ada) ── */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        {[
-          { key: 'workDays', label: 'Hari Kerja', value: metrics.workDays, sub: 'hari kerja periode ini', Icon: Briefcase, box: 'bg-app-soft', icon: 'text-app-accent', always: true },
-          { key: 'cuti', label: 'Cuti', value: metrics.absence.cuti, sub: 'hari cuti periode ini', Icon: Umbrella, box: 'bg-teal-50', icon: 'text-teal-600' },
-          { key: 'izin', label: 'Izin', value: metrics.absence.izin, sub: 'hari izin periode ini', Icon: FileText, box: 'bg-amber-50', icon: 'text-amber-600' },
-          { key: 'sakit', label: 'Sakit', value: metrics.absence.sakit, sub: 'hari sakit periode ini', Icon: Stethoscope, box: 'bg-rose-50', icon: 'text-rose-600' },
-          { key: 'training', label: 'Training', value: metrics.absence.training, sub: 'hari training periode ini', Icon: GraduationCap, box: 'bg-violet-50', icon: 'text-violet-600' }
-        ].filter(c => c.always || c.value > 0).map(({ key, label, value, sub, Icon, box, icon }) => (
-          <div key={key} className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-4 flex flex-col gap-3 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{label}</span>
-              <div className={cn("w-8 h-8 rounded-app flex items-center justify-center", box)}>
-                <Icon className={cn("w-4 h-4", icon)} />
-              </div>
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-slate-900 leading-none">{value}</p>
-              <p className="text-xs text-slate-500 mt-1">{sub}</p>
-            </div>
-          </div>
+        {absenceCards.map(({ key, label, value, sub, Icon, box, icon }, i) => (
+          <StatCard
+            key={key}
+            label={label}
+            value={value}
+            sub={sub}
+            Icon={Icon}
+            iconBox={box}
+            iconColor={icon}
+            className={absenceCards.length % 2 === 1 && i === absenceCards.length - 1 ? "col-span-2 lg:col-span-1" : undefined}
+          />
         ))}
       </div>
 
