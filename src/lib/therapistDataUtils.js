@@ -64,6 +64,41 @@ export const getTherapistPatientsFromRecaps = async (therapistId) => {
 };
 
 /**
+ * Mengambil jam mulai appointment (appointments.appointment_date) untuk daftar recap.
+ * Gagal ambil = dianggap tidak ada jam, supaya tidak menyembunyikan kunjungan.
+ *
+ * @param {Array<{appointment_id?: string}>} recaps
+ * @returns {Promise<Map<string, string>>} appointment_id -> ISO start
+ */
+const fetchAppointmentStarts = async (recaps) => {
+  const ids = [...new Set((recaps || []).map(r => r.appointment_id).filter(Boolean))];
+  const starts = new Map();
+  const chunkSize = 200;
+
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('id, appointment_date')
+      .in('id', ids.slice(i, i + chunkSize));
+
+    if (error) {
+      console.error('Error fetching appointment start times:', error);
+      continue;
+    }
+    (data || []).forEach(a => starts.set(a.id, a.appointment_date));
+  }
+
+  return starts;
+};
+
+/**
+ * SOAP baru terbuka setelah jam appointment dimulai. Kunjungan tanpa jam
+ * (tidak ada appointment) dianggap sudah terbuka.
+ */
+export const isSoapOpenForVisit = (appointmentStart, now = new Date()) =>
+  !appointmentStart || new Date(appointmentStart) <= now;
+
+/**
  * Fetches daily recaps (visits) for a therapist, optionally scoped to a date range.
  * Updated to use therapist_id filter and removed rm_number.
  *
@@ -116,9 +151,12 @@ export const getTherapistVisits = async (therapistId, startDate = null, endDate 
       (patients || []).forEach(p => patientsById.set(p.id, p));
     }
 
+    const appointmentStarts = await fetchAppointmentStarts(recaps);
+
     const visits = (recaps || []).map(recap => ({
       ...recap,
       patient: patientsById.get(recap.actual_patient_id || recap.patient_id) || null,
+      appointment_start: appointmentStarts.get(recap.appointment_id) || null,
     }));
 
     return { data: visits, error: null };
@@ -145,7 +183,7 @@ export const getUnfilledSOAPVisits = async (_unusedName, therapistId, startDate 
     // ambil semua recap therapist dalam periode
     let query = supabase
       .from('daily_recaps')
-      .select('id, patient_id, actual_patient_id')
+      .select('id, patient_id, actual_patient_id, appointment_id')
       .eq('therapist_id', therapistId);
 
     if (startDate) query = query.gte('recap_date', startDate);
@@ -157,7 +195,14 @@ export const getUnfilledSOAPVisits = async (_unusedName, therapistId, startDate 
 
     // Kunjungan guest (tanpa pasien terdaftar) tidak punya SOAP dan tidak tampil
     // di halaman Catatan, jadi tidak dihitung supaya angkanya konsisten dengan daftar.
-    const recaps = (allRecaps || []).filter(r => r.actual_patient_id || r.patient_id);
+    const registeredRecaps = (allRecaps || []).filter(r => r.actual_patient_id || r.patient_id);
+
+    // SOAP juga belum terbuka sebelum jam appointment dimulai, jadi belum dihitung.
+    const appointmentStarts = await fetchAppointmentStarts(registeredRecaps);
+    const now = new Date();
+    const recaps = registeredRecaps.filter(r =>
+      isSoapOpenForVisit(appointmentStarts.get(r.appointment_id), now)
+    );
 
     if (recaps.length === 0) {
       return { count: 0, error: null };
