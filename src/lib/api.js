@@ -3677,6 +3677,54 @@ export const restockInventoryItem = async ({ item_id, quantity, total_price, pur
   }, 'restockInventoryItem');
 };
 
+export const createPendingInventoryOrder = async ({ item_id, quantity, total_price, paid_date, expected_date, supplier, notes }) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.rpc('create_pending_inventory_order', {
+      p_item_id: item_id,
+      p_quantity: Number(quantity),
+      p_total_price: Number(total_price),
+      p_paid_date: paid_date || new Date().toISOString().slice(0, 10),
+      p_expected_date: expected_date || null,
+      p_supplier: supplier || null,
+      p_notes: notes || null
+    });
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'createPendingInventoryOrder');
+};
+
+export const getPendingInventoryOrders = async ({ status = 'pending' } = {}) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('inventory_pending_orders')
+      .select('*, inventory_items ( item_name, unit )')
+      .eq('status', status)
+      .order('paid_date', { ascending: true });
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'getPendingInventoryOrders');
+};
+
+export const receivePendingInventoryOrder = async (id, { received_quantity, received_date } = {}) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.rpc('receive_pending_inventory_order', {
+      p_id: id,
+      p_received_quantity: received_quantity ? Number(received_quantity) : null,
+      p_received_date: received_date || new Date().toISOString().slice(0, 10)
+    });
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'receivePendingInventoryOrder');
+};
+
+export const cancelPendingInventoryOrder = async (id) => {
+  return safeQuery(async () => {
+    const { error } = await supabase.rpc('cancel_pending_inventory_order', { p_id: id });
+    if (error) return { error };
+    return { success: true, error: null };
+  }, 'cancelPendingInventoryOrder');
+};
+
 export const takeInventoryStock = async ({ item_id, quantity, taken_date, notes }) => {
   return safeQuery(async () => {
     const { data, error } = await supabase.rpc('take_inventory_stock', {
