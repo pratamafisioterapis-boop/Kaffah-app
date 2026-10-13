@@ -298,6 +298,12 @@ const TherapistCard = ({
                       }`}
                       {isFullBooked && 'Semua slot hari ini sudah terbooking'}
                       {!isLeave && !isFullBooked && 'Tidak ada slot kosong'}
+                      {replacement && !isLeave && availableSlots.length === 0 && !isFullBooked && (
+                        <>
+                          <br />
+                          Jadwal pengganti izin sudah ada, slot dibuka otomatis mendekati tanggal ini
+                        </>
+                      )}
                    </span>
                 {isFullBooked && (
        <p className="text-xs text-slate-500 mt-1">
