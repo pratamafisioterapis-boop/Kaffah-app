@@ -6,19 +6,22 @@ import InventoryItemList from '@/components/owner/inventory/InventoryItemList';
 import InventoryRestockModal from '@/components/owner/inventory/InventoryRestockModal';
 import InventoryPurchaseHistoryModal from '@/components/owner/inventory/InventoryPurchaseHistoryModal';
 import InventoryItemEditModal from '@/components/owner/inventory/InventoryItemEditModal';
+import InventoryPendingOrders from '@/components/owner/inventory/InventoryPendingOrders';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import InventoryMonthlyTakeOut from '@/components/owner/inventory/InventoryMonthlyTakeOut';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { generateInventoryStockPDF } from '@/lib/exportUtils';
-import { Boxes, Wallet, Download, ClipboardList } from 'lucide-react';
+import { Boxes, Wallet, Download, ClipboardList, Truck } from 'lucide-react';
 import { OWNER_NAV_ITEMS as ownerNavItems } from '@/lib/navItems';
 import PageHero from '@/components/shared/PageHero';
 
 const InventoryStockPage = () => {
   const { toast } = useToast();
-  const { clinicName } = useAuth();
+  const { clinicName, userDetails } = useAuth();
+  const isKaffah = userDetails?.clinic_id === KAFFAH_CLINIC_ID;
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [restockTarget, setRestockTarget] = useState(null);
@@ -76,7 +79,7 @@ const InventoryStockPage = () => {
         </div>
 
         <Tabs defaultValue="stok" className="w-full space-y-4">
-          <TabsList className="grid w-full sm:w-[420px] grid-cols-2 p-1 bg-slate-100 rounded-app">
+          <TabsList className={`grid w-full ${isKaffah ? "sm:w-[600px]" : "sm:w-[420px]"} ${isKaffah ? "grid-cols-3" : "grid-cols-2"} p-1 bg-slate-100 rounded-app`}>
             <TabsTrigger
               value="stok"
               className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 flex items-center gap-2"
@@ -89,6 +92,14 @@ const InventoryStockPage = () => {
             >
               <ClipboardList className="w-4 h-4" /> Pengambilan Bulanan
             </TabsTrigger>
+            {isKaffah && (
+              <TabsTrigger
+                value="dikirim"
+                className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 flex items-center gap-2"
+              >
+                <Truck className="w-4 h-4" /> Pesanan Dikirim
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="stok" className="mt-0 outline-none">
@@ -120,6 +131,12 @@ const InventoryStockPage = () => {
             <h2 className="text-sm font-semibold text-slate-700 mb-3">Riwayat Pengambilan Barang per Bulan</h2>
             <InventoryMonthlyTakeOut />
           </TabsContent>
+          {isKaffah && (
+            <TabsContent value="dikirim" className="mt-0 outline-none">
+              <h2 className="text-sm font-semibold text-slate-700 mb-3">Pembelian Online yang Belum Diterima</h2>
+              <InventoryPendingOrders onChanged={fetchItems} />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
