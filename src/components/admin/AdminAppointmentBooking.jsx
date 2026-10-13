@@ -257,6 +257,14 @@ const formattedDateFull = date
         .lte('start_date', dateStr)
         .gte('end_date', dateStr);
 
+      // Jadwal pengganti izin yang slotnya belum dibuat (slot baru digenerate 30 hari ke depan)
+      // tetap harus terbaca sebagai hari pengganti, bukan libur.
+      const { data: extraShiftRows } = await supabase
+        .from('therapist_extra_shifts')
+        .select('therapist_id')
+        .eq('shift_date', dateStr);
+      const hasExtraShift = new Set((extraShiftRows || []).map(r => r.therapist_id));
+
       (timeOffRows || []).forEach(row => {
         // Kategori disimpan sebagai "<Kategori> - <catatan>" (lihat TherapistTimeOffForm).
         // Ambil kategorinya saja — jangan cari kata "cuti" di seluruh string,
@@ -272,7 +280,7 @@ const formattedDateFull = date
           : category === 'event' ? 'Event'
           : (row.reason || '').split(' - ')[0].trim() || 'Lainnya';
         // Libur mingguan tidak menutup hari itu bila terapis punya slot aktif dari jadwal pengganti.
-        if (row.leave_type === 'weekly_off' && ['aktif', 'terisi', 'terkunci'].includes(statusMap[row.therapist_id])) {
+        if (row.leave_type === 'weekly_off' && (['aktif', 'terisi', 'terkunci'].includes(statusMap[row.therapist_id]) || hasExtraShift.has(row.therapist_id))) {
           replacementMap[row.therapist_id] = true;
           return;
         }
