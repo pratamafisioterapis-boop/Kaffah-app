@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, PackagePlus, Boxes, AlertTriangle, Search, ChevronLeft, ChevronRight, X, ArrowUpDown, Pencil } from 'lucide-react';
+import { Trash2, PackagePlus, Boxes, AlertTriangle, Search, ChevronLeft, ChevronRight, X, Pencil } from 'lucide-react';
 import { deleteInventoryItem } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 import { confirmAction } from '@/lib/confirmAction';
@@ -86,11 +86,10 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory, on
             )}
           </div>
           <div className="relative sm:w-56">
-            <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
             <select
               value={sortBy}
               onChange={(e) => handleSortChange(e.target.value)}
-              className="w-full h-9 pl-8 pr-3 rounded-md border border-slate-200 bg-white text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-200"
+              className="w-full h-9 px-3 rounded-md border border-slate-200 bg-white text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-200"
             >
               {SORT_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
