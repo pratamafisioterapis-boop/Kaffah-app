@@ -77,17 +77,80 @@ const STARS = [
   [80, 7, 1.5], [92, 20, 2], [14, 30, 1.5], [44, 34, 1.5], [74, 36, 2], [90, 40, 1.5],
 ];
 
-// Seven vertebrae, tapering top (cervical) to bottom (lumbar). bx/br are the
-// "bent" starting offset and tilt each one straightens out of.
-const VERTEBRAE = [
-  { w: 18, bx: -9, br: -14 },
-  { w: 20, bx: -14, br: -10 },
-  { w: 22, bx: -8, br: -4 },
-  { w: 24, bx: 6, br: 8 },
-  { w: 26, bx: 12, br: 12 },
-  { w: 28, bx: 8, br: 6 },
-  { w: 30, bx: -4, br: -3 },
-];
+// Anatomical side view of the spine (facing right, anterior = +x): 7 cervical,
+// 12 thoracic and 5 lumbar vertebrae, then sacrum + coccyx. Each segment is
+// placed along a centreline and tilted to follow it. The animation moves every
+// segment from a hunched posture (exaggerated kyphosis, head forward) to the
+// natural S-curve (cervical + lumbar lordosis, thoracic kyphosis).
+const gauss = (t, m, s) => Math.exp(-((t - m) ** 2) / (2 * s * s));
+const SPINE_X = 66;
+const curveHealthy = (t) =>
+  8 * gauss(t, 0.07, 0.09) - 10 * gauss(t, 0.4, 0.17) + 11 * gauss(t, 0.8, 0.1) - 8 * gauss(t, 0.98, 0.05);
+const curveHunched = (t) =>
+  27 * gauss(t, 0.02, 0.08) - 38 * gauss(t, 0.42, 0.2) - 4 * gauss(t, 0.8, 0.1) - 6 * gauss(t, 0.98, 0.06);
+
+const SPINE = (() => {
+  const segs = [];
+  for (let i = 0; i < 7; i++) segs.push({ kind: 'c', w: 8 + i * 0.5, h: 4.2 + i * 0.15, d: 1.6, sp: i === 6 ? 8 : 4 });
+  for (let i = 0; i < 12; i++) segs.push({ kind: 't', w: 11 + i * 0.6, h: 5.2 + i * 0.17, d: 2, sp: 9 });
+  for (let i = 0; i < 5; i++) segs.push({ kind: 'l', w: 19 + i * 0.5, h: 8.4 + i * 0.2, d: 3, sp: 7 });
+  let y = 6;
+  segs.forEach((s) => { s.y = y + s.h / 2; y += s.h + s.d; });
+  segs.push({ kind: 'sacrum', y, w: 22, h: 0, d: 0, sp: 0 });
+  const total = y + 32;
+  const pose = (s) => {
+    const t = (s.kind === 'sacrum' ? s.y + 10 : s.y) / total;
+    const e = 0.01;
+    const tilt = (f) => (-Math.atan2(f(t + e) - f(t - e), 2 * e * total) * 180) / Math.PI;
+    return {
+      ...s,
+      x1: SPINE_X + curveHealthy(t), y1: s.y, r1: tilt(curveHealthy),
+      x0: SPINE_X + curveHunched(t), y0: 6 + (s.y - 6) * 0.96, r0: tilt(curveHunched),
+    };
+  };
+  return segs.map(pose);
+})();
+
+const Vertebra = ({ v, i }) => {
+  const hw = v.w / 2;
+  const hh = v.h / 2;
+  const style = {
+    '--i': i,
+    '--x0': `${v.x0}px`, '--y0': `${v.y0}px`, '--r0': `${v.r0}deg`,
+    '--x1': `${v.x1}px`, '--y1': `${v.y1}px`, '--r1': `${v.r1}deg`,
+  };
+
+  if (v.kind === 'sacrum') {
+    return (
+      <g className="splash-vert" style={style}>
+        <path className="splash-bone" d="M-11 0 L11 0 Q10 13 3 26 L-5 26 Q-12 13 -11 0 Z" />
+        <circle className="splash-hole" cx="4" cy="7" r="1" />
+        <circle className="splash-hole" cx="2" cy="13" r="0.9" />
+        <circle className="splash-hole" cx="0" cy="19" r="0.8" />
+        <path className="splash-bone" d="M-4 27 L3 27 L1 34 L-2.5 34 Z" />
+      </g>
+    );
+  }
+
+  const sx0 = -hw - 2.5;
+  const tipX = sx0 - v.sp;
+  const tipY = v.kind === 't' ? hh * 0.95 : v.kind === 'c' ? hh * 0.2 : 0;
+  const thick = v.kind === 'l' ? hh * 0.7 : hh * 0.3;
+  const body =
+    `M${-hw + 1} ${-hh} L${hw - 1} ${-hh} Q${hw + 0.4} ${-hh} ${hw + 0.4} ${-hh + 1.2} ` +
+    `Q${hw - 0.8} 0 ${hw + 0.4} ${hh - 1.2} Q${hw + 0.4} ${hh} ${hw - 1} ${hh} ` +
+    `L${-hw + 1} ${hh} Q${-hw} ${hh} ${-hw} ${hh - 1} L${-hw} ${-hh + 1} Q${-hw} ${-hh} ${-hw + 1} ${-hh} Z`;
+
+  return (
+    <g className="splash-vert" style={style}>
+      <rect className="splash-disc" x={-hw * 0.92} y={hh + 0.2} width={hw * 1.84} height={v.d - 0.4} rx="0.8" />
+      <path className="splash-bone" d={`M${sx0} ${-thick} L${tipX} ${tipY - thick * 0.6} L${tipX} ${tipY + thick * 0.6} L${sx0} ${thick} Z`} />
+      <rect className="splash-bone" x={-hw - 3} y={-hh * 0.8} width="3.4" height={hh * 1.6} rx="1.2" />
+      <ellipse className="splash-bone" cx={-hw - 1.6} cy={-hh * 0.95} rx="1.6" ry="1.2" />
+      <path className="splash-bone" d={body} />
+    </g>
+  );
+};
 
 const SkyDecor = ({ period }) => {
   if (period === 'malam') {
@@ -250,17 +313,9 @@ export default function SplashScreen({ onDone }) {
 
       <div className="relative z-10 flex flex-col items-center text-center max-w-sm w-full">
 
-        {/* Spine straightening: vertebrae start bent, align one by one, then a glow runs down */}
-        <svg viewBox="0 0 60 96" className="splash-spine h-[92px] w-auto mb-4" aria-hidden="true">
-          <line className="splash-cord" x1="30" y1="4" x2="30" y2="92" stroke="#d4af37" strokeWidth="1" strokeLinecap="round" />
-          {VERTEBRAE.map((v, i) => (
-            <rect
-              key={i}
-              className="splash-vert"
-              x={30 - v.w / 2} y={4 + i * 13} width={v.w} height="8" rx="4"
-              style={{ '--i': i, '--bx': `${v.bx}px`, '--br': `${v.br}deg` }}
-            />
-          ))}
+        {/* Anatomical spine: starts hunched, realigns into the natural S-curve, then a glow runs down */}
+        <svg viewBox="0 0 112 252" className="splash-spine h-[168px] w-auto mb-3" aria-hidden="true">
+          {SPINE.map((v, i) => <Vertebra key={i} v={v} i={i} />)}
         </svg>
 
         {userDetails && (
@@ -334,25 +389,28 @@ export default function SplashScreen({ onDone }) {
         .splash-glow { animation: splash-glow-pulse 5s ease-in-out infinite; }
         @keyframes splash-glow-pulse { 0%, 100% { opacity: .7; } 50% { opacity: 1; } }
 
-        .splash-cord { stroke-opacity: .35; stroke-dasharray: 88; stroke-dashoffset: 88; animation: splash-cord-draw .9s ease-out .7s forwards; }
-        @keyframes splash-cord-draw { to { stroke-dashoffset: 0; } }
-
+        /* Base transform is the healthy pose, so reduced-motion / end state is correct. */
         .splash-vert {
-          fill: rgba(212,175,55,.14); stroke: #d4af37; stroke-width: 1.2;
-          transform-box: fill-box; transform-origin: center;
+          transform: translate(var(--x1), var(--y1)) rotate(var(--r1));
           animation:
-            splash-vert-align 1.1s cubic-bezier(.3,1.25,.5,1) calc(var(--i) * .08s) both,
-            splash-vert-glow .7s ease-in-out calc(1s + var(--i) * .07s) both;
+            splash-vert-in .35s ease-out calc(var(--i) * .015s) both,
+            splash-vert-align .8s cubic-bezier(.3,1.2,.5,1) calc(.45s + var(--i) * .015s) both;
         }
+        @keyframes splash-vert-in { from { opacity: 0; } to { opacity: 1; } }
         @keyframes splash-vert-align {
-          0%   { opacity: 0; transform: translate(var(--bx), -8px) rotate(var(--br)) scale(.6); }
-          35%  { opacity: 1; transform: translate(var(--bx), 0) rotate(var(--br)) scale(1); }
-          100% { opacity: 1; transform: none; }
+          from { transform: translate(var(--x0), var(--y0)) rotate(var(--r0)); }
+          to   { transform: translate(var(--x1), var(--y1)) rotate(var(--r1)); }
         }
-        @keyframes splash-vert-glow {
-          0%   { fill: rgba(212,175,55,.14); }
-          50%  { fill: rgba(212,175,55,.8); }
-          100% { fill: rgba(212,175,55,.28); }
+        .splash-bone {
+          fill: rgba(244,232,196,.3); stroke: #d4af37; stroke-width: .7; stroke-linejoin: round;
+          animation: splash-bone-glow .6s ease-in-out calc(1s + var(--i) * .02s) both;
+        }
+        .splash-disc { fill: rgba(150,205,230,.32); }
+        .splash-hole { fill: rgba(8,9,15,.75); }
+        @keyframes splash-bone-glow {
+          0%   { fill: rgba(244,232,196,.14); }
+          50%  { fill: rgba(255,226,140,.85); }
+          100% { fill: rgba(244,232,196,.3); }
         }
 
         .splash-star { opacity: 0; animation: splash-twinkle 2.2s ease-in-out var(--sd) infinite; }
@@ -391,11 +449,11 @@ export default function SplashScreen({ onDone }) {
 
         @media (prefers-reduced-motion: reduce) {
           .splash-glow, .splash-badge, .splash-anim, .splash-bar-fill,
-          .splash-vert, .splash-cord, .splash-star, .splash-moon, .splash-rays,
+          .splash-vert, .splash-bone, .splash-star, .splash-moon, .splash-rays,
           .splash-sky > div { animation: none !important; }
           .splash-badge, .splash-anim { opacity: 1 !important; transform: none !important; }
-          .splash-ring circle, .splash-cord { stroke-dashoffset: 0 !important; }
-          .splash-vert { fill: rgba(212,175,55,.28); }
+          .splash-ring circle { stroke-dashoffset: 0 !important; }
+          .splash-vert { opacity: 1 !important; }
           .splash-star { opacity: .6; }
           .splash-moon { opacity: .9; }
         }
