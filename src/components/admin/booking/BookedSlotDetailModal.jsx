@@ -28,7 +28,7 @@ const BookedSlotDetailModal = ({
 }) => {
   const { toast } = useToast();
 const { user, userDetails } = useAuth();
-  // Kaffah Physio: terapis tidak boleh membatalkan booking pasien (hanya booking & reschedule)
+  // Kaffah Physio: terapis tidak boleh membatalkan/menghapus booking pasien (hanya booking & reschedule)
   const hideCancel = userDetails?.clinic_id === KAFFAH_CLINIC_ID &&
     ['therapist', 'physiotherapist'].includes(userDetails?.role);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -327,6 +327,7 @@ useEffect(() => {
   {/* ACTION ROW */}
   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 w-full">
 
+    {!hideCancel && (
     <Button
       variant="outline"
       size="sm"
@@ -335,6 +336,7 @@ useEffect(() => {
     >
       Hapus
     </Button>
+    )}
 
     {!hideCancel && (
     <Button
