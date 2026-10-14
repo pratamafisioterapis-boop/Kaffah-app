@@ -189,8 +189,22 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       }
     }
 
+    // Jam slot terapi (dipakai template kwitansi untuk klinik Praxis).
+    let slotEnd = null;
+    if (recap.appointment_id) {
+      const { data: appt } = await supabase
+        .from('appointments')
+        .select('appointment_date, duration_minutes')
+        .eq('id', recap.appointment_id)
+        .maybeSingle();
+      if (appt?.appointment_date) {
+        slotEnd = new Date(new Date(appt.appointment_date).getTime() + (appt.duration_minutes || 60) * 60000).toISOString();
+      }
+    }
+
     setDetailData({
       ...recap,
+      slot_end_at: slotEnd,
       therapist_name: physioData?.name || recap.therapist_name || '-',
       signature_url:  physioData?.signature_url || null,
       stamp_url:      physioData?.stamp_url     || null,
