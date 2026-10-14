@@ -1,6 +1,7 @@
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import SplashScreen from "@/components/SplashScreen";
+import Loader from "@/components/shared/Loader";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { AuthProvider, useAuth } from '@/contexts/SupabaseAuthContext';
@@ -116,20 +117,12 @@ const LoadingFallback = () => (
     style={{ backgroundImage: "url('/loading-bg.jpg')" }}
   >
     <div className="relative z-10 flex flex-col items-center gap-6">
-      {/* Spinner ring */}
-      <div className="relative w-20 h-20">
-        <div className="absolute inset-0 rounded-full border-4 border-slate-200" />
-        <div
-          className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500"
-          style={{ animation: 'spin 0.9s linear infinite' }}
-        />
-      </div>
+      <Loader size="lg" />
       <div className="flex flex-col items-center gap-2">
         <p className="text-slate-800 text-base font-bold uppercase tracking-[0.3em]">Memuat...</p>
         <p className="text-slate-400 text-sm">Mohon tunggu sebentar</p>
       </div>
     </div>
-    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
   </div>
 );
 
