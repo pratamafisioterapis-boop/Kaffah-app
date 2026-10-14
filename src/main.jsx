@@ -29,6 +29,10 @@ window.onunhandledrejection = function(event) {
 
 console.log("System initializing... React version:", React.version);
 
+// Ask the browser not to evict our storage (it holds the login session), so the
+// installed PWA stays signed in after being closed or under memory pressure.
+try { navigator.storage?.persist?.(); } catch { /* ignore */ }
+
 try {
   const rootElement = document.getElementById('root');
   
