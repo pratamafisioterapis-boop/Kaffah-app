@@ -17,9 +17,13 @@ const ResumeMedisCpptDialog = ({ isOpen, onClose, group, clinic }) => {
     if (!isOpen || !group?.patient?.id) { setData(null); return undefined; }
     let cancelled = false;
     (async () => {
-      const [{ data: p }, { data: lastDoc }] = await Promise.all([
+      const [{ data: p }, { data: lastDoc }, { data: lastRecap }] = await Promise.all([
         supabase.from('patients').select('*').eq('id', group.patient.id).maybeSingle(),
         getLatestClinicalDocumentForPatient('resume_medis', group.patient.id),
+        // No Admission = nomor registrasi kunjungan terakhir (daily_recaps).
+        supabase.from('daily_recaps').select('admission_number')
+          .eq('patient_id', group.patient.id).not('admission_number', 'is', null)
+          .order('recap_date', { ascending: false }).limit(1).maybeSingle(),
       ]);
       if (cancelled) return;
       const pt = p || group.patient;
@@ -38,6 +42,7 @@ const ResumeMedisCpptDialog = ({ isOpen, onClose, group, clinic }) => {
         medical_record_number: pt.medical_record_number || '-',
         birth_date: pt.birth_date || null,
         gender: normalizeGender(pt.gender),
+        admission_number: lastRecap?.admission_number || base.admission_number || '',
         document_date: new Date().toISOString().slice(0, 10),
       });
     })();

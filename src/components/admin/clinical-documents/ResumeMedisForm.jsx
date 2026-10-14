@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, ClipboardList, Eye } from 'lucide-react';
 import SearchableSelect from '@/components/ui/searchable-select';
 import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/customSupabaseClient';
 import { normalizeGender } from '@/lib/utils';
 import {
   getPatients, getPatientById, getPhysiotherapists, getClinicDetails,
@@ -89,6 +90,14 @@ const ResumeMedisForm = ({ onSaved }) => {
     setForm((f) => ({ ...f, patient_id: patientId }));
     const { data } = await getPatientById(patientId);
     setSelectedPatient(data || null);
+
+    // Praxis: No Admission diisi otomatis dari nomor registrasi kunjungan terakhir.
+    const { data: lastRecap } = await supabase.from('daily_recaps').select('admission_number')
+      .eq('patient_id', patientId).not('admission_number', 'is', null)
+      .order('recap_date', { ascending: false }).limit(1).maybeSingle();
+    if (lastRecap?.admission_number) {
+      setForm((f) => ({ ...f, admission_number: lastRecap.admission_number }));
+    }
 
     const { data: lastDoc } = await getLatestClinicalDocumentForPatient('resume_medis', patientId);
     if (lastDoc?.data) {
