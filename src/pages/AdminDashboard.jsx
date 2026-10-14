@@ -96,6 +96,7 @@ const [topServices, setTopServices] = useState([]);
     return () => clearTimeout(timer);
   }, [rangeInput]);
   useEffect(() => {
+  let cancelled = false;
   const fetchSlotData = async (range) => {
   const todayDate = new Date();
   const dayOfWeek = todayDate.getDay(); // 0–6
@@ -106,311 +107,200 @@ const today = new Date().toISOString().split('T')[0];
 
 const { data: sessionData } = await supabase.auth.getSession();
 const currentUserId = sessionData?.session?.user?.id;
-const currentUserRow = { clinic_id: await getCachedClinicId(currentUserId) };
+const clinicId = await getCachedClinicId(currentUserId);
 
-const [
-  { data: slotsData, error: slotError },
-  { data: filledAppointments, error: filledError },
-] = await Promise.all([
-  supabase.rpc('get_available_slots_with_status_by_date', {
-    p_date: today,
-    p_clinic_id: currentUserRow?.clinic_id
-  }),
-  // 🔥 SLOT TERISI = JUMLAH APPOINTMENT (REAL PASIEN)
-  supabase
-    .from('appointments')
-    .select('id')
-    .eq('clinic_id', currentUserRow?.clinic_id)
-    .gte('appointment_date', today + 'T00:00:00')
-    .lte('appointment_date', today + 'T23:59:59')
-    .neq('status', 'cancelled'),
-]);
+// Kartu slot dan kartu statistik tidak saling bergantung — jalan bersamaan,
+// masing-masing menampilkan hasilnya begitu selesai.
+const loadSlots = async () => {
+  const [
+    { data: slotsData, error: slotError },
+    { data: filledAppointments, error: filledError },
+  ] = await Promise.all([
+    supabase.rpc('get_available_slots_with_status_by_date', {
+      p_date: today,
+      p_clinic_id: clinicId
+    }),
+    // SLOT TERISI = JUMLAH APPOINTMENT (REAL PASIEN)
+    supabase
+      .from('appointments')
+      .select('id')
+      .eq('clinic_id', clinicId)
+      .gte('appointment_date', today + 'T00:00:00')
+      .lte('appointment_date', today + 'T23:59:59')
+      .neq('status', 'cancelled'),
+  ]);
 
-if (slotError) {
-  console.error(slotError);
-  return;
-}
+  if (slotError) { console.error(slotError); return; }
+  if (filledError) { console.error(filledError); return; }
+  if (cancelled) return;
 
-// TOTAL SLOT
-const total = slotsData.length;
+  setSlotData({ total: slotsData.length, filled: filledAppointments.length });
+};
 
-if (filledError) {
-  console.error(filledError);
-  return;
-}
+const loadStats = async () => {
+  // Satu query daily_recaps untuk semua kartu (sebelumnya 4 query terpisah
+  // dengan filter yang sama), plus master diagnosa secara paralel.
+  const [
+    { data: recaps, error: recapError },
+    { data: masterDiagnoses },
+  ] = await Promise.all([
+    supabase
+      .from('daily_recaps')
+      .select('therapist_id, recap_date, patient_id, service_type, diagnosis')
+      .eq('clinic_id', clinicId)
+      .gte('recap_date', range.startDate)
+      .lte('recap_date', range.endDate),
+    supabase
+      .from('operational_options')
+      .select('id, label')
+      .eq('clinic_id', clinicId)
+      .eq('category', 'diagnosa'),
+  ]);
 
-const filled = filledAppointments.length;
+  if (recapError) { console.error(recapError); return; }
 
-// SET STATE
-setSlotData({
-  total,
-  filled
-});
-  const { data: therapistRecaps, error: recapError } = await supabase
-  .from('daily_recaps')
-  .select(`
-    therapist_id,
-    recap_date
-  `)
-  .eq('clinic_id', currentUserRow?.clinic_id)
-  .gte('recap_date', range.startDate)
-  .lte('recap_date', range.endDate);
+  const therapistRecaps = recaps || [];
+  const patientAppointments = therapistRecaps.filter(r => r.patient_id);
 
-if (recapError) {
-  console.error(recapError);
-  return;
-}
-const therapistIds = [...new Set(therapistRecaps.map(t => t.therapist_id))];
+  const therapistIds = [...new Set(therapistRecaps.map(t => t.therapist_id).filter(Boolean))];
+  const patientIds = [...new Set(patientAppointments.map(p => p.patient_id))];
+  const serviceIds = [...new Set(patientAppointments.map(i => i.service_type).filter(Boolean))];
 
-const { data: therapistData } = await supabase
-  .from('physiotherapists')
-  .select('id, name')
-  .in('id', therapistIds);
+  // Lookup nama: tiga query independen, dijalankan bersamaan.
+  const [
+    { data: therapistData },
+    { data: patientsData },
+    { data: servicesData },
+  ] = await Promise.all([
+    supabase.from('physiotherapists').select('id, name').in('id', therapistIds),
+    supabase.from('patients').select('id, full_name').in('id', patientIds),
+    supabase.from('services').select('id, name').in('id', serviceIds),
+  ]);
 
-const therapistNameMap = {};
-therapistData.forEach(t => {
-  therapistNameMap[t.id] = t.name;
-});
-
+  if (cancelled) return;
 
   // === THERAPIST PERFORMANCE ===
-const therapistMap = {};
+  const therapistNameMap = {};
+  therapistData?.forEach(t => { therapistNameMap[t.id] = t.name; });
 
-therapistRecaps.forEach(item => {
-  if (!item.therapist_id) return;
+  const therapistMap = {};
+  therapistRecaps.forEach(item => {
+    if (!item.therapist_id) return;
+    therapistMap[item.therapist_id] = (therapistMap[item.therapist_id] || 0) + 1;
+  });
 
-  if (!therapistMap[item.therapist_id]) {
-    therapistMap[item.therapist_id] = 0;
-  }
+  setTherapistStats(
+    Object.entries(therapistMap)
+      .map(([therapist_id, total]) => ({
+        therapist_id,
+        name: therapistNameMap[therapist_id] || 'Unknown',
+        total
+      }))
+      .sort((a, b) => b.total - a.total)
+  );
 
-  therapistMap[item.therapist_id] += 1;
-});
+  // === TOP PATIENT ===
+  const patientNameMap = {};
+  patientsData?.forEach(p => { patientNameMap[p.id] = p.full_name; });
 
-const therapistStatsArray = Object.entries(therapistMap)
-  .map(([therapist_id, total]) => {
-  const therapist = therapistNameMap[therapist_id];
+  const patientMap = {};
+  patientAppointments.forEach(item => {
+    if (!patientMap[item.patient_id]) {
+      patientMap[item.patient_id] = {
+        name: patientNameMap[item.patient_id] || 'Unknown',
+        total: 0
+      };
+    }
+    patientMap[item.patient_id].total += 1;
+  });
+  setTopPatients(Object.values(patientMap).sort((a, b) => b.total - a.total));
 
-  return {
-    therapist_id,
-    name: therapistNameMap[therapist_id] || 'Unknown',
-    total
-  };
-})
-  .sort((a, b) => b.total - a.total);
+  // === TOP SERVICES ===
+  const serviceNameMap = {};
+  servicesData?.forEach(s => { serviceNameMap[s.id] = s.name; });
 
-setTherapistStats(therapistStatsArray);
+  const serviceMap = {};
+  patientAppointments.forEach(item => {
+    if (!item.service_type) return;
+    const serviceName = serviceNameMap[item.service_type] || item.service_type;
+    serviceMap[serviceName] = (serviceMap[serviceName] || 0) + 1;
+  });
+  setTopServices(
+    Object.entries(serviceMap)
+      .map(([name, total]) => ({ name, total }))
+      .sort((a, b) => b.total - a.total)
+  );
 
-// === TOP PATIENT ===
-const { data: patientAppointments, error: patientError } = await supabase
-  .from('daily_recaps')
-  .select('patient_id, recap_date, service_type')
-   .not('patient_id', 'is', null)
-   .eq('clinic_id', currentUserRow?.clinic_id)
-  .gte('recap_date', range.startDate)
-  .lte('recap_date', range.endDate);
+  // === TOP DIAGNOSIS ===
+  const diagnosisNameMap = {};
+  masterDiagnoses?.forEach(d => { diagnosisNameMap[d.id] = d.label; });
 
-if (patientError) {
-  console.error(patientError);
-  return;
-}
+  const diagnosisMap = {};
+  therapistRecaps.forEach(item => {
+    if (!item.diagnosis) return;
 
-// ambil ID dulu (INI YANG TADI SALAH POSISI)
-const patientIds = [...new Set(patientAppointments.map(p => p.patient_id))];
+    let labels = item.diagnosis;
 
-// ambil data pasien
-const { data: patientsData } = await supabase
-  .from('patients')
-  .select('id, full_name')
-  .in('id', patientIds);
+    // handle string JSON
+    if (typeof labels === "string") {
+      try {
+        labels = JSON.parse(labels);
+      } catch {
+        labels = [labels];
+      }
+    }
 
-// mapping nama
-const patientNameMap = {};
-patientsData?.forEach(p => {
-  patientNameMap[p.id] = p.full_name;
-});
+    // kalau string → pecah pakai koma
+    if (typeof labels === "string") {
+      labels = labels.split(",").map(l => l.trim());
+    }
 
-// hitung jumlah kunjungan
-const patientMap = {};
+    // kalau bukan array → bungkus jadi array
+    if (!Array.isArray(labels)) {
+      labels = [labels];
+    }
 
-patientAppointments.forEach(item => {
-  if (!item.patient_id) return;
+    labels.forEach(label => {
+      if (!label) return;
 
-  if (!patientMap[item.patient_id]) {
-    patientMap[item.patient_id] = {
-      name: patientNameMap[item.patient_id] || 'Unknown',
-      total: 0
-    };
-  }
+      let name = label;
 
-  patientMap[item.patient_id].total += 1;
-});
+      // kalau UUID → ubah jadi nama
+      if (diagnosisNameMap[label]) {
+        name = diagnosisNameMap[label];
+      }
+      // kalau object → ambil labelnya
+      if (typeof label === "object") {
+        name = label.label || label.name;
+      }
 
-// convert ke array
-const topPatientsArray = Object.values(patientMap)
-  .sort((a, b) => b.total - a.total);
+      if (!name) return;
+      diagnosisMap[name] = (diagnosisMap[name] || 0) + 1;
+    });
+  });
+  setTopDiagnoses(
+    Object.entries(diagnosisMap)
+      .map(([name, total]) => ({ name, total }))
+      .sort((a, b) => b.total - a.total)
+  );
 
-setTopPatients(topPatientsArray);
-// === TOP SERVICES ===
-// === TOP SERVICES ===
-const serviceMap = {};
-
-// ambil semua service_id unik
-const serviceIds = [
-  ...new Set(
-    patientAppointments
-      .map(item => item.service_type)
-      .filter(Boolean)
-  )
-];
-
-// ambil nama service dari tabel services
-const { data: servicesData } = await supabase
-  .from('services')
-  .select('id, name')
-  .in('id', serviceIds);
-
-// mapping id → nama
-const serviceNameMap = {};
-servicesData?.forEach(s => {
-  serviceNameMap[s.id] = s.name;
-});
-
-// hitung total
-patientAppointments.forEach(item => {
-  if (!item.service_type) return;
-
-  const serviceName =
-    serviceNameMap[item.service_type] || item.service_type;
-
-  if (!serviceMap[serviceName]) {
-    serviceMap[serviceName] = 0;
-  }
-
-  serviceMap[serviceName] += 1;
-});
-
-const topServicesArray = Object.entries(serviceMap)
-  .map(([name, total]) => ({ name, total }))
-  .sort((a, b) => b.total - a.total);
-
-setTopServices(topServicesArray);
-
-
-// === TOP DIAGNOSIS ===
-const diagnosisMap = {};
-// ambil master diagnosa
-const { data: masterDiagnoses } = await supabase
-  .from('operational_options')
-  .select('id, label')
-  .eq('clinic_id', currentUserRow?.clinic_id)
-  .eq('category', 'diagnosa');
-
-const diagnosisNameMap = {};
-masterDiagnoses?.forEach(d => {
-  diagnosisNameMap[d.id] = d.label;
-});
-const { data: diagnosisData } = await supabase
-  .from('daily_recaps')
-  .select('diagnosis')
-  .eq('clinic_id', currentUserRow?.clinic_id)
-  .gte('recap_date', range.startDate)
-  .lte('recap_date', range.endDate);
-
-diagnosisData?.forEach(item => {
-  if (!item.diagnosis) return;
-
-  let labels = item.diagnosis;
-
-// handle string JSON
-if (typeof labels === "string") {
-  try {
-    labels = JSON.parse(labels);
-  } catch {
-    labels = [labels];
-  }
-}
-
-// pastikan array
-// kalau string → pecah pakai koma
-if (typeof labels === "string") {
-  labels = labels.split(",").map(l => l.trim());
-}
-
-// kalau bukan array → bungkus jadi array
-if (!Array.isArray(labels)) {
-  labels = [labels];
-}
-
-  labels.forEach(label => {
-  if (!label) return;
-
-  // kalau object → ambil labelnya
-  let name = label;
-
-// kalau UUID → ubah jadi nama
-if (diagnosisNameMap[label]) {
-  name = diagnosisNameMap[label];
-}
-  if (typeof label === "object") {
-    name = label.label || label.name;
-  }
-
-  if (!name) return;
-
-  if (!diagnosisMap[name]) {
-    diagnosisMap[name] = 0;
-  }
-
-  diagnosisMap[name] += 1;
-});
-});
-    
-
-const topDiagnosisArray = Object.entries(diagnosisMap)
-  .map(([name, total]) => ({ name, total }))
-  .sort((a, b) => b.total - a.total);
-
-setTopDiagnoses(topDiagnosisArray);
-
-const { data: trendData, error: trendError } = await supabase
-  .from('daily_recaps')
-  .select('recap_date')
-  .eq('clinic_id', currentUserRow?.clinic_id)
-  .gte('recap_date', range.startDate)
-  .lte('recap_date', range.endDate);
-
-if (trendError) {
-  console.error(trendError);
-} else {
+  // === TREND === (1 titik = 1 hari)
   const trendMap = {};
+  therapistRecaps.forEach(item => {
+    if (!item.recap_date) return;
+    trendMap[item.recap_date] = (trendMap[item.recap_date] || 0) + 1;
+  });
+  setTrendPatients(
+    Object.entries(trendMap)
+      .map(([date, total]) => ({ date, total }))
+      .sort((x, y) => x.date.localeCompare(y.date))
+  );
+};
 
-trendData.forEach(item => {
-  if (!item.recap_date) return;
-
-  // 🔥 kelompokkan per tanggal asli (1 titik = 1 hari, bukan gabungan 3 hari)
-  const key = item.recap_date;
-
-  if (!trendMap[key]) {
-    trendMap[key] = {
-      label: item.recap_date,
-      total: 0
-    };
-  }
-
-  trendMap[key].total += 1;
-});
-
-const trendArray = Object.values(trendMap)
-  .map(item => ({
-    date: item.label,
-    total: item.total
-  }))
-  .sort((a, b) => a.date.localeCompare(b.date));
-
-setTrendPatients(trendArray);
-}
+await Promise.all([loadSlots(), loadStats()]);
   };
   fetchSlotData(dateRange);
+  return () => { cancelled = true; };
 }, [dateRange]);
   return (
     <>
