@@ -9,10 +9,15 @@ import { cn } from '@/lib/utils';
 
 const ADMIN_ROLES = ['admin', 'clinic_admin'];
 const THERAPIST_ROLES = ['therapist', 'physiotherapist'];
-const CACHE_KEY = 'owner_switcher_accounts';
+const LEGACY_CACHE_KEY = 'owner_switcher_accounts';
+// Scoped per clinic so a list cached for one clinic is never shown in another.
+const cacheKey = (clinicId) => `${LEGACY_CACHE_KEY}:${clinicId}`;
 
-const readCache = () => {
-  try { return JSON.parse(localStorage.getItem(CACHE_KEY)) || null; } catch { return null; }
+const readCache = (clinicId) => {
+  try {
+    const list = JSON.parse(localStorage.getItem(cacheKey(clinicId)));
+    return Array.isArray(list) ? list : null;
+  } catch { return null; }
 };
 
 // Lets an owner jump into any admin/therapist account of their own clinic;
@@ -34,7 +39,7 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
     let active = true;
     // While impersonating, RLS may hide the clinic's users, so use the list
     // the owner's own session cached.
-    const cached = isImpersonating ? readCache() : null;
+    const cached = isImpersonating ? readCache(clinicId) : null;
     if (cached) {
       setAccounts(cached.filter((a) => a.id !== user?.id));
       return;
@@ -66,7 +71,10 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
         })
         .sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
       if (!isImpersonating) {
-        try { localStorage.setItem(CACHE_KEY, JSON.stringify(list)); } catch { /* ignore */ }
+        try {
+          localStorage.setItem(cacheKey(clinicId), JSON.stringify(list));
+          localStorage.removeItem(LEGACY_CACHE_KEY);
+        } catch { /* ignore */ }
       }
       setAccounts(list.filter((a) => a.id !== user?.id));
       setLoading(false);
