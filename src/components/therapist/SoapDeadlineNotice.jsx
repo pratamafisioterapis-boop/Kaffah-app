@@ -50,7 +50,7 @@ const SoapDeadlineNotice = ({ therapist }) => {
       {countdown && (
         <p className="mb-2 font-bold">
           {countdown} — mulai {fmtDate(new Date(new Date(`${notice.deadline_end}T00:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10))}, SOAP wajib selesai sebelum pasien melakukan pembayaran.
-          Jika SOAP belum selesai saat pasien membayar, <span className="underline">jasa insentif sesi tersebut tidak akan dibayarkan</span>.
+          Jika SOAP belum selesai saat pasien membayar, <span className="underline">jasa insentif sesi tersebut akan menjadi 0</span>.
         </p>
       )}
       <p>
