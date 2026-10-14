@@ -53,12 +53,17 @@ const ResumeMedisCpptDialog = ({ isOpen, onClose, group, clinic }) => {
     const phone = patient?.phone;
     if (!phone) throw new Error('Nomor telepon pasien tidak tersedia.');
 
-    const path = `resume-medis/${group.patient.id}_${Date.now()}.pdf`;
+    // Nama berkas acak & pendek supaya tautan WhatsApp ringkas (/r/<kode>).
+    const shortId = Array.from(crypto.getRandomValues(new Uint8Array(10)), (b) => (b % 36).toString(36)).join('');
+    const path = `resume-medis/${shortId}.pdf`;
     const { error: upErr } = await supabase.storage
       .from('invoices')
       .upload(path, pdf.output('blob'), { contentType: 'application/pdf', upsert: true });
     if (upErr) throw new Error(`Upload gagal: ${upErr.message}`);
     const fileUrl = supabase.storage.from('invoices').getPublicUrl(path).data.publicUrl;
+    // Tautan pendek (di-rewrite oleh vercel.json); localhost tidak punya rewrite.
+    const { origin, hostname } = window.location;
+    const shareUrl = hostname === 'localhost' || hostname === '127.0.0.1' ? fileUrl : `${origin}/r/${shortId}`;
 
     const clinicName = clinic?.name || '';
     const caption =
@@ -80,7 +85,7 @@ const ResumeMedisCpptDialog = ({ isOpen, onClose, group, clinic }) => {
       return;
     }
     window.open(
-      `https://wa.me/${phone.replace(/^0/, '62')}?text=${encodeURIComponent(`${caption}\n\nLihat/unduh resume medis:\n${fileUrl}`)}`,
+      `https://wa.me/${phone.replace(/^0/, '62')}?text=${encodeURIComponent(`${caption}\n\nLihat/unduh resume medis:\n${shareUrl}`)}`,
       '_blank'
     );
   };
