@@ -1,5 +1,7 @@
 import React, { forwardRef, useEffect, useState } from 'react';
 import { stripSignatureBackground } from '@/lib/signatureImage';
+import { PRAXIS_CLINIC_ID } from '@/lib/clinicIds';
+import ResumeMedisTemplatePraxis from './ResumeMedisTemplatePraxis';
 
 const PROGRAM_TERAPI_LABELS = {
   tens: 'TENS',
@@ -17,7 +19,7 @@ const formatDate = (value) => {
   return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
 };
 
-const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
+const ResumeMedisTemplateDefault = forwardRef(({ data, clinic }, ref) => {
   const programTerapi = data?.program_terapi || [];
   const otherProgram = data?.program_terapi_lainnya;
 
@@ -222,5 +224,12 @@ const ResumeMedisTemplate = forwardRef(({ data, clinic }, ref) => {
     </div>
   );
 });
+
+// Praxis memakai format resume medis tabel sendiri.
+const ResumeMedisTemplate = forwardRef((props, ref) => (
+  props.clinic?.id === PRAXIS_CLINIC_ID
+    ? <ResumeMedisTemplatePraxis ref={ref} {...props} />
+    : <ResumeMedisTemplateDefault ref={ref} {...props} />
+));
 
 export default ResumeMedisTemplate;

@@ -1,5 +1,6 @@
 import React, { forwardRef } from 'react';
 import { terbilangRupiah } from '@/lib/terbilang';
+import { PRAXIS_CLINIC_ID } from '@/lib/clinicIds';
 
 export const KWITANSI_CATEGORIES = [
   { value: 'consultation', label: 'Consultation' },
@@ -20,9 +21,6 @@ const fmtDateTime = (d) => {
   const x = new Date(d);
   return Number.isNaN(x.getTime()) ? '-' : `${fmtDate(x)} ${pad(x.getHours())}:${pad(x.getMinutes())}:${pad(x.getSeconds())}`;
 };
-// ID klinik Praxis (tetap walau nama klinik diganti).
-export const PRAXIS_CLINIC_ID = 'b25e8c29-6977-4e1b-b500-7629ec3aeb8a';
-
 const dayKey = (x) => `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}`;
 
 // Khusus klinik Praxis: invoice yang dibuat setelah hari terapi memakai tanggal

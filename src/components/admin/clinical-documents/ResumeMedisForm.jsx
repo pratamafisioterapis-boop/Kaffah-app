@@ -16,6 +16,20 @@ import {
 import ClinicalDocumentPreviewModal from './ClinicalDocumentPreviewModal';
 import ResumeMedisTemplate from './ResumeMedisTemplate';
 import DiagnosisServiceField from './DiagnosisServiceField';
+import { PRAXIS_CLINIC_ID } from '@/lib/clinicIds';
+
+// Field tambahan khusus format resume medis Praxis.
+const PRAXIS_FIELDS = {
+  admission_number: '', tindakan: '',
+  pain_activity: '', pain_rest: '',
+  blood_pressure: '', pulse: '', respiration: '', spo2: '', temperature: '', weight: '', height: '',
+};
+const PRAXIS_VITAL_INPUTS = [
+  ['pain_activity', 'Nyeri Aktivitas (0-10)'], ['pain_rest', 'Nyeri Istirahat (0-10)'],
+  ['blood_pressure', 'Tekanan Darah (mmHg)'], ['pulse', 'Nadi (x/mnt)'],
+  ['respiration', 'Pernapasan (x/mnt)'], ['spo2', 'SpO2 (%)'],
+  ['temperature', 'Suhu (°C)'], ['weight', 'Berat Badan (Kg)'], ['height', 'Tinggi Badan (cm)'],
+];
 
 const PROGRAM_TERAPI_OPTIONS = [
   { key: 'tens', label: 'TENS' },
@@ -38,6 +52,7 @@ const emptyForm = {
   program_terapi_lainnya: '',
   rekomendasi: '',
   tempat: 'Balikpapan',
+  ...PRAXIS_FIELDS,
 };
 
 const ResumeMedisForm = ({ onSaved }) => {
@@ -50,6 +65,7 @@ const ResumeMedisForm = ({ onSaved }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [previewData, setPreviewData] = useState(null);
+  const isPraxis = clinic?.id === PRAXIS_CLINIC_ID;
 
   useEffect(() => {
     (async () => {
@@ -87,6 +103,7 @@ const ResumeMedisForm = ({ onSaved }) => {
         program_terapi: lastDoc.data.program_terapi || [],
         program_terapi_lainnya: lastDoc.data.program_terapi_lainnya || '',
         rekomendasi: lastDoc.data.rekomendasi || '',
+        tindakan: lastDoc.data.tindakan || '',
       }));
       toast({
         title: 'Riwayat resume medis ditemukan',
@@ -123,6 +140,7 @@ const ResumeMedisForm = ({ onSaved }) => {
       program_terapi_lainnya: form.program_terapi_lainnya,
       rekomendasi: form.rekomendasi,
       tempat: form.tempat,
+      ...(isPraxis ? Object.fromEntries(Object.keys(PRAXIS_FIELDS).map((k) => [k, form[k]])) : {}),
     };
   };
 
@@ -236,6 +254,27 @@ const ResumeMedisForm = ({ onSaved }) => {
             multiple
             onChange={({ diagnosaId, diagnosaLabel }) => setForm((f) => ({ ...f, diagnosa_id: diagnosaId, diagnosa: diagnosaLabel }))}
           />
+
+          {isPraxis && (
+            <div className="space-y-4 rounded-app border border-slate-200 p-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">No Admission</Label>
+                <Input placeholder="PA00000" value={form.admission_number} onChange={(e) => setForm((f) => ({ ...f, admission_number: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {PRAXIS_VITAL_INPUTS.map(([key, label]) => (
+                  <div key={key} className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{label}</Label>
+                    <Input value={form[key]} onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))} />
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Tindakan</Label>
+                <Textarea rows={5} placeholder="Edukasi, kompres, ROM, strengthening, evaluasi..." value={form.tindakan} onChange={(e) => setForm((f) => ({ ...f, tindakan: e.target.value }))} />
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Program Terapi</Label>
