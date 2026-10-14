@@ -86,7 +86,28 @@ const DomainGuard = () => {
 
 // The Kaffah Physiotherapy landing page lives on PUBLIC_DOMAIN; the Clinara
 // product landing page lives at the same "/" route on APP_DOMAIN.
-const HomeRoute = () => (isOnAppDomain() ? <ClinaraLandingPage /> : <LandingPage />);
+//
+// The installed Clinara PWA should never land on the marketing page: its
+// manifest start_url is /login, but PWAs installed before that change keep
+// their old start_url ("/") until the OS refreshes (or never, on iOS). So in
+// standalone mode on the app domain, send "/" straight to /login, which
+// already forwards signed-in users to their dashboard.
+const isStandaloneDisplay = () => {
+  try {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           window.navigator.standalone === true;
+  } catch {
+    return false;
+  }
+};
+
+const HomeRoute = () => {
+  if (isOnAppDomain()) {
+    if (isStandaloneDisplay()) return <Navigate to="/login" replace />;
+    return <ClinaraLandingPage />;
+  }
+  return <LandingPage />;
+};
 
 // Loading Component
 const LoadingFallback = () => (
