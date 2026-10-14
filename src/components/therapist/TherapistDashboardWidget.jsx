@@ -11,10 +11,10 @@ import TherapistPatientTypeDistribution from './TherapistPatientTypeDistribution
 import { Loader2, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const TherapistDashboardWidget = () => {
+const TherapistDashboardWidget = ({ initialProfile = null }) => {
   const { user } = useAuth();
-  const [therapistProfile, setTherapistProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [therapistProfile, setTherapistProfile] = useState(initialProfile);
+  const [loading, setLoading] = useState(!initialProfile);
   const [error, setError] = useState(null);
   const [todayRecapsCount, setTodayRecapsCount] = useState(0);
 
@@ -24,19 +24,22 @@ const TherapistDashboardWidget = () => {
       setLoading(true);
       setError(null);
       
-      // 1. Fetch Profile
-      const { data: profileData, error: profileError } = await getPhysiotherapistByUserId(user.id);
-      
-      if (profileError) {
+      // 1. Profil: pakai yang sudah dimuat induk bila ada, hindari fetch ganda
+      let profileData = initialProfile;
+      if (!profileData) {
+        const { data, error: profileError } = await getPhysiotherapistByUserId(user.id);
+
+        if (profileError) {
           console.error(`❌ [TherapistDashboardWidget] Error fetching profile:`, profileError);
           throw profileError;
-      }
-      
-      if (!profileData) {
+        }
+
+        if (!data) {
           console.warn(`⚠️ [TherapistDashboardWidget] No therapist profile found.`);
           throw new Error("Profil terapis tidak ditemukan.");
+        }
+        profileData = data;
       }
-
       setTherapistProfile(profileData);
 
       // 2. Fetch Today's Stats from Daily Recaps (Not Target Progress)
@@ -64,7 +67,7 @@ const TherapistDashboardWidget = () => {
 
   useEffect(() => {
     loadData();
-  }, [user?.id]);
+  }, [user?.id, initialProfile?.id]);
 
   if (loading) {
     return (

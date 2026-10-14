@@ -123,13 +123,13 @@ const TherapistDashboard = () => {
     { label: 'Settings', path: '#settings', icon: 'Settings', onClick: () => setSettingsOpen(true) },
   ];
 
-  // Dashboard Home Layout Component
-  // Dashboard Home Layout Component
-  const DashboardHome = () => (
+  // Elemen biasa (bukan komponen yang didefinisikan di dalam render) supaya widget
+  // tidak di-remount dan refetch setiap kali state halaman ini berubah.
+  const dashboardHome = (
     <div className="grid grid-cols-1 gap-6">
-       <div>
-          <TherapistDashboardWidget />
-       </div>
+      <div>
+        <TherapistDashboardWidget initialProfile={therapistProfile} />
+      </div>
     </div>
   );
 
@@ -157,7 +157,7 @@ const TherapistDashboard = () => {
         <React.Suspense fallback={<PageSkeleton />}>
         <Routes>
           {/* Grid Layout for Home */}
-          <Route path="/" element={<DashboardHome />} />
+          <Route path="/" element={dashboardHome} />
           
           {/* Other Routes */}
           <Route path="/booking" element={<TherapistBookingCalendar therapist={therapistProfile} />} />

@@ -49,40 +49,43 @@ const TodaysOverviewWidget = () => {
       const currentUserId = sessionData?.session?.user?.id;
       const currentUserRow = { clinic_id: await getCachedClinicId(currentUserId) };
 
-      // 1. Total Appointments Today
-      const { count: appointmentCount, error: appError } = await supabase
-        .from('appointments')
-        .select('*', { count: 'exact', head: true })
-        .eq('clinic_id', currentUserRow?.clinic_id)
-        .gte('appointment_date', todayStart)
-        .lte('appointment_date', todayEnd);
+      const clinicId = currentUserRow?.clinic_id;
+
+      // Tiga query ini tidak saling bergantung — jalankan paralel supaya kartu
+      // tidak menunggu satu per satu (sebelumnya berurutan = 3x latency).
+      const [
+        { count: appointmentCount, error: appError },
+        { count: cancelledCount, error: cancelError },
+        { data: slotData, error: slotError },
+      ] = await Promise.all([
+        // 1. Total Appointments Today
+        supabase
+          .from('appointments')
+          .select('*', { count: 'exact', head: true })
+          .eq('clinic_id', clinicId)
+          .gte('appointment_date', todayStart)
+          .lte('appointment_date', todayEnd),
+        // 2. Cancelled Appointments Today
+        supabase
+          .from('appointments')
+          .select('*', { count: 'exact', head: true })
+          .eq('clinic_id', clinicId)
+          .gte('appointment_date', todayStart)
+          .lte('appointment_date', todayEnd)
+          .ilike('status', '%cancelled%'),
+        // 3. Total Slot Kosong Hari Ini - Menggunakan Function Database
+        supabase.rpc('get_available_slots_with_status_by_date', {
+          p_date: new Date().toISOString().split('T')[0],
+          p_clinic_id: clinicId,
+        }),
+      ]);
 
       if (appError) throw appError;
-
-      // 2. Cancelled Appointments Today
-      // Note: Querying 'appointments' table as 'daily_recaps' typically records completed sessions
-      // and does not have a status column in the schema provided.
-      const { count: cancelledCount, error: cancelError } = await supabase
-        .from('appointments')
-        .select('*', { count: 'exact', head: true })
-        .eq('clinic_id', currentUserRow?.clinic_id)
-        .gte('appointment_date', todayStart)
-        .lte('appointment_date', todayEnd)
-        .ilike('status', '%cancelled%');
-
       if (cancelError) throw cancelError;
+      if (slotError) throw slotError;
 
-      // 3. Total Slot Kosong (Empty Slots) Hari Ini - Menggunakan Function Database
-const { data: slotData, error: slotError } = await supabase
-  .rpc('get_available_slots_with_status_by_date', {
-    p_date: new Date().toISOString().split('T')[0],
-    p_clinic_id: currentUserRow?.clinic_id
-  });
-
-if (slotError) throw slotError;
-
-// Hitung hanya status 'aktif'
-const emptySlotsCount = slotData?.filter(slot => slot.status === 'aktif').length || 0;
+      // Hitung hanya status 'aktif'
+      const emptySlotsCount = slotData?.filter(slot => slot.status === 'aktif').length || 0;
 
       setMetrics({
         totalAppointments: appointmentCount || 0,
