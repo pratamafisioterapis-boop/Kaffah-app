@@ -63,6 +63,10 @@ const BRAND = 'CLINARA';
 
 const STAGE_W = 248;
 const STAGE_H = 508;
+// Wide screens (tablet landscape, installed desktop window) get their own layout instead of a narrow
+// column in the middle: a 360-high stage whose width follows the screen shape, content anchored left and right.
+const WIDE_H = 360;
+const isWideScreen = () => window.innerWidth / window.innerHeight >= 1.15;
 const RING_LEN = 444;
 const TOTAL_MS = 5800;
 const FADE_MS = 400;
@@ -99,6 +103,7 @@ export default function SplashScreen({ onDone }) {
   const [visible, setVisible] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
   const [avatarFailed, setAvatarFailed] = useState(false);
+  const [wide, setWide] = useState(() => { try { return isWideScreen(); } catch { return false; } });
   const onDoneRef = useRef(onDone);
   const finishedRef = useRef(false);
   const stageRef = useRef(null);
@@ -191,6 +196,12 @@ export default function SplashScreen({ onDone }) {
   }, []);
   const ringText = useMemo(() => buildRingText(roleLabel, clinic?.name), [roleLabel, clinic?.name]);
 
+  useEffect(() => {
+    const onResize = () => setWide(isWideScreen());
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   // Fit the design to the screen, the name and quote to their space, and find the dot the bloom starts from.
   useLayoutEffect(() => {
     if (!started) return undefined;
@@ -198,21 +209,31 @@ export default function SplashScreen({ onDone }) {
       const stage = stageRef.current, nm = nameRef.current, dot = dotRef.current, hl = quoteRef.current;
       if (!stage || !nm || !dot || !hl) return;
       const vw = window.innerWidth, vh = window.innerHeight;
-      const k = Math.min(1.9, vw / STAGE_W, vh / STAGE_H);
+      let sw = STAGE_W, sh = STAGE_H, kMax = 1.9;
+      if (wide) {
+        sh = WIDE_H; kMax = 3.2;
+        sw = Math.min(900, Math.max(540, Math.round((vw / vh) * WIDE_H)));
+        stage.style.width = sw + 'px'; stage.style.height = sh + 'px'; stage.style.margin = `${-sh / 2}px 0 0 ${-sw / 2}px`;
+      } else {
+        stage.style.width = ''; stage.style.height = ''; stage.style.margin = '';
+      }
+      const k = Math.min(kMax, vw / sw, vh / sh);
       stage.style.setProperty('--sp-k', k.toFixed(4));
+      stage.style.setProperty('--sp-w', sw + 'px');
       stage.style.setProperty('--sp-bs', Math.ceil((Math.hypot(vw, vh) / k) * 2.4) + 'px');
-      let fs = 60; nm.style.fontSize = fs + 'px';
+      let fs = wide ? 64 : 60; nm.style.fontSize = fs + 'px';
       while (nm.scrollWidth > nm.clientWidth && fs > 22) { fs -= 1; nm.style.fontSize = fs + 'px'; }
-      let qs = 22; hl.style.fontSize = qs + 'px';
-      while (hl.offsetHeight > 150 && qs > 13) { qs -= 1; hl.style.fontSize = qs + 'px'; }
-      const r = dot.getBoundingClientRect(), sr = stage.getBoundingClientRect(), kk = sr.width / STAGE_W || 1;
+      let qs = wide ? 24 : 22; hl.style.fontSize = qs + 'px';
+      const qMax = wide ? 170 : 150;
+      while (hl.offsetHeight > qMax && qs > 13) { qs -= 1; hl.style.fontSize = qs + 'px'; }
+      const r = dot.getBoundingClientRect(), sr = stage.getBoundingClientRect(), kk = sr.width / sw || 1;
       stage.style.setProperty('--sp-fx', ((r.left + r.width / 2 - sr.left) / kk).toFixed(1) + 'px');
       stage.style.setProperty('--sp-fy', ((r.top + r.height / 2 - sr.top) / kk).toFixed(1) + 'px');
     };
     layout();
     window.addEventListener('resize', layout);
     return () => window.removeEventListener('resize', layout);
-  }, [started, name, quoteWords]);
+  }, [started, name, quoteWords, wide]);
 
   if (reduceMotion || !visible) return null;
 
@@ -228,7 +249,7 @@ export default function SplashScreen({ onDone }) {
       {started && (
         <div
           ref={stageRef}
-          className="sp-stage"
+          className={`sp-stage${wide ? ' sp-wide' : ''}`}
           style={{ '--sp-dn': now.date, '--sp-rn': Math.round(now.frac * 100) }}
         >
           {/* scene 2: avatar + daily quote */}
@@ -294,6 +315,8 @@ const SPLASH_CSS = `
 @property --sp-dn { syntax: "<integer>"; inherits: true; initial-value: 14; }
 @property --sp-rn { syntax: "<integer>"; inherits: true; initial-value: 41; }
 
+.sp-root, .sp-root * { box-sizing: border-box; }
+
 /* Colour roles: --sp-acc accent, --sp-t1 main text, --sp-t2 supporting colour (greeting + labels), --sp-t3 quiet grey,
    --sp-ink text on the accent bloom, --sp-trk ring track on the bloom. */
 .sp-root { --sp-acc: #8ec9ff; --sp-t1: #f3f8ff; --sp-t2: #ffc9a3; --sp-t3: #98a0aa; --sp-ink: #0a2540; --sp-trk: rgba(10,37,64,.2);
@@ -330,7 +353,7 @@ const SPLASH_CSS = `
 .sp-disc { position: absolute; inset: 22px; border-radius: 50%; border: 3px solid var(--sp-acc); background: #121214; display: grid; place-items: center; overflow: hidden; font-size: 40px; font-weight: 800; color: var(--sp-t1); }
 .sp-disc img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .sp-disc.sp-logo { background: #fff; }
-.sp-disc.sp-logo img { object-fit: contain; padding: 15%; }
+.sp-disc.sp-logo img { object-fit: contain; padding: 20%; }
 .sp-tag2 { position: absolute; left: 24px; right: 20px; top: 278px; }
 .sp-hl { position: absolute; left: 24px; right: 18px; top: 296px; margin: 0; font-size: 22px; font-weight: 800; line-height: 1.12; letter-spacing: -.03em; color: var(--sp-t1); --sp-t0: 1.85s; --sp-st: .06s; }
 
@@ -355,6 +378,22 @@ const SPLASH_CSS = `
 
 .sp-cnt { position: absolute; left: 24px; right: 24px; bottom: 22px; display: flex; justify-content: space-between; font: 500 9px/1 "DM Sans", Inter, sans-serif; letter-spacing: .2em; color: var(--sp-t3); z-index: 7; }
 .sp-pc::after { counter-reset: spp var(--sp-p); content: counter(spp) "%"; font-variant-numeric: tabular-nums; }
+
+/* wide screens: left-aligned greeting, avatar on the left with the quote beside it, numbers spread across the width */
+.sp-stage.sp-wide { --sp-ax: 126px; --sp-ay: 180px; }
+.sp-wide .sp-s1 { padding: 0 calc(var(--sp-w, 640px) * .4) 0 56px; }
+.sp-wide .sp-hi { font-size: 16px; }
+.sp-wide .sp-ava { left: 56px; top: 110px; margin: 0; width: 140px; height: 140px; }
+.sp-wide .sp-disc { inset: 20px; font-size: 36px; }
+.sp-wide .sp-tag2 { left: 248px; right: 56px; top: 104px; }
+.sp-wide .sp-hl { left: 248px; right: 56px; top: 128px; font-size: 24px; }
+.sp-wide .sp-tg3 { left: 56px; top: 56px; }
+.sp-wide .sp-dn { left: 48px; top: 76px; font-size: 112px; }
+.sp-wide .sp-dm { left: 56px; top: 188px; }
+.sp-wide .sp-rg3 { left: 48%; top: 120px; width: 96px; height: 96px; }
+.sp-wide .sp-rg3 b { font-size: 22px; }
+.sp-wide .sp-rt3 { left: calc(48% + 118px); right: 40px; top: 132px; }
+.sp-wide .sp-cnt { left: 56px; right: 56px; bottom: 20px; }
 
 /* motion: seconds on one 5.8s clock, ease-out curves, nothing loops except the slow orbit text */
 .sp-stage { animation: sp-pcount 5.8s linear both; }
