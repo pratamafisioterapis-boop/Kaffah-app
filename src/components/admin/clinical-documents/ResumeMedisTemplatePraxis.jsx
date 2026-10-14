@@ -65,6 +65,7 @@ const ResumeMedisTemplatePraxis = forwardRef(({ data, clinic }, ref) => {
 
   const tindakan = [
     programs.length ? `Modalitas : ${programs.join(', ')}` : null,
+    data?.tindakan ? `\n${data.tindakan}` : null,
     data?.rekomendasi ? `Rekomendasi : ${data.rekomendasi}` : null,
   ].filter(Boolean).join('\n');
 
