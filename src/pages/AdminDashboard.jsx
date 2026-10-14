@@ -108,11 +108,23 @@ const { data: sessionData } = await supabase.auth.getSession();
 const currentUserId = sessionData?.session?.user?.id;
 const currentUserRow = { clinic_id: await getCachedClinicId(currentUserId) };
 
-const { data: slotsData, error: slotError } = await supabase
-  .rpc('get_available_slots_with_status_by_date', {
+const [
+  { data: slotsData, error: slotError },
+  { data: filledAppointments, error: filledError },
+] = await Promise.all([
+  supabase.rpc('get_available_slots_with_status_by_date', {
     p_date: today,
     p_clinic_id: currentUserRow?.clinic_id
-  });
+  }),
+  // 🔥 SLOT TERISI = JUMLAH APPOINTMENT (REAL PASIEN)
+  supabase
+    .from('appointments')
+    .select('id')
+    .eq('clinic_id', currentUserRow?.clinic_id)
+    .gte('appointment_date', today + 'T00:00:00')
+    .lte('appointment_date', today + 'T23:59:59')
+    .neq('status', 'cancelled'),
+]);
 
 if (slotError) {
   console.error(slotError);
@@ -121,16 +133,6 @@ if (slotError) {
 
 // TOTAL SLOT
 const total = slotsData.length;
-
-// SLOT TERISI
-// 🔥 SLOT TERISI = JUMLAH APPOINTMENT (REAL PASIEN)
-const { data: filledAppointments, error: filledError } = await supabase
-  .from('appointments')
-  .select('id')
-  .eq('clinic_id', currentUserRow?.clinic_id)
-  .gte('appointment_date', today + 'T00:00:00')
-.lte('appointment_date', today + 'T23:59:59')
-  .neq('status', 'cancelled');
 
 if (filledError) {
   console.error(filledError);
