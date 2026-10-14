@@ -20,7 +20,24 @@ const fmtDateTime = (d) => {
   const x = new Date(d);
   return Number.isNaN(x.getTime()) ? '-' : `${fmtDate(x)} ${pad(x.getHours())}:${pad(x.getMinutes())}:${pad(x.getSeconds())}`;
 };
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const dayKey = (x) => `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}`;
+
+// Khusus klinik Praxis: invoice yang dibuat setelah hari terapi memakai tanggal
+// registrasi dan jam akhir slot (mis. slot 09.00-10.00 -> 10.00).
+const getInvoiceDate = (data, clinic) => {
+  const created = data?.created_at || data?.recap_date;
+  const slotEnd = data?.slot_end_at ? new Date(data.slot_end_at) : null;
+  const createdAt = new Date(created);
+  if (
+    /praxis/i.test(clinic?.name || '') &&
+    slotEnd && !Number.isNaN(slotEnd.getTime()) && !Number.isNaN(createdAt.getTime()) &&
+    dayKey(createdAt) > dayKey(slotEnd)
+  ) {
+    return slotEnd;
+  }
+  return created;
+};
+const MONTHS =['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // Item invoice: simpan di recap.invoice_items; jika kosong, buat satu baris
 // Procedure dari layanan pada recap (harga asli & diskon dari recap).
@@ -131,7 +148,7 @@ const InvoiceTemplateKwitansi = forwardRef(({ data }, ref) => {
         </div>
         <div>
           {infoRow('Invoice No', invoiceNo, '100px')}
-          {infoRow('Invoice Date', fmtDateTime(data?.created_at || data?.recap_date), '100px')}
+          {infoRow('Invoice Date', fmtDateTime(getInvoiceDate(data, clinic)), '100px')}
           {infoRow('Registration Date', fmtDate(data?.recap_date), '100px')}
         </div>
       </div>
