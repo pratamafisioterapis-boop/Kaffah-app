@@ -27,11 +27,12 @@ const readImpersonationOrigin = () => {
 // Bungkus panggilan Supabase dengan batas waktu supaya `loading` tidak
 // tersangkut selamanya kalau getSession()/query hang tanpa resolve atau reject
 // (mis. IndexedDB terkunci di PWA, service worker basi, atau koneksi lambat).
+const TIMEOUT_MESSAGE = 'Waktu permintaan habis';
 const withTimeout = (promise, ms = 8000) =>
   Promise.race([
     promise,
     new Promise((resolve) =>
-      setTimeout(() => resolve({ data: null, error: new Error('Waktu permintaan habis') }), ms)
+      setTimeout(() => resolve({ data: null, error: new Error(TIMEOUT_MESSAGE) }), ms)
     ),
   ]);
 
@@ -139,7 +140,9 @@ export const AuthProvider = ({ children }) => {
          console.log("[AuthContext] Session expired, attempting refresh...");
          const { data, error } = await supabase.auth.refreshSession();
          if (error || !data.session) {
-             throw new Error("Session refresh failed");
+             // Keep the original error so a transient network failure is
+             // retried below instead of wiping the login.
+             throw error || new Error("Session refresh failed");
          }
          currentSession = data.session;
       }
@@ -170,7 +173,10 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       console.error("[AuthContext] Error handling session:", err);
       
-      const isNetworkError = err.message === 'Failed to fetch' || err.message?.includes('Network request failed');
+      const isNetworkError =
+        err.name === 'AuthRetryableFetchError' ||
+        err.message === 'Failed to fetch' ||
+        err.message?.includes('Network request failed');
       
       if (isNetworkError && retryCount.current < MAX_RETRIES) {
         retryCount.current++;
@@ -203,7 +209,13 @@ export const AuthProvider = ({ children }) => {
     const initializeAuth = async () => {
       try {
         // Attempt to recover session from local storage first (implicit in getSession)
-        const { data, error } = await withTimeout(supabase.auth.getSession());
+        // Cold start of the installed PWA on a slow network can make the first
+        // getSession() blow past the timeout. That is not "logged out" - the
+        // session is still in storage - so retry before giving up.
+        let { data, error } = await withTimeout(supabase.auth.getSession());
+        for (let attempt = 0; attempt < 2 && mounted && !data?.session && error?.message === TIMEOUT_MESSAGE; attempt++) {
+          ({ data, error } = await withTimeout(supabase.auth.getSession(), 15000));
+        }
 
         if (error) {
            console.warn(`[AuthContext] Session initialization error:`, error.message);
@@ -231,8 +243,8 @@ export const AuthProvider = ({ children }) => {
           } else {
             // Tidak ada session — tapi jika offline, jangan paksa logout
             // Biarkan user tetap di halaman, tunggu koneksi kembali
-            if (!navigator.onLine) {
-              console.log('[AuthContext] Offline on init, skipping clearLocalState');
+            if (!navigator.onLine || error?.message === TIMEOUT_MESSAGE) {
+              console.log('[AuthContext] Offline/timeout on init, skipping clearLocalState');
             } else {
               clearLocalState();
             }
