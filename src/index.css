@@ -199,3 +199,16 @@
   .soap-split > * + * { margin-top: 0; }
   .soap-aside { position: sticky; top: 0.25rem; }
 }
+
+/* Loader (orbit) — src/components/shared/Loader.jsx */
+.kf-loader{position:relative;display:inline-block;flex-shrink:0}
+.kf-loader>span{position:absolute;inset:0;border-radius:9999px}
+.kf-loader-ring{border:var(--kf-b) solid #d8e7f5}
+.kf-loader-arc{border:var(--kf-b) solid transparent;border-top-color:#1677D2;border-right-color:#35C8C1;animation:kf-spin 1.1s cubic-bezier(.6,.1,.4,.9) infinite}
+.kf-loader-arc-b{border-top-color:#35C8C1;border-right-color:transparent;border-left-color:#2F8CFF;animation-duration:1.6s;animation-direction:reverse}
+.kf-loader-dot{animation:kf-spin 2.2s linear infinite}
+.kf-loader-dot::after{content:"";position:absolute;top:-5%;left:calc(50% - 5%);width:10%;height:10%;border-radius:9999px;background:#2F8CFF;box-shadow:0 0 12px #2F8CFF}
+.kf-loader-core{background:linear-gradient(135deg,#2F8CFF,#35C8C1);animation:kf-core 1.6s ease-in-out infinite}
+@keyframes kf-spin{to{transform:rotate(360deg)}}
+@keyframes kf-core{0%,100%{transform:scale(.8)}50%{transform:scale(1.1)}}
+@media (prefers-reduced-motion:reduce){.kf-loader-arc,.kf-loader-dot,.kf-loader-core{animation-duration:6s}}
