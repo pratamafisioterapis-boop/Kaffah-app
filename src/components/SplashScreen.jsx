@@ -64,8 +64,8 @@ const BRAND = 'CLINARA';
 const STAGE_W = 248;
 const STAGE_H = 508;
 const RING_LEN = 444;
-const TOTAL_MS = 10000;
-const FADE_MS = 500;
+const TOTAL_MS = 5200;
+const FADE_MS = 400;
 
 // Orbit text: whole phrases only, with letters at a readable spacing. A long role
 // label drops the clinic name so the text never gets squeezed.
@@ -125,7 +125,7 @@ export default function SplashScreen({ onDone }) {
   useEffect(() => {
     if (reduceMotion) return undefined;
     let active = true;
-    const timeout = setTimeout(() => { if (active) setInfo((prev) => prev || { clinic: null, relawanNama: null, therapistAvatar: null }); }, 1200);
+    const timeout = setTimeout(() => { if (active) setInfo((prev) => prev || { clinic: null, relawanNama: null, therapistAvatar: null }); }, 800);
 
     const run = async () => {
       if (!userId) return;
@@ -141,7 +141,7 @@ export default function SplashScreen({ onDone }) {
         tasks.push(supabase.from('physiotherapists').select('avatar_url').eq('user_id', userId).maybeSingle()
           .then(({ data }) => { out.therapistAvatar = data?.avatar_url || null; }));
       }
-      await Promise.race([Promise.allSettled(tasks), new Promise((resolve) => setTimeout(resolve, 900))]);
+      await Promise.race([Promise.allSettled(tasks), new Promise((resolve) => setTimeout(resolve, 600))]);
       if (active) setInfo({ ...out });
     };
     run();
@@ -150,7 +150,7 @@ export default function SplashScreen({ onDone }) {
 
   const started = !!info;
 
-  // Timeline: fade out for the last half second, done at 10s. Tap anywhere to skip.
+  // Timeline: fade out for the last 0.4s, done at 5.2s. Tap anywhere to skip.
   useEffect(() => {
     if (!started) return undefined;
     const fadeTimer = setTimeout(() => setFadeOut(true), TOTAL_MS - FADE_MS);
@@ -247,7 +247,7 @@ export default function SplashScreen({ onDone }) {
               </div>
             </div>
             {roleLabel && <div className="sp-tag2 sp-cap"><i className="sp-dotl" /><span>{roleLabel}</span></div>}
-            <h2 ref={quoteRef} className="sp-hl sp-kw" style={{ '--sp-st': Math.min(0.11, 0.6 / Math.max(1, quoteWords.length - 1)).toFixed(3) + 's' }}>
+            <h2 ref={quoteRef} className="sp-hl sp-kw" style={{ '--sp-st': Math.min(0.06, 0.3 / Math.max(1, quoteWords.length - 1)).toFixed(3) + 's' }}>
               {quoteWords.map((w, j) => (
                 <span key={j}>
                   <span className="sp-wm"><span className={`sp-w${j === quoteWords.length - 1 ? ' sp-ac' : ''}`} style={{ '--sp-j': j }}>{w}</span></span>{' '}
@@ -332,7 +332,7 @@ const SPLASH_CSS = `
 .sp-disc.sp-logo { background: #fff; }
 .sp-disc.sp-logo img { object-fit: contain; padding: 15%; }
 .sp-tag2 { position: absolute; left: 24px; right: 20px; top: 278px; }
-.sp-hl { position: absolute; left: 24px; right: 18px; top: 300px; margin: 0; font-size: 28px; font-weight: 800; line-height: 1.08; letter-spacing: -.035em; color: var(--sp-t1); --sp-t0: 4.3s; --sp-st: .11s; }
+.sp-hl { position: absolute; left: 24px; right: 18px; top: 300px; margin: 0; font-size: 28px; font-weight: 800; line-height: 1.08; letter-spacing: -.035em; color: var(--sp-t1); --sp-t0: 1.85s; --sp-st: .06s; }
 
 /* scene 3: numbers on the bloom */
 .sp-s3 { position: absolute; inset: 0; z-index: 6; color: var(--sp-ink); visibility: hidden; }
@@ -356,48 +356,48 @@ const SPLASH_CSS = `
 .sp-cnt { position: absolute; left: 24px; right: 24px; bottom: 22px; display: flex; justify-content: space-between; font: 500 9px/1 "DM Sans", Inter, sans-serif; letter-spacing: .2em; color: var(--sp-t3); z-index: 7; }
 .sp-pc::after { counter-reset: spp var(--sp-p); content: counter(spp) "%"; font-variant-numeric: tabular-nums; }
 
-/* motion: seconds on one 10s clock, long ease-out curves, nothing loops except the slow orbit text */
-.sp-stage { animation: sp-pcount 10s linear both; }
-.sp-cnt { animation: sp-cntc 10s step-end both; }
-.sp-s1 { animation: sp-s1vis 3.2s linear both; }
-.sp-s2 { animation: sp-s2vis 6.75s linear both; }
-.sp-s3 { animation: sp-s3vis 10s linear both; }
-.sp-hi { animation: sp-up .9s cubic-bezier(.22,1,.36,1) .1s both; }
-.sp-nm .sp-l { animation: sp-rise 1s cubic-bezier(.22,1,.36,1) calc(.2s + var(--sp-i) * .085s) both; }
-.sp-nm .sp-dt { animation: sp-dotpop .8s cubic-bezier(.34,1.2,.64,1) 1s both; }
-.sp-lab { animation: sp-up .8s cubic-bezier(.22,1,.36,1) 1.3s both; }
-.sp-flood { animation: sp-bmove 10s both; }
-.sp-bl { animation: sp-bscale 10s both; }
-.sp-ava { animation: sp-avapop .9s cubic-bezier(.34,1.15,.64,1) 3.8s both; }
-.sp-ringtxt { animation: sp-ringin .9s ease-out 4s both, sp-spin 40s linear 4s infinite; }
-.sp-tag2 { animation: sp-up .8s cubic-bezier(.22,1,.36,1) 4.1s both; }
-.sp-hl .sp-w { animation: sp-rise .9s cubic-bezier(.22,1,.36,1) calc(var(--sp-t0) + var(--sp-j) * var(--sp-st)) both; }
-.sp-hl .sp-ac { animation: sp-rise 1s cubic-bezier(.22,1,.36,1) calc(var(--sp-t0) + var(--sp-j) * var(--sp-st) + .08s) both; }
-.sp-tg3 { animation: sp-up .8s cubic-bezier(.22,1,.36,1) 6.65s both; }
-.sp-dn { animation: sp-dnrun 1.7s cubic-bezier(.16,1,.3,1) 6.75s both, sp-up .9s cubic-bezier(.22,1,.36,1) 6.75s both; }
-.sp-dm { animation: sp-up .9s cubic-bezier(.22,1,.36,1) 7.05s both; }
-.sp-rg3 { animation: sp-avapop .9s cubic-bezier(.34,1.15,.64,1) 7.2s both; }
-.sp-rg3 .sp-pr { animation: sp-ringfill 1.9s cubic-bezier(.22,1,.36,1) 7.3s both; }
-.sp-rg3 b { animation: sp-rnrun 1.9s cubic-bezier(.22,1,.36,1) 7.3s both; }
-.sp-rt3 { animation: sp-up .9s cubic-bezier(.22,1,.36,1) 7.55s both; }
+/* motion: seconds on one 5.2s clock, ease-out curves, nothing loops except the slow orbit text */
+.sp-stage { animation: sp-pcount 5.2s linear both; }
+.sp-cnt { animation: sp-cntc 5.2s step-end both; }
+.sp-s1 { animation: sp-s1vis 1.38s linear both; }
+.sp-s2 { animation: sp-s2vis 3.4s linear both; }
+.sp-s3 { animation: sp-s3vis 5.2s linear both; }
+.sp-hi { animation: sp-up .5s cubic-bezier(.22,1,.36,1) .05s both; }
+.sp-nm .sp-l { animation: sp-rise .55s cubic-bezier(.22,1,.36,1) calc(.08s + var(--sp-i) * .045s) both; }
+.sp-nm .sp-dt { animation: sp-dotpop .45s cubic-bezier(.34,1.2,.64,1) .4s both; }
+.sp-lab { animation: sp-up .45s cubic-bezier(.22,1,.36,1) .6s both; }
+.sp-flood { animation: sp-bmove 5.2s both; }
+.sp-bl { animation: sp-bscale 5.2s both; }
+.sp-ava { animation: sp-avapop .45s cubic-bezier(.34,1.15,.64,1) 1.65s both; }
+.sp-ringtxt { animation: sp-ringin .45s ease-out 1.75s both, sp-spin 40s linear 1.75s infinite; }
+.sp-tag2 { animation: sp-up .4s cubic-bezier(.22,1,.36,1) 1.8s both; }
+.sp-hl .sp-w { animation: sp-rise .5s cubic-bezier(.22,1,.36,1) calc(var(--sp-t0) + var(--sp-j) * var(--sp-st)) both; }
+.sp-hl .sp-ac { animation: sp-rise .55s cubic-bezier(.22,1,.36,1) calc(var(--sp-t0) + var(--sp-j) * var(--sp-st) + .05s) both; }
+.sp-tg3 { animation: sp-up .4s cubic-bezier(.22,1,.36,1) 3.35s both; }
+.sp-dn { animation: sp-dnrun .95s cubic-bezier(.16,1,.3,1) 3.4s both, sp-up .45s cubic-bezier(.22,1,.36,1) 3.4s both; }
+.sp-dm { animation: sp-up .5s cubic-bezier(.22,1,.36,1) 3.6s both; }
+.sp-rg3 { animation: sp-avapop .45s cubic-bezier(.34,1.15,.64,1) 3.7s both; }
+.sp-rg3 .sp-pr { animation: sp-ringfill 1s cubic-bezier(.22,1,.36,1) 3.75s both; }
+.sp-rg3 b { animation: sp-rnrun 1s cubic-bezier(.22,1,.36,1) 3.75s both; }
+.sp-rt3 { animation: sp-up .5s cubic-bezier(.22,1,.36,1) 3.85s both; }
 
 @keyframes sp-pcount { from { --sp-p: 0; } }
 @keyframes sp-cntc { 0% { color: var(--sp-t3); } 62% { color: color-mix(in srgb, var(--sp-ink) 70%, transparent); } }
 @keyframes sp-s1vis { from, 99% { visibility: visible; } to { visibility: hidden; } }
-@keyframes sp-s2vis { 0%, 47% { visibility: hidden; } 47.1%, 99.9% { visibility: visible; } 100% { visibility: hidden; } }
-@keyframes sp-s3vis { 0%, 66% { visibility: hidden; } 66.1%, 100% { visibility: visible; } }
-@keyframes sp-up { from { opacity: 0; transform: translateY(14px); } }
+@keyframes sp-s2vis { 0%, 40% { visibility: hidden; } 40.1%, 99.9% { visibility: visible; } 100% { visibility: hidden; } }
+@keyframes sp-s3vis { 0%, 64% { visibility: hidden; } 64.1%, 100% { visibility: visible; } }
+@keyframes sp-up { from { opacity: 0; transform: translateY(12px); } }
 @keyframes sp-rise { from { transform: translateY(112%); } }
 @keyframes sp-dotpop { from { transform: scale(0); } }
 @keyframes sp-bmove {
-  0%, 32.5% { transform: translate(var(--sp-fx), var(--sp-fy)); animation-timing-function: cubic-bezier(.65,0,.35,1); }
-  40.5%, 100% { transform: translate(var(--sp-ax), var(--sp-ay)); }
+  0%, 27.3% { transform: translate(var(--sp-fx), var(--sp-fy)); animation-timing-function: cubic-bezier(.65,0,.35,1); }
+  35%, 100% { transform: translate(var(--sp-ax), var(--sp-ay)); }
 }
 @keyframes sp-bscale {
-  0%, 23% { transform: scale(0); animation-timing-function: cubic-bezier(.65,0,.35,1); }
-  31%, 32.5% { transform: scale(1); animation-timing-function: cubic-bezier(.65,0,.35,1); }
-  40.5%, 59% { transform: scale(0); animation-timing-function: cubic-bezier(.65,0,.35,1); }
-  67%, 100% { transform: scale(1); }
+  0%, 18.3% { transform: scale(0); animation-timing-function: cubic-bezier(.65,0,.35,1); }
+  26%, 27.3% { transform: scale(1); animation-timing-function: cubic-bezier(.65,0,.35,1); }
+  35%, 57.7% { transform: scale(0); animation-timing-function: cubic-bezier(.65,0,.35,1); }
+  65.4%, 100% { transform: scale(1); }
 }
 @keyframes sp-avapop { from { opacity: 0; transform: scale(.6); } }
 @keyframes sp-ringin { from { opacity: 0; } }
