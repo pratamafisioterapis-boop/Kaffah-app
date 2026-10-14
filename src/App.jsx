@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import SplashScreen from "@/components/SplashScreen";
+import SplashScreen, { SPLASH_BACKDROP } from "@/components/SplashScreen";
 import Loader from "@/components/shared/Loader";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
@@ -263,7 +263,7 @@ const AppSplashGate = () => {
             position: 'fixed',
             inset: 0,
             zIndex: 999999,
-            background: 'radial-gradient(ellipse 120% 70% at 30% 8%, #1b2244 0%, #0c0f1e 55%, #08090f 100%)',
+            background: SPLASH_BACKDROP,
           }}
         />
       );
