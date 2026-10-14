@@ -18,6 +18,7 @@ import { deleteAppointment, updateAppointment } from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { formatTimeIndonesia } from '@/lib/utils';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 
 const BookedSlotDetailModal = ({ 
   appointment, 
@@ -27,6 +28,9 @@ const BookedSlotDetailModal = ({
 }) => {
   const { toast } = useToast();
 const { user, userDetails } = useAuth();
+  // Kaffah Physio: terapis tidak boleh membatalkan booking pasien (hanya booking & reschedule)
+  const hideCancel = userDetails?.clinic_id === KAFFAH_CLINIC_ID &&
+    ['therapist', 'physiotherapist'].includes(userDetails?.role);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 const [isRescheduleMode, setIsRescheduleMode] = useState(false);
@@ -332,6 +336,7 @@ useEffect(() => {
       Hapus
     </Button>
 
+    {!hideCancel && (
     <Button
       variant="outline"
       size="sm"
@@ -358,6 +363,7 @@ useEffect(() => {
     >
       Cancel
     </Button>
+    )}
 
     <Button
       variant="outline"
