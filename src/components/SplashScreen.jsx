@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { supabase } from "@/lib/customSupabaseClient";
-import { isOnAppDomain } from "@/lib/domainRouting";
 
 // Shared with App.jsx, which covers the screen with the same backdrop while the
 // session is being checked, so there is no colour jump when the splash starts.
@@ -59,6 +58,9 @@ const getTodayQuote = () => {
 const firstWord = (s) => (s || '').trim().split(/\s+/)[0] || '';
 
 // Design size of the stage; it is scaled uniformly to fit the screen.
+// Product name shown in the small label at the bottom left, for every clinic.
+const BRAND = 'CLINARA';
+
 const STAGE_W = 248;
 const STAGE_H = 508;
 const RING_LEN = 444;
@@ -168,8 +170,7 @@ export default function SplashScreen({ onDone }) {
     : role === 'owner' ? (clinic?.owner_role_label || 'Pemilik Klinik')
     : role === 'admin' ? 'Admin'
     : role === 'therapist' ? 'Fisioterapis' : '';
-  const brand = (firstWord(clinic?.name) || (isOnAppDomain() ? 'Clinara' : 'Kaffah')).toUpperCase();
-  const name = firstWord(info?.relawanNama) || firstWord(userDetails?.full_name) || firstWord(userDetails?.name) || firstWord(roleLabel) || firstWord(clinic?.name) || brand;
+  const name = firstWord(info?.relawanNama) || firstWord(userDetails?.full_name) || firstWord(userDetails?.name) || firstWord(roleLabel) || firstWord(clinic?.name) || BRAND;
 
   // Custom photo always wins; owners and admins fall back to the clinic logo, therapists to their own photo.
   const avatar = useMemo(() => {
@@ -281,7 +282,7 @@ export default function SplashScreen({ onDone }) {
           </div>
 
           <div className="sp-flood"><div className="sp-bl" /></div>
-          <div className="sp-cnt"><span>{brand}</span><b className="sp-pc" /></div>
+          <div className="sp-cnt"><span>{BRAND}</span><b className="sp-pc" /></div>
         </div>
       )}
     </div>
