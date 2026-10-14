@@ -3,7 +3,7 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Printer, Download, X, Loader2 } from 'lucide-react';
+import { Printer, Download, X, Loader2, Send } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 // Documents are authored at a fixed A4 width (210mm ≈ 794px @96dpi) for
@@ -35,7 +35,8 @@ const waitForImages = (root) => {
 
 // Generic A4 preview / print / PDF export shell shared by clinical document
 // templates (Resume Medis, Surat Keterangan). Mirrors the InvoiceModal pattern.
-const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, children }) => {
+// onSend (opsional): dipanggil dengan instance jsPDF; menampilkan tombol "Kirim".
+const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, onSend, children }) => {
   // componentRef points at a full-resolution, off-screen clone of the
   // document — the print/PDF pipeline below (html2canvas, iframe print)
   // needs the real A4-sized DOM, not the scaled-down preview copy.
@@ -43,6 +44,7 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, childr
   const previewWrapperRef = useRef(null);
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [previewScale, setPreviewScale] = useState(1);
   const [docHeight, setDocHeight] = useState(0);
 
@@ -177,6 +179,19 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, childr
     }
   };
 
+  const handleSend = async () => {
+    setIsSending(true);
+    try {
+      const pdf = await generatePDF();
+      await onSend(pdf);
+    } catch (err) {
+      console.error('Send Error:', err);
+      toast({ variant: 'destructive', title: 'Gagal Mengirim', description: err.message });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   const handlePrint = () => {
     const printContent = componentRef.current;
     if (!printContent) return;
@@ -237,6 +252,12 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, childr
               {isGenerating ? <Loader2 className="w-4 h-4 sm:mr-2 animate-spin" /> : <Download className="w-4 h-4 sm:mr-2" />}
               <span className="hidden sm:inline">Download PDF</span>
             </Button>
+            {onSend && (
+              <Button size="sm" onClick={handleSend} disabled={isSending} className="bg-emerald-600 hover:bg-emerald-700">
+                {isSending ? <Loader2 className="w-4 h-4 sm:mr-2 animate-spin" /> : <Send className="w-4 h-4 sm:mr-2" />}
+                <span className="hidden sm:inline">Kirim</span>
+              </Button>
+            )}
             <DialogClose asChild>
               <Button aria-label="Tutup" variant="ghost" size="icon">
                 <X className="w-4 h-4" />
