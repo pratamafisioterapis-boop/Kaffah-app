@@ -5,6 +5,7 @@ import { normalizeGender } from '@/lib/utils';
 import { getLatestClinicalDocumentForPatient, getWaApiSettings } from '@/lib/api';
 import ClinicalDocumentPreviewModal from './ClinicalDocumentPreviewModal';
 import ResumeMedisTemplate from './ResumeMedisTemplate';
+import { getPatientAdmissionNumber } from '@/lib/admission';
 
 // Resume medis (format Praxis) dari halaman CPPT. Memakai resume tersimpan
 // terakhir milik pasien bila ada; jika belum ada, diisi dari SOAP terbaru.
@@ -17,9 +18,10 @@ const ResumeMedisCpptDialog = ({ isOpen, onClose, group, clinic }) => {
     if (!isOpen || !group?.patient?.id) { setData(null); return undefined; }
     let cancelled = false;
     (async () => {
-      const [{ data: p }, { data: lastDoc }] = await Promise.all([
+      const [{ data: p }, { data: lastDoc }, admissionNumber] = await Promise.all([
         supabase.from('patients').select('*').eq('id', group.patient.id).maybeSingle(),
         getLatestClinicalDocumentForPatient('resume_medis', group.patient.id),
+        getPatientAdmissionNumber(group.patient.id),
       ]);
       if (cancelled) return;
       const pt = p || group.patient;
@@ -38,6 +40,7 @@ const ResumeMedisCpptDialog = ({ isOpen, onClose, group, clinic }) => {
         medical_record_number: pt.medical_record_number || '-',
         birth_date: pt.birth_date || null,
         gender: normalizeGender(pt.gender),
+        admission_number: admissionNumber || base.admission_number || '',
         document_date: new Date().toISOString().slice(0, 10),
       });
     })();
