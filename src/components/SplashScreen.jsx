@@ -64,7 +64,7 @@ const BRAND = 'CLINARA';
 const STAGE_W = 248;
 const STAGE_H = 508;
 const RING_LEN = 444;
-const TOTAL_MS = 5200;
+const TOTAL_MS = 5800;
 const FADE_MS = 400;
 
 // Orbit text: whole phrases only, with letters at a readable spacing. A long role
@@ -150,7 +150,7 @@ export default function SplashScreen({ onDone }) {
 
   const started = !!info;
 
-  // Timeline: fade out for the last 0.4s, done at 5.2s. Tap anywhere to skip.
+  // Timeline: fade out for the last 0.4s, done at 5.8s. Tap anywhere to skip.
   useEffect(() => {
     if (!started) return undefined;
     const fadeTimer = setTimeout(() => setFadeOut(true), TOTAL_MS - FADE_MS);
@@ -201,10 +201,10 @@ export default function SplashScreen({ onDone }) {
       const k = Math.min(1.9, vw / STAGE_W, vh / STAGE_H);
       stage.style.setProperty('--sp-k', k.toFixed(4));
       stage.style.setProperty('--sp-bs', Math.ceil((Math.hypot(vw, vh) / k) * 2.4) + 'px');
-      let fs = 76; nm.style.fontSize = fs + 'px';
+      let fs = 60; nm.style.fontSize = fs + 'px';
       while (nm.scrollWidth > nm.clientWidth && fs > 22) { fs -= 1; nm.style.fontSize = fs + 'px'; }
-      let qs = 28; hl.style.fontSize = qs + 'px';
-      while (hl.offsetHeight > 170 && qs > 15) { qs -= 1; hl.style.fontSize = qs + 'px'; }
+      let qs = 22; hl.style.fontSize = qs + 'px';
+      while (hl.offsetHeight > 150 && qs > 13) { qs -= 1; hl.style.fontSize = qs + 'px'; }
       const r = dot.getBoundingClientRect(), sr = stage.getBoundingClientRect(), kk = sr.width / STAGE_W || 1;
       stage.style.setProperty('--sp-fx', ((r.left + r.width / 2 - sr.left) / kk).toFixed(1) + 'px');
       stage.style.setProperty('--sp-fy', ((r.top + r.height / 2 - sr.top) / kk).toFixed(1) + 'px');
@@ -311,7 +311,7 @@ const SPLASH_CSS = `
 
 /* scene 1: greeting, name, accent dot */
 .sp-s1 { position: absolute; inset: 0; padding: 0 24px; display: flex; flex-direction: column; justify-content: center; visibility: hidden; z-index: 2; }
-.sp-hi { margin: 0 0 8px; font: italic 400 21px/1 "Instrument Serif", Georgia, serif; color: var(--sp-t2); }
+.sp-hi { margin: 0 0 8px; font: italic 400 18px/1 "Instrument Serif", Georgia, serif; color: var(--sp-t2); }
 .sp-nm { margin: 0; overflow: hidden; padding: .04em 0 .1em; font-weight: 800; line-height: .95; text-transform: uppercase; letter-spacing: -.045em; white-space: nowrap; color: var(--sp-t1); }
 .sp-nm .sp-l { display: inline-block; }
 .sp-nm .sp-dt { display: inline-block; width: .5em; height: .5em; border-radius: 50%; background: var(--sp-acc); margin-left: .08em; }
@@ -327,77 +327,77 @@ const SPLASH_CSS = `
 .sp-ava { position: absolute; left: 50%; top: 96px; width: 160px; height: 160px; margin-left: -80px; }
 .sp-ringtxt { position: absolute; inset: 0; width: 100%; height: 100%; }
 .sp-ringtxt text { font: 500 7.8px "DM Sans", Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; fill: var(--sp-t3); }
-.sp-disc { position: absolute; inset: 22px; border-radius: 50%; border: 3px solid var(--sp-acc); background: #121214; display: grid; place-items: center; overflow: hidden; font-size: 46px; font-weight: 800; color: var(--sp-t1); }
+.sp-disc { position: absolute; inset: 22px; border-radius: 50%; border: 3px solid var(--sp-acc); background: #121214; display: grid; place-items: center; overflow: hidden; font-size: 40px; font-weight: 800; color: var(--sp-t1); }
 .sp-disc img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .sp-disc.sp-logo { background: #fff; }
 .sp-disc.sp-logo img { object-fit: contain; padding: 15%; }
 .sp-tag2 { position: absolute; left: 24px; right: 20px; top: 278px; }
-.sp-hl { position: absolute; left: 24px; right: 18px; top: 300px; margin: 0; font-size: 28px; font-weight: 800; line-height: 1.08; letter-spacing: -.035em; color: var(--sp-t1); --sp-t0: 1.85s; --sp-st: .06s; }
+.sp-hl { position: absolute; left: 24px; right: 18px; top: 296px; margin: 0; font-size: 22px; font-weight: 800; line-height: 1.12; letter-spacing: -.03em; color: var(--sp-t1); --sp-t0: 1.85s; --sp-st: .06s; }
 
 /* scene 3: numbers on the bloom */
 .sp-s3 { position: absolute; inset: 0; z-index: 6; color: var(--sp-ink); visibility: hidden; }
 .sp-s3 .sp-cap { color: var(--sp-ink); opacity: .8; } .sp-s3 .sp-dotl { background: var(--sp-ink); }
-.sp-tg3 { position: absolute; left: 24px; top: 48px; }
-.sp-dn { position: absolute; left: 18px; top: 62px; font-size: 138px; font-weight: 800; letter-spacing: -.07em; line-height: .9; }
+.sp-tg3 { position: absolute; left: 24px; top: 84px; }
+.sp-dn { position: absolute; left: 20px; top: 100px; font-size: 100px; font-weight: 800; letter-spacing: -.07em; line-height: .9; }
 .sp-dn::after { counter-reset: spd var(--sp-dn); content: counter(spd); font-variant-numeric: tabular-nums; }
-.sp-dm { position: absolute; left: 24px; top: 202px; }
-.sp-dm small { display: block; font: 500 10px/1 "DM Sans", Inter, sans-serif; letter-spacing: .2em; text-transform: uppercase; margin-bottom: 4px; }
-.sp-dm span { font: italic 400 34px/1 "Instrument Serif", Georgia, serif; color: var(--sp-ink); }
-.sp-rg3 { position: absolute; left: 24px; top: 300px; width: 96px; height: 96px; }
+.sp-dm { position: absolute; left: 24px; top: 204px; }
+.sp-dm small { display: block; font: 500 9.5px/1 "DM Sans", Inter, sans-serif; letter-spacing: .2em; text-transform: uppercase; margin-bottom: 4px; }
+.sp-dm span { font: italic 400 26px/1 "Instrument Serif", Georgia, serif; color: var(--sp-ink); }
+.sp-rg3 { position: absolute; left: 24px; top: 290px; width: 84px; height: 84px; }
 .sp-rg3 svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .sp-rg3 .sp-tr { fill: none; stroke: var(--sp-trk); stroke-width: 9; }
 .sp-rg3 .sp-pr { fill: none; stroke: var(--sp-ink); stroke-width: 9; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: var(--sp-off, .6); }
-.sp-rg3 b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 25px; font-weight: 800; letter-spacing: -.03em; }
+.sp-rg3 b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 20px; font-weight: 800; letter-spacing: -.03em; }
 .sp-rg3 b::after { counter-reset: spr var(--sp-rn); content: counter(spr) "%"; font-variant-numeric: tabular-nums; }
-.sp-rt3 { position: absolute; left: 134px; right: 18px; top: 304px; }
-.sp-rt3 p { margin: 0 0 8px; font: 500 12.5px/1.35 "Inter Tight", Inter, sans-serif; }
-.sp-rt3 strong { font-size: 30px; font-weight: 800; letter-spacing: -.04em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--sp-ink); }
+.sp-rt3 { position: absolute; left: 124px; right: 18px; top: 296px; }
+.sp-rt3 p { margin: 0 0 6px; font: 500 11.5px/1.35 "Inter Tight", Inter, sans-serif; }
+.sp-rt3 strong { font-size: 24px; font-weight: 800; letter-spacing: -.04em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--sp-ink); }
 
 .sp-cnt { position: absolute; left: 24px; right: 24px; bottom: 22px; display: flex; justify-content: space-between; font: 500 9px/1 "DM Sans", Inter, sans-serif; letter-spacing: .2em; color: var(--sp-t3); z-index: 7; }
 .sp-pc::after { counter-reset: spp var(--sp-p); content: counter(spp) "%"; font-variant-numeric: tabular-nums; }
 
-/* motion: seconds on one 5.2s clock, ease-out curves, nothing loops except the slow orbit text */
-.sp-stage { animation: sp-pcount 5.2s linear both; }
-.sp-cnt { animation: sp-cntc 5.2s step-end both; }
+/* motion: seconds on one 5.8s clock, ease-out curves, nothing loops except the slow orbit text */
+.sp-stage { animation: sp-pcount 5.8s linear both; }
+.sp-cnt { animation: sp-cntc 5.8s step-end both; }
 .sp-s1 { animation: sp-s1vis 1.38s linear both; }
-.sp-s2 { animation: sp-s2vis 3.4s linear both; }
-.sp-s3 { animation: sp-s3vis 5.2s linear both; }
+.sp-s2 { animation: sp-s2vis 4s linear both; }
+.sp-s3 { animation: sp-s3vis 5.8s linear both; }
 .sp-hi { animation: sp-up .5s cubic-bezier(.22,1,.36,1) .05s both; }
 .sp-nm .sp-l { animation: sp-rise .55s cubic-bezier(.22,1,.36,1) calc(.08s + var(--sp-i) * .045s) both; }
 .sp-nm .sp-dt { animation: sp-dotpop .45s cubic-bezier(.34,1.2,.64,1) .4s both; }
 .sp-lab { animation: sp-up .45s cubic-bezier(.22,1,.36,1) .6s both; }
-.sp-flood { animation: sp-bmove 5.2s both; }
-.sp-bl { animation: sp-bscale 5.2s both; }
+.sp-flood { animation: sp-bmove 5.8s both; }
+.sp-bl { animation: sp-bscale 5.8s both; }
 .sp-ava { animation: sp-avapop .45s cubic-bezier(.34,1.15,.64,1) 1.65s both; }
 .sp-ringtxt { animation: sp-ringin .45s ease-out 1.75s both, sp-spin 40s linear 1.75s infinite; }
 .sp-tag2 { animation: sp-up .4s cubic-bezier(.22,1,.36,1) 1.8s both; }
 .sp-hl .sp-w { animation: sp-rise .5s cubic-bezier(.22,1,.36,1) calc(var(--sp-t0) + var(--sp-j) * var(--sp-st)) both; }
 .sp-hl .sp-ac { animation: sp-rise .55s cubic-bezier(.22,1,.36,1) calc(var(--sp-t0) + var(--sp-j) * var(--sp-st) + .05s) both; }
-.sp-tg3 { animation: sp-up .4s cubic-bezier(.22,1,.36,1) 3.35s both; }
-.sp-dn { animation: sp-dnrun .95s cubic-bezier(.16,1,.3,1) 3.4s both, sp-up .45s cubic-bezier(.22,1,.36,1) 3.4s both; }
-.sp-dm { animation: sp-up .5s cubic-bezier(.22,1,.36,1) 3.6s both; }
-.sp-rg3 { animation: sp-avapop .45s cubic-bezier(.34,1.15,.64,1) 3.7s both; }
-.sp-rg3 .sp-pr { animation: sp-ringfill 1s cubic-bezier(.22,1,.36,1) 3.75s both; }
-.sp-rg3 b { animation: sp-rnrun 1s cubic-bezier(.22,1,.36,1) 3.75s both; }
-.sp-rt3 { animation: sp-up .5s cubic-bezier(.22,1,.36,1) 3.85s both; }
+.sp-tg3 { animation: sp-up .4s cubic-bezier(.22,1,.36,1) 3.95s both; }
+.sp-dn { animation: sp-dnrun .95s cubic-bezier(.16,1,.3,1) 4s both, sp-up .45s cubic-bezier(.22,1,.36,1) 4s both; }
+.sp-dm { animation: sp-up .5s cubic-bezier(.22,1,.36,1) 4.2s both; }
+.sp-rg3 { animation: sp-avapop .45s cubic-bezier(.34,1.15,.64,1) 4.3s both; }
+.sp-rg3 .sp-pr { animation: sp-ringfill 1s cubic-bezier(.22,1,.36,1) 4.35s both; }
+.sp-rg3 b { animation: sp-rnrun 1s cubic-bezier(.22,1,.36,1) 4.35s both; }
+.sp-rt3 { animation: sp-up .5s cubic-bezier(.22,1,.36,1) 4.45s both; }
 
 @keyframes sp-pcount { from { --sp-p: 0; } }
-@keyframes sp-cntc { 0% { color: var(--sp-t3); } 62% { color: color-mix(in srgb, var(--sp-ink) 70%, transparent); } }
+@keyframes sp-cntc { 0% { color: var(--sp-t3); } 65% { color: color-mix(in srgb, var(--sp-ink) 70%, transparent); } }
 @keyframes sp-s1vis { from, 99% { visibility: visible; } to { visibility: hidden; } }
-@keyframes sp-s2vis { 0%, 40% { visibility: hidden; } 40.1%, 99.9% { visibility: visible; } 100% { visibility: hidden; } }
-@keyframes sp-s3vis { 0%, 64% { visibility: hidden; } 64.1%, 100% { visibility: visible; } }
+@keyframes sp-s2vis { 0%, 34% { visibility: hidden; } 34.1%, 99.9% { visibility: visible; } 100% { visibility: hidden; } }
+@keyframes sp-s3vis { 0%, 68% { visibility: hidden; } 68.1%, 100% { visibility: visible; } }
 @keyframes sp-up { from { opacity: 0; transform: translateY(12px); } }
 @keyframes sp-rise { from { transform: translateY(112%); } }
 @keyframes sp-dotpop { from { transform: scale(0); } }
 @keyframes sp-bmove {
-  0%, 27.3% { transform: translate(var(--sp-fx), var(--sp-fy)); animation-timing-function: cubic-bezier(.65,0,.35,1); }
-  35%, 100% { transform: translate(var(--sp-ax), var(--sp-ay)); }
+  0%, 24.5% { transform: translate(var(--sp-fx), var(--sp-fy)); animation-timing-function: cubic-bezier(.65,0,.35,1); }
+  31.4%, 100% { transform: translate(var(--sp-ax), var(--sp-ay)); }
 }
 @keyframes sp-bscale {
-  0%, 18.3% { transform: scale(0); animation-timing-function: cubic-bezier(.65,0,.35,1); }
-  26%, 27.3% { transform: scale(1); animation-timing-function: cubic-bezier(.65,0,.35,1); }
-  35%, 57.7% { transform: scale(0); animation-timing-function: cubic-bezier(.65,0,.35,1); }
-  65.4%, 100% { transform: scale(1); }
+  0%, 16.4% { transform: scale(0); animation-timing-function: cubic-bezier(.65,0,.35,1); }
+  23.3%, 24.5% { transform: scale(1); animation-timing-function: cubic-bezier(.65,0,.35,1); }
+  31.4%, 62.1% { transform: scale(0); animation-timing-function: cubic-bezier(.65,0,.35,1); }
+  69%, 100% { transform: scale(1); }
 }
 @keyframes sp-avapop { from { opacity: 0; transform: scale(.6); } }
 @keyframes sp-ringin { from { opacity: 0; } }
