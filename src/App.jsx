@@ -220,6 +220,18 @@ const AppSplashGate = () => {
   const [showSplash, setShowSplash] = useState(false);
   const prevUserIdRef = useRef(undefined);
   const wasImpersonatingRef = useRef(false);
+  // Until the auth check settles, a PWA launch with a stored session would
+  // flash the login form before the splash appears. Cover the screen with the
+  // splash backdrop meanwhile. `settled` flips once we know whether a splash
+  // follows (or there is nobody signed in), with a timeout as a safety net.
+  const [settled, setSettled] = useState(false);
+  const hasStoredSession = useMemo(() => {
+    try { return !!localStorage.getItem('kaffah-auth-token'); } catch { return false; }
+  }, []);
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(true), 12000);
+    return () => clearTimeout(t);
+  }, []);
 
   const isPWA = useMemo(() => {
     try {
@@ -247,9 +259,24 @@ const AppSplashGate = () => {
     }
     prevUserIdRef.current = currentUserId;
     wasImpersonatingRef.current = isImpersonating;
+    setSettled(true);
   }, [isPWA, authLoading, user, isImpersonating]);
 
-  if (!showSplash) return null;
+  if (!showSplash) {
+    if (isPWA && hasStoredSession && !settled) {
+      return (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 999999,
+            background: 'radial-gradient(ellipse 120% 70% at 30% 8%, #1b2244 0%, #0c0f1e 55%, #08090f 100%)',
+          }}
+        />
+      );
+    }
+    return null;
+  }
   return <SplashScreen onDone={() => setShowSplash(false)} />;
 };
 
