@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, User, Calendar, ChevronRight, Search, ClipboardList, Download, Stethoscope } from 'lucide-react';
+import { Loader2, User, Calendar, ChevronRight, Search, ClipboardList, Download, Stethoscope, FileText } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -13,13 +13,16 @@ import { getCachedClinicId } from '@/lib/api';
 import { exportDailyRecapsToCSV } from '@/lib/utils';
 import { validatePatientId } from '@/lib/validationHelpers';
 import TherapistMedicalRecords from '@/components/therapist/TherapistMedicalRecords';
+import ResumeMedisCpptDialog from '@/components/admin/clinical-documents/ResumeMedisCpptDialog';
 
 // therapistProfile & basePath are only passed when the current account is
 // itself linked as a therapist (owner merged with a therapist profile via
 // Super Admin's "Jadikan Terapis") — in that case this tab also offers a
 // "SOAP Saya" section to input SOAP for patients that therapist actually
 // handles, on top of the read-only view of every patient's evaluations.
-const DailyEvaluationReadOnly = ({ therapistProfile = null, basePath = '/therapist/records' }) => {
+// resumeClinic (opsional): bila diisi, tiap pasien punya tombol Resume Medis
+// (download & kirim) — dipakai halaman CPPT klinik Praxis.
+const DailyEvaluationReadOnly = ({ therapistProfile = null, basePath = '/therapist/records', resumeClinic = null, title = null }) => {
   const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const { toast } = useToast();
 
@@ -30,6 +33,7 @@ const DailyEvaluationReadOnly = ({ therapistProfile = null, basePath = '/therapi
   const [detailModalOpen, setDetailModalOpen] = useState(false);
 
   const [isExporting, setIsExporting] = useState(false);
+  const [resumeGroup, setResumeGroup] = useState(null);
 
   useEffect(() => { fetchSoapRecords(); }, []);
 
@@ -105,7 +109,7 @@ const DailyEvaluationReadOnly = ({ therapistProfile = null, basePath = '/therapi
       <div className="space-y-3 sm:space-y-6">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2 sm:gap-4">
           <div className="flex-1">
-            {!isPWA && <h2 className="text-base sm:text-xl font-bold text-slate-900 flex items-center gap-2"><ClipboardList className="w-5 h-5 sm:w-6 sm:h-6 text-app-accent" />{therapistProfile ? 'Evaluasi Harian Semua Pasien (Lihat Saja)' : 'Daftar Evaluasi Harian (SOAP)'}</h2>}
+            {!isPWA && <h2 className="text-base sm:text-xl font-bold text-slate-900 flex items-center gap-2"><ClipboardList className="w-5 h-5 sm:w-6 sm:h-6 text-app-accent" />{title || (therapistProfile ? 'Evaluasi Harian Semua Pasien (Lihat Saja)' : 'Daftar Evaluasi Harian (SOAP)')}</h2>}
             {!isPWA && <p className="hidden sm:block text-sm text-slate-500 mt-1">Pantau perkembangan pasien melalui catatan SOAP dari terapis.</p>}
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-2 w-full lg:w-auto">
@@ -134,11 +138,17 @@ const DailyEvaluationReadOnly = ({ therapistProfile = null, basePath = '/therapi
                     <div className="flex items-center gap-2 sm:gap-2.5"><User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500 flex-shrink-0" /><span className="break-words sm:truncate">Oleh: {group.records[0]?.therapist?.full_name || 'Terapis'}</span></div>
                   </div>
                   <Button className="w-full bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 justify-between group-hover:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] h-8 sm:h-9 text-xs sm:text-sm" variant="outline" size="sm"><span className="font-medium">Lihat Detail SOAP</span><ChevronRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" /></Button>
+                  {resumeClinic && (
+                    <Button className="w-full mt-2 h-8 sm:h-9 text-xs sm:text-sm bg-indigo-600 hover:bg-indigo-700 text-white" size="sm" onClick={(e) => { e.stopPropagation(); setResumeGroup(group); }}>
+                      <FileText className="w-4 h-4 mr-2" />Resume Medis (Download / Kirim)
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ))
           )}
         </div>
+        {resumeClinic && <ResumeMedisCpptDialog isOpen={!!resumeGroup} onClose={() => setResumeGroup(null)} group={resumeGroup} clinic={resumeClinic} />}
         <DailyEvaluationDetailModal isOpen={detailModalOpen} onClose={() => setDetailModalOpen(false)} patientData={selectedPatientGroup} />
       </div>
     </div>

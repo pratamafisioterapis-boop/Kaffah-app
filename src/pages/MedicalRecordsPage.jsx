@@ -4,13 +4,16 @@ import MedicalRecordsManagement from '@/components/admin/MedicalRecordsManagemen
 import DailyEvaluationReadOnly from '@/components/admin/DailyEvaluationReadOnly';
 import { FileText, Stethoscope } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { getPhysiotherapistByUserId } from '@/lib/api';
+import { getPhysiotherapistByUserId, getClinicDetails } from '@/lib/api';
+import { PRAXIS_CLINIC_ID } from '@/lib/clinicIds';
 import { useMedicalRecordsFilledBy } from '@/hooks/useMedicalRecordsFilledBy';
 import PageHero from '@/components/shared/PageHero';
 
 const MedicalRecordsPage = () => {
   const { user, role, clinicName } = useAuth();
   const [therapistProfile, setTherapistProfile] = useState(null);
+  const [clinic, setClinic] = useState(null);
+  const [clinicLoaded, setClinicLoaded] = useState(false);
   const { filledBy } = useMedicalRecordsFilledBy();
   // Klinik dengan mode 'therapist': admin hanya melihat, terapis yang mengisi.
   const readOnly = role === 'admin' && filledBy === 'therapist';
@@ -31,7 +34,22 @@ const MedicalRecordsPage = () => {
     return () => { isMounted = false; };
   }, [user]);
 
+  useEffect(() => {
+    let isMounted = true;
+    getClinicDetails().then(({ data }) => {
+      if (!isMounted) return;
+      setClinic(data || null);
+      setClinicLoaded(true);
+    });
+    return () => { isMounted = false; };
+  }, []);
+
+  // Praxis: tab Rekam Medis dihapus, Evaluasi Harian menjadi CPPT (+ resume medis).
+  const isPraxis = clinic?.id === PRAXIS_CLINIC_ID;
+
   const basePath = role === 'owner' ? '/owner' : '/admin';
+
+  if (!clinicLoaded) return null;
 
   return (
     <div className="space-y-5 animate-in fade-in duration-200 ease-out">
@@ -40,26 +58,33 @@ const MedicalRecordsPage = () => {
       <PageHero image="/hero/clinara-medrec-hero.webp" title="Rekam" highlight="Medis" description="Pusat data rekam medis pasien dan evaluasi SOAP." />
 
       {/* Tab Navigation */}
-      <Tabs defaultValue="records" className="w-full space-y-5">
+      <Tabs defaultValue={isPraxis ? 'evaluasi-harian' : 'records'} className="w-full space-y-5">
         <TabsList className="flex gap-1.5 p-1 w-fit rounded-app h-auto" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0' }}>
-          <TabsTrigger value="records"
+          {!isPraxis && <TabsTrigger value="records"
             className="flex items-center gap-2 px-5 py-2 rounded-app-sm text-xs font-bold transition-[color,background-color,border-color,box-shadow,transform,opacity] data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm data-[state=inactive]:text-slate-500">
             <FileText className="w-3.5 h-3.5" />
             Rekam Medis
-          </TabsTrigger>
+          </TabsTrigger>}
           <TabsTrigger value="evaluasi-harian"
             className="flex items-center gap-2 px-5 py-2 rounded-app-sm text-xs font-bold transition-[color,background-color,border-color,box-shadow,transform,opacity] data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm data-[state=inactive]:text-slate-500">
             <Stethoscope className="w-3.5 h-3.5" />
-            Evaluasi Harian
+            {isPraxis ? 'CPPT' : 'Evaluasi Harian'}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="records" className="mt-0 outline-none">
-          <MedicalRecordsManagement readOnly={readOnly} />
-        </TabsContent>
+        {!isPraxis && (
+          <TabsContent value="records" className="mt-0 outline-none">
+            <MedicalRecordsManagement readOnly={readOnly} />
+          </TabsContent>
+        )}
 
         <TabsContent value="evaluasi-harian" className="mt-0 outline-none">
-          <DailyEvaluationReadOnly therapistProfile={therapistProfile} basePath={`${basePath}/medical-records-soap`} />
+          <DailyEvaluationReadOnly
+            therapistProfile={therapistProfile}
+            basePath={`${basePath}/medical-records-soap`}
+            resumeClinic={isPraxis ? clinic : null}
+            title={isPraxis ? 'CPPT (Catatan Perkembangan Pasien Terintegrasi)' : null}
+          />
         </TabsContent>
       </Tabs>
     </div>
