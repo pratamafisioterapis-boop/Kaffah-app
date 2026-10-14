@@ -197,11 +197,6 @@ const ClinaraNavbar = () => {
           <a href="/login" className="text-sm font-semibold text-clinara-navy hover:text-clinara-blue transition-colors px-3">
             Masuk
           </a>
-          <a href="/register">
-            <Button className="bg-clinara-navy hover:bg-clinara-blue text-white rounded-full px-5 gap-1.5">
-              Daftarkan Klinik <ArrowRight className="w-3.5 h-3.5" />
-            </Button>
-          </a>
         </div>
         <button className="md:hidden" onClick={() => setOpen(!open)} aria-label="Menu">
           {open ? <CloseIcon className="w-6 h-6 text-clinara-navy" /> : <Menu className="w-6 h-6 text-clinara-navy" />}
@@ -215,9 +210,6 @@ const ClinaraNavbar = () => {
             </a>
           ))}
           <a href="/login" className="text-sm font-semibold text-clinara-navy">Masuk</a>
-          <a href="/register">
-            <Button className="w-full bg-clinara-navy hover:bg-clinara-blue text-white rounded-full">Daftarkan Klinik</Button>
-          </a>
         </div>
       )}
     </nav>
@@ -298,11 +290,6 @@ const ClinaraLandingPage = () => {
                 </p>
 
                 <div className="mt-8 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5">
-                  <a href="/register" className="w-full sm:w-auto">
-                    <Button size="lg" className="w-full sm:w-auto h-12 bg-clinara-navy hover:bg-clinara-blue text-white rounded-full px-7 gap-2 shadow-lg shadow-clinara-navy/20">
-                      Mulai Gratis 7 Hari <ArrowRight className="w-4 h-4" />
-                    </Button>
-                  </a>
                   <a href="#cara-kerja" className="w-full sm:w-auto">
                     <Button size="lg" variant="outline" className="w-full sm:w-auto h-12 rounded-full px-7 gap-2 border-clinara-navy/25 bg-white/60 backdrop-blur-sm text-clinara-navy hover:bg-white">
                       <PlayCircle className="w-4 h-4" /> Lihat Cara Kerja
@@ -638,11 +625,6 @@ const ClinaraLandingPage = () => {
                 <p className="font-bold text-clinara-navy text-lg leading-snug">Ratusan klinik telah mempercayai Clinara</p>
                 <p className="text-sm text-slate-500 mt-0.5">Bergabunglah sekarang dan rasakan kemudahan mengelola klinik Anda.</p>
               </div>
-              <a href="/register" className="w-full sm:w-auto shrink-0">
-                <Button size="lg" className="w-full sm:w-auto h-12 bg-clinara-navy hover:bg-clinara-blue text-white rounded-full px-7 gap-2">
-                  Mulai Gratis 7 Hari <ArrowRight className="w-4 h-4" />
-                </Button>
-              </a>
             </FadeIn>
           </div>
         </section>
@@ -923,11 +905,6 @@ const ClinaraLandingPage = () => {
                     </li>
                   ))}
                 </ul>
-                <a href="/register" className="mt-6 block">
-                  <Button className={`w-full rounded-full ${plan.highlight ? 'bg-clinara-navy hover:bg-clinara-blue text-white' : 'bg-clinara-bg text-clinara-navy hover:bg-clinara-navy hover:text-white'}`}>
-                    Daftarkan Klinik
-                  </Button>
-                </a>
               </FadeIn>
             ))}
           </div>
@@ -966,11 +943,6 @@ const ClinaraLandingPage = () => {
               dan berbasis data.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
-              <a href="/register">
-                <Button size="lg" className="bg-white text-clinara-navy hover:bg-slate-100 rounded-full px-8 gap-2">
-                  Daftarkan Klinik <ArrowRight className="w-4 h-4" />
-                </Button>
-              </a>
               <a href="#harga">
                 <Button size="lg" variant="outline" className="rounded-full px-8 bg-transparent border-white/40 text-white hover:bg-white/10">
                   Lihat Harga
@@ -1002,13 +974,11 @@ const ClinaraLandingPage = () => {
                 <ul className="space-y-2 text-sm">
                   <li><a href="#fitur" className="hover:text-white transition-colors">Fitur</a></li>
                   <li><a href="#harga" className="hover:text-white transition-colors">Harga</a></li>
-                  <li><a href="/register" className="hover:text-white transition-colors">Daftarkan Klinik</a></li>
                 </ul>
               </div>
               <div>
                 <h4 className="text-white font-semibold mb-4 text-sm">Untuk Klinik</h4>
                 <ul className="space-y-2 text-sm">
-                  <li><a href="/register" className="hover:text-white transition-colors">Daftarkan Klinik</a></li>
                   <li><a href="/login" className="hover:text-white transition-colors">Masuk Akun</a></li>
                 </ul>
               </div>
