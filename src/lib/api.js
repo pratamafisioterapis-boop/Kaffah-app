@@ -6836,6 +6836,38 @@ export const savePhysiotherapist = async (payload) => {
   }, 'savePhysiotherapist', { retry: true });
 };
 
+// Identitas SATUSEHAT nakes (NIK + IHS Practitioner). Disimpan di tabel terpisah
+// karena physiotherapists dibaca halaman publik; RLS hanya untuk owner/admin.
+export const getTherapistSatusehat = async (therapistId) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('physiotherapist_satusehat')
+      .select('nik, ihs_number')
+      .eq('physiotherapist_id', therapistId)
+      .maybeSingle();
+    if (error) return { error };
+    return { data: data || { nik: '', ihs_number: '' }, error: null };
+  }, 'getTherapistSatusehat');
+};
+
+export const saveTherapistSatusehat = async (therapistId, clinicId, { nik, ihs_number }) => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase
+      .from('physiotherapist_satusehat')
+      .upsert({
+        physiotherapist_id: therapistId,
+        clinic_id: clinicId,
+        nik: nik || null,
+        ihs_number: ihs_number || null,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'physiotherapist_id' })
+      .select()
+      .single();
+    if (error) return { error };
+    return { data, error: null };
+  }, 'saveTherapistSatusehat');
+};
+
 // ============================================
 // SOAP LOCK (physiotherapist appointment lock based on unfilled SOAP)
 // ============================================

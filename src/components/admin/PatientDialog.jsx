@@ -54,6 +54,7 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
     birth_date: '',
     address: '',
     nik: '',
+    ihs_number: '',
     occupation: '',
     religion: '',
     additional_info_option_id: null,
@@ -184,6 +185,7 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
         birth_date: safeDate(normalizedData.birth_date),
         address: normalizedData.address === '-' ? '' : normalizedData.address || '',
         nik: normalizedData.nik || '',
+        ihs_number: normalizedData.ihs_number || '',
         occupation: normalizedData.occupation || '',
         religion: normalizedData.religion || '',
         additional_info_option_id: normalizedData.additional_info_option_id || normalizedData.additional_info?.id || null,
@@ -213,12 +215,12 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
           let stale = false;
           supabase
             .from('patients')
-            .select('occupation, religion, ktp_photo_path')
+            .select('occupation, religion, ktp_photo_path, ihs_number')
             .eq('id', initialData.id)
             .maybeSingle()
             .then(({ data, error }) => {
               if (stale || error || !data) return;
-              setFormData(prev => ({ ...prev, occupation: data.occupation || '', religion: data.religion || '' }));
+              setFormData(prev => ({ ...prev, occupation: data.occupation || '', religion: data.religion || '', ihs_number: data.ihs_number || '' }));
               setKtpPath(data.ktp_photo_path || null);
               setOriginalKtpPath(data.ktp_photo_path || null);
               setExtrasLoaded(true);
@@ -236,6 +238,7 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
         birth_date: '',
         address: '',
         nik: '',
+        ihs_number: '',
         occupation: '',
         religion: '',
         additional_info_option_id: null,
@@ -415,6 +418,7 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
     try {
       finalData.occupation = (finalData.occupation || '').trim() || null;
       finalData.religion = finalData.religion || null;
+      finalData.ihs_number = (finalData.ihs_number || '').trim() || null;
 
       if (ktpFile) {
         const { data: sessionData } = await supabase.auth.getSession();
@@ -433,6 +437,7 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
         // Data tambahan belum berhasil dimuat: jangan timpa nilai yang tersimpan
         delete finalData.occupation;
         delete finalData.religion;
+        delete finalData.ihs_number;
       } else if (!initialData || finalKtpPath !== originalKtpPath) {
         finalData.ktp_photo_path = finalKtpPath;
       }
@@ -634,6 +639,21 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
                             <ValidationIcon field="nik" />
                         </div>
                         {errors.nik && <p className="text-xs text-red-500 mt-1">{errors.nik}</p>}
+                        {!errors.nik && formData.nik && formData.nik.length !== 16 && (
+                          <p className="text-xs text-amber-600 mt-1">NIK belum 16 digit — belum bisa dikirim ke SATUSEHAT.</p>
+                        )}
+                      </div>
+
+                      {/* IHS Number (SATUSEHAT) */}
+                      <div className="space-y-1 relative">
+                        <Label htmlFor="ihs_number">IHS Number (SATUSEHAT)</Label>
+                        <Input
+                          id="ihs_number"
+                          value={formData.ihs_number}
+                          onChange={(e) => handleInputChange('ihs_number', e.target.value)}
+                          className="bg-white"
+                          placeholder="Terisi otomatis saat integrasi aktif (Opsional)"
+                        />
                       </div>
 
                       {/* Additional Info */}

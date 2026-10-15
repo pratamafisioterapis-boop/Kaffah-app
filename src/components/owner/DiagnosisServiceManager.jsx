@@ -36,6 +36,10 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 // Fitur pembersihan duplikat hanya untuk owner klinik Kaffah Physiotherapy
 const KAFFAH_CLINIC_ID = 'bfdc3fd8-a052-4753-a5b7-229930b3237a';
 
+// Format kode untuk SATUSEHAT: ICD-10 (Condition) dan ICD-9-CM prosedur (Procedure).
+const ICD10_RE = /^[A-Z][0-9]{2}(\.[0-9A-Z]{1,4})?$/;
+const ICD9_RE = /^[0-9]{2}(\.[0-9]{1,2})?$/;
+
 const DiagnosisServiceManager = () => {
   const { toast } = useToast();
   const { role, userDetails } = useAuth();
@@ -56,7 +60,7 @@ const DiagnosisServiceManager = () => {
 
   // Form States
   const [editingItem, setEditingItem] = useState(null); // null = create mode
-  const [formData, setFormData] = useState({ label: '', parent_id: null });
+  const [formData, setFormData] = useState({ label: '', parent_id: null, icd10_code: '', icd9_code: '' });
   const [pasteContent, setPasteContent] = useState("");
   const [targetServiceId, setTargetServiceId] = useState(null);
 
@@ -103,7 +107,7 @@ setExpandedServices({});
 
   const handleOpenServiceModal = (service = null) => {
     setEditingItem(service);
-    setFormData({ label: service ? service.label : '', parent_id: null });
+    setFormData({ label: service ? service.label : '', parent_id: null, icd10_code: '', icd9_code: service?.icd9_code || '' });
     setIsServiceModalOpen(true);
   };
 
@@ -113,13 +117,20 @@ setExpandedServices({});
       return;
     }
 
+    const icd9 = formData.icd9_code.trim();
+    if (icd9 && !ICD9_RE.test(icd9)) {
+      toast({ variant: "destructive", title: "Format ICD-9-CM tidak valid", description: "Contoh yang benar: 93.39" });
+      return;
+    }
+    const icdExtra = { icd9_code: icd9 || null, icd_verified: !!icd9 };
+
     setIsProcessing(true);
     try {
       let result;
       if (editingItem) {
-        result = await updateOperationalOption(editingItem.id, formData.label.trim());
+        result = await updateOperationalOption(editingItem.id, formData.label.trim(), icdExtra);
       } else {
-        result = await createOperationalOption('service', formData.label.trim());
+        result = await createOperationalOption('service', formData.label.trim(), icdExtra);
       }
 
       if (result.error) throw result.error;
@@ -139,7 +150,7 @@ setExpandedServices({});
   const handleOpenDiagnosisModal = (serviceId, diagnosis = null) => {
     setEditingItem(diagnosis);
     setTargetServiceId(serviceId);
-    setFormData({ label: diagnosis ? diagnosis.label : '', parent_id: serviceId });
+    setFormData({ label: diagnosis ? diagnosis.label : '', parent_id: serviceId, icd10_code: diagnosis?.icd10_code || '', icd9_code: '' });
     setIsDiagnosisModalOpen(true);
   };
 
@@ -149,10 +160,17 @@ setExpandedServices({});
       return;
     }
 
+    const icd10 = formData.icd10_code.trim().toUpperCase();
+    if (icd10 && !ICD10_RE.test(icd10)) {
+      toast({ variant: "destructive", title: "Format ICD-10 tidak valid", description: "Contoh yang benar: M54.5" });
+      return;
+    }
+
     setIsProcessing(true);
     try {
       let result;
-      const extraData = { parent_id: targetServiceId };
+      // Kode yang disimpan owner dianggap sudah ditinjau (icd_verified).
+      const extraData = { parent_id: targetServiceId, icd10_code: icd10 || null, icd_verified: !!icd10 };
 
       if (editingItem) {
         result = await updateOperationalOption(editingItem.id, formData.label.trim(), extraData);
@@ -301,6 +319,10 @@ setExpandedServices({});
             Manajemen Layanan & Diagnosa
           </h2>
           <p className="text-sm text-slate-500">Atur struktur layanan klinik dan diagnosa terkait.</p>
+          <p className="text-xs text-slate-500 mt-1" title="Kode ICD-10 diperlukan untuk bridging SATUSEHAT">
+            Kode ICD-10 terverifikasi: {diagnoses.filter(d => d.icd10_code && d.icd_verified).length} dari {diagnoses.length} diagnosa
+            {diagnoses.some(d => d.icd10_code && !d.icd_verified) && ` (${diagnoses.filter(d => d.icd10_code && !d.icd_verified).length} saran otomatis perlu ditinjau)`}
+          </p>
         </div>
         <div className="flex gap-2 w-full md:w-auto">
           <div className="relative flex-1 md:w-64">
@@ -433,6 +455,15 @@ setExpandedServices({});
                                     <div key={diagnosis.id} className="group flex items-center justify-between p-3 bg-white border border-slate-200 rounded-app-sm hover:border-app-accent/40 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity]">
                                        <span className="text-sm text-slate-700 font-medium break-words sm:truncate pr-2" title={diagnosis.label}>
                                           {diagnosis.label}
+                                          {diagnosis.icd10_code && (
+                                            <Badge
+                                              variant="outline"
+                                              className={`ml-2 text-xs ${diagnosis.icd_verified ? 'text-emerald-700 border-emerald-200' : 'text-amber-700 border-amber-200'}`}
+                                              title={diagnosis.icd_verified ? 'Kode ICD-10 sudah diverifikasi' : 'Kode ICD-10 saran otomatis, belum diverifikasi — buka Edit lalu Simpan untuk menandai terverifikasi'}
+                                            >
+                                              {diagnosis.icd10_code}
+                                            </Badge>
+                                          )}
                                           {diagnosis.is_active === false && (
                                             <Badge variant="outline" className="ml-2 text-xs text-slate-500 border-slate-200">Nonaktif</Badge>
                                           )}
@@ -491,6 +522,14 @@ setExpandedServices({});
               placeholder="Contoh: Fisioterapi Musculoskeletal"
               autoFocus
             />
+            <label className="text-sm font-medium text-slate-700 mt-4 mb-2 block">Kode ICD-9-CM Tindakan (SATUSEHAT)</label>
+            <Input
+              value={formData.icd9_code}
+              onChange={(e) => setFormData({...formData, icd9_code: e.target.value})}
+              placeholder="Contoh: 93.39 (opsional)"
+              maxLength={6}
+            />
+            <p className="text-xs text-slate-500 mt-1">Kode prosedur untuk layanan ini. Tetapkan bersama terapis/dokter penanggung jawab.</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsServiceModalOpen(false)}>Batal</Button>
@@ -519,6 +558,14 @@ setExpandedServices({});
               placeholder="Contoh: Low Back Pain"
               autoFocus
             />
+            <label className="text-sm font-medium text-slate-700 mt-4 mb-2 block">Kode ICD-10 (SATUSEHAT)</label>
+            <Input
+              value={formData.icd10_code}
+              onChange={(e) => setFormData({...formData, icd10_code: e.target.value.toUpperCase()})}
+              placeholder="Contoh: M54.5 (opsional)"
+              maxLength={8}
+            />
+            <p className="text-xs text-slate-500 mt-1">Menyimpan kode menandainya sebagai terverifikasi oleh klinik.</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDiagnosisModalOpen(false)}>Batal</Button>

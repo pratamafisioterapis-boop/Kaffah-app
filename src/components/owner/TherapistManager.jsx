@@ -19,7 +19,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  getAllPhysiotherapists, savePhysiotherapist, createTherapistAccount, deletePhysiotherapist,
+  getAllPhysiotherapists, savePhysiotherapist, getTherapistSatusehat, saveTherapistSatusehat, createTherapistAccount, deletePhysiotherapist,
   uploadTherapistPhoto, getTherapistTimeOff, addTherapistTimeOff, deleteTherapistTimeOff, updateTherapistTimeOff,
   getCurrentClinic, getBadgesByOwner, linkOwnerAsTherapist, getPhysiotherapistByUserId
 } from '@/lib/api';
@@ -131,6 +131,9 @@ const TherapistManager = () => {
     const { data } = await getBadgesByOwner();
     if (data) setAvailableBadges(data);
   };
+
+  // Identitas SATUSEHAT (tabel terpisah, bukan bagian dari formData terapis)
+  const [satusehat, setSatusehat] = useState({ nik: '', ihs_number: '' });
 
   function initialFormState() {
     return {
@@ -317,9 +320,14 @@ const TherapistManager = () => {
         license_number: therapist.license_number || '',
         gender: therapist.gender || ''
       });
+      setSatusehat({ nik: '', ihs_number: '' });
+      getTherapistSatusehat(therapist.id).then(({ data }) => {
+        if (data) setSatusehat({ nik: data.nik || '', ihs_number: data.ihs_number || '' });
+      });
       setPassword(''); 
     } else {
       setEditingTherapist(null);
+      setSatusehat({ nik: '', ihs_number: '' });
       setFormData(initialFormState());
       setPassword('');
     }
@@ -396,6 +404,11 @@ const TherapistManager = () => {
 
     if (!editingTherapist && !isOwnerAsTherapist && !password) {
       toast({ variant: "destructive", title: "Validasi Gagal", description: "Password wajib diisi untuk akun baru" });
+      return;
+    }
+
+    if (satusehat.nik && !/^\d{16}$/.test(satusehat.nik)) {
+      toast({ variant: "destructive", title: "Validasi Gagal", description: "NIK terapis harus 16 digit angka." });
       return;
     }
 
@@ -533,6 +546,13 @@ const TherapistManager = () => {
       const { data, error: createError } = await createTherapistAccount(payload, password);
       error = createError;
       savedData = data;
+    }
+
+    if (!error && savedData?.id && (satusehat.nik || satusehat.ihs_number || editingTherapist)) {
+      const { error: sErr } = await saveTherapistSatusehat(savedData.id, clinicId, satusehat);
+      if (sErr) {
+        toast({ variant: "destructive", title: "NIK/IHS belum tersimpan", description: sErr.message });
+      }
     }
 
     if (!error) {
@@ -958,6 +978,27 @@ const headerColorMap = {
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-slate-600">No. STR / SIP</label>
                     <Input value={formData.license_number} onChange={(e) => setFormData({...formData, license_number: e.target.value})} placeholder="FL00001233102233" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-600">NIK (SATUSEHAT)</label>
+                    <Input
+                      inputMode="numeric"
+                      maxLength={16}
+                      value={satusehat.nik}
+                      onChange={(e) => setSatusehat({ ...satusehat, nik: e.target.value.replace(/\D/g, '') })}
+                      placeholder="16 digit NIK"
+                    />
+                    {satusehat.nik && satusehat.nik.length !== 16 && (
+                      <p className="text-xs text-amber-600">NIK harus 16 digit.</p>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-600">IHS Number Nakes (SATUSEHAT)</label>
+                    <Input
+                      value={satusehat.ihs_number}
+                      onChange={(e) => setSatusehat({ ...satusehat, ihs_number: e.target.value.trim() })}
+                      placeholder="Diisi otomatis saat integrasi aktif"
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-slate-600">Jenis Kelamin</label>
