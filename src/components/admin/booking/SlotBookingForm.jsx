@@ -50,7 +50,7 @@ const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatu
     guest_name: '',
     guest_phone: '',
     notes: '',
-    duration: 60,
+    duration: slot?.duration_minutes || 60,
     isRecurring: false,
     recurringEndDate: '',
     is_homecare: false
