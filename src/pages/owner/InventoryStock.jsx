@@ -79,23 +79,23 @@ const InventoryStockPage = () => {
         </div>
 
         <Tabs defaultValue="stok" className="w-full space-y-4">
-          <TabsList className={`grid w-full ${isKaffah ? "sm:w-[600px]" : "sm:w-[420px]"} ${isKaffah ? "grid-cols-3" : "grid-cols-2"} p-1 bg-slate-100 rounded-app`}>
+          <TabsList className={`flex h-auto w-full flex-nowrap items-stretch justify-start gap-1 overflow-x-auto scrollbar-hide snap-x snap-mandatory p-1 bg-slate-100 rounded-app sm:grid ${isKaffah ? "sm:w-[600px] sm:grid-cols-3" : "sm:w-[420px] sm:grid-cols-2"}`}>
             <TabsTrigger
               value="stok"
-              className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 flex items-center gap-2"
+              className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 flex shrink-0 snap-start items-center justify-center gap-2 px-4 py-2"
             >
               <Boxes className="w-4 h-4" /> Stok Barang
             </TabsTrigger>
             <TabsTrigger
               value="pengambilan"
-              className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 flex items-center gap-2"
+              className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 flex shrink-0 snap-start items-center justify-center gap-2 px-4 py-2"
             >
               <ClipboardList className="w-4 h-4" /> Pengambilan Bulanan
             </TabsTrigger>
             {isKaffah && (
               <TabsTrigger
                 value="dikirim"
-                className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 flex items-center gap-2"
+                className="rounded-app-sm data-[state=active]:bg-white data-[state=active]:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 flex shrink-0 snap-start items-center justify-center gap-2 px-4 py-2"
               >
                 <Truck className="w-4 h-4" /> Pesanan Dikirim
               </TabsTrigger>
