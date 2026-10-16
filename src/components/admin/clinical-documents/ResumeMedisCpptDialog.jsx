@@ -34,8 +34,11 @@ const ResumeMedisCpptDialog = ({ isOpen, onClose, group, clinic }) => {
         tindakan: soap.plan || '',
         therapist_name: soap.therapist?.full_name || '-',
       };
+      const isBlank = (v) => !v || v === '-';
+      const soapTherapist = (group.records || []).map((r) => r?.therapist?.full_name).find((n) => !isBlank(n));
       setData({
         ...base,
+        therapist_name: !isBlank(base.therapist_name) ? base.therapist_name : (soapTherapist || '-'),
         patient_name: pt.full_name || '-',
         medical_record_number: pt.medical_record_number || '-',
         birth_date: pt.birth_date || null,
