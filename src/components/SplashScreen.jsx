@@ -163,6 +163,23 @@ export default function SplashScreen({ onDone }) {
     return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
   }, [started]);
 
+  // Spoken "Welcome back, <name>" once the splash starts. Uses the device's built-in voice, so there is no
+  // audio file to ship; browsers that block speech without a prior tap simply stay silent.
+  useEffect(() => {
+    if (!started || !name || name === BRAND) return undefined;
+    const synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
+    if (!synth || typeof SpeechSynthesisUtterance === 'undefined') return undefined;
+    try {
+      const u = new SpeechSynthesisUtterance(`Welcome back, ${name}`);
+      u.lang = 'en-US';
+      u.rate = 0.95;
+      u.volume = 0.9;
+      synth.cancel();
+      synth.speak(u);
+    } catch { /* speech is optional */ }
+    return () => { try { synth.cancel(); } catch { /* ignore */ } };
+  }, [started]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const skip = () => {
     if (finishedRef.current) return;
     setFadeOut(true);
