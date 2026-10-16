@@ -95,36 +95,14 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, onSend
     };
   }, [isOpen, children]);
 
-  const generatePDF = async () => {
-    const element = componentRef.current;
-    if (!element) throw new Error('Elemen dokumen tidak ditemukan');
-
-    await waitForImages(element);
-
-    // element sits inside a scrollable modal (overflow-y-auto, max-h-[90vh]),
-    // so without an explicit height/windowHeight html2canvas falls back to
-    // the modal's visible viewport and silently crops everything below the
-    // fold (e.g. the REKOMENDASI section and signature block).
-    const fullHeight = element.scrollHeight;
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      width: 794,
-      windowWidth: 794,
-      height: fullHeight,
-      windowHeight: fullHeight,
-      scrollX: 0,
-      scrollY: 0,
-    });
-
+  // Draws one rasterized document onto the PDF. startOnNewPage is false only
+  // for the very first document, which uses jsPDF's initial blank page.
+  const addCanvasToPdf = (pdf, canvas, startOnNewPage) => {
     const pdfWidth = 210;
     const pdfHeight = 297;
     const pdfImgH = (canvas.height * pdfWidth) / canvas.width;
 
-    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
+    if (startOnNewPage) pdf.addPage();
 
     if (pdfImgH <= pdfHeight) {
       // Fits on a single page — draw at its natural (unscaled) height so
@@ -161,6 +139,43 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, onSend
         renderedPx += sliceHeightPx;
         isFirstPage = false;
       }
+    }
+  };
+
+  // Template yang menandai tiap dokumennya dengan [data-doc-page] (mis. beberapa
+  // resume sekaligus) dirender satu per satu: tiap dokumen mulai di halaman baru.
+  const generatePDF = async () => {
+    const element = componentRef.current;
+    if (!element) throw new Error('Elemen dokumen tidak ditemukan');
+
+    await waitForImages(element);
+
+    const pages = Array.from(element.querySelectorAll('[data-doc-page]'));
+    const targets = pages.length ? pages : [element];
+    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
+
+    for (let i = 0; i < targets.length; i += 1) {
+      const target = targets[i];
+      // target sits inside a scrollable modal (overflow-y-auto, max-h-[90vh]),
+      // so without an explicit height/windowHeight html2canvas falls back to
+      // the modal's visible viewport and silently crops everything below the
+      // fold (e.g. the REKOMENDASI section and signature block).
+      const fullHeight = target.scrollHeight;
+      // eslint-disable-next-line no-await-in-loop
+      const canvas = await html2canvas(target, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        width: 794,
+        windowWidth: 794,
+        height: fullHeight,
+        windowHeight: fullHeight,
+        scrollX: 0,
+        scrollY: 0,
+      });
+      addCanvasToPdf(pdf, canvas, i > 0);
     }
 
     return pdf;
@@ -218,6 +233,8 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, onSend
                  mm-to-px rounding tips the box a hair past one page and
                  prints a blank second page. */
               #doc-root { width: 210mm; min-height: calc(297mm - 1px); box-sizing: border-box; }
+              [data-doc-page] { break-after: page; }
+              [data-doc-page]:last-child { break-after: auto; }
             }
           </style>
         </head>
