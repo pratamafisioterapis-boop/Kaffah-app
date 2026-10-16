@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
+import { fillTherapistNames } from '@/lib/therapistNames';
 import DailyEvaluationDetailModal from './DailyEvaluationDetailModal';
 
 const DailyEvaluationTab = () => {
@@ -38,7 +39,7 @@ const DailyEvaluationTab = () => {
       // Group by patient_id to show unique patients
       const grouped = {};
       
-      data.forEach(record => {
+      (await fillTherapistNames(supabase, data)).forEach(record => {
         // Skip records where patient might have been deleted or is missing
         if (!record.patient) return;
 
