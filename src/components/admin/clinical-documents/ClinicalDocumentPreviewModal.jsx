@@ -10,6 +10,32 @@ import { useToast } from '@/components/ui/use-toast';
 // print/PDF fidelity, but their height varies with content length.
 const DOC_BASE_WIDTH = 794;
 
+// html2canvas merender salinan DOM di iframe. Salinan itu masih berada di dalam
+// dialog (transform, overflow-hidden, posisi fixed di luar layar), sehingga
+// posisi/lebarnya bisa bergeser dan isi PDF terpotong di kanan. Sebelum
+// dirender, lepaskan semua pengaruh elemen induk dan kunci lebar ke A4.
+const PDF_TARGET_ATTR = 'data-pdf-target';
+const normalizeClone = (clonedDoc) => {
+  const el = clonedDoc.querySelector(`[${PDF_TARGET_ATTR}]`);
+  if (!el) return;
+  for (let node = el.parentElement; node && node !== clonedDoc.documentElement; node = node.parentElement) {
+    node.style.position = 'static';
+    node.style.transform = 'none';
+    node.style.left = '0';
+    node.style.top = '0';
+    node.style.width = 'auto';
+    node.style.maxWidth = 'none';
+    node.style.maxHeight = 'none';
+    node.style.overflow = 'visible';
+    node.style.margin = '0';
+    node.style.padding = '0';
+  }
+  clonedDoc.documentElement.style.width = `${DOC_BASE_WIDTH}px`;
+  clonedDoc.body.style.width = `${DOC_BASE_WIDTH}px`;
+  clonedDoc.body.style.margin = '0';
+  el.style.width = `${DOC_BASE_WIDTH}px`;
+};
+
 // Waits for every <img loading="lazy" decoding="async"> inside the document (signature, stamp, logo) to
 // actually finish loading before html2canvas rasterizes it — a fixed delay
 // isn't reliable for remote Supabase Storage images on a slow/first fetch,
@@ -161,6 +187,7 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, onSend
       // the modal's visible viewport and silently crops everything below the
       // fold (e.g. the REKOMENDASI section and signature block).
       const fullHeight = target.scrollHeight;
+      target.setAttribute(PDF_TARGET_ATTR, '');
       // eslint-disable-next-line no-await-in-loop
       const canvas = await html2canvas(target, {
         scale: 2,
@@ -174,7 +201,9 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, onSend
         windowHeight: fullHeight,
         scrollX: 0,
         scrollY: 0,
+        onclone: normalizeClone,
       });
+      target.removeAttribute(PDF_TARGET_ATTR);
       addCanvasToPdf(pdf, canvas, i > 0);
     }
 
