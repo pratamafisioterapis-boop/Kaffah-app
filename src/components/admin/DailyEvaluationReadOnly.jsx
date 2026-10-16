@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
+import { fillTherapistNames } from '@/lib/therapistNames';
 import DailyEvaluationDetailModal from '@/components/admin/DailyEvaluationDetailModal';
 import { useToast } from '@/components/ui/use-toast';
 import { getCachedClinicId } from '@/lib/api';
@@ -53,7 +54,7 @@ const DailyEvaluationReadOnly = ({ therapistProfile = null, basePath = '/therapi
       const { data, error } = await supabase.from('medical_records').select(`*, patient:patients!inner(id, full_name, medical_record_number, clinic_id), therapist:users!created_by(full_name)`).eq('patient.clinic_id', userRow.clinic_id).order('created_at', { ascending: false });
       if (error) throw error;
       const grouped = {};
-      data.forEach(record => {
+      (await fillTherapistNames(supabase, data)).forEach(record => {
         // Robust check using validation helper
         if (!record.patient || !validatePatientId(record.patient.id, 'GroupSOAP').valid) return;
         
@@ -80,7 +81,7 @@ const DailyEvaluationReadOnly = ({ therapistProfile = null, basePath = '/therapi
       const { data, error } = await supabase.from('medical_records').select(`*, patient:patients!inner(full_name, clinic_id), therapist:users!created_by(full_name)`).eq('patient.clinic_id', userRow.clinic_id).order('created_at', { ascending: false });
       if (error) throw error;
       if (!data || data.length === 0) { toast({ title: "Tidak ada data", description: "Belum ada data evaluasi harian untuk diekspor." }); return; }
-      exportDailyRecapsToCSV(data);
+      exportDailyRecapsToCSV(await fillTherapistNames(supabase, data));
       toast({ title: "Export Berhasil", description: "File CSV evaluasi harian telah diunduh." });
     } catch (err) { console.error(err); toast({ variant: "destructive", title: "Gagal Export", description: err.message }); } finally { setIsExporting(false); }
   };
