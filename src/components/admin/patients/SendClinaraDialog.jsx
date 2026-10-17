@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/lib/customSupabaseClient';
 import {
-  buildPortalUrl, buildWhatsAppLink, createLink, getLiveLink, markLinkSent, patientDisplayName, setLinkStatus,
+  buildPortalUrl, buildWhatsAppLink, createLink, getLiveLink, extractHonorific, markLinkSent, patientDisplayName, setLinkStatus,
 } from '@/lib/patientPortal';
 
 const STATUS_LABEL = {
@@ -95,7 +95,7 @@ const SendClinaraDialog = ({ patient, onClose }) => {
   }, msg);
 
   const wa = fresh && patient
-    ? buildWhatsAppLink({ phone: patient.phone, patientName: patientDisplayName(patient), clinicName, url: fresh.url })
+    ? buildWhatsAppLink({ phone: patient.phone, patientName: patientDisplayName(patient), honorific: extractHonorific(patient.nickname), clinicName, url: fresh.url })
     : null;
   const st = link ? STATUS_LABEL[link.status] : null;
 

@@ -43,24 +43,36 @@ export const greetingByHour = (date = new Date()) => {
 export const patientDisplayName = (patient) =>
   String(patient?.nickname || '').trim() || String(patient?.full_name || '').trim();
 
-export const buildWhatsAppMessage = ({ patientName, clinicName, url, now }) => {
+// Sapaan = kata pertama nama panggilan bila berupa sapaan umum (Bapak, Ibu, Mas, Mba, Kak, ...).
+// Tanpa sapaan yang dikenali (atau memakai nama lengkap), pakai "Anda".
+const HONORIFICS = ['bapak', 'pak', 'ibu', 'bu', 'mas', 'mba', 'mbak', 'kak', 'ka', 'kakak', 'abang', 'bang', 'dek', 'adik', 'om', 'tante'];
+
+export const extractHonorific = (nickname) => {
+  const first = String(nickname || '').trim().split(/\s+/)[0] || '';
+  const word = first.replace(/[.,]+$/, '');
+  if (!HONORIFICS.includes(word.toLowerCase())) return null;
+  return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+};
+
+export const buildWhatsAppMessage = ({ patientName, honorific, clinicName, url, now }) => {
   const clinic = clinicName || 'klinik kami';
+  const you = honorific || 'Anda';
   return (
     `Selamat ${greetingByHour(now)}, ${patientName} 🙏\n\n` +
     `Terima kasih telah mempercayakan proses pemulihan Anda kepada *${clinic}*.\n\n` +
     'Kami berkomitmen memberikan pelayanan terbaik, tidak hanya selama sesi terapi berlangsung, tetapi juga setelahnya. ' +
-    'Karena itu, kami menyediakan halaman khusus agar Anda dapat memantau perkembangan terapi secara mudah dan aman. ' +
-    'Di halaman ini Anda juga bisa melihat *home program*, yaitu latihan yang dianjurkan untuk dilakukan secara mandiri di rumah agar pemulihan lebih optimal:\n\n' +
+    `Karena itu, kami menyediakan halaman khusus agar ${you} dapat memantau perkembangan terapi secara mudah dan aman. ` +
+    `Di halaman ini ${you} juga bisa melihat *home program*, yaitu latihan yang dianjurkan untuk dilakukan secara mandiri di rumah agar pemulihan lebih optimal:\n\n` +
     `🔗 ${url}\n\n` +
-    '*Cara mengakses:* buka tautan di atas, lalu masukkan tanggal lahir Anda (format: DD-MM-YYYY) untuk masuk.\n\n' +
+    `*Cara mengakses:* buka tautan di atas, lalu masukkan tanggal lahir ${you} (format: DD-MM-YYYY) untuk masuk.\n\n` +
     'Jika ada pertanyaan atau keluhan setelah sesi, jangan ragu menghubungi kami. ' +
-    'Semoga lekas pulih dan sehat selalu.\n\n' +
+    `Semoga ${you} lekas pulih dan sehat selalu.\n\n` +
     `Hormat kami,\n*${clinic}*`
   );
 };
 
-export const buildWhatsAppLink = ({ phone, patientName, clinicName, url, now }) => {
-  const text = buildWhatsAppMessage({ patientName, clinicName, url, now });
+export const buildWhatsAppLink = ({ phone, patientName, honorific, clinicName, url, now }) => {
+  const text = buildWhatsAppMessage({ patientName, honorific, clinicName, url, now });
   return `https://wa.me/${toWhatsAppNumber(phone)}?text=${encodeURIComponent(text)}`;
 };
 
