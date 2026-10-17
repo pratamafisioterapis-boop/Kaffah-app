@@ -21,7 +21,6 @@ const TAGS = ['Nyeri saat berjalan', 'Kaku pagi hari', 'Bengkak', 'Nyeri naik ta
 const fmtDate = (d, opts = { day: 'numeric', month: 'short' }) =>
   new Date(d).toLocaleDateString('id-ID', opts);
 const fmtTime = (d) => new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace(':', '.');
-const fmtDuration = (sec) => (sec ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` : null);
 const initials = (n) => (n || '?').trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
 const Mark = ({ clinic }) => (
@@ -120,7 +119,7 @@ const HomeTab = ({ home, go }) => {
         <div className="row">
           <Mark clinic={home.clinic} />
           <b className="sp" style={{ fontSize: 14 }}>{home.clinic?.name}</b>
-          {home.sessions_total ? <span className="pill warm num">Sesi {home.sessions_done}/{home.sessions_total}</span> : null}
+          {home.sessions_done > 0 ? <span className="pill warm num">Sesi ke-{home.sessions_done}</span> : null}
         </div>
         <h1>Halo, {home.first_name}</h1>
         {home.complaint && <p>{home.complaint}</p>}
@@ -154,9 +153,9 @@ const HomeTab = ({ home, go }) => {
           </div>
         )}
         <div className="stat3">
-          <div><b className="num" style={{ color: 'var(--ok)' }}>{home.vas_latest ?? '-'}/10</b><span>Nyeri{home.vas_first != null ? `, dari ${home.vas_first} di awal` : ''}</span></div>
+          <div><b className="num" style={{ color: 'var(--ok)' }}>{home.vas_latest != null ? `${home.vas_latest}/10` : '–'}</b><span>{home.vas_latest != null ? `Nyeri${home.vas_first != null && home.vas_first !== home.vas_latest ? `, dari ${home.vas_first} di awal` : ''}` : 'Nyeri belum tercatat'}</span></div>
           <div><b className="num">{home.streak_days} hari</b><span>Latihan beruntun</span></div>
-          <div><b className="num">{home.sessions_done}{home.sessions_total ? `/${home.sessions_total}` : ''}</b><span>Sesi terapi</span></div>
+          <div><b className="num">{home.sessions_done}</b><span>Sesi terapi</span></div>
         </div>
         {home.latest_note && (
           <div className="quote"><div className="eyebrow">Catatan dari terapis</div><p>{home.latest_note}</p></div>
@@ -168,58 +167,36 @@ const HomeTab = ({ home, go }) => {
 };
 
 const ProgressTab = ({ data }) => {
-  const [view, setView] = useState('nyeri');
   const entries = data.entries || [];
-  // Ukuran gerak/kekuatan: awal = start atau nilai pertama, kini = nilai terakhir, target dari entri terbaru.
-  const keys = [];
-  entries.forEach((e) => (e.measures || []).forEach((m) => { if (!keys.includes(m.key)) keys.push(m.key); }));
-  const measures = keys.map((k) => {
-    const series = entries.map((e) => (e.measures || []).find((m) => m.key === k)).filter(Boolean);
-    const first = series[0], last = series[series.length - 1];
-    const start = first.start ?? first.value;
-    const pct = last.target != null && last.target !== start
-      ? Math.max(0, Math.min(100, Math.round(((last.value - start) / (last.target - start)) * 100))) : null;
-    return { key: k, label: last.label, unit: last.unit || '', start, now: last.value, target: last.target, pct };
-  });
   const vasPts = entries.filter((e) => e.vas != null);
+  const first = vasPts[0], last = vasPts[vasPts.length - 1];
   return (
     <div className="pp-pad" style={{ paddingTop: 24 }}>
       <div><div className="eyebrow">Perkembangan Anda</div><h2>Riwayat terapi</h2></div>
-      <div className="seg" role="tablist">
-        <button role="tab" aria-selected={view === 'nyeri'} onClick={() => setView('nyeri')}>Nyeri</button>
-        <button role="tab" aria-selected={view === 'gerak'} onClick={() => setView('gerak')}>Gerak & kekuatan</button>
-      </div>
-      {view === 'nyeri' ? (
-        <div className="card">
-          {vasPts.length ? (
-            <div className="row">
-              <div className="sp"><div className="eyebrow">Skala nyeri VAS</div>
-                <div className="row" style={{ gap: 8, alignItems: 'baseline' }}>
-                  <span className="num" style={{ fontFamily: 'var(--display)', fontSize: 34, fontWeight: 700 }}>{vasPts[vasPts.length - 1].vas}</span>
-                  <span style={{ color: 'var(--muted)' }}>dari 10</span>
-                </div></div>
-              {vasPts.length > 1 && vasPts[0].vas > vasPts[vasPts.length - 1].vas && (
-                <span className="pill ok">Turun {vasPts[0].vas - vasPts[vasPts.length - 1].vas} poin</span>
-              )}
-            </div>
-          ) : <p style={{ margin: 0, color: 'var(--muted)' }}>Belum ada pengukuran nyeri.</p>}
-          <VasChart entries={entries} />
-        </div>
-      ) : measures.length ? measures.map((m) => (
-        <div className="card" key={m.key}>
-          <div className="row"><b className="sp">{m.label}</b>{m.pct != null && <span className="pill ok num">{m.pct}% ke target</span>}</div>
-          {m.pct != null && <div className="bar"><i style={{ width: `${m.pct}%` }} /></div>}
-          <div className="row num" style={{ fontSize: 12, color: 'var(--muted)', justifyContent: 'space-between' }}>
-            <span>Awal {m.start}{m.unit}</span><b style={{ color: 'var(--ink)' }}>Kini {m.now}{m.unit}</b>{m.target != null && <span>Target {m.target}{m.unit}</span>}
+      <div className="card">
+        {vasPts.length ? (
+          <div className="row">
+            <div className="sp"><div className="eyebrow">Skala nyeri (0–10)</div>
+              <div className="row" style={{ gap: 8, alignItems: 'baseline' }}>
+                <span className="num" style={{ fontFamily: 'var(--display)', fontSize: 34, fontWeight: 700 }}>{last.vas}</span>
+                <span style={{ color: 'var(--muted)' }}>dari 10</span>
+              </div></div>
+            {vasPts.length > 1 && first.vas > last.vas && <span className="pill ok">Turun {first.vas - last.vas} poin</span>}
           </div>
-        </div>
-      )) : <div className="card" style={{ color: 'var(--muted)' }}>Ukuran gerak dan kekuatan akan tampil setelah terapis mencatatnya.</div>}
+        ) : <p style={{ margin: 0, color: 'var(--muted)' }}>Nilai nyeri akan tampil setelah terapis mencatatnya saat sesi.</p>}
+        <VasChart entries={entries} />
+      </div>
       <div className="card">
         <h3 style={{ marginBottom: 14 }}>Riwayat sesi</h3>
         {entries.length === 0 ? <p style={{ margin: 0, color: 'var(--muted)' }}>Belum ada sesi tercatat.</p> : (
           <ul className="tl">
-            {[...entries].reverse().slice(0, 12).map((e) => (
-              <li key={e.no}><div><b>{fmtDate(e.date)} · Sesi {e.no}{data.sessions_total ? `/${data.sessions_total}` : ''}</b>{e.note && <p>{e.note}</p>}</div></li>
+            {[...entries].reverse().slice(0, 20).map((e) => (
+              <li key={e.no}>
+                <div>
+                  <b>{fmtDate(e.date)} · Sesi {e.no}</b>{e.vas != null && <span className="pill num" style={{ marginLeft: 8 }}>Nyeri {e.vas}/10</span>}
+                  {e.update && <p>{e.update.charAt(0).toUpperCase() + e.update.slice(1)}</p>}
+                </div>
+              </li>
             ))}
           </ul>
         )}
@@ -228,19 +205,33 @@ const ProgressTab = ({ data }) => {
   );
 };
 
-const ProgramTab = ({ items, onToggle }) => {
+const ProgramTab = ({ session, items, onToggle }) => {
   const [openId, setOpenId] = useState(null);
-  const cur = items.find((i) => i.program_id === openId);
+  const [videoUrl, setVideoUrl] = useState(null);
+  const [videoState, setVideoState] = useState('idle'); // idle | loading | ready | error
+  const cur = items.find((i) => i.exercise_id === openId);
+
+  useEffect(() => {
+    setVideoUrl(null);
+    if (!cur || !cur.has_video) { setVideoState('idle'); return undefined; }
+    let alive = true;
+    setVideoState('loading');
+    portalApi.videoUrl(session, cur.exercise_id)
+      .then((u) => { if (alive) { setVideoUrl(u); setVideoState('ready'); } })
+      .catch(() => { if (alive) setVideoState('error'); });
+    return () => { alive = false; };
+  }, [session, cur?.exercise_id, cur?.has_video]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div className="pp-pad" style={{ paddingTop: 24 }}>
-      <div><div className="eyebrow">Program rumah</div><h2>Latihan hari ini</h2>
-        <p style={{ margin: '6px 0 0', color: 'var(--muted)', fontSize: 14 }}>Berhenti jika nyeri terasa lebih dari 5 dari 10 dan kabari terapis.</p></div>
-      {items.length === 0 && <div className="card" style={{ color: 'var(--muted)' }}>Terapis belum memberi latihan. Latihan akan tampil di sini.</div>}
+      <div><div className="eyebrow">Program rumah</div><h2>Latihan untuk Anda</h2>
+        <p style={{ margin: '6px 0 0', color: 'var(--muted)', fontSize: 14 }}>Berhenti jika nyeri terasa bertambah berat dan kabari terapis.</p></div>
+      {items.length === 0 && <div className="card" style={{ color: 'var(--muted)' }}>Terapis belum memberi latihan. Latihan akan tampil di sini setelah sesi berikutnya.</div>}
       {items.map((e) => (
-        <div className="card" key={e.program_id}>
-          <button className="vid" onClick={() => setOpenId(e.program_id)} aria-label={`Buka ${e.title}`}>
-            <div className="thumb"><div className="play"><Play size={14} fill="currentColor" /></div>{fmtDuration(e.duration_seconds) && <small className="num">{fmtDuration(e.duration_seconds)}</small>}</div>
-            <div className="sp"><b style={{ fontSize: 15, lineHeight: 1.25, display: 'block' }}>{e.title}</b><span style={{ fontSize: 12, color: 'var(--muted)' }}>{e.sets_reps}</span></div>
+        <div className="card" key={e.exercise_id}>
+          <button className="vid" onClick={() => setOpenId(e.exercise_id)} aria-label={`Buka ${e.title}`}>
+            <div className="thumb"><div className="play"><Play size={14} fill="currentColor" /></div></div>
+            <div className="sp"><b style={{ fontSize: 15, lineHeight: 1.25, display: 'block' }}>{e.title}</b><span style={{ fontSize: 12, color: 'var(--muted)' }}>{e.dose}</span></div>
             <span className={`check ${e.done_today ? 'on' : ''}`}><Check size={14} strokeWidth={3} /></span>
           </button>
         </div>
@@ -249,16 +240,21 @@ const ProgramTab = ({ items, onToggle }) => {
         <div className="sheet" onClick={(ev) => { if (ev.target === ev.currentTarget) setOpenId(null); }}>
           <div role="dialog" aria-label={cur.title}>
             <div className="grab" />
-            <div className="player">
-              {cur.video_url ? <video src={cur.video_url} controls playsInline preload="metadata" /> : <span>Video belum tersedia. Ikuti langkah di bawah ini.</span>}
-            </div>
+            {cur.has_video && (
+              <div className="player">
+                {videoState === 'ready' && videoUrl ? <video src={videoUrl} controls playsInline preload="metadata" />
+                  : videoState === 'error' ? <span>Video belum bisa diputar. Ikuti langkah di bawah ini.</span>
+                  : <span>Memuat video...</span>}
+              </div>
+            )}
             <h2 style={{ margin: '14px 0 4px' }}>{cur.title}</h2>
-            <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 12 }}>{cur.sets_reps}</div>
-            {cur.description && <p style={{ margin: '0 0 8px', fontSize: 14, whiteSpace: 'pre-wrap' }}>{cur.description}</p>}
-            {cur.notes && <p style={{ margin: '0 0 8px', fontSize: 14, color: 'var(--muted)', whiteSpace: 'pre-wrap' }}>Catatan terapis: {cur.notes}</p>}
+            {cur.dose && <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 12 }}>{cur.dose}</div>}
+            {cur.how_to && <><div className="eyebrow" style={{ marginBottom: 4 }}>Cara melakukan</div><p style={{ margin: '0 0 10px', fontSize: 14 }}>{cur.how_to}</p></>}
+            {cur.progression && <><div className="eyebrow" style={{ marginBottom: 4 }}>Jika sudah terasa ringan</div><p style={{ margin: '0 0 10px', fontSize: 14 }}>{cur.progression}</p></>}
+            {cur.caution && <><div className="eyebrow" style={{ marginBottom: 4, color: 'var(--warm)' }}>Perhatian</div><p style={{ margin: '0 0 10px', fontSize: 14 }}>{cur.caution}</p></>}
             <div className="row" style={{ marginTop: 18 }}>
               <button className="btn ghost" style={{ width: '36%' }} onClick={() => setOpenId(null)}>Tutup</button>
-              <button className="btn" onClick={async () => { await onToggle(cur.program_id, !cur.done_today); setOpenId(null); }}>{cur.done_today ? 'Batalkan selesai' : 'Tandai selesai'}</button>
+              <button className="btn" onClick={async () => { await onToggle(cur.exercise_id, !cur.done_today); setOpenId(null); }}>{cur.done_today ? 'Batalkan selesai' : 'Tandai selesai'}</button>
             </div>
           </div>
         </div>
@@ -430,9 +426,9 @@ const PatientPortalPage = () => {
     return () => clearInterval(t);
   }, [phase, session, refreshHome]);
 
-  const toggleExercise = async (programId, done) => {
+  const toggleExercise = async (exerciseId, done) => {
     try {
-      await portalApi.logExercise(session, programId, done);
+      await portalApi.logExercise(session, exerciseId, done);
       setProgram(await portalApi.program(session));
       flash(done ? 'Latihan dicatat selesai' : 'Tanda selesai dibatalkan');
     } catch (e) { if (e.sessionInvalid) backToGate('Sesi Anda berakhir.'); else flash('Gagal menyimpan. Coba lagi.'); }
@@ -472,7 +468,7 @@ const PatientPortalPage = () => {
         <div className="pp-body">
           {tab === 'home' && home && <HomeTab home={home} go={setTab} />}
           {tab === 'prog' && (progress ? <ProgressTab data={progress} /> : <div className="pp-pad"><p style={{ color: 'var(--muted)' }}>Memuat...</p></div>)}
-          {tab === 'lat' && <ProgramTab items={program} onToggle={toggleExercise} />}
+          {tab === 'lat' && <ProgramTab session={session} items={program} onToggle={toggleExercise} />}
           {tab === 'fb' && <FeedbackTab history={history} onSubmit={submitFeedback} />}
           {tab === 'chat' && <ChatTab session={session} therapist={home?.therapist} clinicName={home?.clinic?.name} onUnauthorized={() => backToGate('Sesi Anda berakhir.')} />}
         </div>

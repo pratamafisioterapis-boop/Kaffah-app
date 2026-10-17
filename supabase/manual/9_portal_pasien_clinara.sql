@@ -1,39 +1,65 @@
--- USULAN, BELUM DITERAPKAN. Fondasi portal pasien Clinara: tautan akses +
--- verifikasi tanggal lahir, progres, home program, keluhan, dan chat.
+-- USULAN, BELUM DITERAPKAN. Fondasi portal pasien Clinara.
+--
+-- Sumber data tampilan pasien adalah SOAP yang sudah ada (medical_records):
+--   * Riwayat sesi + grafik nyeri: baris "Nyeri 0-10: sekarang N" / NPRS di kolom
+--     objective (pola yang sama dengan ObjectiveProgressUpdate.jsx), dan baris
+--     "Update Kondisi: ..." untuk catatan perubahan per sesi.
+--   * Program rumah: plan_data.exercises + exDose di SOAP terbaru yang berisi latihan,
+--     detailnya dari plan_exercises. Catatan terapis: plan_data.notes.
+--   * Video latihan: satu video per kode latihan (plan_exercises.id), diunggah Super
+--     Admin ke bucket privat exercise-videos. Pasien memutar lewat tautan bertanda
+--     tangan dari Edge Function portal-exercise-video.
+--
+-- Fitur ini per klinik (opt-in). clinics.patient_portal_enabled default FALSE, diatur
+-- Super Admin. Jika nonaktif: staf klinik tidak bisa membuat tautan, tautan yang ada
+-- tidak bisa dipakai, dan staf tidak melihat video latihan.
 --
 -- Aturan penulisan file ini:
 --   * Tanpa DROP. Semua objek baru; fungsi memakai CREATE OR REPLACE.
 --   * Tubuh fungsi memakai $fn$ (bukan $$).
---   * Tahap dipisah per bagian supaya mudah dijalankan satu per satu di SQL
---     Editor kalau ada yang ditolak/timeout lewat tool MCP.
+--   * Dibagi per tahap supaya mudah dijalankan satu per satu di SQL Editor.
 --
 -- Prinsip keamanan:
---   * Pasien TIDAK login dan TIDAK punya akses ke tabel apa pun. Semua akses
---     lewat fungsi SECURITY DEFINER yang memeriksa token + tanggal lahir
---     (portal_verify) lalu memakai token sesi (portal_*).
---   * Token tautan dan token sesi tidak disimpan mentah, hanya hash SHA-256.
---   * Tautan dan sesi TIDAK kedaluwarsa sendiri. Pasien tetap masuk di perangkatnya
---     sampai admin menonaktifkan tautan (status 'disabled') atau mencabutnya.
---     Perangkat baru tetap harus memasukkan tanggal lahir.
---   * Percobaan salah dihitung dan dikembalikan sebagai hasil (bukan RAISE),
---     karena RAISE akan membatalkan UPDATE penghitung itu sendiri.
---   * Yang dibuka ke anon hanya: portal_get_branding, portal_verify, dan fungsi
---     portal_* yang butuh token sesi. Tidak ada tabel yang dibuka ke anon.
---   * Pasien hanya melihat data yang sengaja diisi terapis (progres, catatan
---     untuk pasien), bukan SOAP/rekam medis mentah.
+--   * Pasien TIDAK login dan TIDAK punya akses ke tabel apa pun. Semua akses lewat
+--     fungsi SECURITY DEFINER yang memeriksa token + tanggal lahir (portal_verify) lalu
+--     token sesi (portal_*).
+--   * Token tautan dan sesi hanya disimpan sebagai hash SHA-256.
+--   * Percobaan salah dihitung dan dikembalikan sebagai hasil (bukan RAISE), karena
+--     RAISE akan membatalkan UPDATE penghitung itu sendiri.
+--   * Tautan dan sesi tidak kedaluwarsa sendiri; admin menonaktifkan (disabled) atau
+--     mencabut (revoked). Perangkat baru tetap harus memasukkan tanggal lahir.
+--   * Pasien hanya melihat: nyeri, "Update Kondisi", catatan terapis (plan_data.notes),
+--     dan program latihan. Bukan S/O/A/P mentah.
 --
--- Memakai yang sudah ada: patients (birth_date, phone, clinic_id), clinics
--- (logo_url, landing_primary_color), exercises + exercise_videos (perpustakaan
--- video, saat ini kosong), appointments, get_my_role(), get_my_clinic_id().
--- Catatan: patient_feedback_links/responses adalah alur rating Google Review,
--- BUKAN keluhan klinis, jadi tidak dipakai di sini.
+-- Memakai yang sudah ada: patients, clinics, medical_records, daily_recaps,
+-- plan_exercises, appointments, get_my_role(), get_my_clinic_id().
+-- Catatan: patient_feedback_links/responses adalah alur rating Google Review, bukan
+-- keluhan klinis, jadi tidak dipakai. exercises/exercise_videos (kosong, tak terpakai)
+-- juga tidak dipakai.
 
--- =============================================================== TAHAP 1: brand
+-- =============================================================== TAHAP 1: fitur per klinik + brand
+alter table public.clinics add column if not exists patient_portal_enabled boolean not null default false;
+comment on column public.clinics.patient_portal_enabled is
+  'Super Admin: klinik ini boleh mengirim tautan Clinara ke pasien dan memakai video latihan.';
+
 alter table public.clinics
   add column if not exists portal_brand_color text
   check (portal_brand_color is null or portal_brand_color ~ '^#[0-9a-fA-F]{6}$');
 comment on column public.clinics.portal_brand_color is
-  'Satu warna brand untuk aplikasi pasien Clinara. Kosong = pakai landing_primary_color.';
+  'Satu warna brand aplikasi pasien. Kosong = pakai landing_primary_color.';
+
+create or replace function public.portal_clinic_enabled(p_clinic_id uuid)
+returns boolean
+language sql security definer stable
+set search_path = public
+as $fn$ select coalesce((select patient_portal_enabled from public.clinics where id = p_clinic_id), false) $fn$;
+
+-- Untuk policy staf: super admin, atau klinik saya mengaktifkan fitur.
+create or replace function public.portal_my_clinic_enabled()
+returns boolean
+language sql security definer stable
+set search_path = public
+as $fn$ select get_my_role() = 'super_admin' or public.portal_clinic_enabled(get_my_clinic_id()) $fn$;
 
 -- =============================================================== TAHAP 2: tabel
 create table if not exists public.patient_portal_links (
@@ -46,14 +72,13 @@ create table if not exists public.patient_portal_links (
   status text not null default 'active' check (status in ('active','locked','disabled','revoked')),
   failed_attempts smallint not null default 0,
   locked_at timestamptz,
-  expires_at timestamptz,
+  expires_at timestamptz,  -- NULL = tidak kedaluwarsa
   last_opened_at timestamptz,
   sent_via text,
   sent_at timestamptz,
   created_by uuid,
   created_at timestamptz not null default now()
 );
--- satu tautan hidup (aktif atau terkunci) per pasien
 create unique index if not exists patient_portal_links_one_live_per_patient
   on public.patient_portal_links (patient_id) where status <> 'revoked';
 create index if not exists patient_portal_links_clinic_idx on public.patient_portal_links (clinic_id);
@@ -66,51 +91,19 @@ create table if not exists public.patient_portal_sessions (
   created_at timestamptz not null default now()
 );
 create index if not exists patient_portal_sessions_link_idx on public.patient_portal_sessions (link_id);
-create index if not exists patient_portal_sessions_exp_idx on public.patient_portal_sessions (expires_at);
 
-create table if not exists public.patient_progress_entries (
-  id uuid primary key default gen_random_uuid(),
-  clinic_id uuid not null references public.clinics(id) on delete cascade,
-  patient_id uuid not null references public.patients(id) on delete cascade,
-  entry_date date not null default current_date,
-  vas smallint check (vas between 0 and 10),
-  -- ukuran fleksibel per regio tubuh, mis.
-  -- [{"key":"knee_flexion","label":"Fleksi lutut","unit":"°","value":118,"target":130,"start":75}]
-  measures jsonb not null default '[]'::jsonb,
-  note_for_patient text,
-  visible_to_patient boolean not null default true,
-  created_by uuid,
-  created_at timestamptz not null default now()
-);
-create index if not exists patient_progress_patient_idx on public.patient_progress_entries (patient_id, entry_date);
-create index if not exists patient_progress_clinic_idx on public.patient_progress_entries (clinic_id);
-
-create table if not exists public.patient_home_programs (
-  id uuid primary key default gen_random_uuid(),
-  clinic_id uuid not null references public.clinics(id) on delete cascade,
-  patient_id uuid not null references public.patients(id) on delete cascade,
-  exercise_id uuid not null references public.exercises(id),
-  sets_reps text,
-  notes text,
-  is_active boolean not null default true,
-  assigned_by uuid,
-  assigned_at timestamptz not null default now(),
-  unique (patient_id, exercise_id)
-);
-create index if not exists patient_home_programs_clinic_idx on public.patient_home_programs (clinic_id);
-create index if not exists patient_home_programs_exercise_idx on public.patient_home_programs (exercise_id);
-
+-- Catatan "latihan hari ini selesai". Program itu sendiri dibaca dari SOAP.
 create table if not exists public.patient_exercise_logs (
   id uuid primary key default gen_random_uuid(),
   clinic_id uuid not null references public.clinics(id) on delete cascade,
   patient_id uuid not null references public.patients(id) on delete cascade,
-  program_id uuid not null references public.patient_home_programs(id) on delete cascade,
+  exercise_id text not null references public.plan_exercises(id),
   done_on date not null default current_date,
   created_at timestamptz not null default now(),
-  unique (program_id, done_on)
+  unique (patient_id, exercise_id, done_on)
 );
-create index if not exists patient_exercise_logs_patient_idx on public.patient_exercise_logs (patient_id, done_on);
 create index if not exists patient_exercise_logs_clinic_idx on public.patient_exercise_logs (clinic_id);
+create index if not exists patient_exercise_logs_exercise_idx on public.patient_exercise_logs (exercise_id);
 
 create table if not exists public.patient_portal_feedback (
   id uuid primary key default gen_random_uuid(),
@@ -139,50 +132,28 @@ create table if not exists public.patient_portal_messages (
 create index if not exists patient_portal_messages_thread_idx on public.patient_portal_messages (patient_id, created_at);
 create index if not exists patient_portal_messages_clinic_idx on public.patient_portal_messages (clinic_id);
 
--- Profil terapi yang tampil di aplikasi pasien (keluhan, target jumlah sesi, terapis utama).
-create table if not exists public.patient_portal_profiles (
-  patient_id uuid primary key references public.patients(id) on delete cascade,
-  clinic_id uuid not null references public.clinics(id) on delete cascade,
-  complaint_label text,
-  sessions_total smallint check (sessions_total is null or sessions_total > 0),
-  therapist_id uuid references public.physiotherapists(id) on delete set null,
-  updated_at timestamptz not null default now()
+-- Video latihan: satu per kode latihan di plan_exercises, dikelola Super Admin.
+create table if not exists public.exercise_video_assets (
+  exercise_id text primary key references public.plan_exercises(id) on delete cascade,
+  storage_path text not null,
+  duration_seconds integer,
+  size_bytes bigint,
+  uploaded_by uuid,
+  created_at timestamptz not null default now()
 );
-create index if not exists patient_portal_profiles_clinic_idx on public.patient_portal_profiles (clinic_id);
-create index if not exists patient_portal_profiles_therapist_idx on public.patient_portal_profiles (therapist_id);
 
--- =============================================================== TAHAP 3: RLS dan hak akses tabel
+-- =============================================================== TAHAP 3: RLS, hak akses, storage
 alter table public.patient_portal_links enable row level security;
 alter table public.patient_portal_sessions enable row level security;
-alter table public.patient_progress_entries enable row level security;
-alter table public.patient_home_programs enable row level security;
 alter table public.patient_exercise_logs enable row level security;
 alter table public.patient_portal_feedback enable row level security;
 alter table public.patient_portal_messages enable row level security;
-alter table public.patient_portal_profiles enable row level security;
+alter table public.exercise_video_assets enable row level security;
 
--- Staf klinik. Sesi: tanpa policy sama sekali (hanya fungsi SECURITY DEFINER).
--- Tautan: staf hanya boleh membaca; tulis lewat portal_create_link / portal_set_link_status.
+-- Staf klinik. Sesi: tanpa policy (hanya fungsi definer).
+-- Tautan: staf hanya membaca; tulis lewat portal_create_link / portal_set_link_status.
 create policy portal_links_staff_read on public.patient_portal_links for select
   using (get_my_role() = 'super_admin'
-    or (get_my_role() in ('owner','admin','clinic_admin','therapist') and clinic_id = get_my_clinic_id()));
-
-create policy portal_progress_staff on public.patient_progress_entries for all
-  using (get_my_role() = 'super_admin'
-    or (get_my_role() in ('owner','admin','clinic_admin','therapist') and clinic_id = get_my_clinic_id()))
-  with check (get_my_role() = 'super_admin'
-    or (get_my_role() in ('owner','admin','clinic_admin','therapist') and clinic_id = get_my_clinic_id()));
-
-create policy portal_programs_staff on public.patient_home_programs for all
-  using (get_my_role() = 'super_admin'
-    or (get_my_role() in ('owner','admin','clinic_admin','therapist') and clinic_id = get_my_clinic_id()))
-  with check (get_my_role() = 'super_admin'
-    or (get_my_role() in ('owner','admin','clinic_admin','therapist') and clinic_id = get_my_clinic_id()));
-
-create policy portal_profiles_staff on public.patient_portal_profiles for all
-  using (get_my_role() = 'super_admin'
-    or (get_my_role() in ('owner','admin','clinic_admin','therapist') and clinic_id = get_my_clinic_id()))
-  with check (get_my_role() = 'super_admin'
     or (get_my_role() in ('owner','admin','clinic_admin','therapist') and clinic_id = get_my_clinic_id()));
 
 create policy portal_logs_staff_read on public.patient_exercise_logs for select
@@ -209,17 +180,31 @@ create policy portal_messages_staff_mark_read on public.patient_portal_messages 
   with check (get_my_role() = 'super_admin'
     or (get_my_role() in ('owner','admin','clinic_admin','therapist') and clinic_id = get_my_clinic_id()));
 
--- Cabut hak bawaan Supabase (default privileges memberi anon/authenticated),
--- lalu beri hanya yang perlu ke authenticated; anon tidak dapat apa-apa.
+-- Video: hanya Super Admin yang mengelola; staf hanya melihat jika klinik mereka aktif.
+create policy exercise_video_assets_read on public.exercise_video_assets for select to authenticated
+  using (public.portal_my_clinic_enabled());
+create policy exercise_video_assets_write on public.exercise_video_assets for all to authenticated
+  using (get_my_role() = 'super_admin') with check (get_my_role() = 'super_admin');
+
+-- Cabut hak bawaan Supabase (default privileges memberi anon/authenticated).
 revoke all on public.patient_portal_links, public.patient_portal_sessions,
-  public.patient_progress_entries, public.patient_home_programs,
   public.patient_exercise_logs, public.patient_portal_feedback,
-  public.patient_portal_messages, public.patient_portal_profiles from public, anon, authenticated;
-grant select on public.patient_portal_links to authenticated;
-grant select, insert, update, delete on public.patient_progress_entries,
-  public.patient_home_programs, public.patient_portal_feedback, public.patient_portal_profiles to authenticated;
-grant select on public.patient_exercise_logs to authenticated;
+  public.patient_portal_messages, public.exercise_video_assets from public, anon, authenticated;
+grant select on public.patient_portal_links, public.patient_exercise_logs to authenticated;
+grant select, insert, update, delete on public.patient_portal_feedback to authenticated;
 grant select, insert, update on public.patient_portal_messages to authenticated;
+grant select, insert, update, delete on public.exercise_video_assets to authenticated;
+
+-- Bucket video privat. Batas 200 MB per file (batas global proyek di Dashboard juga berlaku).
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('exercise-videos', 'exercise-videos', false, 209715200)
+on conflict (id) do nothing;
+
+create policy exercise_videos_super_admin_write on storage.objects for all to authenticated
+  using (bucket_id = 'exercise-videos' and get_my_role() = 'super_admin')
+  with check (bucket_id = 'exercise-videos' and get_my_role() = 'super_admin');
+create policy exercise_videos_clinic_read on storage.objects for select to authenticated
+  using (bucket_id = 'exercise-videos' and public.portal_my_clinic_enabled());
 
 do $do$
 begin
@@ -240,7 +225,39 @@ returns text language sql volatile
 set search_path = public, extensions
 as $fn$ select translate(encode(gen_random_bytes(24), 'base64'), '+/=', '-_') $fn$;
 
--- Menerjemahkan token sesi ke (link, pasien, klinik). RAISE di sini aman karena tidak ada yang diubah.
+-- Nilai nyeri 0-10 dari teks Objective. Pola yang sama dengan ObjectiveProgressUpdate.jsx.
+create or replace function public.portal_extract_nprs(p_text text)
+returns smallint language sql immutable
+as $fn$
+  select case when v between 0 and 10 then v::smallint end
+  from (select coalesce(
+      (regexp_match(p_text, 'nyeri[^.\n]*?sekarang\D{0,3}(\d{1,2})(?!\d)', 'i'))[1],
+      (regexp_match(p_text, 'NPRS[^\d\n]{0,20}(\d{1,2})(?!\d)', 'i'))[1])::int as v) t
+$fn$;
+
+-- Kalimat "Update Kondisi: ..." (mis. "nyeri tekan berkurang, ROM bertambah").
+create or replace function public.portal_extract_update(p_text text)
+returns text language sql immutable
+as $fn$ select nullif(btrim((regexp_match(p_text, 'Update Kondisi:\s*([^\n]*)', 'i'))[1]), '') $fn$;
+
+-- Latihan di SOAP terbaru yang berisi latihan: (kode, dosis dari SOAP).
+create or replace function public.portal_program_items(p_patient_id uuid)
+returns table (exercise_id text, soap_dose text)
+language sql security definer stable
+set search_path = public
+as $fn$
+  select e.key, nullif(btrim(mr.plan_data->'exDose'->>e.key), '')
+  from (select plan_data from public.medical_records
+        where patient_id = p_patient_id
+          and jsonb_typeof(plan_data->'exercises') = 'object'
+          and plan_data->'exercises' <> '{}'::jsonb
+        order by created_at desc limit 1) mr,
+       jsonb_each(mr.plan_data->'exercises') e
+  where e.value = 'true'::jsonb
+$fn$;
+
+-- Menerjemahkan token sesi ke (link, pasien, klinik). Klinik harus mengaktifkan fitur.
+-- RAISE di sini aman karena tidak ada yang diubah.
 create or replace function public.portal_resolve_session(p_session text)
 returns table (link_id uuid, patient_id uuid, clinic_id uuid)
 language plpgsql security definer
@@ -251,10 +268,12 @@ begin
     select l.id, l.patient_id, l.clinic_id
     from public.patient_portal_sessions s
     join public.patient_portal_links l on l.id = s.link_id
+    join public.clinics c on c.id = l.clinic_id
     where s.session_hash = public.portal_hash(p_session)
       and (s.expires_at is null or s.expires_at > now())
       and l.status = 'active'
-      and (l.expires_at is null or l.expires_at > now());
+      and (l.expires_at is null or l.expires_at > now())
+      and c.patient_portal_enabled;
   if not found then
     raise exception 'Sesi tidak valid atau sudah berakhir' using errcode = '28000';
   end if;
@@ -280,6 +299,9 @@ begin
   select * into v_patient from public.patients where id = p_patient_id;
   if not found or (v_role <> 'super_admin' and v_patient.clinic_id is distinct from get_my_clinic_id()) then
     raise exception 'Pasien tidak ditemukan' using errcode = 'P0002';
+  end if;
+  if not public.portal_clinic_enabled(v_patient.clinic_id) then
+    raise exception 'Fitur Clinara untuk pasien belum diaktifkan di klinik ini' using errcode = '42501';
   end if;
   if v_patient.birth_date is null then
     raise exception 'Tanggal lahir pasien belum diisi' using errcode = 'P0001';
@@ -360,11 +382,12 @@ begin
   if not found or v_link.status = 'revoked' then
     return jsonb_build_object('status', 'invalid');
   end if;
-  v_status := case when v_link.status in ('locked','disabled') then v_link.status
+  select name, logo_url, coalesce(portal_brand_color, landing_primary_color) as color, patient_portal_enabled as enabled
+    into v_c from public.clinics where id = v_link.clinic_id;
+  v_status := case when not v_c.enabled then 'disabled'
+                   when v_link.status in ('locked','disabled') then v_link.status
                    when v_link.expires_at is not null and v_link.expires_at <= now() then 'expired'
                    else 'active' end;
-  select name, logo_url, coalesce(portal_brand_color, landing_primary_color) as color
-    into v_c from public.clinics where id = v_link.clinic_id;
   return jsonb_build_object('status', v_status, 'clinic_name', v_c.name,
     'logo_url', v_c.logo_url, 'brand_color', v_c.color);
 end
@@ -385,6 +408,9 @@ begin
     where token_hash = public.portal_hash(p_token) for update;
   if not found or v_link.status = 'revoked' then
     return jsonb_build_object('ok', false, 'reason', 'invalid');
+  end if;
+  if not public.portal_clinic_enabled(v_link.clinic_id) then
+    return jsonb_build_object('ok', false, 'reason', 'disabled');
   end if;
   if v_link.status in ('locked','disabled') then
     return jsonb_build_object('ok', false, 'reason', v_link.status);
@@ -427,13 +453,14 @@ language sql security definer
 set search_path = public, extensions
 as $fn$ delete from public.patient_portal_sessions where session_hash = public.portal_hash(p_session) $fn$;
 
+-- Tab Beranda.
 create or replace function public.portal_get_home(p_session text)
 returns jsonb
 language plpgsql security definer stable
 set search_path = public, extensions
 as $fn$
 declare
-  s record; v_pat record; v_c record; v_prof record; v_next jsonb; v_note text;
+  s record; v_pat record; v_c record; v_last record; v_next jsonb; v_note text;
   v_total int; v_done int; v_unread int; v_vas jsonb; v_week jsonb;
   v_sessions int; v_streak int := 0; v_i int := 0;
   v_vas_first smallint; v_vas_last smallint;
@@ -443,9 +470,13 @@ begin
     from public.patients where id = s.patient_id;
   select name, logo_url, coalesce(portal_brand_color, landing_primary_color) as color into v_c
     from public.clinics where id = s.clinic_id;
-  select pr.complaint_label, pr.sessions_total, t.name as therapist into v_prof
-    from public.patient_portal_profiles pr left join public.physiotherapists t on t.id = pr.therapist_id
-    where pr.patient_id = s.patient_id;
+
+  -- keluhan (diagnosis) dan terapis dari sesi terbaru
+  select case when jsonb_typeof(diagnosis_labels->0) = 'string' then diagnosis_labels->>0 end as complaint,
+         therapist_name as therapist into v_last
+    from public.daily_recaps
+    where patient_id = s.patient_id and diagnosis_labels is not null and jsonb_typeof(diagnosis_labels) = 'array'
+    order by recap_date desc, created_at desc limit 1;
 
   select jsonb_build_object('appointment_date', a.appointment_date, 'therapist', t.name)
     into v_next
@@ -453,26 +484,27 @@ begin
     where a.patient_id = s.patient_id and a.appointment_date > now() and a.status = 'confirmed'
     order by a.appointment_date limit 1;
 
-  select note_for_patient into v_note from public.patient_progress_entries
-    where patient_id = s.patient_id and visible_to_patient and note_for_patient is not null
-    order by entry_date desc, created_at desc limit 1;
+  select count(*) into v_sessions from public.medical_records where patient_id = s.patient_id;
 
-  select coalesce(jsonb_agg(vas order by entry_date, created_at), '[]'::jsonb) into v_vas
-    from (select vas, entry_date, created_at from public.patient_progress_entries
-          where patient_id = s.patient_id and visible_to_patient and vas is not null
-          order by entry_date desc, created_at desc limit 12) x;
-  select (array_agg(vas order by entry_date, created_at))[1],
-         (array_agg(vas order by entry_date desc, created_at desc))[1]
-    into v_vas_first, v_vas_last
-    from public.patient_progress_entries
-    where patient_id = s.patient_id and visible_to_patient and vas is not null;
-  select count(*) into v_sessions from public.patient_progress_entries
-    where patient_id = s.patient_id and visible_to_patient;
+  select nullif(btrim(plan_data->>'notes'), '') into v_note from public.medical_records
+    where patient_id = s.patient_id and nullif(btrim(plan_data->>'notes'), '') is not null
+    order by created_at desc limit 1;
+
+  -- nyeri per SOAP (yang terbaca), 12 terakhir
+  select coalesce(jsonb_agg(n order by d), '[]'::jsonb) into v_vas from (
+    select public.portal_extract_nprs(mr.objective) as n, mr.created_at as d
+    from public.medical_records mr
+    where mr.patient_id = s.patient_id and public.portal_extract_nprs(mr.objective) is not null
+    order by mr.created_at desc limit 12) x;
+  select (array_agg(n order by d))[1], (array_agg(n order by d desc))[1] into v_vas_first, v_vas_last from (
+    select public.portal_extract_nprs(mr.objective) as n, mr.created_at as d
+    from public.medical_records mr
+    where mr.patient_id = s.patient_id and public.portal_extract_nprs(mr.objective) is not null) y;
 
   select count(*), count(l.id) into v_total, v_done
-    from public.patient_home_programs p
-    left join public.patient_exercise_logs l on l.program_id = p.id and l.done_on = current_date
-    where p.patient_id = s.patient_id and p.is_active;
+    from public.portal_program_items(s.patient_id) p
+    left join public.patient_exercise_logs l
+      on l.patient_id = s.patient_id and l.exercise_id = p.exercise_id and l.done_on = current_date;
 
   -- kalender Senin sampai Minggu minggu ini
   select jsonb_agg(jsonb_build_object('date', d::date, 'done',
@@ -498,35 +530,36 @@ begin
 
   return jsonb_build_object('first_name', v_pat.first_name,
     'clinic', jsonb_build_object('name', v_c.name, 'logo_url', v_c.logo_url, 'brand_color', v_c.color),
-    'complaint', v_prof.complaint_label, 'therapist', v_prof.therapist,
-    'sessions_done', v_sessions, 'sessions_total', v_prof.sessions_total,
-    'next_appointment', v_next, 'latest_note', v_note, 'vas_series', v_vas,
+    'complaint', v_last.complaint, 'therapist', v_last.therapist, 'sessions_done', v_sessions,
+    'next_appointment', v_next, 'latest_note', left(v_note, 600), 'vas_series', v_vas,
     'vas_first', v_vas_first, 'vas_latest', v_vas_last, 'streak_days', v_streak,
     'week', v_week, 'program_total', v_total, 'program_done_today', v_done,
     'unread_messages', v_unread);
 end
 $fn$;
 
--- Tab Progres: grafik nyeri, ukuran gerak/kekuatan (awal, kini, target dihitung di aplikasi dari
--- entri pertama, terakhir, dan "target" di measures), dan riwayat sesi.
+-- Tab Progres: satu entri per SOAP (urut tanggal sesi): nyeri (bila terbaca) dan Update Kondisi.
 create or replace function public.portal_get_progress(p_session text)
 returns jsonb
 language plpgsql security definer stable
 set search_path = public, extensions
 as $fn$
-declare s record; v_total smallint;
+declare s record;
 begin
   select * into s from public.portal_resolve_session(p_session);
-  select sessions_total into v_total from public.patient_portal_profiles where patient_id = s.patient_id;
-  return jsonb_build_object('sessions_total', v_total, 'entries', coalesce((
-    select jsonb_agg(jsonb_build_object('no', n, 'date', entry_date, 'vas', vas,
-             'measures', measures, 'note', note_for_patient) order by n)
-    from (select e.*, row_number() over (order by entry_date, created_at) as n
-          from public.patient_progress_entries e
-          where e.patient_id = s.patient_id and e.visible_to_patient) x), '[]'::jsonb));
+  return jsonb_build_object('entries', coalesce((
+    select jsonb_agg(jsonb_build_object('no', n, 'date', d, 'vas', vas, 'update', upd) order by n)
+    from (select row_number() over (order by coalesce(dr.recap_date, mr.created_at::date), mr.created_at) as n,
+                 coalesce(dr.recap_date, mr.created_at::date) as d,
+                 public.portal_extract_nprs(mr.objective) as vas,
+                 public.portal_extract_update(mr.objective) as upd
+          from public.medical_records mr
+          left join public.daily_recaps dr on dr.id = mr.daily_recap_id
+          where mr.patient_id = s.patient_id) x), '[]'::jsonb));
 end
 $fn$;
 
+-- Tab Latihan: dari SOAP terbaru yang berisi latihan.
 create or replace function public.portal_get_program(p_session text)
 returns jsonb
 language plpgsql security definer stable
@@ -536,19 +569,18 @@ declare s record;
 begin
   select * into s from public.portal_resolve_session(p_session);
   return coalesce((select jsonb_agg(jsonb_build_object(
-      'program_id', p.id, 'title', e.title, 'description', e.description,
-      'duration_seconds', e.duration_seconds, 'sets_reps', p.sets_reps, 'notes', p.notes,
-      'video_url', (select v.video_url from public.exercise_videos v where v.exercise_id = e.id
-                    order by v.created_at limit 1),
+      'exercise_id', e.id, 'title', e.name, 'group', e.grp, 'how_to', e.how_to,
+      'dose', coalesce(p.soap_dose, e.dose), 'progression', e.progression, 'caution', e.caution,
+      'has_video', exists (select 1 from public.exercise_video_assets v where v.exercise_id = e.id),
       'done_today', exists (select 1 from public.patient_exercise_logs l
-                            where l.program_id = p.id and l.done_on = current_date))
-      order by p.assigned_at)
-    from public.patient_home_programs p join public.exercises e on e.id = p.exercise_id
-    where p.patient_id = s.patient_id and p.is_active), '[]'::jsonb);
+                            where l.patient_id = s.patient_id and l.exercise_id = e.id and l.done_on = current_date))
+      order by e.id)
+    from public.portal_program_items(s.patient_id) p
+    join public.plan_exercises e on e.id = p.exercise_id), '[]'::jsonb);
 end
 $fn$;
 
-create or replace function public.portal_log_exercise(p_session text, p_program_id uuid, p_done boolean)
+create or replace function public.portal_log_exercise(p_session text, p_exercise_id text, p_done boolean)
 returns void
 language plpgsql security definer
 set search_path = public, extensions
@@ -556,18 +588,38 @@ as $fn$
 declare s record;
 begin
   select * into s from public.portal_resolve_session(p_session);
-  if not exists (select 1 from public.patient_home_programs
-                 where id = p_program_id and patient_id = s.patient_id and is_active) then
+  if not exists (select 1 from public.portal_program_items(s.patient_id) where exercise_id = p_exercise_id) then
     raise exception 'Latihan tidak ditemukan' using errcode = 'P0002';
   end if;
   if p_done then
-    insert into public.patient_exercise_logs (clinic_id, patient_id, program_id)
-      values (s.clinic_id, s.patient_id, p_program_id)
-      on conflict (program_id, done_on) do nothing;
+    insert into public.patient_exercise_logs (clinic_id, patient_id, exercise_id)
+      values (s.clinic_id, s.patient_id, p_exercise_id)
+      on conflict (patient_id, exercise_id, done_on) do nothing;
   else
     delete from public.patient_exercise_logs
-      where program_id = p_program_id and patient_id = s.patient_id and done_on = current_date;
+      where patient_id = s.patient_id and exercise_id = p_exercise_id and done_on = current_date;
   end if;
+end
+$fn$;
+
+-- Jalur file video di storage, hanya untuk latihan yang ada di program pasien. Dipanggil Edge
+-- Function portal-exercise-video (service role), TIDAK dibuka ke anon.
+create or replace function public.portal_video_path(p_session text, p_exercise_id text)
+returns text
+language plpgsql security definer stable
+set search_path = public, extensions
+as $fn$
+declare s record; v_path text;
+begin
+  select * into s from public.portal_resolve_session(p_session);
+  select v.storage_path into v_path
+    from public.exercise_video_assets v
+    where v.exercise_id = p_exercise_id
+      and exists (select 1 from public.portal_program_items(s.patient_id) where exercise_id = p_exercise_id);
+  if v_path is null then
+    raise exception 'Video tidak tersedia' using errcode = 'P0002';
+  end if;
+  return v_path;
 end
 $fn$;
 
@@ -590,6 +642,21 @@ begin
     values (s.clinic_id, s.patient_id, p_vas::smallint,
             coalesce((select array_agg(left(t, 60)) from unnest(p_tags[1:10]) t), '{}'),
             left(p_message, 2000));
+end
+$fn$;
+
+create or replace function public.portal_list_feedback(p_session text)
+returns jsonb
+language plpgsql security definer stable
+set search_path = public, extensions
+as $fn$
+declare s record;
+begin
+  select * into s from public.portal_resolve_session(p_session);
+  return coalesce((select jsonb_agg(jsonb_build_object('at', created_at, 'vas', vas, 'tags', tags,
+            'message', message, 'status', status) order by created_at desc)
+    from (select * from public.patient_portal_feedback where patient_id = s.patient_id
+          order by created_at desc limit 50) f), '[]'::jsonb);
 end
 $fn$;
 
@@ -630,48 +697,39 @@ begin
 end
 $fn$;
 
--- Tab Keluhan: riwayat laporan milik pasien sendiri.
-create or replace function public.portal_list_feedback(p_session text)
-returns jsonb
-language plpgsql security definer stable
-set search_path = public, extensions
-as $fn$
-declare s record;
-begin
-  select * into s from public.portal_resolve_session(p_session);
-  return coalesce((select jsonb_agg(jsonb_build_object('at', created_at, 'vas', vas, 'tags', tags,
-            'message', message, 'status', status) order by created_at desc)
-    from (select * from public.patient_portal_feedback where patient_id = s.patient_id
-          order by created_at desc limit 50) f), '[]'::jsonb);
-end
-$fn$;
-
 -- Pembersih sesi yang punya batas waktu (sesi normal tidak kedaluwarsa). Opsional.
 create or replace function public.portal_cleanup_expired()
 returns void
 language sql security definer
 set search_path = public
-as $fn$ delete from public.patient_portal_sessions where expires_at < now() - interval '1 day' $fn$;
+as $fn$ delete from public.patient_portal_sessions where expires_at is not null and expires_at < now() - interval '1 day' $fn$;
 
 -- =============================================================== TAHAP 7: hak eksekusi fungsi
 -- Default Supabase memberi EXECUTE ke anon pada fungsi baru. Cabut semua dulu.
 revoke execute on function
-  public.portal_hash(text), public.portal_new_token(), public.portal_resolve_session(text),
+  public.portal_clinic_enabled(uuid), public.portal_my_clinic_enabled(),
+  public.portal_hash(text), public.portal_new_token(), public.portal_extract_nprs(text),
+  public.portal_extract_update(text), public.portal_program_items(uuid), public.portal_resolve_session(text),
   public.portal_create_link(uuid, int), public.portal_set_link_status(uuid, text),
-  public.portal_mark_link_sent(uuid, text), public.portal_get_branding(text), public.portal_list_feedback(text),
+  public.portal_mark_link_sent(uuid, text), public.portal_get_branding(text),
   public.portal_verify(text, date), public.portal_logout(text), public.portal_get_home(text),
   public.portal_get_progress(text), public.portal_get_program(text),
-  public.portal_log_exercise(text, uuid, boolean), public.portal_submit_feedback(text, int, text[], text),
+  public.portal_log_exercise(text, text, boolean), public.portal_video_path(text, text),
+  public.portal_submit_feedback(text, int, text[], text), public.portal_list_feedback(text),
   public.portal_list_messages(text), public.portal_send_message(text, text),
   public.portal_cleanup_expired()
 from public, anon, authenticated;
 
+-- Dipakai policy RLS (dievaluasi sebagai pengguna login).
+grant execute on function public.portal_clinic_enabled(uuid), public.portal_my_clinic_enabled() to authenticated;
 -- Staf
 grant execute on function public.portal_create_link(uuid, int),
   public.portal_set_link_status(uuid, text), public.portal_mark_link_sent(uuid, text) to authenticated;
--- Pasien (anon). portal_hash/new_token/resolve_session/cleanup sengaja TIDAK dibuka.
+-- Edge Function portal-exercise-video memanggil ini dengan service role.
+grant execute on function public.portal_video_path(text, text) to service_role;
+-- Pasien (anon). Fungsi internal dan portal_video_path (khusus Edge Function) TIDAK dibuka.
 grant execute on function public.portal_get_branding(text), public.portal_verify(text, date),
   public.portal_logout(text), public.portal_get_home(text), public.portal_get_progress(text),
-  public.portal_get_program(text), public.portal_log_exercise(text, uuid, boolean),
-  public.portal_submit_feedback(text, int, text[], text), public.portal_list_messages(text),
-  public.portal_send_message(text, text), public.portal_list_feedback(text) to anon;
+  public.portal_get_program(text), public.portal_log_exercise(text, text, boolean),
+  public.portal_submit_feedback(text, int, text[], text), public.portal_list_feedback(text),
+  public.portal_list_messages(text), public.portal_send_message(text, text) to anon;

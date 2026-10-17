@@ -89,8 +89,16 @@ export const portalApi = {
   home: (session) => call('portal_get_home', { p_session: session }),
   progress: (session) => call('portal_get_progress', { p_session: session }),
   program: (session) => call('portal_get_program', { p_session: session }),
-  logExercise: (session, programId, done) =>
-    call('portal_log_exercise', { p_session: session, p_program_id: programId, p_done: done }),
+  logExercise: (session, exerciseId, done) =>
+    call('portal_log_exercise', { p_session: session, p_exercise_id: exerciseId, p_done: done }),
+  // Tautan putar bertanda tangan dari Edge Function (cek sesi, fitur klinik, dan program pasien di server).
+  videoUrl: async (session, exerciseId) => {
+    const { data, error } = await supabase.functions.invoke('portal-exercise-video', {
+      body: { session, exercise_id: exerciseId },
+    });
+    if (error || !data?.url) throw new Error('Video belum bisa diputar. Coba lagi nanti.');
+    return data.url;
+  },
   submitFeedback: (session, vas, tags, message) =>
     call('portal_submit_feedback', { p_session: session, p_vas: vas, p_tags: tags, p_message: message }),
   listFeedback: (session) => call('portal_list_feedback', { p_session: session }),
