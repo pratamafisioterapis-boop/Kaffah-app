@@ -20,7 +20,6 @@ const APP_ONLY_PREFIXES = [
   '/relawan',
   '/konversi-dokter',
   '/follow-up',
-  '/p', // portal pasien Clinara: /p/<token>
 ];
 
 const matchesHost = (hostname, domain) =>

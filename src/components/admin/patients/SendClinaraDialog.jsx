@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Send, Copy, Link2, ShieldOff, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { supabase } from '@/lib/customSupabaseClient';
 import {
   buildPortalUrl, buildWhatsAppLink, createLink, getLiveLink, markLinkSent, setLinkStatus,
 } from '@/lib/patientPortal';
@@ -23,7 +24,8 @@ const fmt = (iso) =>
 // hanya bisa dikirim ulang dengan membuat tautan baru (yang lama dicabut).
 const SendClinaraDialog = ({ patient, onClose }) => {
   const { toast } = useToast();
-  const { clinicName } = useAuth();
+  const { clinicName, userDetails } = useAuth();
+  const [clinicDomain, setClinicDomain] = useState(null);
   const [link, setLink] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -45,6 +47,12 @@ const SendClinaraDialog = ({ patient, onClose }) => {
   }, [patient, toast]);
 
   useEffect(() => {
+    if (!patient || !userDetails?.clinic_id) return;
+    supabase.from('clinics').select('subdomain, custom_domain, custom_domain_status')
+      .eq('id', userDetails.clinic_id).maybeSingle().then(({ data }) => setClinicDomain(data || null));
+  }, [patient, userDetails?.clinic_id]);
+
+  useEffect(() => {
     setFresh(null);
     setLink(null);
     if (patient) load();
@@ -64,7 +72,7 @@ const SendClinaraDialog = ({ patient, onClose }) => {
 
   const handleCreate = () => run(async () => {
     const res = await createLink(patient.id);
-    setFresh({ linkId: res.link_id, url: buildPortalUrl(res.token) });
+    setFresh({ linkId: res.link_id, url: buildPortalUrl(res.token, clinicDomain) });
     await load();
   }, 'Tautan baru dibuat');
 

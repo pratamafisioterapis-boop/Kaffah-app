@@ -1,5 +1,5 @@
 -- SUDAH DITERAPKAN ke produksi (17 Okt 2026) lewat apply_migration per tahap, nama
--- migrasi portal_pasien_1 ... portal_pasien_8. Fitur nonaktif di semua klinik sampai Super
+-- migrasi portal_pasien_1 ... portal_pasien_9. Fitur nonaktif di semua klinik sampai Super
 -- Admin mengaktifkannya (clinics.patient_portal_enabled). File ini adalah salinan acuan.
 -- Catatan: dijalankan di Supabase SQL Editor, skrip utuh ini gagal dengan error
 -- 'relation "v_patient" does not exist' (penyebab belum jelas; tidak terjadi di Postgres lokal
@@ -206,8 +206,12 @@ revoke all on public.patient_portal_links, public.patient_portal_sessions,
   public.patient_exercise_logs, public.patient_portal_feedback,
   public.patient_portal_messages, public.exercise_video_assets from public, anon, authenticated;
 grant select on public.patient_portal_links, public.patient_exercise_logs to authenticated;
-grant select, insert, update, delete on public.patient_portal_feedback to authenticated;
-grant select, insert, update on public.patient_portal_messages to authenticated;
+-- Staf hanya boleh menandai pesan terbaca dan menandai keluhan ditinjau; isi pesan/keluhan pasien
+-- tidak bisa diubah (kolom, bukan seluruh tabel).
+grant select, insert on public.patient_portal_messages to authenticated;
+grant update (read_at) on public.patient_portal_messages to authenticated;
+grant select on public.patient_portal_feedback to authenticated;
+grant update (status, reviewed_by, reviewed_at) on public.patient_portal_feedback to authenticated;
 grant select, insert, update, delete on public.exercise_video_assets to authenticated;
 
 -- Bucket video privat. Batas 200 MB per file (batas global proyek di Dashboard juga berlaku).
