@@ -1,5 +1,4 @@
 import { TABLE_FIT } from '@/lib/tableStyles';
-import { TableCols } from '@/components/ui/table-cols';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { 
@@ -219,7 +218,13 @@ const formatTanggal = (date) => {
             {/* Desktop: tabel */}
             <div className="hidden sm:block relative overflow-x-auto">
                 <Table className={TABLE_FIT}>
-                    <TableCols widths={[8, 17, 6, 6, 12, 12, 11, 8, 12, 8]} />
+                    {/* Kolom Aksi lebar tetap (bukan persen) agar tombol tidak terpotong; Nama Pasien menyerap sisa lebar */}
+                    <colgroup>
+                        {[8, null, 6, 6, 12, 12, 11, 8, 11].map((w, i) => (
+                            <col key={i} style={w ? { width: `${w}%` } : undefined} />
+                        ))}
+                        <col className="w-14 lg:w-36" />
+                    </colgroup>
                     <TableHeader className="bg-slate-100">
                         <TableRow>
                             <TableHead className="w-[100px] text-center font-semibold text-slate-700">No RM</TableHead>
@@ -231,7 +236,7 @@ const formatTanggal = (date) => {
                             <TableHead className="text-center font-semibold text-slate-700">Info Tambahan</TableHead>
                             <TableHead className="text-center font-semibold text-slate-700">Status</TableHead>
                             <TableHead className="text-center font-semibold text-slate-700">Kelengkapan</TableHead>
-                            <TableHead className="text-center font-semibold text-slate-700">Aksi</TableHead>
+                            <TableHead className="text-right font-semibold text-slate-700">Aksi</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -283,28 +288,33 @@ const formatTanggal = (date) => {
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-center">
-                                        <div className="flex items-center justify-center gap-1">
-                                        <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedPatient(patient); setIsOpen(true); }}>
-                                            Riwayat
-                                        </Button>
-                                        {portalEnabled && (
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full" onClick={(e) => e.stopPropagation()} aria-label="Aksi lainnya">
-                                                    <MoreHorizontal className="h-4 w-4 text-slate-500" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
-                                                <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                                <DropdownMenuItem className="cursor-pointer" onClick={() => setClinaraPatient(patient)}>
-                                                    <Smartphone className="mr-2 h-4 w-4 text-sky-600" /> Kirim Clinara
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem className="cursor-pointer" onClick={() => { setSelectedPatient(patient); setIsOpen(true); }}>
-                                                    <History className="mr-2 h-4 w-4 text-slate-500" /> Lihat Riwayat
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                        )}
+                                        <div className="flex items-center justify-end gap-1 lg:gap-1.5 whitespace-nowrap">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="hidden lg:inline-flex h-8 px-3"
+                                                onClick={(e) => { e.stopPropagation(); setSelectedPatient(patient); setIsOpen(true); }}
+                                            >
+                                                Riwayat
+                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="sm" className="h-8 w-8 shrink-0 p-0 rounded-full hover:bg-slate-200/70 data-[state=open]:bg-slate-200/70" onClick={(e) => e.stopPropagation()} aria-label="Aksi lainnya">
+                                                        <MoreHorizontal className="h-4 w-4 text-slate-500" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
+                                                    <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                                    <DropdownMenuItem className="cursor-pointer lg:hidden" onClick={() => { setSelectedPatient(patient); setIsOpen(true); }}>
+                                                        <History className="mr-2 h-4 w-4 text-slate-500" /> Lihat Riwayat
+                                                    </DropdownMenuItem>
+                                                    {portalEnabled && (
+                                                        <DropdownMenuItem className="cursor-pointer" onClick={() => setClinaraPatient(patient)}>
+                                                            <Smartphone className="mr-2 h-4 w-4 text-sky-600" /> Kirim Clinara
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
                                     </TableCell>
                                 </TableRow>
