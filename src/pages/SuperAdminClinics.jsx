@@ -98,6 +98,8 @@ const SuperAdminClinics = () => {
   const [loadingExistingTherapists, setLoadingExistingTherapists] = useState(false);
   const [selectedExistingTherapistId, setSelectedExistingTherapistId] = useState('');
   const [separateOpen, setSeparateOpen] = useState(false);
+  const [removeTarget, setRemoveTarget] = useState(null);
+  const [removing, setRemoving] = useState(false);
   const [separateTarget, setSeparateTarget] = useState(null); // { owner, clinic, physio }
   const [therapistLogins, setTherapistLogins] = useState([]);
   const [loadingTherapistLogins, setLoadingTherapistLogins] = useState(false);
@@ -270,11 +272,26 @@ const SuperAdminClinics = () => {
     else fetchClinics();
   };
 
-  const handleDelete = async (clinic) => {
-    if (!window.confirm(`Hapus klinik "${clinic.name}"? Aksi ini tidak bisa dibatalkan.`)) return;
-    const { error } = await supabase.from('clinics').delete().eq('id', clinic.id);
-    if (error) toast({ variant: 'destructive', title: 'Gagal menghapus', description: error.message });
-    else { toast({ title: 'Klinik dihapus' }); fetchClinics(); }
+  const handleDeactivateFromDialog = async () => {
+    const clinic = removeTarget;
+    setRemoving(true);
+    const { error } = await supabase.from('clinics').update({ subscription_status: 'inactive' }).eq('id', clinic.id);
+    setRemoving(false);
+    if (error) { toast({ variant: 'destructive', title: 'Gagal menonaktifkan', description: error.message }); return; }
+    toast({ title: 'Klinik dinonaktifkan' });
+    setRemoveTarget(null);
+    fetchClinics();
+  };
+
+  const handleDelete = async () => {
+    const clinic = removeTarget;
+    setRemoving(true);
+    const { error } = await supabase.rpc('delete_clinic', { p_clinic_id: clinic.id });
+    setRemoving(false);
+    if (error) { toast({ variant: 'destructive', title: 'Gagal menghapus', description: error.message }); return; }
+    toast({ title: 'Klinik dihapus' });
+    setRemoveTarget(null);
+    fetchClinics();
   };
 
   const toggleFeature = async (clinic, role, featureKey) => {
@@ -690,7 +707,7 @@ const SuperAdminClinics = () => {
                   {clinic.subscription_status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}
                 </Button>
                 <Button size="sm" variant="ghost" className="min-h-11 min-w-11" aria-label={`Edit ${clinic.name}`} title="Edit klinik" onClick={() => openEdit(clinic)}><Pencil className="w-4 h-4" /></Button>
-                <Button size="sm" variant="ghost" className="min-h-11 min-w-11" aria-label={`Hapus ${clinic.name}`} title="Hapus klinik" onClick={() => handleDelete(clinic)}><Trash2 className="w-4 h-4 text-red-500" /></Button>
+                <Button size="sm" variant="ghost" className="min-h-11 min-w-11" aria-label={`Hapus ${clinic.name}`} title="Hapus klinik" onClick={() => setRemoveTarget(clinic)}><Trash2 className="w-4 h-4 text-red-500" /></Button>
               </div>
 
               <div className="border-t border-app-border pt-3">
@@ -1206,6 +1223,31 @@ const SuperAdminClinics = () => {
             <Button variant="outline" onClick={() => setSeparateOpen(false)}>Batal</Button>
             <Button onClick={handleConfirmSeparate} disabled={separating || !selectedTherapistLoginId} className="bg-blue-600">
               {separating && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Pisahkan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!removeTarget} onOpenChange={(v) => { if (!v && !removing) setRemoveTarget(null); }}>
+        <DialogContent className={SHEET_DIALOG}>
+          <DialogHeader><DialogTitle>Nonaktifkan atau hapus {removeTarget?.name}?</DialogTitle></DialogHeader>
+          <div className="space-y-3 text-sm">
+            <div className="rounded-lg border p-3">
+              <p className="font-semibold">Nonaktifkan</p>
+              <p className="text-muted-foreground">Klinik tidak bisa dipakai, tetapi semua data tetap tersimpan dan bisa diaktifkan lagi.</p>
+            </div>
+            <div className="rounded-lg border border-red-200 p-3">
+              <p className="font-semibold text-red-600">Hapus permanen</p>
+              <p className="text-muted-foreground">Klinik beserta semua datanya (pasien, rekam medis, keuangan, dll) dihapus dan tidak bisa dibatalkan.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRemoveTarget(null)} disabled={removing}>Batal</Button>
+            <Button variant="outline" onClick={handleDeactivateFromDialog} disabled={removing || removeTarget?.subscription_status !== 'active'}>
+              Nonaktifkan
+            </Button>
+            <Button onClick={handleDelete} disabled={removing} className="bg-red-600 hover:bg-red-700">
+              {removing && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Hapus permanen
             </Button>
           </DialogFooter>
         </DialogContent>
