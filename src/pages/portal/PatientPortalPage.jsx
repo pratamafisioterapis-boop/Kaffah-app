@@ -212,7 +212,7 @@ const HomeTab = ({ home, goals, go, onLogout }) => {
 };
 
 const GoalsProgress = ({ goals }) => (
-  <div className="pp-pad" style={{ padding: 0 }}>
+  <div className="pp-pad span2" style={{ padding: 0 }}>
     {goals.map((g) => {
       const start = g.history?.length ? g.history[0].progress : 0;
       return (
@@ -235,7 +235,7 @@ const ProgressTab = ({ data, goals, complaint }) => {
   const first = vasPts[0], last = vasPts[vasPts.length - 1];
   return (
     <div className="pp-pad" style={{ paddingTop: TOP_PAD }}>
-      <div><div className="eyebrow">Perkembangan Anda</div>
+      <div className="span2"><div className="eyebrow">Perkembangan Anda</div>
         <h2>{entries.length ? `${complaint || 'Riwayat terapi'}, sejak ${fmtDate(entries[0].date, { day: 'numeric', month: 'long' })}` : (complaint || 'Riwayat terapi')}</h2></div>
       {goals?.length > 0 && (
         <div className="seg" role="tablist">
@@ -296,7 +296,7 @@ const ProgramTab = ({ session, items, therapist, onToggle }) => {
 
   return (
     <div className="pp-pad" style={{ paddingTop: TOP_PAD }}>
-      <div><div className="eyebrow">Program rumah</div><h2>Latihan hari ini</h2>
+      <div className="span2"><div className="eyebrow">Program rumah</div><h2>Latihan hari ini</h2>
         <p style={{ margin: '6px 0 0', color: 'var(--muted)', fontSize: 14 }}>{therapist ? `Dari ${therapist}. ` : ''}Berhenti jika nyeri lebih dari 5/10 dan kabari terapis.</p></div>
       {items.length === 0 && <div className="card" style={{ color: 'var(--muted)' }}>Terapis belum memberi latihan. Latihan akan tampil di sini setelah sesi berikutnya.</div>}
       {items.map((e) => (
@@ -350,7 +350,7 @@ const FeedbackTab = ({ history, onSubmit }) => {
   };
   return (
     <div className="pp-pad" style={{ paddingTop: TOP_PAD }}>
-      <div><div className="eyebrow">Umpan balik</div><h2>Apa yang Anda rasakan hari ini?</h2>
+      <div className="span2"><div className="eyebrow">Umpan balik</div><h2>Apa yang Anda rasakan hari ini?</h2>
         <p style={{ margin: '6px 0 0', color: 'var(--muted)', fontSize: 14 }}>Terapis membaca ini sebelum sesi berikutnya.</p></div>
       <form className="card" onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div className="field"><label htmlFor="pp-vas">Tingkat nyeri sekarang: <b className="num">{vas}</b>/10</label>
