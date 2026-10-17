@@ -29,23 +29,26 @@ export const toWhatsAppNumber = (phone) => {
   return digits;
 };
 
-// Salam menurut jam kirim di WIB (bukan jam perangkat), supaya konsisten untuk semua admin.
+// Salam menurut jam kirim di zona waktu perangkat tempat akun login (WIB/WITA/WIT mengikuti lokasi admin).
 export const greetingByHour = (date = new Date()) => {
-  const hour = Number(
-    new Intl.DateTimeFormat('en-GB', { hour: '2-digit', hourCycle: 'h23', timeZone: 'Asia/Jakarta' }).format(date),
-  );
+  const hour = date.getHours();
   if (hour >= 4 && hour < 11) return 'pagi';
   if (hour >= 11 && hour < 15) return 'siang';
   if (hour >= 15 && hour < 18) return 'sore';
   return 'malam';
 };
 
-// Gender tidak diketahui: pakai "Bapak/Ibu" daripada menebak.
+// Data lama memuat 'male'/'female' selain 'Laki-laki'/'Perempuan'. Gender kosong: pakai "Bapak/Ibu" daripada menebak.
 const honorific = (gender) => {
-  if (gender === 'Perempuan') return 'Ibu';
-  if (gender === 'Laki-laki') return 'Bapak';
+  const g = String(gender || '').trim().toLowerCase();
+  if (g === 'perempuan' || g === 'female') return 'Ibu';
+  if (g === 'laki-laki' || g === 'male') return 'Bapak';
   return 'Bapak/Ibu';
 };
+
+// Pakai nama panggilan; jika kosong di database, pakai nama lengkap.
+export const patientDisplayName = (patient) =>
+  String(patient?.nickname || '').trim() || String(patient?.full_name || '').trim();
 
 export const buildWhatsAppMessage = ({ patientName, gender, clinicName, url, now }) => {
   const clinic = clinicName || 'klinik kami';
