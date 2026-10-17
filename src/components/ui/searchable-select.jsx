@@ -34,8 +34,6 @@ const SearchableSelect = ({
     const el = containerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const openUpward = spaceBelow < 260 && rect.top > spaceBelow;
 
     // If an ancestor has a CSS transform (e.g. a Radix Dialog/Sheet content panel,
     // which is centered with translate-x/-y), it becomes the containing block for
@@ -57,8 +55,19 @@ const SearchableSelect = ({
       ancestor = ancestor.parentElement;
     }
 
+    // Ruang yang benar-benar terlihat: dibatasi layar dan, bila menu masuk ke dalam
+    // dialog, juga oleh tepi dialog. Tanpa ini menu bertinggi tetap menjulur keluar
+    // area terlihat sehingga opsi paling bawah terpotong dan tidak bisa di-scroll.
+    const anchorBox = transformedAncestor ? transformedAncestor.getBoundingClientRect() : null;
+    const visibleTop = Math.max(0, anchorBox ? anchorBox.top : 0);
+    const visibleBottom = Math.min(window.innerHeight, anchorBox ? anchorBox.bottom : window.innerHeight);
+    const spaceBelow = visibleBottom - rect.bottom;
+    const spaceAbove = rect.top - visibleTop;
+    const openUpward = spaceBelow < 260 && spaceAbove > spaceBelow;
+    const maxHeight = Math.max(120, Math.min(240, (openUpward ? spaceAbove : spaceBelow) - 12));
+
     if (transformedAncestor) {
-      const anchorRect = transformedAncestor.getBoundingClientRect();
+      const anchorRect = anchorBox;
       // If the transformed ancestor is itself the scrolling element (e.g. a
       // DialogContent with overflow-y-auto directly on it, common on long mobile
       // forms), position:absolute offsets are measured in its unscrolled content
@@ -74,6 +83,7 @@ const SearchableSelect = ({
         position: 'absolute',
         left: rect.left - anchorRect.left + anchorScrollLeft,
         width: rect.width,
+        maxHeight,
         top: openUpward ? undefined : contentRelativeBottom + 6,
         bottom: openUpward ? transformedAncestor.scrollHeight - contentRelativeTop + 6 : undefined,
       });
@@ -85,6 +95,7 @@ const SearchableSelect = ({
       position: 'fixed',
       left: rect.left,
       width: rect.width,
+      maxHeight,
       top: openUpward ? undefined : rect.bottom + 6,
       bottom: openUpward ? window.innerHeight - rect.top + 6 : undefined,
     });
@@ -303,8 +314,8 @@ const SearchableSelect = ({
       {open && !disabled && menuPos && createPortal(
         <div
           ref={menuRef}
-          style={{ position: menuPos.position, left: menuPos.left, width: menuPos.width, top: menuPos.top, bottom: menuPos.bottom }}
-          className="bg-white border border-slate-200 rounded-app-sm shadow-xl z-[9999] max-h-60 overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-100"
+          style={{ position: menuPos.position, left: menuPos.left, width: menuPos.width, top: menuPos.top, bottom: menuPos.bottom, maxHeight: menuPos.maxHeight }}
+          className="bg-white border border-slate-200 rounded-app-sm shadow-xl z-[9999] max-h-60 overflow-y-auto overscroll-contain animate-in fade-in-0 zoom-in-95 duration-100"
         >
           {isLoading ? (
              <div className="p-4 flex items-center justify-center text-slate-500 text-sm">
