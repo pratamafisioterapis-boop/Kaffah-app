@@ -10,8 +10,11 @@
 -- Prinsip keamanan:
 --   * Pasien TIDAK login dan TIDAK punya akses ke tabel apa pun. Semua akses
 --     lewat fungsi SECURITY DEFINER yang memeriksa token + tanggal lahir
---     (portal_verify) lalu memakai token sesi pendek (portal_*).
+--     (portal_verify) lalu memakai token sesi (portal_*).
 --   * Token tautan dan token sesi tidak disimpan mentah, hanya hash SHA-256.
+--   * Tautan dan sesi TIDAK kedaluwarsa sendiri. Pasien tetap masuk di perangkatnya
+--     sampai admin menonaktifkan tautan (status 'disabled') atau mencabutnya.
+--     Perangkat baru tetap harus memasukkan tanggal lahir.
 --   * Percobaan salah dihitung dan dikembalikan sebagai hasil (bukan RAISE),
 --     karena RAISE akan membatalkan UPDATE penghitung itu sendiri.
 --   * Yang dibuka ke anon hanya: portal_get_branding, portal_verify, dan fungsi
@@ -38,7 +41,9 @@ create table if not exists public.patient_portal_links (
   clinic_id uuid not null references public.clinics(id) on delete cascade,
   patient_id uuid not null references public.patients(id) on delete cascade,
   token_hash text not null unique,
-  status text not null default 'active' check (status in ('active','locked','revoked')),
+  -- active = bisa dipakai; locked = terkunci otomatis (5x salah); disabled = dimatikan admin
+  -- (bisa diaktifkan lagi); revoked = dicabut permanen (diganti tautan baru)
+  status text not null default 'active' check (status in ('active','locked','disabled','revoked')),
   failed_attempts smallint not null default 0,
   locked_at timestamptz,
   expires_at timestamptz,
@@ -57,7 +62,7 @@ create table if not exists public.patient_portal_sessions (
   id uuid primary key default gen_random_uuid(),
   link_id uuid not null references public.patient_portal_links(id) on delete cascade,
   session_hash text not null unique,
-  expires_at timestamptz not null,
+  expires_at timestamptz,  -- NULL = berlaku selama tautan aktif
   created_at timestamptz not null default now()
 );
 create index if not exists patient_portal_sessions_link_idx on public.patient_portal_sessions (link_id);
@@ -134,6 +139,18 @@ create table if not exists public.patient_portal_messages (
 create index if not exists patient_portal_messages_thread_idx on public.patient_portal_messages (patient_id, created_at);
 create index if not exists patient_portal_messages_clinic_idx on public.patient_portal_messages (clinic_id);
 
+-- Profil terapi yang tampil di aplikasi pasien (keluhan, target jumlah sesi, terapis utama).
+create table if not exists public.patient_portal_profiles (
+  patient_id uuid primary key references public.patients(id) on delete cascade,
+  clinic_id uuid not null references public.clinics(id) on delete cascade,
+  complaint_label text,
+  sessions_total smallint check (sessions_total is null or sessions_total > 0),
+  therapist_id uuid references public.physiotherapists(id) on delete set null,
+  updated_at timestamptz not null default now()
+);
+create index if not exists patient_portal_profiles_clinic_idx on public.patient_portal_profiles (clinic_id);
+create index if not exists patient_portal_profiles_therapist_idx on public.patient_portal_profiles (therapist_id);
+
 -- =============================================================== TAHAP 3: RLS dan hak akses tabel
 alter table public.patient_portal_links enable row level security;
 alter table public.patient_portal_sessions enable row level security;
@@ -142,6 +159,7 @@ alter table public.patient_home_programs enable row level security;
 alter table public.patient_exercise_logs enable row level security;
 alter table public.patient_portal_feedback enable row level security;
 alter table public.patient_portal_messages enable row level security;
+alter table public.patient_portal_profiles enable row level security;
 
 -- Staf klinik. Sesi: tanpa policy sama sekali (hanya fungsi SECURITY DEFINER).
 -- Tautan: staf hanya boleh membaca; tulis lewat portal_create_link / portal_set_link_status.
@@ -156,6 +174,12 @@ create policy portal_progress_staff on public.patient_progress_entries for all
     or (get_my_role() in ('owner','admin','clinic_admin','therapist') and clinic_id = get_my_clinic_id()));
 
 create policy portal_programs_staff on public.patient_home_programs for all
+  using (get_my_role() = 'super_admin'
+    or (get_my_role() in ('owner','admin','clinic_admin','therapist') and clinic_id = get_my_clinic_id()))
+  with check (get_my_role() = 'super_admin'
+    or (get_my_role() in ('owner','admin','clinic_admin','therapist') and clinic_id = get_my_clinic_id()));
+
+create policy portal_profiles_staff on public.patient_portal_profiles for all
   using (get_my_role() = 'super_admin'
     or (get_my_role() in ('owner','admin','clinic_admin','therapist') and clinic_id = get_my_clinic_id()))
   with check (get_my_role() = 'super_admin'
@@ -190,10 +214,10 @@ create policy portal_messages_staff_mark_read on public.patient_portal_messages 
 revoke all on public.patient_portal_links, public.patient_portal_sessions,
   public.patient_progress_entries, public.patient_home_programs,
   public.patient_exercise_logs, public.patient_portal_feedback,
-  public.patient_portal_messages from public, anon, authenticated;
+  public.patient_portal_messages, public.patient_portal_profiles from public, anon, authenticated;
 grant select on public.patient_portal_links to authenticated;
 grant select, insert, update, delete on public.patient_progress_entries,
-  public.patient_home_programs, public.patient_portal_feedback to authenticated;
+  public.patient_home_programs, public.patient_portal_feedback, public.patient_portal_profiles to authenticated;
 grant select on public.patient_exercise_logs to authenticated;
 grant select, insert, update on public.patient_portal_messages to authenticated;
 
@@ -228,7 +252,7 @@ begin
     from public.patient_portal_sessions s
     join public.patient_portal_links l on l.id = s.link_id
     where s.session_hash = public.portal_hash(p_session)
-      and s.expires_at > now()
+      and (s.expires_at is null or s.expires_at > now())
       and l.status = 'active'
       and (l.expires_at is null or l.expires_at > now());
   if not found then
@@ -238,7 +262,7 @@ end
 $fn$;
 
 -- =============================================================== TAHAP 5: fungsi staf (authenticated)
-create or replace function public.portal_create_link(p_patient_id uuid, p_valid_days int default 90)
+create or replace function public.portal_create_link(p_patient_id uuid, p_valid_days int default null)
 returns jsonb
 language plpgsql security definer
 set search_path = public, extensions
@@ -265,7 +289,8 @@ begin
     where patient_id = p_patient_id and status <> 'revoked';
 
   v_token := public.portal_new_token();
-  v_exp := now() + make_interval(days => greatest(1, least(coalesce(p_valid_days, 90), 365)));
+  -- default: tidak kedaluwarsa. Isi p_valid_days hanya jika klinik ingin batas waktu.
+  v_exp := case when p_valid_days is null then null else now() + make_interval(days => greatest(1, p_valid_days)) end;
   insert into public.patient_portal_links (clinic_id, patient_id, token_hash, expires_at, created_by)
     values (v_patient.clinic_id, p_patient_id, public.portal_hash(v_token), v_exp, auth.uid())
     returning id into v_link;
@@ -288,7 +313,7 @@ begin
   if v_role is null or v_role not in ('super_admin','owner','admin','clinic_admin','therapist') then
     raise exception 'Tidak berwenang' using errcode = '42501';
   end if;
-  if p_status not in ('active','locked','revoked') then
+  if p_status not in ('active','locked','disabled','revoked') then
     raise exception 'Status tidak dikenal' using errcode = '22023';
   end if;
   select * into v_link from public.patient_portal_links where id = p_link_id;
@@ -335,7 +360,7 @@ begin
   if not found or v_link.status = 'revoked' then
     return jsonb_build_object('status', 'invalid');
   end if;
-  v_status := case when v_link.status = 'locked' then 'locked'
+  v_status := case when v_link.status in ('locked','disabled') then v_link.status
                    when v_link.expires_at is not null and v_link.expires_at <= now() then 'expired'
                    else 'active' end;
   select name, logo_url, coalesce(portal_brand_color, landing_primary_color) as color
@@ -355,15 +380,14 @@ declare
   v_pat record;
   v_fail smallint;
   v_session text;
-  v_exp timestamptz := now() + interval '12 hours';
 begin
   select * into v_link from public.patient_portal_links
     where token_hash = public.portal_hash(p_token) for update;
   if not found or v_link.status = 'revoked' then
     return jsonb_build_object('ok', false, 'reason', 'invalid');
   end if;
-  if v_link.status = 'locked' then
-    return jsonb_build_object('ok', false, 'reason', 'locked');
+  if v_link.status in ('locked','disabled') then
+    return jsonb_build_object('ok', false, 'reason', v_link.status);
   end if;
   if v_link.expires_at is not null and v_link.expires_at <= now() then
     return jsonb_build_object('ok', false, 'reason', 'expired');
@@ -387,9 +411,13 @@ begin
   v_session := public.portal_new_token();
   update public.patient_portal_links set failed_attempts = 0, last_opened_at = now() where id = v_link.id;
   insert into public.patient_portal_sessions (link_id, session_hash, expires_at)
-    values (v_link.id, public.portal_hash(v_session), v_exp);
-  return jsonb_build_object('ok', true, 'session', v_session, 'expires_at', v_exp,
-    'first_name', v_pat.first_name);
+    values (v_link.id, public.portal_hash(v_session), null);
+  -- simpan maksimal 10 perangkat/sesi terbaru per tautan
+  delete from public.patient_portal_sessions
+    where link_id = v_link.id
+      and id not in (select id from public.patient_portal_sessions
+                     where link_id = v_link.id order by created_at desc limit 10);
+  return jsonb_build_object('ok', true, 'session', v_session, 'first_name', v_pat.first_name);
 end
 $fn$;
 
@@ -405,14 +433,19 @@ language plpgsql security definer stable
 set search_path = public, extensions
 as $fn$
 declare
-  s record; v_pat record; v_c record; v_next jsonb; v_note text;
-  v_total int; v_done int; v_unread int; v_vas jsonb;
+  s record; v_pat record; v_c record; v_prof record; v_next jsonb; v_note text;
+  v_total int; v_done int; v_unread int; v_vas jsonb; v_week jsonb;
+  v_sessions int; v_streak int := 0; v_i int := 0;
+  v_vas_first smallint; v_vas_last smallint;
 begin
   select * into s from public.portal_resolve_session(p_session);
   select coalesce(nullif(nickname, ''), split_part(full_name, ' ', 1)) as first_name into v_pat
     from public.patients where id = s.patient_id;
   select name, logo_url, coalesce(portal_brand_color, landing_primary_color) as color into v_c
     from public.clinics where id = s.clinic_id;
+  select pr.complaint_label, pr.sessions_total, t.name as therapist into v_prof
+    from public.patient_portal_profiles pr left join public.physiotherapists t on t.id = pr.therapist_id
+    where pr.patient_id = s.patient_id;
 
   select jsonb_build_object('appointment_date', a.appointment_date, 'therapist', t.name)
     into v_next
@@ -428,34 +461,69 @@ begin
     from (select vas, entry_date, created_at from public.patient_progress_entries
           where patient_id = s.patient_id and visible_to_patient and vas is not null
           order by entry_date desc, created_at desc limit 12) x;
+  select (array_agg(vas order by entry_date, created_at))[1],
+         (array_agg(vas order by entry_date desc, created_at desc))[1]
+    into v_vas_first, v_vas_last
+    from public.patient_progress_entries
+    where patient_id = s.patient_id and visible_to_patient and vas is not null;
+  select count(*) into v_sessions from public.patient_progress_entries
+    where patient_id = s.patient_id and visible_to_patient;
 
   select count(*), count(l.id) into v_total, v_done
     from public.patient_home_programs p
     left join public.patient_exercise_logs l on l.program_id = p.id and l.done_on = current_date
     where p.patient_id = s.patient_id and p.is_active;
 
+  -- kalender Senin sampai Minggu minggu ini
+  select jsonb_agg(jsonb_build_object('date', d::date, 'done',
+           exists (select 1 from public.patient_exercise_logs l where l.patient_id = s.patient_id and l.done_on = d::date),
+           'today', d::date = current_date) order by d)
+    into v_week
+    from generate_series(date_trunc('week', current_date), date_trunc('week', current_date) + interval '6 days', interval '1 day') d;
+
+  -- beruntun: hari berturut-turut ada latihan; hari ini yang belum dicatat tidak memutus.
+  loop
+    exit when v_i > 365;
+    if exists (select 1 from public.patient_exercise_logs l
+               where l.patient_id = s.patient_id and l.done_on = current_date - v_i) then
+      v_streak := v_streak + 1;
+    elsif v_i > 0 then
+      exit;
+    end if;
+    v_i := v_i + 1;
+  end loop;
+
   select count(*) into v_unread from public.patient_portal_messages
     where patient_id = s.patient_id and sender = 'therapist' and read_at is null;
 
   return jsonb_build_object('first_name', v_pat.first_name,
     'clinic', jsonb_build_object('name', v_c.name, 'logo_url', v_c.logo_url, 'brand_color', v_c.color),
+    'complaint', v_prof.complaint_label, 'therapist', v_prof.therapist,
+    'sessions_done', v_sessions, 'sessions_total', v_prof.sessions_total,
     'next_appointment', v_next, 'latest_note', v_note, 'vas_series', v_vas,
-    'program_total', v_total, 'program_done_today', v_done, 'unread_messages', v_unread);
+    'vas_first', v_vas_first, 'vas_latest', v_vas_last, 'streak_days', v_streak,
+    'week', v_week, 'program_total', v_total, 'program_done_today', v_done,
+    'unread_messages', v_unread);
 end
 $fn$;
 
+-- Tab Progres: grafik nyeri, ukuran gerak/kekuatan (awal, kini, target dihitung di aplikasi dari
+-- entri pertama, terakhir, dan "target" di measures), dan riwayat sesi.
 create or replace function public.portal_get_progress(p_session text)
 returns jsonb
 language plpgsql security definer stable
 set search_path = public, extensions
 as $fn$
-declare s record;
+declare s record; v_total smallint;
 begin
   select * into s from public.portal_resolve_session(p_session);
-  return coalesce((select jsonb_agg(jsonb_build_object('date', entry_date, 'vas', vas,
-            'measures', measures, 'note', note_for_patient) order by entry_date, created_at)
-    from public.patient_progress_entries
-    where patient_id = s.patient_id and visible_to_patient), '[]'::jsonb);
+  select sessions_total into v_total from public.patient_portal_profiles where patient_id = s.patient_id;
+  return jsonb_build_object('sessions_total', v_total, 'entries', coalesce((
+    select jsonb_agg(jsonb_build_object('no', n, 'date', entry_date, 'vas', vas,
+             'measures', measures, 'note', note_for_patient) order by n)
+    from (select e.*, row_number() over (order by entry_date, created_at) as n
+          from public.patient_progress_entries e
+          where e.patient_id = s.patient_id and e.visible_to_patient) x), '[]'::jsonb));
 end
 $fn$;
 
@@ -562,7 +630,23 @@ begin
 end
 $fn$;
 
--- Pembersih sesi kedaluwarsa. Jadwalkan lewat pg_cron (mis. harian) di SQL Editor.
+-- Tab Keluhan: riwayat laporan milik pasien sendiri.
+create or replace function public.portal_list_feedback(p_session text)
+returns jsonb
+language plpgsql security definer stable
+set search_path = public, extensions
+as $fn$
+declare s record;
+begin
+  select * into s from public.portal_resolve_session(p_session);
+  return coalesce((select jsonb_agg(jsonb_build_object('at', created_at, 'vas', vas, 'tags', tags,
+            'message', message, 'status', status) order by created_at desc)
+    from (select * from public.patient_portal_feedback where patient_id = s.patient_id
+          order by created_at desc limit 50) f), '[]'::jsonb);
+end
+$fn$;
+
+-- Pembersih sesi yang punya batas waktu (sesi normal tidak kedaluwarsa). Opsional.
 create or replace function public.portal_cleanup_expired()
 returns void
 language sql security definer
@@ -574,7 +658,7 @@ as $fn$ delete from public.patient_portal_sessions where expires_at < now() - in
 revoke execute on function
   public.portal_hash(text), public.portal_new_token(), public.portal_resolve_session(text),
   public.portal_create_link(uuid, int), public.portal_set_link_status(uuid, text),
-  public.portal_mark_link_sent(uuid, text), public.portal_get_branding(text),
+  public.portal_mark_link_sent(uuid, text), public.portal_get_branding(text), public.portal_list_feedback(text),
   public.portal_verify(text, date), public.portal_logout(text), public.portal_get_home(text),
   public.portal_get_progress(text), public.portal_get_program(text),
   public.portal_log_exercise(text, uuid, boolean), public.portal_submit_feedback(text, int, text[], text),
@@ -590,4 +674,4 @@ grant execute on function public.portal_get_branding(text), public.portal_verify
   public.portal_logout(text), public.portal_get_home(text), public.portal_get_progress(text),
   public.portal_get_program(text), public.portal_log_exercise(text, uuid, boolean),
   public.portal_submit_feedback(text, int, text[], text), public.portal_list_messages(text),
-  public.portal_send_message(text, text) to anon;
+  public.portal_send_message(text, text), public.portal_list_feedback(text) to anon;
