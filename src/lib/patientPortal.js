@@ -96,7 +96,14 @@ export const createLink = async (patientId) => {
   return data; // { link_id, token, patient_name, phone, expires_at }
 };
 
-export const setLinkStatus = async (linkId, status) => {
+// Token tautan yang masih hidup untuk dikirim ulang; null untuk tautan lama yang tokennya tidak tersimpan.
+export const getLinkToken = async (linkId) => {
+  const { data, error } = await supabase.rpc('portal_get_link_token', { p_link_id: linkId });
+  if (error) throw error;
+  return data || null;
+};
+
+export const setLinkStatus =async (linkId, status) => {
   const { error } = await supabase.rpc('portal_set_link_status', { p_link_id: linkId, p_status: status });
   if (error) throw error;
 };

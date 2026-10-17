@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/lib/customSupabaseClient';
 import {
-  buildPortalUrl, buildWhatsAppLink, createLink, getLiveLink, extractHonorific, markLinkSent, patientDisplayName, setLinkStatus,
+  buildPortalUrl, buildWhatsAppLink, createLink, getLinkToken, getLiveLink, extractHonorific, markLinkSent, patientDisplayName, setLinkStatus,
 } from '@/lib/patientPortal';
 
 const STATUS_LABEL = {
@@ -20,8 +20,8 @@ const fmt = (iso) =>
   iso ? new Date(iso).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : null;
 
 // Kirim tautan aplikasi pasien (Clinara) lewat WhatsApp milik admin.
-// Token mentah hanya ada saat tautan dibuat. Setelah dialog ditutup, tautan
-// hanya bisa dikirim ulang dengan membuat tautan baru (yang lama dicabut).
+// Tautan yang masih aktif tetap bisa dikirim ulang. Tautan lama (dibuat sebelum token
+// disimpan) tidak punya token; untuk itu admin membuat tautan baru sekali.
 const SendClinaraDialog = ({ patient, onClose }) => {
   const { toast } = useToast();
   const { clinicName, userDetails } = useAuth();
@@ -29,7 +29,7 @@ const SendClinaraDialog = ({ patient, onClose }) => {
   const [link, setLink] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [fresh, setFresh] = useState(null); // { linkId, url } hanya sesudah dibuat di dialog ini
+  const [fresh, setFresh] = useState(null); // { linkId, url } tautan yang bisa dikirim
 
   const open = Boolean(patient);
   const missingBirth = patient && !patient.birth_date;
@@ -38,13 +38,16 @@ const SendClinaraDialog = ({ patient, onClose }) => {
     if (!patient) return;
     setLoading(true);
     try {
-      setLink(await getLiveLink(patient.id));
+      const live = await getLiveLink(patient.id);
+      setLink(live);
+      const token = live && live.status === 'active' ? await getLinkToken(live.id) : null;
+      setFresh(token ? { linkId: live.id, url: buildPortalUrl(token, clinicDomain) } : null);
     } catch (e) {
       toast({ variant: 'destructive', title: 'Gagal memuat status tautan', description: e.message });
     } finally {
       setLoading(false);
     }
-  }, [patient, toast]);
+  }, [patient, toast, clinicDomain]);
 
   useEffect(() => {
     if (!patient || !userDetails?.clinic_id) return;
@@ -72,7 +75,6 @@ const SendClinaraDialog = ({ patient, onClose }) => {
 
   const handleCreate = () => run(async () => {
     const res = await createLink(patient.id);
-    setFresh({ linkId: res.link_id, url: buildPortalUrl(res.token, clinicDomain) });
     await load();
   }, 'Tautan baru dibuat');
 
@@ -146,10 +148,12 @@ const SendClinaraDialog = ({ patient, onClose }) => {
                   <p className="text-xs text-slate-500">Nomor HP pasien kosong. WhatsApp tetap terbuka dan Anda memilih kontaknya sendiri.</p>
                 )}
                 <p className="text-xs text-slate-500">
-                  Tautan ini hanya bisa dilihat sekarang. Jika dialog ditutup, mengirim ulang berarti membuat tautan baru dan tautan lama berhenti berlaku.
+                  Tautan ini bisa dikirim ulang kapan saja selama masih aktif.
                 </p>
               </div>
-            ) : (
+            ) : null}
+
+            {(!fresh || link?.status !== 'active') && (
               <div className="space-y-2">
                 <Button className="w-full" onClick={handleCreate} disabled={busy}>
                   {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Link2 className="h-4 w-4 mr-2" />}
