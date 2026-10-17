@@ -1,5 +1,5 @@
 import { TABLE_FIT } from '@/lib/tableStyles';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
@@ -82,9 +82,26 @@ useEffect(() => {
     const { search, status, completeness } = filters;
 
     // Handlers
-    const handleSearchChange = (e) => {
-        onFilterChange({ ...filters, search: e.target.value });
-    };
+    // Input stays instant; the query fires 300ms after the last keystroke.
+    const [searchInput, setSearchInput] = useState(search);
+    const filtersRef = useRef(filters);
+    filtersRef.current = filters;
+
+    useEffect(() => {
+        if (searchInput === filtersRef.current.search) return;
+        const t = setTimeout(() => {
+            onFilterChange({ ...filtersRef.current, search: searchInput });
+        }, 300);
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchInput]);
+
+    const handleSearchChange = (e) => setSearchInput(e.target.value);
+
+    // Full-table spinner only when there is nothing to show yet; otherwise keep
+    // the previous rows visible (dimmed) while the new result loads.
+    const showSpinner = loading && patients.length === 0;
+    const isRefreshing = loading && patients.length > 0;
 
     const handleStatusFilter = (val) => {
         onFilterChange({ ...filters, status: val });
@@ -118,7 +135,7 @@ const formatTanggal = (date) => {
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                         <Input 
                             placeholder="Cari nama, RM, atau No HP..." 
-                            value={search}
+                            value={searchInput}
                             onChange={handleSearchChange}
                             className="pl-9 h-9 text-xs"
                         />
@@ -147,8 +164,8 @@ const formatTanggal = (date) => {
             </div>
 
             {/* Mobile / PWA: kartu, tanpa geser horizontal */}
-            <div className="sm:hidden divide-y divide-slate-100">
-                    {loading ? (
+            <div className={cn("sm:hidden divide-y divide-slate-100 transition-opacity", isRefreshing && "opacity-60")}>
+                    {showSpinner ? (
                         <div className="flex flex-col items-center justify-center py-16">
                             <Loader2 className="h-8 w-8 animate-spin text-indigo-500 mb-3" />
                             <p className="text-xs text-slate-500">Memuat data pasien...</p>
@@ -216,7 +233,7 @@ const formatTanggal = (date) => {
             </div>
 
             {/* Desktop: tabel */}
-            <div className="hidden sm:block relative overflow-x-auto">
+            <div className={cn("hidden sm:block relative overflow-x-auto transition-opacity", isRefreshing && "opacity-60")}>
                 <Table className={TABLE_FIT}>
                     {/* Kolom Aksi lebar tetap (bukan persen) agar tombol tidak terpotong; Nama Pasien menyerap sisa lebar */}
                     <colgroup>
@@ -240,7 +257,7 @@ const formatTanggal = (date) => {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {loading ? (
+                        {showSpinner ? (
                             <TableRow>
                                 <TableCell colSpan={10} className="h-48 text-center">
                                     <div className="flex flex-col items-center justify-center text-slate-500">
