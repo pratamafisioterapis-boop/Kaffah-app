@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { nextExerciseCode, summarizePrefixes, PREFIX_PATTERN } from '@/lib/exerciseCodes';
+import { nextExerciseCode, summarizePrefixes, generatePrefix } from '@/lib/exerciseCodes';
 import { Panel, Pill, EmptyState } from '@/components/superadmin/ui';
 import { confirmAction } from '@/lib/confirmAction';
 
@@ -31,7 +31,7 @@ const readDuration = (file) =>
     v.src = url;
   });
 
-const EMPTY_FORM = { mode: 'existing', prefix: '', newPrefix: '', name: '', grp: '', howTo: '', dose: '', progression: '', caution: '' };
+const EMPTY_FORM = { mode: 'existing', prefix: '', name: '', grp: '', howTo: '', dose: '', progression: '', caution: '' };
 const nz = (v) => (v && v.trim() ? v.trim() : null);
 
 const ExerciseVideoManager = () => {
@@ -149,10 +149,12 @@ const ExerciseVideoManager = () => {
 
   const prefixes = useMemo(() => summarizePrefixes(exercises), [exercises]);
   const groups = useMemo(() => [...new Set(exercises.map((e) => e.grp).filter(Boolean))].sort((a, b) => a.localeCompare(b)), [exercises]);
-  const chosenPrefix = form.mode === 'new' ? form.newPrefix.trim().toUpperCase() : form.prefix;
-  const prefixValid = form.mode === 'new'
-    ? PREFIX_PATTERN.test(chosenPrefix) && !prefixes.some((p) => p.prefix === chosenPrefix)
-    : Boolean(form.prefix);
+  // Awalan baru dibuat otomatis dari nama latihan (tidak diketik); awalan yang ada dipilih dari daftar.
+  const nameReady = form.name.trim().length >= 3;
+  const chosenPrefix = form.mode === 'new'
+    ? (nameReady ? generatePrefix(form.name, new Set(prefixes.map((p) => p.prefix))) || '' : '')
+    : form.prefix;
+  const prefixValid = Boolean(chosenPrefix);
   const codePreview = prefixValid ? nextExerciseCode(chosenPrefix, exercises.map((e) => e.id)) : null;
   const setField = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -160,7 +162,7 @@ const ExerciseVideoManager = () => {
     e.preventDefault();
     const name = form.name.trim();
     const grp = form.grp.trim();
-    if (!prefixValid) { toast({ variant: 'destructive', title: 'Awalan kode belum valid', description: 'Pilih awalan yang ada, atau isi awalan baru 2–3 huruf besar yang belum dipakai.' }); return; }
+    if (!prefixValid) { toast({ variant: 'destructive', title: 'Awalan kode belum ada', description: 'Pilih awalan dari daftar, atau pilih awalan baru (otomatis) dan isi nama latihan dulu.' }); return; }
     if (name.length < 3 || !grp) { toast({ variant: 'destructive', title: 'Nama dan kelompok latihan wajib diisi' }); return; }
     setCreating(true);
     try {
@@ -284,20 +286,17 @@ const ExerciseVideoManager = () => {
                 value={form.mode === 'new' ? '__baru' : form.prefix}
                 onChange={(e) => setForm((f) => (e.target.value === '__baru' ? { ...f, mode: 'new', prefix: '' } : { ...f, mode: 'existing', prefix: e.target.value }))}>
                 <option value="">Pilih awalan…</option>
+                <option value="__baru">Awalan baru (dibuat otomatis)</option>
                 {prefixes.map((p) => <option key={p.prefix} value={p.prefix}>{p.prefix} · {p.samples.join(', ')} ({p.count} latihan)</option>)}
-                <option value="__baru">Awalan baru…</option>
               </select>
               {form.mode === 'new' && (
-                <div className="mt-2">
-                  <Input value={form.newPrefix} onChange={(e) => setForm((f) => ({ ...f, newPrefix: e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3) }))}
-                    placeholder="2–3 huruf besar, mis. TH" aria-label="Awalan baru" maxLength={3} />
-                  {form.newPrefix && !prefixValid && (
-                    <p className="mt-1 text-xs text-red-600">{prefixes.some((p) => p.prefix === form.newPrefix.toUpperCase()) ? 'Awalan ini sudah ada. Pilih dari daftar.' : 'Isi 2–3 huruf besar.'}</p>
-                  )}
-                </div>
+                <p className="mt-2 text-xs text-slate-500">
+                  Awalan dibuat otomatis dari nama latihan (mis. Bridging → BR) dan dijamin belum dipakai. Gunakan ini hanya jika latihan tidak cocok dengan awalan yang ada.
+                </p>
               )}
               <p className="mt-2 text-sm text-slate-600">
                 Kode yang akan dibuat: <b className="font-mono text-slate-900">{codePreview || '—'}</b>
+                {form.mode === 'new' && !nameReady && <span className="ml-2 text-xs text-slate-400">(isi nama latihan dulu)</span>}
               </p>
             </div>
             <div>

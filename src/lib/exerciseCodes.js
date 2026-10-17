@@ -28,3 +28,22 @@ export const summarizePrefixes = (exercises) => {
   });
   return [...map.values()].sort((a, b) => a.prefix.localeCompare(b.prefix));
 };
+
+// Awalan baru dibuat otomatis dari nama latihan, tanpa diketik. Urutan percobaan, memakai yang pertama
+// belum dipakai: dua huruf pertama kata pertama (Bridging -> BR), inisial dua kata pertama
+// (Bridging dua kaki -> BD), huruf pertama nama + huruf-huruf berikutnya (BI, BD, BG...), lalu
+// AA, AB, ... sampai ketemu yang bebas. Hasilnya selalu 2 huruf besar dan tidak bentrok dengan
+// awalan yang sudah ada, jadi kode lama tidak terpengaruh.
+export const generatePrefix = (name, usedPrefixes) => {
+  const used = usedPrefixes instanceof Set ? usedPrefixes : new Set(usedPrefixes);
+  const clean = String(name || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+  const words = clean.split(/[^A-Z]+/).filter(Boolean);
+  const letters = words.join('');
+  const candidates = [];
+  if (words[0]?.length >= 2) candidates.push(words[0].slice(0, 2));
+  if (words.length >= 2) candidates.push(words[0][0] + words[1][0]);
+  for (let i = 1; i < letters.length; i += 1) candidates.push(letters[0] + letters[i]);
+  const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for (const a of A) for (const b of A) candidates.push(a + b);
+  return candidates.find((c) => c.length === 2 && !used.has(c)) || null;
+};
