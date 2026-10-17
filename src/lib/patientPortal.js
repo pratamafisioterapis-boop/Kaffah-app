@@ -111,6 +111,19 @@ export const portalApi = {
   listFeedback: (session) => call('portal_list_feedback', { p_session: session }),
   listMessages: (session) => call('portal_list_messages', { p_session: session }),
   sendMessage: (session, body) => call('portal_send_message', { p_session: session, p_body: body }),
+  // Booking jadwal: terapis terakhir lebih dulu, slot kosong 14 hari, lalu pesan slot.
+  bookingOptions: (session) => call('portal_get_booking_options', { p_session: session }),
+  bookingSlots: (session, days = 14) => call('portal_get_booking_slots', { p_session: session, p_days: days }),
+  book: async (session, therapistId, date, time, note) => {
+    const res = await call('portal_book_appointment', {
+      p_session: session, p_therapist_id: therapistId, p_date: date, p_time: time, p_note: note || null,
+    });
+    // Notifikasi WhatsApp ke klinik, sama seperti booking online lainnya. Gagal kirim tidak membatalkan booking.
+    supabase.functions
+      .invoke('process-booking-whatsapp-now', { body: { appointment_id: res.appointment_id, is_homecare: false, disable_whatsapp: false } })
+      .catch(() => {});
+    return res;
+  },
 };
 
 // Satu warna brand (#rrggbb) -> hue 0..360 untuk seluruh palet portal.

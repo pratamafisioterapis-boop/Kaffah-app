@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import { Home, TrendingUp, PlayCircle, ClipboardList, MessageCircle, Send, Check, Play } from 'lucide-react';
+import { Home, TrendingUp, PlayCircle, ClipboardList, MessageCircle, Send, Check, Play, CalendarPlus, CalendarCheck, ChevronLeft, Activity, User } from 'lucide-react';
 import { portalApi, loadSession, saveSession, clearSession, hexToHue } from '@/lib/patientPortal';
 import './portal.css';
 
@@ -25,7 +25,12 @@ const greeting = () => {
   const h = new Date().getHours();
   return h < 11 ? 'Selamat pagi' : h < 15 ? 'Selamat siang' : h < 18 ? 'Selamat sore' : 'Selamat malam';
 };
-const TOP_PAD = 'calc(env(safe-area-inset-top, 0px) + 34px)';
+const TOP_PAD = 'calc(env(safe-area-inset-top, 0px) + 28px)';
+const WEEKDAYS = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+// Nama terapis tanpa gelar ("Adi Pratama,S.Fis.,Ftr" -> "Adi Pratama").
+const shortName = (n) => String(n || '').split(',')[0].trim();
+const dotTime = (t) => String(t || '').replace(':', '.');
+const dayOf = (iso) => new Date(`${iso}T00:00:00`);
 // Langkah latihan: per baris, atau per kalimat bila teksnya beberapa kalimat. Satu kalimat tampil sebagai paragraf.
 const toSteps = (t) => {
   const lines = String(t || '').split(/\n+/).map((x) => x.trim()).filter(Boolean);
@@ -75,9 +80,9 @@ const Gate = ({ branding, onVerify, notice }) => {
       <div className="logo"><Mark clinic={branding} />{branding.clinic_name}</div>
       <h1>Pemulihan Anda ada di sini.</h1>
       <p>{branding.clinic_name} mengirim tautan ini untuk Anda. Masukkan tanggal lahir agar data Anda tetap aman.</p>
-      {notice && <p style={{ color: 'var(--hero-ink)', fontWeight: 600 }}>{notice}</p>}
+      {notice && <p className="notice">{notice}</p>}
       <form className="panel" onSubmit={submit} autoComplete="off">
-        <label htmlFor="pp-dd" style={{ fontWeight: 600, fontSize: 13 }}>Tanggal lahir</label>
+        <label htmlFor="pp-dd" className="gate-label">Tanggal lahir</label>
         <div className="dob">
           <input id="pp-dd" ref={refs[0]} inputMode="numeric" placeholder="HH" aria-label="Hari" value={v.d} onChange={set('d', 2, 0)} />
           <input ref={refs[1]} inputMode="numeric" placeholder="BB" aria-label="Bulan" value={v.m} onChange={set('m', 2, 1)} />
@@ -85,7 +90,7 @@ const Gate = ({ branding, onVerify, notice }) => {
         </div>
         <p className="err" role="alert">{err}</p>
         <button className="btn" type="submit" disabled={busy}>{busy ? 'Memeriksa...' : 'Masuk'}</button>
-        <p className="powered" style={{ marginTop: 12 }}>Didukung Clinara</p>
+        <p className="powered" style={{ marginTop: 14 }}>Didukung Clinara</p>
       </form>
     </div>
   );
@@ -94,27 +99,27 @@ const Gate = ({ branding, onVerify, notice }) => {
 // ---------------------------------------------------------------- Chart
 const VasChart = ({ entries }) => {
   const pts = entries.filter((e) => e.vas != null);
-  if (pts.length < 2) return <p style={{ color: 'var(--muted)', margin: '12px 0 0' }}>Grafik muncul setelah dua sesi tercatat.</p>;
-  const W = 300, H = 150;
-  const x = (i) => 26 + (i * (W - 46)) / (pts.length - 1);
-  const y = (n) => 12 + ((10 - n) * (H - 40)) / 10;
+  if (pts.length < 2) return <p className="muted" style={{ margin: '14px 0 0' }}>Grafik muncul setelah dua sesi tercatat.</p>;
+  const W = 320, H = 170;
+  const x = (i) => 28 + (i * (W - 50)) / (pts.length - 1);
+  const y = (n) => 14 + ((10 - n) * (H - 46)) / 10;
   const xy = pts.map((p, i) => [x(i), y(p.vas)]);
   const path = xy.map((p, i) => `${i ? 'L' : 'M'}${p[0]} ${p[1]}`).join(' ');
   const last = xy[xy.length - 1];
   return (
     <svg className="chart" viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={`Nyeri dari ${pts[0].vas} menjadi ${pts[pts.length - 1].vas} dari 10`}>
       {[0, 5, 10].map((n) => (
-        <g key={n}><line x1="22" x2={W - 14} y1={y(n)} y2={y(n)} stroke="var(--line)" strokeDasharray="3 4" /><text x="0" y={y(n) + 3}>{n}</text></g>
+        <g key={n}><line x1="24" x2={W - 14} y1={y(n)} y2={y(n)} stroke="var(--line)" strokeDasharray="3 4" /><text x="0" y={y(n) + 4}>{n}</text></g>
       ))}
       <path d={`${path} L${last[0]} ${y(0)} L${xy[0][0]} ${y(0)}Z`} fill="var(--brand-soft)" opacity=".8" />
-      <path d={path} fill="none" stroke="var(--brand)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+      <path d={path} fill="none" stroke="var(--brand)" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
       {xy.map((p, i) => (
         <g key={i}>
-          <circle cx={p[0]} cy={p[1]} r={i === xy.length - 1 ? 6 : 3.5} fill={i === xy.length - 1 ? 'var(--warm)' : 'var(--surface)'} stroke="var(--brand)" strokeWidth="2" />
-          {pts.length <= 8 && <text x={p[0]} y={H - 6} textAnchor="middle">{fmtDate(pts[i].date)}</text>}
+          <circle cx={p[0]} cy={p[1]} r={i === xy.length - 1 ? 6.5 : 4} fill={i === xy.length - 1 ? 'var(--warm)' : 'var(--surface)'} stroke="var(--brand)" strokeWidth="2" />
+          {pts.length <= 7 && <text x={p[0]} y={H - 6} textAnchor="middle">{fmtDate(pts[i].date)}</text>}
         </g>
       ))}
-      <text x={last[0]} y={last[1] - 11} textAnchor="middle" style={{ fill: 'var(--ink)', fontWeight: 700, fontSize: 11 }}>{pts[pts.length - 1].vas}</text>
+      <text x={last[0]} y={last[1] - 13} textAnchor="middle" style={{ fill: 'var(--ink)', fontWeight: 700, fontSize: 13 }}>{pts[pts.length - 1].vas}</text>
     </svg>
   );
 };
@@ -124,22 +129,21 @@ const VasChart = ({ entries }) => {
 const GoalsCard = ({ goals, compact = false }) => {
   if (!goals?.length) return null;
   return (
-    <div className="card">
-      <div className="eyebrow">Target terapi</div>
-      <h3 style={{ marginBottom: 4 }}>Goal treatment Anda</h3>
+    <section className="card">
+      <h3>Target terapi Anda</h3>
       {goals.map((g) => {
         const hist = g.history || [];
         const prev = hist.length > 1 ? hist[hist.length - 2].progress : null;
         const gain = prev != null && g.progress > prev ? g.progress - prev : 0;
         return (
-          <div key={g.id} style={{ marginTop: 14 }}>
-            <div className="row" style={{ gap: 8, alignItems: 'baseline' }}>
-              <b className="sp" style={{ fontSize: 14 }}>{g.text}</b>
-              {g.progress >= 100 ? <span className="pill ok">Tercapai</span> : <span className="num" style={{ fontWeight: 700 }}>{g.progress}%</span>}
+          <div key={g.id} className="goal">
+            <div className="row" style={{ alignItems: 'flex-start' }}>
+              <b className="sp goal-text">{g.text}</b>
+              {g.progress >= 100 ? <span className="pill ok">Tercapai</span> : <span className="num goal-pct">{g.progress}%</span>}
             </div>
             <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={g.progress} aria-label={g.text}><i style={{ width: `${g.progress}%` }} /></div>
             {!compact && (gain > 0 || hist.length > 1) && (
-              <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>
+              <div className="muted small">
                 {gain > 0 ? `Naik ${gain} poin sejak sesi sebelumnya. ` : ''}
                 {hist.length > 1 ? `Riwayat: ${hist.map((h) => `${h.progress}%`).join(' → ')}` : ''}
               </div>
@@ -147,7 +151,7 @@ const GoalsCard = ({ goals, compact = false }) => {
           </div>
         );
       })}
-    </div>
+    </section>
   );
 };
 
@@ -157,75 +161,98 @@ const HomeTab = ({ home, goals, go, onLogout }) => {
   const left = home.program_total - home.program_done_today;
   return (
     <>
-      <div className="top">
-        <div className="row">
-          <div className="avatar">{initials(home.first_name)}</div>
-          <div className="sp"><b style={{ fontSize: 14 }}>{home.clinic?.name}</b>
-            <div style={{ fontSize: 12, color: 'var(--hero-mute)' }}>{fmtDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
-          {home.sessions_done > 0 ? <span className="pill warm num">Sesi ke-{home.sessions_done}</span> : null}
+      <header className="top">
+        <div className="top-in">
+          <div className="row">
+            <div className="avatar">{initials(home.first_name)}</div>
+            <div className="sp"><b className="clinic-name">{home.clinic?.name}</b>
+              <div className="top-date">{fmtDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
+            {home.sessions_done > 0 ? <span className="pill warm num">Sesi ke-{home.sessions_done}</span> : null}
+          </div>
+          <h1>{greeting()}, {home.first_name}</h1>
+          {(home.complaint || home.therapist) && (
+            <div className="hero-meta">
+              {home.complaint && <span className="hero-complaint">{home.complaint}</span>}
+              {home.therapist && <span className="hero-therapist"><User size={16} strokeWidth={2} aria-hidden="true" />{shortName(home.therapist)}</span>}
+            </div>
+          )}
         </div>
-        <h1>{greeting()}, {home.first_name}</h1>
-        {home.complaint && <p>{home.complaint}</p>}
-      </div>
+      </header>
       <div className="pp-pad">
-        {na && (
-          <div className="card row" style={{ gap: 14 }}>
-            <div className="date-box"><small>{MONTHS[new Date(na.appointment_date).getMonth()]}</small><b className="num">{new Date(na.appointment_date).getDate()}</b></div>
-            <div className="sp">
-              <div className="eyebrow">Sesi berikutnya</div>
-              <h3>{fmtDate(na.appointment_date, { weekday: 'long' })}, {fmtTime(na.appointment_date)} WIB</h3>
-              {na.therapist && <div style={{ fontSize: 13, color: 'var(--muted)' }}>{na.therapist}</div>}
-            </div>
-          </div>
-        )}
-        {home.program_total > 0 && (
-          <div className="card">
-            <div className="row">
-              <div className="pp-ring" style={{ '--p': pct }}><span className="num">{home.program_done_today}/{home.program_total}</span></div>
-              <div className="sp">
-                <h3>Program rumah hari ini</h3>
-                <div style={{ fontSize: 13, color: 'var(--muted)' }}>{left === 0 ? 'Semua selesai. Kerja bagus.' : `Sisa ${left} latihan.`}</div>
+        <div className="pair eq">
+          {na ? (
+            <section className="card">
+              <div className="row" style={{ gap: 16 }}>
+                <div className="date-box"><small>{MONTHS[new Date(na.appointment_date).getMonth()]}</small><b className="num">{new Date(na.appointment_date).getDate()}</b></div>
+                <div className="sp">
+                  <h3>Sesi berikutnya</h3>
+                  <div className="next-when">{fmtDate(na.appointment_date, { weekday: 'long' })}, {fmtTime(na.appointment_date)}</div>
+                  {na.therapist && <div className="muted">{shortName(na.therapist)}</div>}
+                </div>
               </div>
-            </div>
-            <div className="week">
-              {(home.week || []).map((d, i) => (
-                <div key={d.date}>{DAYS[i]}<i className={`${d.done ? 'done' : ''} ${d.today ? 'today' : ''}`}><Check size={14} strokeWidth={3} /></i></div>
-              ))}
-            </div>
-            <button className="btn" onClick={() => go('lat')}>Lanjut latihan</button>
-          </div>
-        )}
+              <button className="btn ghost" onClick={() => go('book')}><CalendarPlus size={20} aria-hidden="true" />Booking jadwal lain</button>
+            </section>
+          ) : (
+            <section className="card">
+              <h3>Belum ada jadwal sesi</h3>
+              <p className="muted" style={{ margin: '6px 0 16px' }}>Pilih hari dan jam terapi berikutnya. Terapis yang terakhir menangani Anda ditampilkan lebih dulu.</p>
+              <button className="btn" onClick={() => go('book')}><CalendarPlus size={20} aria-hidden="true" />Booking jadwal</button>
+            </section>
+          )}
+          {home.program_total > 0 && (
+            <section className="card">
+              <div className="row" style={{ alignItems: 'baseline' }}>
+                <h3 className="sp">Program rumah hari ini</h3>
+                <span className="num prog-count"><b>{home.program_done_today}</b>/{home.program_total}</span>
+              </div>
+              <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Latihan selesai hari ini"><i style={{ width: `${pct}%` }} /></div>
+              <div className="muted">{left === 0 ? 'Semua selesai. Kerja bagus.' : `Sisa ${left} latihan.`}</div>
+              <div className="week">
+                {(home.week || []).map((d, i) => (
+                  <div key={d.date}>{DAYS[i]}<i className={`${d.done ? 'done' : ''} ${d.today ? 'today' : ''}`}><Check size={16} strokeWidth={3} /></i></div>
+                ))}
+              </div>
+              <button className="btn" onClick={() => go('lat')}>{left === 0 ? 'Lihat latihan' : 'Lanjut latihan'}</button>
+            </section>
+          )}
+        </div>
         <div className="stat3">
-          <div><b className="num" style={{ color: 'var(--ok)' }}>{home.vas_latest != null ? `${home.vas_latest}/10` : '–'}</b><span>{home.vas_latest != null ? `Nyeri${home.vas_first != null && home.vas_first !== home.vas_latest ? `, dari ${home.vas_first} di awal` : ''}` : 'Nyeri belum tercatat'}</span></div>
+          <div><b className="num" style={{ color: 'var(--ok)' }}>{home.vas_latest != null ? `${home.vas_latest}/10` : '–'}</b><span>{home.vas_latest != null ? `Nyeri${home.vas_first != null && home.vas_first !== home.vas_latest ? `, awal ${home.vas_first}` : ''}` : 'Nyeri belum tercatat'}</span></div>
           <div><b className="num">{home.streak_days} hari</b><span>Latihan beruntun</span></div>
           <div><b className="num">{home.sessions_done}</b><span>Sesi terapi</span></div>
         </div>
-        <GoalsCard goals={goals} compact />
-        {home.latest_note && (
-          <div className="quote"><div className="eyebrow">Catatan dari terapis</div><p>{home.latest_note}</p></div>
-        )}
+        <div className="pair">
+          <GoalsCard goals={goals} compact />
+          {home.latest_note && (
+            <section className="quote"><h3>Catatan dari terapis</h3><p>{home.latest_note}</p></section>
+          )}
+        </div>
         <div className="powered">Didukung Clinara · {home.clinic?.name}</div>
-        <button className="btn ghost" onClick={onLogout}>Keluar dari perangkat ini</button>
+        <button className="btn ghost logout" onClick={onLogout}>Keluar dari perangkat ini</button>
       </div>
     </>
   );
 };
 
 const GoalsProgress = ({ goals }) => (
-  <div className="pp-pad span2" style={{ padding: 0 }}>
+  <>
     {goals.map((g) => {
       const start = g.history?.length ? g.history[0].progress : 0;
       return (
-        <div className="card" key={g.id}>
-          <div className="row"><b className="sp">{g.text}</b><span className="pill ok num">{g.progress >= 100 ? 'Tercapai' : `${g.progress}% ke target`}</span></div>
+        <section className="card" key={g.id}>
+          <div className="row" style={{ alignItems: 'flex-start' }}><b className="sp goal-text">{g.text}</b><span className="pill ok num">{g.progress >= 100 ? 'Tercapai' : `${g.progress}% ke target`}</span></div>
           <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={g.progress} aria-label={g.text}><i style={{ width: `${g.progress}%` }} /></div>
-          <div className="row num" style={{ fontSize: 12, color: 'var(--muted)', justifyContent: 'space-between' }}>
+          <div className="row num muted small" style={{ justifyContent: 'space-between' }}>
             <span>Awal {start}%</span><b style={{ color: 'var(--ink)' }}>Kini {g.progress}%</b><span>Target 100%</span>
           </div>
-        </div>
+        </section>
       );
     })}
-  </div>
+  </>
+);
+
+const PageHead = ({ title, sub }) => (
+  <div className="page-head"><h2>{title}</h2>{sub && <p className="muted">{sub}</p>}</div>
 );
 
 const ProgressTab = ({ data, goals, complaint }) => {
@@ -233,99 +260,118 @@ const ProgressTab = ({ data, goals, complaint }) => {
   const entries = data.entries || [];
   const vasPts = entries.filter((e) => e.vas != null);
   const first = vasPts[0], last = vasPts[vasPts.length - 1];
+  const since = entries.length ? `sejak ${fmtDate(entries[0].date, { day: 'numeric', month: 'long' })}` : '';
   return (
     <div className="pp-pad" style={{ paddingTop: TOP_PAD }}>
-      <div className="span2"><div className="eyebrow">Perkembangan Anda</div>
-        <h2>{entries.length ? `${complaint || 'Riwayat terapi'}, sejak ${fmtDate(entries[0].date, { day: 'numeric', month: 'long' })}` : (complaint || 'Riwayat terapi')}</h2></div>
+      <PageHead title="Perkembangan Anda" sub={[complaint, since].filter(Boolean).join(', ')} />
       {goals?.length > 0 && (
         <div className="seg" role="tablist">
           <button role="tab" aria-selected={view === 'nyeri'} onClick={() => setView('nyeri')}>Nyeri</button>
           <button role="tab" aria-selected={view === 'goal'} onClick={() => setView('goal')}>Target terapi</button>
         </div>
       )}
-      {view === 'goal' && goals?.length > 0 ? <GoalsProgress goals={goals} /> : <>
-      <div className="card">
-        {vasPts.length ? (
-          <div className="row">
-            <div className="sp"><div className="eyebrow">Skala nyeri (0–10)</div>
-              <div className="row" style={{ gap: 8, alignItems: 'baseline' }}>
-                <span className="num" style={{ fontFamily: 'var(--display)', fontSize: 34, fontWeight: 700 }}>{last.vas}</span>
-                <span style={{ color: 'var(--muted)' }}>dari 10</span>
-              </div></div>
-            {vasPts.length > 1 && first.vas > last.vas && <span className="pill ok">Turun {first.vas - last.vas} poin</span>}
-          </div>
-        ) : <p style={{ margin: 0, color: 'var(--muted)' }}>Nilai nyeri akan tampil setelah terapis mencatatnya saat sesi.</p>}
-        <VasChart entries={entries} />
-      </div>
-      </>}
-      <div className="card">
-        <h3 style={{ marginBottom: 14 }}>Riwayat sesi</h3>
-        {entries.length === 0 ? <p style={{ margin: 0, color: 'var(--muted)' }}>Belum ada sesi tercatat.</p> : (
-          <ul className="tl">
-            {[...entries].reverse().slice(0, 20).map((e) => (
-              <li key={e.no}>
-                <div>
-                  <b>{fmtDate(e.date)} · Sesi {e.no}</b>{e.vas != null && <span className="pill num" style={{ marginLeft: 8 }}>Nyeri {e.vas}/10</span>}
-                  {e.update && <p>{e.update.charAt(0).toUpperCase() + e.update.slice(1)}</p>}
+      <div className="pair">
+        <div className="stack">
+          {view === 'goal' && goals?.length > 0 ? <GoalsProgress goals={goals} /> : (
+            <section className="card">
+              {vasPts.length ? (
+                <div className="row">
+                  <div className="sp"><h3>Skala nyeri (0–10)</h3>
+                    <div className="row" style={{ gap: 10, alignItems: 'baseline', marginTop: 6 }}>
+                      <span className="num big-num">{last.vas}</span>
+                      <span className="muted">dari 10</span>
+                    </div></div>
+                  {vasPts.length > 1 && first.vas > last.vas && <span className="pill ok">Turun {first.vas - last.vas} poin</span>}
                 </div>
-              </li>
-            ))}
-          </ul>
-        )}
+              ) : <p className="muted" style={{ margin: 0 }}>Nilai nyeri akan tampil setelah terapis mencatatnya saat sesi.</p>}
+              <VasChart entries={entries} />
+            </section>
+          )}
+        </div>
+        <section className="card">
+          <h3 style={{ marginBottom: 16 }}>Riwayat sesi</h3>
+          {entries.length === 0 ? <p className="muted" style={{ margin: 0 }}>Belum ada sesi tercatat.</p> : (
+            <ul className="tl">
+              {[...entries].reverse().slice(0, 20).map((e) => (
+                <li key={e.no}>
+                  <div>
+                    <b>{fmtDate(e.date)} · Sesi {e.no}</b>{e.vas != null && <span className="pill num" style={{ marginLeft: 10 }}>Nyeri {e.vas}/10</span>}
+                    {e.update && <p>{e.update.charAt(0).toUpperCase() + e.update.slice(1)}</p>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </div>
   );
 };
 
+// Tautan putar bertanda tangan (berlaku 1 jam) untuk semua latihan yang punya video. Dipakai untuk sampul
+// (satu bingkai video) dan pemutar. null = gagal dimuat.
+const useVideoUrls = (session, items) => {
+  const [urls, setUrls] = useState({});
+  const asked = useRef(new Set());
+  const load = useCallback((id, force = false) => {
+    if (!force && asked.current.has(id)) return;
+    asked.current.add(id);
+    portalApi.videoUrl(session, id)
+      .then((u) => setUrls((p) => ({ ...p, [id]: u })))
+      .catch(() => setUrls((p) => ({ ...p, [id]: null })));
+  }, [session]);
+  useEffect(() => { items.filter((i) => i.has_video).forEach((i) => load(i.exercise_id)); }, [items, load]);
+  return [urls, load];
+};
+
+const Thumb = ({ item, url }) => (
+  <div className={`thumb${item.has_video ? '' : ' no-video'}`} aria-hidden="true">
+    {item.has_video && url && <video src={`${url}#t=0.5`} muted playsInline preload="metadata" tabIndex={-1} onLoadedData={(e) => e.currentTarget.classList.add('ready')} />}
+    {item.has_video ? <span className="play"><Play size={18} fill="currentColor" /></span> : <Activity size={30} strokeWidth={1.6} />}
+  </div>
+);
+
 const ProgramTab = ({ session, items, therapist, onToggle }) => {
   const [openId, setOpenId] = useState(null);
-  const [videoUrl, setVideoUrl] = useState(null);
-  const [videoState, setVideoState] = useState('idle'); // idle | loading | ready | error
+  const [urls, loadUrl] = useVideoUrls(session, items);
   const cur = items.find((i) => i.exercise_id === openId);
-
-  useEffect(() => {
-    setVideoUrl(null);
-    if (!cur || !cur.has_video) { setVideoState('idle'); return undefined; }
-    let alive = true;
-    setVideoState('loading');
-    portalApi.videoUrl(session, cur.exercise_id)
-      .then((u) => { if (alive) { setVideoUrl(u); setVideoState('ready'); } })
-      .catch(() => { if (alive) setVideoState('error'); });
-    return () => { alive = false; };
-  }, [session, cur?.exercise_id, cur?.has_video]); // eslint-disable-line react-hooks/exhaustive-deps
+  const curUrl = cur ? urls[cur.exercise_id] : undefined;
+  const doneCount = items.filter((i) => i.done_today).length;
 
   return (
     <div className="pp-pad" style={{ paddingTop: TOP_PAD }}>
-      <div className="span2"><div className="eyebrow">Program rumah</div><h2>Latihan hari ini</h2>
-        <p style={{ margin: '6px 0 0', color: 'var(--muted)', fontSize: 14 }}>{therapist ? `Dari ${therapist}. ` : ''}Berhenti jika nyeri lebih dari 5/10 dan kabari terapis.</p></div>
-      {items.length === 0 && <div className="card" style={{ color: 'var(--muted)' }}>Terapis belum memberi latihan. Latihan akan tampil di sini setelah sesi berikutnya.</div>}
-      {items.map((e) => (
-        <div className="card" key={e.exercise_id}>
-          <button className="vid" onClick={() => setOpenId(e.exercise_id)} aria-label={`Buka ${e.title}`}>
-            <div className="thumb"><div className="play"><Play size={14} fill="currentColor" /></div></div>
-            <div className="sp"><b style={{ fontSize: 15, lineHeight: 1.25, display: 'block' }}>{e.title}</b><span style={{ fontSize: 12, color: 'var(--muted)' }}>{e.dose}</span></div>
-            <span className={`check ${e.done_today ? 'on' : ''}`}><Check size={14} strokeWidth={3} /></span>
-          </button>
-        </div>
-      ))}
+      <PageHead title="Latihan hari ini" sub={`${therapist ? `Dari ${shortName(therapist)}. ` : ''}Berhenti jika nyeri lebih dari 5/10 dan kabari terapis.`} />
+      {items.length > 0 && <p className="muted ex-count num" style={{ margin: 0 }}>{doneCount} dari {items.length} latihan selesai</p>}
+      {items.length === 0 && <div className="card muted">Terapis belum memberi latihan. Latihan akan tampil di sini setelah sesi berikutnya.</div>}
+      <div className="ex-grid">
+        {items.map((e) => (
+          <div className="card ex" key={e.exercise_id}>
+            <button className="vid" onClick={() => setOpenId(e.exercise_id)} aria-label={`Buka ${e.title}`}>
+              <Thumb item={e} url={urls[e.exercise_id]} />
+              <div className="sp"><b className="ex-title">{e.title}</b><span className="muted small">{e.dose}</span></div>
+              <span className={`check ${e.done_today ? 'on' : ''}`} aria-label={e.done_today ? 'Selesai' : 'Belum selesai'}><Check size={18} strokeWidth={3} /></span>
+            </button>
+          </div>
+        ))}
+      </div>
       {cur && (
         <div className="sheet" onClick={(ev) => { if (ev.target === ev.currentTarget) setOpenId(null); }}>
           <div role="dialog" aria-label={cur.title}>
             <div className="grab" />
             {cur.has_video && (
               <div className="player">
-                {videoState === 'ready' && videoUrl ? <video src={videoUrl} controls playsInline preload="metadata" />
-                  : videoState === 'error' ? <span>Video belum bisa diputar. Ikuti langkah di bawah ini.</span>
+                {curUrl ? <video key={curUrl} src={curUrl} controls playsInline preload="metadata" onError={() => loadUrl(cur.exercise_id, true)} />
+                  : curUrl === null ? <span>Video belum bisa diputar. Ikuti langkah di bawah ini.</span>
                   : <span>Memuat video...</span>}
               </div>
             )}
-            <h2 style={{ margin: '14px 0 4px' }}>{cur.title}</h2>
-            {cur.dose && <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 12 }}>{cur.dose}</div>}
-            {cur.how_to && <><div className="eyebrow" style={{ marginBottom: 8 }}>Cara melakukan</div>
-              {toSteps(cur.how_to) ? <ol className="steps">{toSteps(cur.how_to).map((x, i) => <li key={i}>{x}</li>)}</ol> : <p style={{ margin: '0 0 10px', fontSize: 14 }}>{cur.how_to}</p>}</>}
-            {cur.progression && <><div className="eyebrow" style={{ marginBottom: 4 }}>Jika sudah terasa ringan</div><p style={{ margin: '0 0 10px', fontSize: 14 }}>{cur.progression}</p></>}
-            {cur.caution && <><div className="eyebrow" style={{ marginBottom: 4, color: 'var(--warm)' }}>Perhatian</div><p style={{ margin: '0 0 10px', fontSize: 14 }}>{cur.caution}</p></>}
-            <div className="row" style={{ marginTop: 18 }}>
+            <h2 style={{ margin: '16px 0 4px' }}>{cur.title}</h2>
+            {cur.dose && <div className="muted" style={{ marginBottom: 14 }}>{cur.dose}</div>}
+            {cur.how_to && <><h3 className="sheet-h">Cara melakukan</h3>
+              {toSteps(cur.how_to) ? <ol className="steps">{toSteps(cur.how_to).map((x, i) => <li key={i}>{x}</li>)}</ol> : <p className="sheet-p">{cur.how_to}</p>}</>}
+            {cur.progression && <><h3 className="sheet-h">Jika sudah terasa ringan</h3><p className="sheet-p">{cur.progression}</p></>}
+            {cur.caution && <><h3 className="sheet-h" style={{ color: 'var(--warm)' }}>Perhatian</h3><p className="sheet-p">{cur.caution}</p></>}
+            <div className="row" style={{ marginTop: 20 }}>
               <button className="btn ghost" style={{ width: '36%' }} onClick={() => setOpenId(null)}>Tutup</button>
               <button className="btn" onClick={async () => { await onToggle(cur.exercise_id, !cur.done_today); setOpenId(null); }}>{cur.done_today ? 'Batalkan selesai' : 'Tandai selesai'}</button>
             </div>
@@ -350,29 +396,175 @@ const FeedbackTab = ({ history, onSubmit }) => {
   };
   return (
     <div className="pp-pad" style={{ paddingTop: TOP_PAD }}>
-      <div className="span2"><div className="eyebrow">Umpan balik</div><h2>Apa yang Anda rasakan hari ini?</h2>
-        <p style={{ margin: '6px 0 0', color: 'var(--muted)', fontSize: 14 }}>Terapis membaca ini sebelum sesi berikutnya.</p></div>
-      <form className="card" onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div className="field"><label htmlFor="pp-vas">Tingkat nyeri sekarang: <b className="num">{vas}</b>/10</label>
-          <input id="pp-vas" type="range" min="0" max="10" value={vas} onChange={(e) => setVas(+e.target.value)} />
-          <div className="faces"><span>Tidak nyeri</span><span>Sangat nyeri</span></div></div>
-        <div className="field"><label>Keluhan yang muncul</label>
-          <div className="chips">{TAGS.map((t) => (
-            <button type="button" key={t} className="chip" aria-pressed={tags.includes(t)} onClick={() => setTags((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]))}>{t}</button>
-          ))}</div></div>
-        <div className="field"><label htmlFor="pp-msg">Cerita singkat (opsional)</label>
-          <textarea id="pp-msg" maxLength={2000} value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="Misalnya: nyeri muncul setelah jalan kaki 15 menit." /></div>
-        <button className="btn" type="submit" disabled={busy}>{busy ? 'Mengirim...' : 'Kirim ke terapis'}</button>
-      </form>
-      <div className="card"><h3>Riwayat laporan Anda</h3>
-        {history.length === 0 && <p style={{ margin: '8px 0 0', color: 'var(--muted)' }}>Belum ada laporan.</p>}
-        {history.map((f) => (
-          <div className="hist" key={f.at}>
-            <div className="row"><b className="sp">{fmtDate(f.at)}</b><span className="pill num">Nyeri {f.vas}/10</span></div>
-            <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--muted)' }}>{[(f.tags || []).join(', '), f.message].filter(Boolean).join('. ') || 'Tanpa catatan.'}</p>
-          </div>
-        ))}
+      <PageHead title="Apa yang Anda rasakan hari ini?" sub="Terapis membaca ini sebelum sesi berikutnya." />
+      <div className="pair">
+        <form className="card form" onSubmit={submit}>
+          <div className="field"><label htmlFor="pp-vas">Tingkat nyeri sekarang: <b className="num">{vas}</b>/10</label>
+            <input id="pp-vas" type="range" min="0" max="10" value={vas} onChange={(e) => setVas(+e.target.value)} />
+            <div className="faces"><span>Tidak nyeri</span><span>Sangat nyeri</span></div></div>
+          <div className="field"><label>Keluhan yang muncul</label>
+            <div className="chips">{TAGS.map((t) => (
+              <button type="button" key={t} className="chip" aria-pressed={tags.includes(t)} onClick={() => setTags((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]))}>{t}</button>
+            ))}</div></div>
+          <div className="field"><label htmlFor="pp-msg">Cerita singkat (opsional)</label>
+            <textarea id="pp-msg" maxLength={2000} value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="Misalnya: nyeri muncul setelah jalan kaki 15 menit." /></div>
+          <button className="btn" type="submit" disabled={busy}>{busy ? 'Mengirim...' : 'Kirim ke terapis'}</button>
+        </form>
+        <section className="card"><h3>Riwayat laporan Anda</h3>
+          {history.length === 0 && <p className="muted" style={{ margin: '10px 0 0' }}>Belum ada laporan.</p>}
+          {history.map((f) => (
+            <div className="hist" key={f.at}>
+              <div className="row"><b className="sp">{fmtDate(f.at)}</b><span className="pill num">Nyeri {f.vas}/10</span></div>
+              <p className="muted" style={{ margin: '8px 0 0' }}>{[(f.tags || []).join(', '), f.message].filter(Boolean).join('. ') || 'Tanpa catatan.'}</p>
+            </div>
+          ))}
+        </section>
       </div>
+    </div>
+  );
+};
+
+// Booking jadwal terapi. Terapis yang terakhir menangani pasien tampil lebih dulu; bila jadwalnya penuh
+// di tanggal itu, terapis lain yang masih punya slot ditawarkan di bawahnya.
+const BookingTab = ({ session, lastTherapist, onBack, onBooked, onUnauthorized }) => {
+  const [opts, setOpts] = useState(null);
+  const [slots, setSlots] = useState(null);
+  const [loadError, setLoadError] = useState('');
+  const [date, setDate] = useState(null);
+  const [pick, setPick] = useState(null); // { therapist_id, start }
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoadError('');
+    try {
+      const [o, sl] = await Promise.all([portalApi.bookingOptions(session), portalApi.bookingSlots(session, 14)]);
+      setOpts(o); setSlots(sl);
+      const lastId = o.last_therapist_id;
+      const dates = [...new Set(sl.map((x) => x.date))].sort();
+      setDate((cur) => cur || dates.find((d) => sl.some((x) => x.date === d && x.therapist_id === lastId)) || dates[0] || null);
+    } catch (e) {
+      if (e.sessionInvalid) onUnauthorized(); else setLoadError('Jadwal belum bisa dimuat. Periksa koneksi lalu coba lagi.');
+    }
+  }, [session, onUnauthorized]);
+  useEffect(() => { load(); }, [load]);
+
+  if (done) {
+    return (
+      <div className="pp-pad" style={{ paddingTop: TOP_PAD }}>
+        <section className="card done-card">
+          <span className="done-mark"><CalendarCheck size={30} strokeWidth={2} aria-hidden="true" /></span>
+          <h2>Jadwal terbooking</h2>
+          <p className="done-when">{fmtDate(done.appointment_date, { weekday: 'long', day: 'numeric', month: 'long' })}, {fmtTime(done.appointment_date)}</p>
+          <p className="muted">Bersama {shortName(done.therapist)}. Klinik menerima pemberitahuan booking Anda.</p>
+          <button className="btn" onClick={onBooked}>Kembali ke beranda</button>
+        </section>
+      </div>
+    );
+  }
+
+  const head = (
+    <>
+      <button className="back" onClick={onBack}><ChevronLeft size={22} aria-hidden="true" />Kembali</button>
+      <PageHead title="Booking jadwal" sub={lastTherapist ? `Terapis terakhir Anda, ${shortName(lastTherapist)}, ditampilkan lebih dulu.` : 'Pilih hari, terapis, dan jam.'} />
+    </>
+  );
+
+  if (loadError) return (
+    <div className="pp-pad" style={{ paddingTop: TOP_PAD }}>{head}
+      <section className="card"><p style={{ margin: '0 0 14px' }} role="alert">{loadError}</p><button className="btn" onClick={load}>Coba lagi</button></section>
+    </div>
+  );
+  if (!opts || !slots) return <div className="pp-pad" style={{ paddingTop: TOP_PAD }}>{head}<p className="muted">Memuat jadwal...</p></div>;
+
+  const lastId = opts.last_therapist_id;
+  const therapists = opts.therapists || [];
+  const dates = Array.from({ length: 14 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i); return d.toLocaleDateString('sv-SE'); });
+  const countOn = (d) => slots.filter((x) => x.date === d).length;
+  const onDay = slots.filter((x) => x.date === date);
+  const by = (id) => onDay.filter((x) => x.therapist_id === id);
+  const lastT = therapists.find((t) => t.id === lastId);
+  const others = therapists.filter((t) => t.id !== lastId && by(t.id).length > 0);
+  const lastNext = lastT && by(lastId).length === 0 ? dates.find((d) => d > date && slots.some((x) => x.date === d && x.therapist_id === lastId)) : null;
+  const pickedT = pick && therapists.find((t) => t.id === pick.therapist_id);
+
+  const choose = (therapist_id, start) => { setPick({ therapist_id, start }); setError(''); };
+  const confirm = async () => {
+    setBusy(true); setError('');
+    try {
+      setDone(await portalApi.book(session, pick.therapist_id, date, pick.start, note.trim()));
+    } catch (e) {
+      if (e.sessionInvalid) onUnauthorized();
+      else { setError(e.message || 'Booking gagal. Coba lagi.'); setPick(null); load(); }
+    }
+    setBusy(false);
+  };
+
+  const renderSlots = (t) => (
+    <div className="slots">
+      {by(t.id).map((x) => (
+        <button key={x.start} className="slot num" aria-pressed={pick?.therapist_id === t.id && pick.start === x.start} onClick={() => choose(t.id, x.start)}>{dotTime(x.start)}</button>
+      ))}
+    </div>
+  );
+  const renderWho = (t, badge) => (
+    <div className="row who">
+      <span className="avatar sm">{t.avatar_url ? <img src={t.avatar_url} alt="" /> : initials(shortName(t.name))}</span>
+      <div className="sp"><b>{shortName(t.name)}</b>{t.specialization && <div className="muted small">{t.specialization}</div>}
+        {badge && <span className="pill warm">{badge}</span>}</div>
+    </div>
+  );
+
+  return (
+    <div className="pp-pad book" style={{ paddingTop: TOP_PAD }}>
+      {head}
+      <div className="dates" role="tablist" aria-label="Pilih tanggal">
+        {dates.map((d) => {
+          const n = countOn(d); const dt = dayOf(d);
+          return (
+            <button key={d} role="tab" className="date" aria-selected={date === d} disabled={n === 0} onClick={() => { setDate(d); setPick(null); }}>
+              <small>{d === dates[0] ? 'Hari ini' : WEEKDAYS[dt.getDay()]}</small><b className="num">{dt.getDate()}</b><i className={n ? 'has' : ''} aria-hidden="true" />
+            </button>
+          );
+        })}
+      </div>
+      {!date ? (
+        <section className="card"><h3>Belum ada jadwal kosong</h3><p className="muted" style={{ margin: '6px 0 14px' }}>Semua slot dua minggu ke depan terisi. Hubungi klinik lewat Chat agar dicarikan jadwal.</p></section>
+      ) : (
+        <div className="pair">
+          {lastT && (
+            <section className="card">
+              {renderWho(lastT, 'Terakhir menangani Anda')}
+              {by(lastId).length ? renderSlots(lastT) : (
+                <div className="full-note">
+                  <p style={{ margin: 0 }}>Jadwal {shortName(lastT.name)} penuh di tanggal ini.</p>
+                  {lastNext && <button className="btn ghost" onClick={() => { setDate(lastNext); setPick(null); }}>Lihat {fmtDate(lastNext, { weekday: 'long', day: 'numeric', month: 'short' })}</button>}
+                </div>
+              )}
+            </section>
+          )}
+          {others.length > 0 && (
+            <section className="card">
+              <h3>{lastT && by(lastId).length === 0 ? 'Terapis lain yang tersedia' : 'Terapis lain'}</h3>
+              {others.map((t) => (<div key={t.id} className="other">{renderWho(t)}{renderSlots(t)}</div>))}
+            </section>
+          )}
+          {!lastT && others.length === 0 && <section className="card"><p className="muted" style={{ margin: 0 }}>Tidak ada slot di tanggal ini. Pilih tanggal lain.</p></section>}
+        </div>
+      )}
+      {error && <p className="err" role="alert">{error}</p>}
+      {pick && pickedT && (
+        <div className="confirm-bar">
+          <div className="sp">
+            <b>{fmtDate(date, { weekday: 'long', day: 'numeric', month: 'long' })}, {dotTime(pick.start)}</b>
+            <div className="muted small">{shortName(pickedT.name)}</div>
+            <input className="note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder="Catatan untuk terapis (opsional)" aria-label="Catatan untuk terapis" />
+          </div>
+          <button className="btn" onClick={confirm} disabled={busy}>{busy ? 'Memproses...' : 'Konfirmasi'}</button>
+        </div>
+      )}
     </div>
   );
 };
@@ -409,21 +601,21 @@ const ChatTab = ({ session, therapist, clinicName, onUnauthorized }) => {
     <>
       <div className="chat-head">
         <span className="avatar" style={{ background: 'var(--brand)', color: 'var(--brand-ink)' }}>{initials((therapist || clinicName || '').replace(/^Ft\.?\s*/i, ''))}</span>
-        <div className="sp"><b>{therapist || 'Terapis Anda'}</b><div style={{ fontSize: 12, color: 'var(--muted)' }}>{clinicName}. Balasan datang saat terapis sedang bertugas.</div></div>
+        <div className="sp"><b>{therapist ? shortName(therapist) : 'Terapis Anda'}</b><div className="muted small">{clinicName}. Balasan datang saat terapis sedang bertugas.</div></div>
       </div>
       <div className="msgs" ref={box}>
-        {msgs.length === 0 ? <p style={{ color: 'var(--muted)', textAlign: 'center' }}>Belum ada pesan. Tulis pertanyaan Anda di bawah.</p> : <div className="day">Percakapan</div>}
+        {msgs.length === 0 ? <p className="muted" style={{ textAlign: 'center' }}>Belum ada pesan. Tulis pertanyaan Anda di bawah.</p> : <div className="day">Percakapan</div>}
         {msgs.map((m, i) => (
           <div key={i} className={`m ${m.sender === 'patient' ? 'me' : 'them'}`}>{m.body}<small className="num">{fmtTime(m.at)}</small></div>
         ))}
       </div>
-      {error && <p className="err" style={{ padding: '0 18px' }} role="alert">{error}</p>}
+      {error && <p className="err" style={{ padding: '0 20px' }} role="alert">{error}</p>}
       <div className="qs">
         {['Boleh latihan hari ini?', 'Nyeri bertambah', 'Ganti jadwal sesi'].map((q) => <button key={q} type="button" onClick={() => send(null, q)}>{q}</button>)}
       </div>
       <form className="compose" onSubmit={send}>
         <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Tulis pesan" aria-label="Pesan" maxLength={2000} />
-        <button className="send" aria-label="Kirim"><Send size={20} /></button>
+        <button className="send" aria-label="Kirim"><Send size={22} /></button>
       </form>
     </>
   );
@@ -451,6 +643,8 @@ const PatientPortalPage = () => {
   const backToGate = useCallback((msg) => {
     clearSession(token); setSession(null); setNotice(msg || ''); setPhase('gate');
   }, [token]);
+
+  const onUnauthorizedBook = useCallback(() => backToGate('Sesi Anda berakhir.'), [backToGate]);
 
   const refreshHome = useCallback(async (s) => {
     try { setHome(await portalApi.home(s)); return true; }
@@ -531,14 +725,14 @@ const PatientPortalPage = () => {
   const style = { '--h': hue };
   const head = <Helmet><title>{branding?.clinic_name ? `${branding.clinic_name} · Clinara` : 'Clinara'}</title><meta name="robots" content="noindex,nofollow" /></Helmet>;
 
-  if (phase === 'loading') return <div className="pp" style={style}>{head}<div className="center"><p style={{ color: 'var(--muted)' }}>Memuat...</p></div></div>;
+  if (phase === 'loading') return <div className="pp" style={style}>{head}<div className="center"><p className="muted">Memuat...</p></div></div>;
   if (phase === 'blocked') {
     return (
       <div className="pp" style={style}>{head}
-        <div className="center"><div style={{ maxWidth: 340 }}>
+        <div className="center"><div style={{ maxWidth: 380 }}>
           {branding && <div className="row" style={{ justifyContent: 'center', marginBottom: 16 }}><Mark clinic={branding} /><b>{branding.clinic_name}</b></div>}
           <h2 style={{ marginBottom: 8 }}>Tautan tidak bisa dipakai</h2>
-          <p style={{ color: 'var(--muted)', margin: 0 }}>{REASONS[blockedReason] || REASONS.invalid}</p>
+          <p className="muted" style={{ margin: 0 }}>{REASONS[blockedReason] || REASONS.invalid}</p>
         </div></div>
       </div>
     );
@@ -550,15 +744,16 @@ const PatientPortalPage = () => {
       <div className="pp-col">
         <div className={`pp-body${tab === 'chat' ? ' chatting' : ''}`}>
           {tab === 'home' && home && <HomeTab home={home} goals={goals} go={setTab} onLogout={logout} />}
-          {tab === 'prog' && (progress ? <ProgressTab data={progress} goals={goals} complaint={home?.complaint} /> : <div className="pp-pad" style={{ paddingTop: TOP_PAD }}><p style={{ color: 'var(--muted)' }}>Memuat...</p></div>)}
+          {tab === 'prog' && (progress ? <ProgressTab data={progress} goals={goals} complaint={home?.complaint} /> : <div className="pp-pad" style={{ paddingTop: TOP_PAD }}><p className="muted">Memuat...</p></div>)}
           {tab === 'lat' && <ProgramTab session={session} items={program} therapist={home?.therapist} onToggle={toggleExercise} />}
           {tab === 'fb' && <FeedbackTab history={history} onSubmit={submitFeedback} />}
+          {tab === 'book' && <BookingTab session={session} lastTherapist={home?.therapist} onBack={() => setTab('home')} onBooked={() => { refreshHome(session); setTab('home'); }} onUnauthorized={onUnauthorizedBook} />}
           {tab === 'chat' && <ChatTab session={session} therapist={home?.therapist} clinicName={home?.clinic?.name} onUnauthorized={() => backToGate('Sesi Anda berakhir.')} />}
         </div>
         <nav className="nav" role="tablist" aria-label="Menu">
           {TABS.map(([k, label, Icon]) => (
-            <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>
-              <Icon size={22} strokeWidth={1.8} />{label}
+            <button key={k} role="tab" aria-selected={tab === k || (k === 'home' && tab === 'book')} onClick={() => setTab(k)}>
+              <Icon size={24} strokeWidth={1.8} aria-hidden="true" /><span>{label}</span>
               {k === 'chat' && home?.unread_messages > 0 && tab !== 'chat' && <span className="badge">{home.unread_messages}</span>}
             </button>
           ))}
