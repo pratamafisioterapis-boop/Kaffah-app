@@ -85,6 +85,30 @@
       "destination": "/clinara-icon-app.png"
     },
     {
+      "source": "/p/:token",
+      "has": [
+        {
+          "type": "host",
+          "value": "kaffahphysio.id"
+        }
+      ],
+      "destination": "/index-portal.html"
+    },
+    {
+      "source": "/p/:token",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.kaffahphysio.id"
+        }
+      ],
+      "destination": "/index-portal.html"
+    },
+    {
+      "source": "/p/:token",
+      "destination": "/index-portal-clinara.html"
+    },
+    {
       "source": "/((?!assets/).*)",
       "has": [
         {
