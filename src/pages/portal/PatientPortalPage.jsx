@@ -21,6 +21,17 @@ const TAGS = ['Nyeri saat berjalan', 'Kaku pagi hari', 'Bengkak', 'Nyeri naik ta
 const fmtDate = (d, opts = { day: 'numeric', month: 'short' }) =>
   new Date(d).toLocaleDateString('id-ID', opts);
 const fmtTime = (d) => new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace(':', '.');
+const greeting = () => {
+  const h = new Date().getHours();
+  return h < 11 ? 'Selamat pagi' : h < 15 ? 'Selamat siang' : h < 18 ? 'Selamat sore' : 'Selamat malam';
+};
+const TOP_PAD = 'calc(env(safe-area-inset-top, 0px) + 34px)';
+// Langkah latihan: per baris, atau per kalimat bila teksnya beberapa kalimat. Satu kalimat tampil sebagai paragraf.
+const toSteps = (t) => {
+  const lines = String(t || '').split(/\n+/).map((x) => x.trim()).filter(Boolean);
+  const parts = lines.length > 1 ? lines : String(t || '').split(/(?<=[.!?])\s+(?=[A-Z])/).map((x) => x.trim()).filter(Boolean);
+  return parts.length > 1 ? parts.map((x) => x.replace(/^\d+[.)]\s*/, '')) : null;
+};
 const initials = (n) => (n || '?').trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
 const Mark = ({ clinic }) => (
@@ -148,11 +159,12 @@ const HomeTab = ({ home, goals, go, onLogout }) => {
     <>
       <div className="top">
         <div className="row">
-          <Mark clinic={home.clinic} />
-          <b className="sp" style={{ fontSize: 14 }}>{home.clinic?.name}</b>
+          <div className="avatar">{initials(home.first_name)}</div>
+          <div className="sp"><b style={{ fontSize: 14 }}>{home.clinic?.name}</b>
+            <div style={{ fontSize: 12, color: 'var(--hero-mute)' }}>{fmtDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
           {home.sessions_done > 0 ? <span className="pill warm num">Sesi ke-{home.sessions_done}</span> : null}
         </div>
-        <h1>Halo, {home.first_name}</h1>
+        <h1>{greeting()}, {home.first_name}</h1>
         {home.complaint && <p>{home.complaint}</p>}
       </div>
       <div className="pp-pad">
@@ -199,13 +211,39 @@ const HomeTab = ({ home, goals, go, onLogout }) => {
   );
 };
 
-const ProgressTab = ({ data, goals }) => {
+const GoalsProgress = ({ goals }) => (
+  <div className="pp-pad" style={{ padding: 0 }}>
+    {goals.map((g) => {
+      const start = g.history?.length ? g.history[0].progress : 0;
+      return (
+        <div className="card" key={g.id}>
+          <div className="row"><b className="sp">{g.text}</b><span className="pill ok num">{g.progress >= 100 ? 'Tercapai' : `${g.progress}% ke target`}</span></div>
+          <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={g.progress} aria-label={g.text}><i style={{ width: `${g.progress}%` }} /></div>
+          <div className="row num" style={{ fontSize: 12, color: 'var(--muted)', justifyContent: 'space-between' }}>
+            <span>Awal {start}%</span><b style={{ color: 'var(--ink)' }}>Kini {g.progress}%</b><span>Target 100%</span>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+);
+
+const ProgressTab = ({ data, goals, complaint }) => {
+  const [view, setView] = useState('nyeri');
   const entries = data.entries || [];
   const vasPts = entries.filter((e) => e.vas != null);
   const first = vasPts[0], last = vasPts[vasPts.length - 1];
   return (
-    <div className="pp-pad" style={{ paddingTop: 24 }}>
-      <div><div className="eyebrow">Perkembangan Anda</div><h2>Riwayat terapi</h2></div>
+    <div className="pp-pad" style={{ paddingTop: TOP_PAD }}>
+      <div><div className="eyebrow">Perkembangan Anda</div>
+        <h2>{entries.length ? `${complaint || 'Riwayat terapi'}, sejak ${fmtDate(entries[0].date, { day: 'numeric', month: 'long' })}` : (complaint || 'Riwayat terapi')}</h2></div>
+      {goals?.length > 0 && (
+        <div className="seg" role="tablist">
+          <button role="tab" aria-selected={view === 'nyeri'} onClick={() => setView('nyeri')}>Nyeri</button>
+          <button role="tab" aria-selected={view === 'goal'} onClick={() => setView('goal')}>Target terapi</button>
+        </div>
+      )}
+      {view === 'goal' && goals?.length > 0 ? <GoalsProgress goals={goals} /> : <>
       <div className="card">
         {vasPts.length ? (
           <div className="row">
@@ -219,7 +257,7 @@ const ProgressTab = ({ data, goals }) => {
         ) : <p style={{ margin: 0, color: 'var(--muted)' }}>Nilai nyeri akan tampil setelah terapis mencatatnya saat sesi.</p>}
         <VasChart entries={entries} />
       </div>
-      <GoalsCard goals={goals} />
+      </>}
       <div className="card">
         <h3 style={{ marginBottom: 14 }}>Riwayat sesi</h3>
         {entries.length === 0 ? <p style={{ margin: 0, color: 'var(--muted)' }}>Belum ada sesi tercatat.</p> : (
@@ -239,7 +277,7 @@ const ProgressTab = ({ data, goals }) => {
   );
 };
 
-const ProgramTab = ({ session, items, onToggle }) => {
+const ProgramTab = ({ session, items, therapist, onToggle }) => {
   const [openId, setOpenId] = useState(null);
   const [videoUrl, setVideoUrl] = useState(null);
   const [videoState, setVideoState] = useState('idle'); // idle | loading | ready | error
@@ -257,9 +295,9 @@ const ProgramTab = ({ session, items, onToggle }) => {
   }, [session, cur?.exercise_id, cur?.has_video]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="pp-pad" style={{ paddingTop: 24 }}>
-      <div><div className="eyebrow">Program rumah</div><h2>Latihan untuk Anda</h2>
-        <p style={{ margin: '6px 0 0', color: 'var(--muted)', fontSize: 14 }}>Berhenti jika nyeri terasa bertambah berat dan kabari terapis.</p></div>
+    <div className="pp-pad" style={{ paddingTop: TOP_PAD }}>
+      <div><div className="eyebrow">Program rumah</div><h2>Latihan hari ini</h2>
+        <p style={{ margin: '6px 0 0', color: 'var(--muted)', fontSize: 14 }}>{therapist ? `Dari ${therapist}. ` : ''}Berhenti jika nyeri lebih dari 5/10 dan kabari terapis.</p></div>
       {items.length === 0 && <div className="card" style={{ color: 'var(--muted)' }}>Terapis belum memberi latihan. Latihan akan tampil di sini setelah sesi berikutnya.</div>}
       {items.map((e) => (
         <div className="card" key={e.exercise_id}>
@@ -283,7 +321,8 @@ const ProgramTab = ({ session, items, onToggle }) => {
             )}
             <h2 style={{ margin: '14px 0 4px' }}>{cur.title}</h2>
             {cur.dose && <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 12 }}>{cur.dose}</div>}
-            {cur.how_to && <><div className="eyebrow" style={{ marginBottom: 4 }}>Cara melakukan</div><p style={{ margin: '0 0 10px', fontSize: 14 }}>{cur.how_to}</p></>}
+            {cur.how_to && <><div className="eyebrow" style={{ marginBottom: 8 }}>Cara melakukan</div>
+              {toSteps(cur.how_to) ? <ol className="steps">{toSteps(cur.how_to).map((x, i) => <li key={i}>{x}</li>)}</ol> : <p style={{ margin: '0 0 10px', fontSize: 14 }}>{cur.how_to}</p>}</>}
             {cur.progression && <><div className="eyebrow" style={{ marginBottom: 4 }}>Jika sudah terasa ringan</div><p style={{ margin: '0 0 10px', fontSize: 14 }}>{cur.progression}</p></>}
             {cur.caution && <><div className="eyebrow" style={{ marginBottom: 4, color: 'var(--warm)' }}>Perhatian</div><p style={{ margin: '0 0 10px', fontSize: 14 }}>{cur.caution}</p></>}
             <div className="row" style={{ marginTop: 18 }}>
@@ -310,7 +349,7 @@ const FeedbackTab = ({ history, onSubmit }) => {
     if (ok) { setTags([]); setMsg(''); }
   };
   return (
-    <div className="pp-pad" style={{ paddingTop: 24 }}>
+    <div className="pp-pad" style={{ paddingTop: TOP_PAD }}>
       <div><div className="eyebrow">Umpan balik</div><h2>Apa yang Anda rasakan hari ini?</h2>
         <p style={{ margin: '6px 0 0', color: 'var(--muted)', fontSize: 14 }}>Terapis membaca ini sebelum sesi berikutnya.</p></div>
       <form className="card" onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -357,9 +396,9 @@ const ChatTab = ({ session, therapist, clinicName, onUnauthorized }) => {
     lastCount.current = msgs.length;
   }, [msgs]);
 
-  const send = async (e) => {
-    e.preventDefault();
-    const body = text.trim();
+  const send = async (e, quick) => {
+    if (e) e.preventDefault();
+    const body = (quick || text).trim();
     if (!body) return;
     setText(''); setError('');
     try { await portalApi.sendMessage(session, body); await load(); }
@@ -369,16 +408,19 @@ const ChatTab = ({ session, therapist, clinicName, onUnauthorized }) => {
   return (
     <>
       <div className="chat-head">
-        <span className="mark">{initials(therapist || clinicName)}</span>
+        <span className="avatar" style={{ background: 'var(--brand)', color: 'var(--brand-ink)' }}>{initials((therapist || clinicName || '').replace(/^Ft\.?\s*/i, ''))}</span>
         <div className="sp"><b>{therapist || 'Terapis Anda'}</b><div style={{ fontSize: 12, color: 'var(--muted)' }}>{clinicName}. Balasan datang saat terapis sedang bertugas.</div></div>
       </div>
       <div className="msgs" ref={box}>
-        {msgs.length === 0 && <p style={{ color: 'var(--muted)', textAlign: 'center' }}>Belum ada pesan. Tulis pertanyaan Anda di bawah.</p>}
+        {msgs.length === 0 ? <p style={{ color: 'var(--muted)', textAlign: 'center' }}>Belum ada pesan. Tulis pertanyaan Anda di bawah.</p> : <div className="day">Percakapan</div>}
         {msgs.map((m, i) => (
           <div key={i} className={`m ${m.sender === 'patient' ? 'me' : 'them'}`}>{m.body}<small className="num">{fmtTime(m.at)}</small></div>
         ))}
       </div>
       {error && <p className="err" style={{ padding: '0 18px' }} role="alert">{error}</p>}
+      <div className="qs">
+        {['Boleh latihan hari ini?', 'Nyeri bertambah', 'Ganti jadwal sesi'].map((q) => <button key={q} type="button" onClick={() => send(null, q)}>{q}</button>)}
+      </div>
       <form className="compose" onSubmit={send}>
         <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Tulis pesan" aria-label="Pesan" maxLength={2000} />
         <button className="send" aria-label="Kirim"><Send size={20} /></button>
@@ -506,10 +548,10 @@ const PatientPortalPage = () => {
   return (
     <div className="pp" style={style}>{head}
       <div className="pp-col">
-        <div className="pp-body">
+        <div className={`pp-body${tab === 'chat' ? ' chatting' : ''}`}>
           {tab === 'home' && home && <HomeTab home={home} goals={goals} go={setTab} onLogout={logout} />}
-          {tab === 'prog' && (progress ? <ProgressTab data={progress} goals={goals} /> : <div className="pp-pad"><p style={{ color: 'var(--muted)' }}>Memuat...</p></div>)}
-          {tab === 'lat' && <ProgramTab session={session} items={program} onToggle={toggleExercise} />}
+          {tab === 'prog' && (progress ? <ProgressTab data={progress} goals={goals} complaint={home?.complaint} /> : <div className="pp-pad" style={{ paddingTop: TOP_PAD }}><p style={{ color: 'var(--muted)' }}>Memuat...</p></div>)}
+          {tab === 'lat' && <ProgramTab session={session} items={program} therapist={home?.therapist} onToggle={toggleExercise} />}
           {tab === 'fb' && <FeedbackTab history={history} onSubmit={submitFeedback} />}
           {tab === 'chat' && <ChatTab session={session} therapist={home?.therapist} clinicName={home?.clinic?.name} onUnauthorized={() => backToGate('Sesi Anda berakhir.')} />}
         </div>
