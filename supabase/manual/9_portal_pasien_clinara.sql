@@ -1,4 +1,11 @@
--- USULAN, BELUM DITERAPKAN. Fondasi portal pasien Clinara.
+-- SUDAH DITERAPKAN ke produksi (17 Okt 2026) lewat apply_migration per tahap, nama
+-- migrasi portal_pasien_1 ... portal_pasien_8. Fitur nonaktif di semua klinik sampai Super
+-- Admin mengaktifkannya (clinics.patient_portal_enabled). File ini adalah salinan acuan.
+-- Catatan: dijalankan di Supabase SQL Editor, skrip utuh ini gagal dengan error
+-- 'relation "v_patient" does not exist' (penyebab belum jelas; tidak terjadi di Postgres lokal
+-- maupun lewat apply_migration). Jika perlu dijalankan ulang di SQL Editor, jalankan per tahap.
+--
+-- Fondasi portal pasien Clinara.
 --
 -- Sumber data tampilan pasien adalah SOAP yang sudah ada (medical_records):
 --   * Riwayat sesi + grafik nyeri: baris "Nyeri 0-10: sekarang N" / NPRS di kolom
@@ -15,7 +22,9 @@
 -- tidak bisa dipakai, dan staf tidak melihat video latihan.
 --
 -- Aturan penulisan file ini:
---   * Tanpa DROP. Semua objek baru; fungsi memakai CREATE OR REPLACE.
+--   * Tanpa DROP dan tanpa DELETE (tool apply_migration membatalkan skrip yang berisi
+--     pernyataan destruktif). Sesi dan catatan latihan memakai tanda (revoked_at, is_done).
+--     Semua objek baru; fungsi memakai CREATE OR REPLACE.
 --   * Tubuh fungsi memakai $fn$ (bukan $$).
 --   * Dibagi per tahap supaya mudah dijalankan satu per satu di SQL Editor.
 --
@@ -88,6 +97,7 @@ create table if not exists public.patient_portal_sessions (
   link_id uuid not null references public.patient_portal_links(id) on delete cascade,
   session_hash text not null unique,
   expires_at timestamptz,  -- NULL = berlaku selama tautan aktif
+  revoked_at timestamptz,  -- diisi saat keluar atau saat melebihi 10 perangkat
   created_at timestamptz not null default now()
 );
 create index if not exists patient_portal_sessions_link_idx on public.patient_portal_sessions (link_id);
@@ -99,6 +109,7 @@ create table if not exists public.patient_exercise_logs (
   patient_id uuid not null references public.patients(id) on delete cascade,
   exercise_id text not null references public.plan_exercises(id),
   done_on date not null default current_date,
+  is_done boolean not null default true,  -- false = pasien membatalkan tanda selesai
   created_at timestamptz not null default now(),
   unique (patient_id, exercise_id, done_on)
 );
@@ -141,6 +152,10 @@ create table if not exists public.exercise_video_assets (
   uploaded_by uuid,
   created_at timestamptz not null default now()
 );
+
+-- Untuk database yang sudah menjalankan versi awal tahap 2 (idempotent).
+alter table public.patient_portal_sessions add column if not exists revoked_at timestamptz;
+alter table public.patient_exercise_logs add column if not exists is_done boolean not null default true;
 
 -- =============================================================== TAHAP 3: RLS, hak akses, storage
 alter table public.patient_portal_links enable row level security;
@@ -228,6 +243,7 @@ as $fn$ select translate(encode(gen_random_bytes(24), 'base64'), '+/=', '-_') $f
 -- Nilai nyeri 0-10 dari teks Objective. Pola yang sama dengan ObjectiveProgressUpdate.jsx.
 create or replace function public.portal_extract_nprs(p_text text)
 returns smallint language sql immutable
+set search_path = public
 as $fn$
   select case when v between 0 and 10 then v::smallint end
   from (select coalesce(
@@ -238,6 +254,7 @@ $fn$;
 -- Kalimat "Update Kondisi: ..." (mis. "nyeri tekan berkurang, ROM bertambah").
 create or replace function public.portal_extract_update(p_text text)
 returns text language sql immutable
+set search_path = public
 as $fn$ select nullif(btrim((regexp_match(p_text, 'Update Kondisi:\s*([^\n]*)', 'i'))[1]), '') $fn$;
 
 -- Latihan di SOAP terbaru yang berisi latihan: (kode, dosis dari SOAP).
@@ -270,6 +287,7 @@ begin
     join public.patient_portal_links l on l.id = s.link_id
     join public.clinics c on c.id = l.clinic_id
     where s.session_hash = public.portal_hash(p_session)
+      and s.revoked_at is null
       and (s.expires_at is null or s.expires_at > now())
       and l.status = 'active'
       and (l.expires_at is null or l.expires_at > now())
@@ -438,11 +456,11 @@ begin
   update public.patient_portal_links set failed_attempts = 0, last_opened_at = now() where id = v_link.id;
   insert into public.patient_portal_sessions (link_id, session_hash, expires_at)
     values (v_link.id, public.portal_hash(v_session), null);
-  -- simpan maksimal 10 perangkat/sesi terbaru per tautan
-  delete from public.patient_portal_sessions
-    where link_id = v_link.id
+  -- simpan maksimal 10 perangkat/sesi terbaru per tautan; yang lebih lama dinonaktifkan
+  update public.patient_portal_sessions set revoked_at = now()
+    where link_id = v_link.id and revoked_at is null
       and id not in (select id from public.patient_portal_sessions
-                     where link_id = v_link.id order by created_at desc limit 10);
+                     where link_id = v_link.id and revoked_at is null order by created_at desc limit 10);
   return jsonb_build_object('ok', true, 'session', v_session, 'first_name', v_pat.first_name);
 end
 $fn$;
@@ -451,7 +469,8 @@ create or replace function public.portal_logout(p_session text)
 returns void
 language sql security definer
 set search_path = public, extensions
-as $fn$ delete from public.patient_portal_sessions where session_hash = public.portal_hash(p_session) $fn$;
+as $fn$ update public.patient_portal_sessions set revoked_at = now()
+  where session_hash = public.portal_hash(p_session) and revoked_at is null $fn$;
 
 -- Tab Beranda.
 create or replace function public.portal_get_home(p_session text)
@@ -504,11 +523,11 @@ begin
   select count(*), count(l.id) into v_total, v_done
     from public.portal_program_items(s.patient_id) p
     left join public.patient_exercise_logs l
-      on l.patient_id = s.patient_id and l.exercise_id = p.exercise_id and l.done_on = current_date;
+      on l.patient_id = s.patient_id and l.exercise_id = p.exercise_id and l.done_on = current_date and l.is_done;
 
   -- kalender Senin sampai Minggu minggu ini
   select jsonb_agg(jsonb_build_object('date', d::date, 'done',
-           exists (select 1 from public.patient_exercise_logs l where l.patient_id = s.patient_id and l.done_on = d::date),
+           exists (select 1 from public.patient_exercise_logs l where l.patient_id = s.patient_id and l.done_on = d::date and l.is_done),
            'today', d::date = current_date) order by d)
     into v_week
     from generate_series(date_trunc('week', current_date), date_trunc('week', current_date) + interval '6 days', interval '1 day') d;
@@ -517,7 +536,7 @@ begin
   loop
     exit when v_i > 365;
     if exists (select 1 from public.patient_exercise_logs l
-               where l.patient_id = s.patient_id and l.done_on = current_date - v_i) then
+               where l.patient_id = s.patient_id and l.done_on = current_date - v_i and l.is_done) then
       v_streak := v_streak + 1;
     elsif v_i > 0 then
       exit;
@@ -573,7 +592,7 @@ begin
       'dose', coalesce(p.soap_dose, e.dose), 'progression', e.progression, 'caution', e.caution,
       'has_video', exists (select 1 from public.exercise_video_assets v where v.exercise_id = e.id),
       'done_today', exists (select 1 from public.patient_exercise_logs l
-                            where l.patient_id = s.patient_id and l.exercise_id = e.id and l.done_on = current_date))
+                            where l.patient_id = s.patient_id and l.exercise_id = e.id and l.done_on = current_date and l.is_done))
       order by e.id)
     from public.portal_program_items(s.patient_id) p
     join public.plan_exercises e on e.id = p.exercise_id), '[]'::jsonb);
@@ -591,14 +610,9 @@ begin
   if not exists (select 1 from public.portal_program_items(s.patient_id) where exercise_id = p_exercise_id) then
     raise exception 'Latihan tidak ditemukan' using errcode = 'P0002';
   end if;
-  if p_done then
-    insert into public.patient_exercise_logs (clinic_id, patient_id, exercise_id)
-      values (s.clinic_id, s.patient_id, p_exercise_id)
-      on conflict (patient_id, exercise_id, done_on) do nothing;
-  else
-    delete from public.patient_exercise_logs
-      where patient_id = s.patient_id and exercise_id = p_exercise_id and done_on = current_date;
-  end if;
+  insert into public.patient_exercise_logs (clinic_id, patient_id, exercise_id, is_done)
+    values (s.clinic_id, s.patient_id, p_exercise_id, coalesce(p_done, true))
+    on conflict (patient_id, exercise_id, done_on) do update set is_done = excluded.is_done;
 end
 $fn$;
 
@@ -697,13 +711,6 @@ begin
 end
 $fn$;
 
--- Pembersih sesi yang punya batas waktu (sesi normal tidak kedaluwarsa). Opsional.
-create or replace function public.portal_cleanup_expired()
-returns void
-language sql security definer
-set search_path = public
-as $fn$ delete from public.patient_portal_sessions where expires_at is not null and expires_at < now() - interval '1 day' $fn$;
-
 -- =============================================================== TAHAP 7: hak eksekusi fungsi
 -- Default Supabase memberi EXECUTE ke anon pada fungsi baru. Cabut semua dulu.
 revoke execute on function
@@ -716,12 +723,12 @@ revoke execute on function
   public.portal_get_progress(text), public.portal_get_program(text),
   public.portal_log_exercise(text, text, boolean), public.portal_video_path(text, text),
   public.portal_submit_feedback(text, int, text[], text), public.portal_list_feedback(text),
-  public.portal_list_messages(text), public.portal_send_message(text, text),
-  public.portal_cleanup_expired()
+  public.portal_list_messages(text), public.portal_send_message(text, text)
 from public, anon, authenticated;
 
--- Dipakai policy RLS (dievaluasi sebagai pengguna login).
-grant execute on function public.portal_clinic_enabled(uuid), public.portal_my_clinic_enabled() to authenticated;
+-- Dipakai policy RLS (dievaluasi sebagai pengguna login). portal_clinic_enabled sengaja tidak
+-- dibuka; ia hanya dipanggil dari dalam fungsi definer lain.
+grant execute on function public.portal_my_clinic_enabled() to authenticated;
 -- Staf
 grant execute on function public.portal_create_link(uuid, int),
   public.portal_set_link_status(uuid, text), public.portal_mark_link_sent(uuid, text) to authenticated;
