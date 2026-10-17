@@ -468,7 +468,7 @@ const BookingTab = ({ session, lastTherapist, onBack, onBooked, onUnauthorized }
   const load = useCallback(async () => {
     setLoadError('');
     try {
-      const [o, sl] = await Promise.all([portalApi.bookingOptions(session), portalApi.bookingSlots(session, 14)]);
+      const [o, sl] = await Promise.all([portalApi.bookingOptions(session), portalApi.bookingSlots(session, 10)]);
       setOpts(o); setSlots(sl);
       const lastId = o.last_therapist_id;
       const dates = [...new Set(sl.map((x) => x.date))].sort();
@@ -509,7 +509,7 @@ const BookingTab = ({ session, lastTherapist, onBack, onBooked, onUnauthorized }
 
   const lastId = opts.last_therapist_id;
   const therapists = opts.therapists || [];
-  const dates = Array.from({ length: 14 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i); return d.toLocaleDateString('sv-SE'); });
+  const dates = Array.from({ length: 10 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i); return d.toLocaleDateString('sv-SE'); });
   const countOn = (d) => slots.filter((x) => x.date === d).length;
   const onDay = slots.filter((x) => x.date === date);
   const by = (id) => onDay.filter((x) => x.therapist_id === id);
@@ -559,7 +559,7 @@ const BookingTab = ({ session, lastTherapist, onBack, onBooked, onUnauthorized }
         })}
       </div>
       {!date ? (
-        <section className="card"><h3>Belum ada jadwal kosong</h3><p className="muted" style={{ margin: '6px 0 14px' }}>Semua slot dua minggu ke depan terisi. Hubungi klinik lewat Chat agar dicarikan jadwal.</p></section>
+        <section className="card"><h3>Belum ada jadwal kosong</h3><p className="muted" style={{ margin: '6px 0 14px' }}>Semua slot 10 hari ke depan terisi. Hubungi klinik lewat Chat agar dicarikan jadwal.</p></section>
       ) : (
         <div className="pair">
           {lastT && (

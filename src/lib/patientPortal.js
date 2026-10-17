@@ -161,9 +161,9 @@ export const portalApi = {
   listFeedback: (session) => call('portal_list_feedback', { p_session: session }),
   listMessages: (session) => call('portal_list_messages', { p_session: session }),
   sendMessage: (session, body) => call('portal_send_message', { p_session: session, p_body: body }),
-  // Booking jadwal: terapis terakhir lebih dulu, slot kosong 14 hari, lalu pesan slot.
+  // Booking jadwal: terapis terakhir lebih dulu, slot kosong 10 hari, lalu pesan slot.
   bookingOptions: (session) => call('portal_get_booking_options', { p_session: session }),
-  bookingSlots: (session, days = 14) => call('portal_get_booking_slots', { p_session: session, p_days: days }),
+  bookingSlots: (session, days = 10) => call('portal_get_booking_slots', { p_session: session, p_days: days }),
   book: async (session, therapistId, date, time, note) => {
     const res = await call('portal_book_appointment', {
       p_session: session, p_therapist_id: therapistId, p_date: date, p_time: time, p_note: note || null,
