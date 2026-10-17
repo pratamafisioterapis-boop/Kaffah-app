@@ -1,27 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Database, Plus, Upload } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
-import { getCachedClinicId } from '@/lib/api';
-import { normalizePatient } from '@/lib/patientHelpers';
-import { useToast } from "@/components/ui/use-toast";
+import { usePatientList } from '@/hooks/usePatientList';
 import CenteredPatientTable from '@/components/shared/CenteredPatientTable';
 import PatientModal from '@/components/shared/PatientModal';
 import ImportPatientExcelModal from '@/components/shared/ImportPatientExcelModal';
-import { getCachedData, setCachedData, clearCachedData } from '@/lib/dataCache';
 import PageHero from '@/components/shared/PageHero';
-
-const DEFAULT_FILTERS = { search: '', completeness: 'all', status: 'all' };
-const initialCacheKey = `patients:1:20:${JSON.stringify(DEFAULT_FILTERS)}`;
 
 const AdminDatabasePatients = () => {
 
-    const { toast } = useToast();
-    // Lazy initializers so the cache is re-read on every mount (each time this
-    // menu is switched back into), not just once when the module first loads.
-    const [patients, setPatients] = useState(() => getCachedData(initialCacheKey)?.patients || []);
-    const [loading, setLoading] = useState(() => !getCachedData(initialCacheKey));
-    const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const {
+        patients, loading, pagination, filters,
+        setPagination, handleFilterChange, refresh: handleRefresh
+    } = usePatientList();
 
     // Modal State
     const [modalOpen, setModalOpen] = useState(false);
@@ -29,110 +20,8 @@ const AdminDatabasePatients = () => {
     const [selectedPatient, setSelectedPatient] = useState(null);
     const [isImportOpen, setIsImportOpen] = useState(false);
 
-    // State for Table
-    const [pagination, setPagination] = useState(() => {
-        const cached = getCachedData(initialCacheKey);
-        return {
-            page: 1,
-            itemsPerPage: 20,
-            totalItems: cached?.totalItems || 0,
-            totalPages: cached?.totalPages || 1
-        };
-    });
-
-    const [filters, setFilters] = useState(DEFAULT_FILTERS);
-
-    useEffect(() => {
-        fetchPatients();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pagination.page, pagination.itemsPerPage, filters, refreshTrigger]);
-
-    const fetchPatients = async () => {
-        const cacheKey = `patients:${pagination.page}:${pagination.itemsPerPage}:${JSON.stringify(filters)}`;
-        // On a fresh mount (e.g. switching back to this menu), show the last
-        // known page instantly instead of blanking the table behind a
-        // spinner while the network round trip completes.
-        const cached = refreshTrigger === 0 ? getCachedData(cacheKey) : null;
-        if (cached) {
-            setPatients(cached.patients);
-            setPagination(prev => ({ ...prev, totalItems: cached.totalItems, totalPages: cached.totalPages }));
-            setLoading(false);
-        } else {
-            setLoading(true);
-        }
-
-        try {
-            // Calculate range for pagination
-            const from = (pagination.page - 1) * pagination.itemsPerPage;
-            const to = from + pagination.itemsPerPage - 1;
-
-            const { data: sessionData } = await supabase.auth.getSession();
-            const userId = sessionData?.session?.user?.id;
-            const clinicId = await getCachedClinicId(userId);
-
-            let query = supabase
-                .from('patients')
-                .select('*, patient_info_options(label)', { count: 'exact' })
-                .eq('clinic_id', clinicId);
-
-            // Apply Status Filter (DB Side)
-            if (filters.status !== 'all') {
-                query = query.eq('status', filters.status);
-            }
-
-            // Apply Search (DB Side - ILIKE)
-            if (filters.search) {
-                query = query.or(`full_name.ilike.%${filters.search}%,medical_record_number.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
-            }
-            
-            // Fetch Data
-            const { data, error, count } = await query
-                .order('created_at', { ascending: false })
-                .range(from, to);
-
-            if (error) throw error;
-
-            let normalizedData = (data || []).map(p => normalizePatient(p));
-
-            if (filters.completeness !== 'all') {
-                normalizedData = normalizedData.filter(p => 
-                    filters.completeness === 'complete' ? p.isComplete : !p.isComplete
-                );
-            }
-
-            const totalItems = count || 0;
-            const totalPages = Math.ceil(totalItems / pagination.itemsPerPage);
-
-            setPatients(normalizedData);
-            setPagination(prev => ({ ...prev, totalItems, totalPages }));
-            setCachedData(cacheKey, { patients: normalizedData, totalItems, totalPages });
-
-        } catch (error) {
-            console.error("Error fetching patients:", error);
-            if (!cached) {
-                toast({
-                    variant: "destructive",
-                    title: "Error",
-                    description: "Gagal memuat data pasien."
-                });
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const handlePaginationChange = (newPagination) => {
         setPagination(newPagination);
-    };
-
-    const handleFilterChange = (newFilters) => {
-        setFilters(newFilters);
-        setPagination(prev => ({ ...prev, page: 1 }));
-    };
-
-    const handleRefresh = () => {
-        clearCachedData('patients:');
-        setRefreshTrigger(prev => prev + 1);
     };
 
     const handleAddClick = () => {
