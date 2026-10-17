@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2, Copy } from 'lucide-react';
+import { Plus, Trash2, Copy, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
@@ -10,11 +10,15 @@ const newGoalId = () => `g${Date.now().toString(36)}${Math.random().toString(36)
 /**
  * Goal treatment (tampil di portal pasien Clinara). goals: [{ id, text, progress 0-100 }].
  * Id goal tetap saat dibawa ke SOAP berikutnya, supaya portal bisa menampilkan perkembangannya per sesi.
+ * suggestions: kalimat goal dari diagnosa + S/O; sekali klik menambahkannya sebagai goal baru.
  * previousGoals: goal dari SOAP sebelumnya, ditawarkan untuk disalin bila goal masih kosong.
  */
-const GoalTreatment = ({ goals, onChange, previousGoals }) => {
+const GoalTreatment = ({ goals, onChange, previousGoals, suggestions = [] }) => {
   const list = Array.isArray(goals) ? goals : [];
   const update = (id, patch) => onChange(list.map((g) => (g.id === id ? { ...g, ...patch } : g)));
+  const taken = new Set(list.map((g) => g.text.trim()));
+  const open = suggestions.filter((t) => !taken.has(t));
+  const addSuggestion = (text) => onChange([...list, { id: newGoalId(), text, progress: 0 }]);
   const canCopy = list.length === 0 && Array.isArray(previousGoals) && previousGoals.length > 0;
 
   return (
@@ -29,6 +33,21 @@ const GoalTreatment = ({ goals, onChange, previousGoals }) => {
         )}
       </div>
       <p className="mb-3 text-xs text-slate-500">Target terapi yang dilihat pasien di aplikasi Clinara, beserta progresnya. Perbarui progres tiap sesi.</p>
+      {open.length > 0 && list.length < MAX_GOALS && (
+        <div className="mb-3" aria-label="Saran goal">
+          <p className="mb-1.5 flex items-center gap-1 text-xs font-medium text-slate-600">
+            <Sparkles className="h-3.5 w-3.5 text-teal-600" /> Saran dari diagnosa dan pemeriksaan. Klik untuk memilih.
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {open.map((t) => (
+              <button key={t} type="button" onClick={() => addSuggestion(t)}
+                className="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-3 py-1.5 text-left text-xs font-medium leading-snug text-teal-900 hover:bg-teal-100">
+                <Plus className="h-3 w-3 shrink-0" /> {t}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="space-y-3">
         {list.map((g, i) => (
           <div key={g.id} className="rounded-app-sm border border-slate-100 bg-slate-50/70 p-3">

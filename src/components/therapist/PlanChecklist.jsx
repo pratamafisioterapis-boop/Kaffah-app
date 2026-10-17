@@ -94,7 +94,7 @@ const ExerciseDetail = ({ ex }) => (
  * value: { epa, manual, dose, exercises: {id: true}, exDose: {id: teks}, notes } | null
  * onChange(data, text, exerciseNames): text = ringkasan untuk kolom `plan`; exerciseNames = latihan terpilih.
  */
-const PlanChecklist = ({ diagnosisLabels, value, onChange, goalsEnabled = false, previousGoals = null }) => {
+const PlanChecklist = ({ diagnosisLabels, value, onChange, goalsEnabled = false, previousGoals = null, goalSuggestions = [] }) => {
   // Daftar latihan diambil dari database untuk diagnosa terpilih (disimpan kumulatif).
   const [catalog, setCatalog] = useState({ byDiagnosis: {}, exercises: {}, fetched: [] });
   const [loading, setLoading] = useState(false);
@@ -314,7 +314,7 @@ const PlanChecklist = ({ diagnosisLabels, value, onChange, goalsEnabled = false,
       </PlanCard>
 
       {goalsEnabled && (
-        <GoalTreatment goals={data.goals} previousGoals={previousGoals} onChange={(goals) => emit({ ...data, goals })} />
+        <GoalTreatment goals={data.goals} previousGoals={previousGoals} suggestions={goalSuggestions} onChange={(goals) => emit({ ...data, goals })} />
       )}
 
       <section className="rounded-app-lg border border-slate-200 bg-white px-4 py-3">

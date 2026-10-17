@@ -27,6 +27,7 @@ import { format } from 'date-fns';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useAssessmentMode } from '@/hooks/useAssessmentMode';
+import { suggestGoals } from '@/lib/goalSuggestions';
 import { usePortalEnabled } from '@/hooks/usePortalEnabled';
 import { id } from 'date-fns/locale';
 
@@ -205,6 +206,10 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
       return isValidUUID(d) ? null : d;
     })
     .filter(Boolean), [diagnosis, diagnosisOptions]);
+  const goalSuggestions = useMemo(
+    () => (portalEnabled ? suggestGoals({ subjective: formData.subjective, objective: formData.objective, diagnoses: diagnosisLabels }) : []),
+    [portalEnabled, formData.subjective, formData.objective, diagnosisLabels],
+  );
 
   // Judul resmi kode ICF dimuat dari database sesuai kode yang terdeteksi.
   const [icfTitles, setIcfTitles] = useState({});
@@ -779,6 +784,7 @@ if (isCreate) {
                       value={formData.plan_data}
                       goalsEnabled={portalEnabled}
                       previousGoals={latestGoals}
+                      goalSuggestions={goalSuggestions}
                       onChange={(plan_data, plan, names) => {
                         setFormData((prev) => ({ ...prev, plan_data, plan }));
                         setHomeExercises(names || []);
