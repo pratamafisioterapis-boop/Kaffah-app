@@ -1,0 +1,51 @@
+-- USULAN, BELUM DITERAPKAN. Pengerasan fungsi yang sengaja tetap bisa dipanggil
+-- anon karena dipakai halaman booking publik. Review dan uji dulu; jalankan di
+-- SQL Editor (CREATE OR REPLACE FUNCTION pernah timeout lewat tool MCP).
+--
+-- 1) create_appointment_safe -> SQL final ada di
+--    supabase/manual/8_create_appointment_safe_hardening.sql (catatan di bawah
+--    adalah usulan awal).
+--    (dipakai /booking oleh pengunjung tanpa login)
+--    Masalah: anon bebas mengisi p_allow_overlap (lewati cek bentrok),
+--    p_status, p_is_manual, p_action_by* (memalsukan pelaku), dan p_clinic_id
+--    yang tidak cocok dengan klinik terapis. Fungsi juga tanpa search_path.
+--    Perbaikan: jika tidak ada sesi login, paksa nilai aman dan validasi klinik.
+--    Sisipkan blok berikut tepat setelah BEGIN pada fungsi yang ada, dan
+--    tambahkan `SET search_path = public` pada definisinya:
+--
+--      IF auth.uid() IS NULL THEN
+--        p_allow_overlap  := false;
+--        p_is_manual      := false;
+--        p_action_by      := NULL;
+--        p_action_by_name := NULL;
+--        p_action_by_role := NULL;
+--        p_status         := 'confirmed';
+--        IF p_clinic_id IS NOT NULL AND NOT EXISTS (
+--          SELECT 1 FROM public.physiotherapists
+--          WHERE id = p_therapist_id AND clinic_id = p_clinic_id
+--        ) THEN
+--          RAISE EXCEPTION 'Terapis tidak terdaftar di klinik ini';
+--        END IF;
+--      END IF;
+--
+--    Catatan: p_clinic_id NULL membuat fungsi memakai klinik pertama
+--    (`SELECT id FROM clinics LIMIT 1`). Itu berbahaya di multi-klinik; sebaiknya
+--    anon wajib mengirim p_clinic_id, atau ambil dari physiotherapists.clinic_id.
+--    Juga tambahkan pembatasan laju (rate limit) di sisi Edge Function / WAF
+--    Vercel, karena anon tetap bisa membuat janji untuk slot kosong mana pun.
+--
+-- 2) search_patient_for_booking dan match_patient_for_new_registration
+--    Masalah: dengan nama belakang + tanggal lahir (atau 2 dari 3 faktor), anon
+--    mendapat nama lengkap, nomor HP, dan nomor RM pasien. Tanggal lahir dan
+--    nama belakang umum mudah ditebak, jadi ini bisa dipakai menyisir data.
+--    Perbaikan yang disarankan:
+--      * kembalikan nomor HP tersamar (mis. 0812****789) dan jangan kembalikan
+--        medical_record_number ke anon,
+--      * kurangi LIMIT 5 menjadi 1 dan hanya kembalikan saat hasil unik,
+--      * batasi laju per IP (Vercel Firewall / Edge Function sebagai perantara).
+--    Frontend yang perlu disesuaikan: src/components/public/SmartReturningPatientStep.jsx
+--    dan SmartPatientMatchConfirmStep.jsx (apakah memakai phone / RM penuh).
+--
+-- 3) get_public_invoice_url(p_recap_id) dan get_patient_therapist_history_public
+--    Dilindungi UUID yang tidak bisa ditebak; risiko rendah selama UUID tidak
+--    bocor. Tidak perlu diubah sekarang.
