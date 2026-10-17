@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -253,14 +253,27 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     });
   };
 
+  // Teks hasil salin kunjungan lalu (terapi lanjutan). Template yang dipilih setelahnya
+  // menggantikan salinan ini, bukan ditumpuk di bawahnya, supaya SOAP tidak ganda.
+  const copiedBaselineRef = useRef({});
+
   const handleApplyTemplate = (field) => (text, { replace }) => {
+    const existing = (formData[field] || '').trim();
+    const baseline = (copiedBaselineRef.current[field] || '').trim();
+    const replacesCopy = !replace && !!existing && !!baseline && existing.startsWith(baseline);
+    if (replace || replacesCopy) delete copiedBaselineRef.current[field];
     setFormData((prev) => {
-      const existing = (prev[field] || '').trim();
-      return { ...prev, [field]: replace || !existing ? text : `${existing}\n\n${text}` };
+      const prevText = (prev[field] || '').trim();
+      if (replacesCopy) {
+        // Tambahan terapis setelah salinan (mis. baris Update Kondisi) tetap dipertahankan.
+        const extra = prevText.slice(baseline.length).trim();
+        return { ...prev, [field]: extra ? `${text}\n${extra}` : text };
+      }
+      return { ...prev, [field]: replace || !prevText ? text : `${prevText}\n\n${text}` };
     });
     toast({
-      title: replace ? `${field === 'objective' ? 'Objective' : 'Subjective'} terisi` : 'Template ditambahkan',
-      description: 'Silakan cek dan lengkapi bila perlu.',
+      title: replace || replacesCopy ? `${field === 'objective' ? 'Objective' : 'Subjective'} terisi` : 'Template ditambahkan',
+      description: replacesCopy ? 'Template menggantikan salinan kunjungan lalu.' : 'Silakan cek dan lengkapi bila perlu.',
       className: 'bg-blue-50 border-blue-200 text-blue-800',
     });
   };
@@ -505,14 +518,17 @@ if (isCreate) {
   const handleCopySOAP = (record, { continuing = false } = {}) => {
     if (!record) return;
     setAssessmentAuto(continuing);
+    // Baris perkembangan kunjungan lalu sudah basi; terapis menulis yang baru.
+    const copiedSubjective = applyProgressNote(refreshOnsetInSubjective(
+      record.subjective || '',
+      onsetInfo?.complaint_onset_date || deriveOnsetFromSubjective(record.subjective, record.created_at)
+    ), '');
+    const copiedObjective = record.objective || '';
+    copiedBaselineRef.current = { subjective: copiedSubjective, objective: copiedObjective };
     setFormData(prev => ({
       ...prev,
-      // Baris perkembangan kunjungan lalu sudah basi; terapis menulis yang baru.
-      subjective: applyProgressNote(refreshOnsetInSubjective(
-        record.subjective || '',
-        onsetInfo?.complaint_onset_date || deriveOnsetFromSubjective(record.subjective, record.created_at)
-      ), ''),
-      objective: record.objective || '',
+      subjective: copiedSubjective,
+      objective: copiedObjective,
       assessment: record.assessment || '',
       plan: record.plan || '',
       plan_data: record.plan_data || (record.plan ? { notes: record.plan } : null),
