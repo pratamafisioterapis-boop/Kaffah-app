@@ -55,6 +55,15 @@ const getTodayQuote = () => {
   return dailyQuotes[dayOfYear % dailyQuotes.length];
 };
 
+// Last clinic row seen on this device, so a slow lookup does not fall back to the generic role label.
+const clinicCacheKey = (id) => `clinara:splash-clinic:${id}`;
+const readCachedClinic = (id) => {
+  try { return JSON.parse(localStorage.getItem(clinicCacheKey(id)) || 'null'); } catch { return null; }
+};
+const writeCachedClinic = (id, data) => {
+  try { localStorage.setItem(clinicCacheKey(id), JSON.stringify(data)); } catch { /* cache is optional */ }
+};
+
 const firstWord = (s) => (s || '').trim().split(/\s+/)[0] || '';
 
 // Design size of the stage; it is scaled uniformly to fit the screen.
@@ -130,15 +139,15 @@ export default function SplashScreen({ onDone }) {
   useEffect(() => {
     if (reduceMotion) return undefined;
     let active = true;
-    const timeout = setTimeout(() => { if (active) setInfo((prev) => prev || { clinic: null, relawanNama: null, therapistAvatar: null }); }, 800);
+    const timeout = setTimeout(() => { if (active) setInfo((prev) => prev || { clinic: null, relawanNama: null, therapistAvatar: null }); }, 1500);
 
     const run = async () => {
       if (!userId) return;
-      const out = { clinic: null, relawanNama: null, therapistAvatar: null };
+      const out = { clinic: clinicId ? readCachedClinic(clinicId) : null, relawanNama: null, therapistAvatar: null };
       const tasks = [];
       if (clinicId) {
         tasks.push(supabase.from('clinics').select('name, logo_url, owner_role_label').eq('id', clinicId).single()
-          .then(({ data }) => { out.clinic = data || null; }));
+          .then(({ data }) => { if (data) { out.clinic = data; writeCachedClinic(clinicId, data); } }));
       }
       tasks.push(supabase.from('pemilih_relawan').select('nama').eq('user_id', userId).maybeSingle()
         .then(({ data }) => { out.relawanNama = data?.nama || null; }));
@@ -146,7 +155,7 @@ export default function SplashScreen({ onDone }) {
         tasks.push(supabase.from('physiotherapists').select('avatar_url').eq('user_id', userId).maybeSingle()
           .then(({ data }) => { out.therapistAvatar = data?.avatar_url || null; }));
       }
-      await Promise.race([Promise.allSettled(tasks), new Promise((resolve) => setTimeout(resolve, 600))]);
+      await Promise.race([Promise.allSettled(tasks), new Promise((resolve) => setTimeout(resolve, 1200))]);
       if (active) setInfo({ ...out });
     };
     run();
