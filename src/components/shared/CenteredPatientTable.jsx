@@ -82,7 +82,7 @@ useEffect(() => {
     const { search, status, completeness } = filters;
 
     // Handlers
-    // Input stays instant; the query fires 300ms after the last keystroke.
+    // Input stays instant; the query fires 120ms after the last keystroke.
     const [searchInput, setSearchInput] = useState(search);
     const filtersRef = useRef(filters);
     filtersRef.current = filters;
@@ -91,7 +91,7 @@ useEffect(() => {
         if (searchInput === filtersRef.current.search) return;
         const t = setTimeout(() => {
             onFilterChange({ ...filtersRef.current, search: searchInput });
-        }, 300);
+        }, 120);
         return () => clearTimeout(t);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchInput]);
