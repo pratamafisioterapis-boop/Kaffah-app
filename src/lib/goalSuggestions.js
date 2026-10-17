@@ -1,9 +1,11 @@
-// Saran goal treatment dari diagnosa + Subjective/Objective yang sudah diisi terapis.
-// Deterministik (tanpa jaringan): memakai hasil analyzeIcf (nyeri, ROM, kekuatan, kekakuan, aktivitas, skor
-// fungsional) lalu menyusun kalimat target yang terukur. Terapis tinggal memilih, dan teksnya bisa diedit.
+// Saran goal treatment dari Subjective/Objective yang sudah diisi terapis.
+// Deterministik (tanpa jaringan). Jalur utama membaca format template (Inspeksi / Palpasi / Pemeriksaan Gerak /
+// Kekuatan Otot / Tes Spesifik / Pengukuran, plus "Update Kondisi" di sesi lanjutan), sehingga tiap temuan
+// langsung menjadi target yang terukur. Bila teks bukan hasil template dan hasilnya sedikit, dilengkapi dengan
+// analyzeIcf. Terapis tinggal memilih, dan teksnya bisa diedit.
 import { analyzeIcf } from '@/lib/icfAssessment';
 
-const MAX_SUGGESTIONS = 8;
+const MAX_SUGGESTIONS = 12;
 
 const detailOf = (item, re) => {
   for (const d of item.details || []) {
@@ -42,15 +44,132 @@ const ACTIVITY_PHRASE = {
   d910: 'mengikuti kegiatan sosial tanpa keluhan',
 };
 
-const halve = (n) => (n >= 6 ? Math.ceil(n / 2) : n >= 3 ? 2 : 1);
+const add2 = (arr, t) => { if (!arr.includes(t)) arr.push(t); };
+const halve = (n) => (n >= 3 ? Math.ceil(n / 2) : 1);
+
+
+// ───────────────────────── Jalur template ─────────────────────────
+
+const lc = (t) => t.charAt(0).toLowerCase() + t.slice(1);
+const NEGATIVE = /\b(tidak|normal|simetris|tanpa)\b/i;
+
+// Bagian Objective template: judul bagian tanpa "- ", isinya baris "- label : nilai".
+const SECTION_RE = /^(Inspeksi|Palpasi|Pemeriksaan Gerak|Kekuatan Otot|Tes Spesifik|Pengukuran)\s*:?\s*$/i;
+const parseObjective = (text) => {
+  const sections = {};
+  let cur = null;
+  String(text || '').split('\n').forEach((raw) => {
+    const line = raw.trim();
+    if (!line) return;
+    const head = line.match(SECTION_RE);
+    if (head) { cur = head[1].toLowerCase(); sections[cur] = sections[cur] || []; return; }
+    if (cur && line.startsWith('-')) sections[cur].push(line.replace(/^-\s*/, '').trim());
+  });
+  return sections;
+};
+
+const splitList = (t) => t.split(/,|\bserta\b|\bdan\b|\bmaupun\b/i).map((x) => x.trim()).filter(Boolean);
+
+const painRegion = (subjective) => {
+  const m = String(subjective || '').match(/keluhan nyeri ([\p{L} ]{3,40}?) (?:saat|yang|sejak|dirasakan|akibat|setelah|karena|dan|,)/iu);
+  const r = m ? m[1].trim() : '';
+  return r && r.split(/\s+/).length <= 5 ? r : '';
+};
+
+const templateGoals = (subjective, objective) => {
+  const sec = parseObjective(objective);
+  const found = Object.keys(sec).length > 0;
+  const out = [];
+  const add = (t) => { if (t && !out.includes(t)) out.push(t); };
+  const where = painRegion(subjective);
+  const nyeri = where ? `Nyeri ${where}` : 'Nyeri';
+
+  // Nyeri: NPRS di Pengukuran
+  const nprs = (sec.pengukuran || []).map((l) => l.match(/^(?:NPRS|NRS|VAS)[^:]*:\s*(\d{1,2})\s*\/\s*10/i)).find(Boolean);
+  // Sesi lanjutan: nilai terkini dari baris "Update Kondisi" lebih tepat sebagai titik awal target.
+  const now = String(objective || '').match(/Update Kondisi:[^\n]*?nyeri sekarang\s*(\d{1,2})\s*\/\s*10/i);
+  if (nprs) {
+    const n = Number(now ? now[1] : nprs[1]);
+    add(`${nyeri} turun dari ${n}/10 menjadi ≤${halve(n)}/10`);
+    if (halve(n) > 2) add(`${nyeri} ≤2/10 saat beraktivitas sehari-hari`);
+  } else if (found || /\bnyeri\b/i.test(subjective)) {
+    add(`${nyeri} berkurang menjadi ≤2/10 saat beraktivitas`);
+  }
+
+  // Lingkup gerak
+  const rom = [];
+  (sec['pemeriksaan gerak'] || []).forEach((l) => {
+    const m = l.match(/^(.+?)\s*:\s*(.+)$/);
+    if (!m || /end-?feel|memprovokasi/i.test(m[1])) return;
+    const deg = m[2].match(/(\d{1,3})\s*derajat/i);
+    if (deg) rom.push(`Lingkup gerak ${lc(m[1])} meningkat dari ${deg[1]}° hingga penuh tanpa nyeri`);
+    else if (/terbatas/i.test(m[2])) rom.push(`Lingkup gerak ${lc(m[1])} meningkat hingga penuh tanpa nyeri`);
+    else if (/\bpenuh\b/i.test(m[2]) && /nyeri\s+ada/i.test(m[2])) rom.push(`Gerak ${lc(m[1])} bebas nyeri`);
+  });
+  rom.slice(0, 3).forEach(add);
+
+  // Kekuatan otot
+  (sec['kekuatan otot'] || []).map((l) => l.match(/^Kekuatan (.+?)\s*\(0-5\)\s*:\s*([0-5])/i)).filter(Boolean)
+    .filter((m) => Number(m[2]) < 5).slice(0, 3)
+    .forEach((m) => add(`Kekuatan ${lc(m[1])} meningkat dari ${m[2]}/5 menjadi ${Math.min(5, Number(m[2]) + 1)}/5`));
+
+  // Tes spesifik: yang positif menjadi negatif
+  const positives = [];
+  const others = [];
+  (sec['tes spesifik'] || []).forEach((l) => {
+    const m = l.match(/^(.+?)\s*:\s*(.+)$/);
+    if (!m) return;
+    if (/positif/i.test(m[2])) positives.push(m[1].trim());
+    else if (/^ada\b/i.test(m[2].trim())) others.push(`${m[1].trim()} berkurang`);
+  });
+  if (positives.length) add(`Tes ${positives.slice(0, 3).join(', ')} menjadi negatif`);
+  others.slice(0, 2).forEach(add);
+
+  // Pengukuran lingkar segmen (bengkak)
+  (sec.pengukuran || []).forEach((l) => { if (/lingkar/i.test(l)) add(`Selisih ${lc(l.split(':')[0].trim())} berkurang menuju sisi sehat`); });
+
+  // Palpasi
+  (sec.palpasi || []).forEach((l) => {
+    const tense = l.match(/peningkatan ketegangan pada (?:otot-otot |otot )?(.+?)\.?$/i);
+    if (tense) {
+      const muscles = splitList(tense[1]).slice(0, 3).join(', ');
+      add(`Ketegangan otot ${muscles} berkurang`);
+    }
+    const tender = l.match(/^Nyeri tekan pada (?:area )?(.+?)\.?$/i);
+    if (tender && tender[1].length <= 70) add(`Nyeri tekan pada ${tender[1]} berkurang`);
+  });
+
+  // Inspeksi
+  (sec.inspeksi || []).forEach((l) => {
+    if (NEGATIVE.test(l) || !/ditemukan|tampak/i.test(l)) return;
+    if (/bengkak|pembengkakan/i.test(l)) add('Bengkak berkurang hingga hilang');
+    else if (/atrofi/i.test(l)) add('Massa otot yang mengecil (atrofi) membaik');
+    else if (/protracted|forward head|asimetris|lordosis|kifosis|skoliosis|lateral shift/i.test(l)) add('Postur tubuh membaik dan lebih simetris');
+    else if (/gaya jalan|pincang|antalgik/i.test(l)) add('Pola jalan kembali normal tanpa pincang');
+  });
+
+  // Subjective: aktivitas yang sulit dilakukan, tidur, kesemutan
+  const sub = String(subjective || '');
+  const hard = sub.match(/kesulitan saat ([^.]+)/i);
+  if (hard) splitList(hard[1]).slice(0, 3).forEach((a) => add(`Mampu ${lc(a)} tanpa nyeri`));
+  if (/\b(terbangun|tidur terganggu|sulit tidur|susah tidur)\b/i.test(sub) && !/tidak (?:ada )?(?:terbangun|gangguan tidur)/i.test(sub)) add('Tidur tidak lagi terganggu oleh nyeri');
+  if (/terdapat keluhan (?:baal|kesemutan)/i.test(sub) && !/tidak terdapat keluhan (?:baal|kesemutan)/i.test(sub)) add('Kesemutan/baal berkurang secara bertahap');
+  return out;
+};
 
 /**
  * @returns {string[]} kalimat goal siap pakai (tanpa duplikat, maksimal 8), yang paling relevan lebih dulu.
  */
 export const suggestGoals = ({ subjective = '', objective = '', diagnoses = [] } = {}) => {
   if (!String(objective).trim() && !String(subjective).trim() && !diagnoses.length) return [];
+  const out = templateGoals(subjective, objective);
+  // Teks bebas (bukan template) atau template yang tipis: lengkapi dari analisis ICF.
+  if (out.length >= 4) {
+    add2(out, 'Pasien mampu melakukan program latihan di rumah secara mandiri dan rutin');
+    add2(out, 'Kembali ke aktivitas sehari-hari tanpa keluhan');
+    return out.slice(0, MAX_SUGGESTIONS);
+  }
   const icf = analyzeIcf({ subjective, objective, diagnoses });
-  const out = [];
   const add = (t) => { if (t && !out.includes(t)) out.push(t); };
   const has = (code) => icf.b.find((x) => x.code === code);
 
