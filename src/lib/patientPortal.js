@@ -29,10 +29,43 @@ export const toWhatsAppNumber = (phone) => {
   return digits;
 };
 
-export const buildWhatsAppLink = ({ phone, patientName, clinicName, url }) => {
-  const text =
-    `Halo ${patientName}, ini tautan ${clinicName || 'klinik kami'} untuk melihat perkembangan terapi Anda: ${url}\n` +
-    'Masukkan tanggal lahir Anda untuk masuk.';
+// Salam menurut jam kirim di WIB (bukan jam perangkat), supaya konsisten untuk semua admin.
+export const greetingByHour = (date = new Date()) => {
+  const hour = Number(
+    new Intl.DateTimeFormat('en-GB', { hour: '2-digit', hourCycle: 'h23', timeZone: 'Asia/Jakarta' }).format(date),
+  );
+  if (hour >= 4 && hour < 11) return 'pagi';
+  if (hour >= 11 && hour < 15) return 'siang';
+  if (hour >= 15 && hour < 18) return 'sore';
+  return 'malam';
+};
+
+// Gender tidak diketahui: pakai "Bapak/Ibu" daripada menebak.
+const honorific = (gender) => {
+  if (gender === 'Perempuan') return 'Ibu';
+  if (gender === 'Laki-laki') return 'Bapak';
+  return 'Bapak/Ibu';
+};
+
+export const buildWhatsAppMessage = ({ patientName, gender, clinicName, url, now }) => {
+  const clinic = clinicName || 'klinik kami';
+  const title = honorific(gender);
+  return (
+    `Selamat ${greetingByHour(now)}, ${title} ${patientName} 🙏\n\n` +
+    `Terima kasih telah mempercayakan proses pemulihan Anda kepada *${clinic}*.\n\n` +
+    'Kami berkomitmen memberikan pelayanan terbaik, tidak hanya selama sesi terapi berlangsung, tetapi juga setelahnya. ' +
+    `Karena itu, kami menyediakan halaman khusus agar ${title} dapat memantau perkembangan terapi secara mudah dan aman. ` +
+    `Di halaman ini ${title} juga bisa melihat *home program*, yaitu latihan yang dianjurkan untuk dilakukan secara mandiri di rumah agar pemulihan lebih optimal:\n\n` +
+    `🔗 ${url}\n\n` +
+    `*Cara mengakses:* buka tautan di atas, lalu masukkan tanggal lahir ${title} (format: DD-MM-YYYY) untuk masuk.\n\n` +
+    'Jika ada pertanyaan atau keluhan setelah sesi, jangan ragu menghubungi kami. ' +
+    `Semoga ${title} lekas pulih dan sehat selalu.\n\n` +
+    `Hormat kami,\n*${clinic}*`
+  );
+};
+
+export const buildWhatsAppLink = ({ phone, patientName, gender, clinicName, url, now }) => {
+  const text = buildWhatsAppMessage({ patientName, gender, clinicName, url, now });
   return `https://wa.me/${toWhatsAppNumber(phone)}?text=${encodeURIComponent(text)}`;
 };
 
