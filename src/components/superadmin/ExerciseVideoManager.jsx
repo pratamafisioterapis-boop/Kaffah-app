@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2, Upload, Trash2, Play, Search, CheckCircle2, Plus, Pencil, Check, X } from 'lucide-react';
+import { Loader2, Upload, Trash2, Play, Search, CheckCircle2, Plus, Pencil, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { nextExerciseCode, summarizePrefixes, PREFIX_PATTERN } from '@/lib/exerciseCodes';
+import { nextExerciseCode, summarizePrefixes, generatePrefix } from '@/lib/exerciseCodes';
 import { Panel, Pill, EmptyState } from '@/components/superadmin/ui';
 import { confirmAction } from '@/lib/confirmAction';
 
@@ -31,8 +31,42 @@ const readDuration = (file) =>
     v.src = url;
   });
 
-const EMPTY_FORM = { mode: 'existing', prefix: '', newPrefix: '', name: '', grp: '', howTo: '', dose: '', progression: '', caution: '' };
+const EMPTY_FORM = { mode: 'existing', prefix: '', name: '', grp: '', howTo: '', dose: '', progression: '', caution: '' };
 const nz = (v) => (v && v.trim() ? v.trim() : null);
+const FIELD_LABEL = 'block text-sm font-medium text-slate-700 mb-1';
+
+// Kolom isian latihan yang dipakai dialog Tambah dan dialog Edit. `idp` membedakan id elemen antar dialog.
+const ExerciseFields = ({ form, onChange, groups, idp }) => (
+  <>
+    <div>
+      <label htmlFor={`${idp}-name`} className={FIELD_LABEL}>Nama latihan</label>
+      <Input id={`${idp}-name`} value={form.name} onChange={onChange('name')} maxLength={120} placeholder="mis. Chin tuck (retraksi servikal)" required />
+    </div>
+    <div>
+      <label htmlFor={`${idp}-grp`} className={FIELD_LABEL}>Kelompok</label>
+      <Input id={`${idp}-grp`} list={`${idp}-grp-list`} value={form.grp} onChange={onChange('grp')} maxLength={60} placeholder="mis. Penguatan, Peregangan, Mobilitas" required />
+      <datalist id={`${idp}-grp-list`}>{groups.map((g) => <option key={g} value={g} />)}</datalist>
+    </div>
+    <div>
+      <label htmlFor={`${idp}-how`} className={FIELD_LABEL}>Cara melakukan <span className="font-normal text-slate-400">(tampil ke pasien)</span></label>
+      <Textarea id={`${idp}-how`} value={form.howTo} onChange={onChange('howTo')} rows={4} placeholder="Langkah singkat dalam bahasa awam." />
+    </div>
+    <div className="grid gap-3 sm:grid-cols-2">
+      <div>
+        <label htmlFor={`${idp}-dose`} className={FIELD_LABEL}>Dosis bawaan</label>
+        <Input id={`${idp}-dose`} value={form.dose} onChange={onChange('dose')} placeholder="mis. 10 kali x 3" />
+      </div>
+      <div>
+        <label htmlFor={`${idp}-prog`} className={FIELD_LABEL}>Progresi</label>
+        <Input id={`${idp}-prog`} value={form.progression} onChange={onChange('progression')} placeholder="mis. Tambah tahan 5 detik" />
+      </div>
+    </div>
+    <div>
+      <label htmlFor={`${idp}-caution`} className={FIELD_LABEL}>Perhatian</label>
+      <Input id={`${idp}-caution`} value={form.caution} onChange={onChange('caution')} placeholder="mis. Tanpa nyeri tajam" />
+    </div>
+  </>
+);
 
 const ExerciseVideoManager = () => {
   const { toast } = useToast();
@@ -47,8 +81,12 @@ const ExerciseVideoManager = () => {
   const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [creating, setCreating] = useState(false);
-  const [editId, setEditId] = useState(null); // kode latihan yang namanya sedang diedit
-  const [editName, setEditName] = useState('');
+  const [editId, setEditId] = useState(null); // kode latihan yang sedang diedit (dialog Edit)
+  const [editForm, setEditForm] = useState(EMPTY_FORM);
+  const [editLoading, setEditLoading] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  // Hapus: null | { stage: 'checking' } | { stage: 'confirm' | 'blocked' | 'deleting', soap, logs, plans }
+  const [del, setDel] = useState(null);
   const fileRef = useRef(null);
   const targetRef = useRef(null);
 
@@ -125,34 +163,113 @@ const ExerciseVideoManager = () => {
     setPreview({ id, url: data.signedUrl });
   };
 
-  const startEdit = (e) => { setEditId(e.id); setEditName(e.name || ''); };
-  const cancelEdit = () => { setEditId(null); setEditName(''); };
+  const setEditField = (k) => (ev) => setEditForm((f) => ({ ...f, [k]: ev.target.value }));
 
-  // Ganti nama saja; kode tidak pernah berubah. SOAP yang sudah tersimpan menyimpan teks rencana saat itu,
-  // sedangkan aplikasi pasien dan pencarian Plan SOAP langsung memakai nama baru.
-  const saveName = async (id) => {
-    const name = editName.trim();
-    const current = exercises.find((x) => x.id === id);
-    if (!current || name === current.name) { cancelEdit(); return; }
-    if (name.length < 3 || name.length > 120) {
-      toast({ variant: 'destructive', title: 'Nama latihan 3–120 karakter' });
+  const openEdit = async (e) => {
+    setEditId(e.id);
+    setDel(null);
+    setEditLoading(true);
+    setEditForm({ ...EMPTY_FORM, name: e.name || '', grp: e.grp || '' });
+    const { data, error } = await supabase.from('plan_exercises')
+      .select('name, grp, how_to, dose, progression, caution').eq('id', e.id).maybeSingle();
+    setEditLoading(false);
+    if (error || !data) {
+      toast({ variant: 'destructive', title: 'Gagal memuat latihan', description: error?.message });
+      setEditId(null);
       return;
     }
-    setBusyId(id);
-    const { error } = await supabase.from('plan_exercises').update({ name }).eq('id', id);
-    setBusyId(null);
-    if (error) { toast({ variant: 'destructive', title: 'Gagal mengganti nama', description: error.message }); return; }
-    setExercises((prev) => prev.map((x) => (x.id === id ? { ...x, name } : x)));
-    toast({ title: `Nama ${id} diperbarui` });
-    cancelEdit();
+    setEditForm({ ...EMPTY_FORM, name: data.name || '', grp: data.grp || '', howTo: data.how_to || '', dose: data.dose || '', progression: data.progression || '', caution: data.caution || '' });
+  };
+
+  const closeEdit = () => {
+    if (savingEdit || del?.stage === 'deleting') return;
+    setEditId(null);
+    setDel(null);
+  };
+
+  // Kode tidak pernah berubah. Aplikasi pasien dan pencarian Plan SOAP langsung memakai isi baru; SOAP yang sudah
+  // tersimpan menyimpan teks rencana saat itu dan tidak ikut berubah.
+  const saveEdit = async (ev) => {
+    ev.preventDefault();
+    const name = editForm.name.trim();
+    const grp = editForm.grp.trim();
+    if (name.length < 3 || name.length > 120 || !grp) {
+      toast({ variant: 'destructive', title: 'Nama (3–120 karakter) dan kelompok wajib diisi' });
+      return;
+    }
+    setSavingEdit(true);
+    const { error } = await supabase.from('plan_exercises').update({
+      name, grp, how_to: nz(editForm.howTo), dose: nz(editForm.dose), progression: nz(editForm.progression), caution: nz(editForm.caution),
+    }).eq('id', editId);
+    setSavingEdit(false);
+    if (error) { toast({ variant: 'destructive', title: 'Gagal menyimpan perubahan', description: error.message }); return; }
+    setExercises((prev) => prev.map((x) => (x.id === editId ? { ...x, name, grp } : x)));
+    toast({ title: `Latihan ${editId} diperbarui` });
+    setEditId(null);
+  };
+
+  // Latihan yang sudah dipakai di SOAP atau tercatat dikerjakan pasien tidak boleh dihapus: itu mengubah rekam
+  // medis dan riwayat pasien. Yang hanya ada di rencana diagnosa boleh, dan kodenya dibersihkan dari rencana itu.
+  const startDelete = async () => {
+    const id = editId;
+    setDel({ stage: 'checking' });
+    const [soap, logs, plans] = await Promise.all([
+      supabase.from('medical_records').select('id', { count: 'exact', head: true }).contains('plan_data', { exercises: { [id]: true } }),
+      supabase.from('patient_exercise_logs').select('id', { count: 'exact', head: true }).eq('exercise_id', id),
+      supabase.from('diagnosis_exercise_plans').select('diagnosis_key', { count: 'exact', head: true })
+        .or(`phase1.cs.{${id}},phase2.cs.{${id}},phase3.cs.{${id}}`),
+    ]);
+    const err = soap.error || logs.error || plans.error;
+    if (err) { toast({ variant: 'destructive', title: 'Gagal memeriksa pemakaian latihan', description: err.message }); setDel(null); return; }
+    const usage = { soap: soap.count || 0, logs: logs.count || 0, plans: plans.count || 0 };
+    setDel({ stage: usage.soap > 0 || usage.logs > 0 ? 'blocked' : 'confirm', ...usage });
+  };
+
+  const confirmDelete = async () => {
+    const id = editId;
+    const path = assets[id]?.storage_path;
+    setDel((d) => ({ ...d, stage: 'deleting' }));
+    const { data: gone, error } = await supabase.from('plan_exercises').delete().eq('id', id).select('id');
+    if (error || !gone?.length) {
+      toast({
+        variant: 'destructive',
+        title: 'Latihan tidak terhapus',
+        description: error?.code === '23503' ? 'Latihan ini baru saja tercatat dikerjakan pasien, jadi tidak bisa dihapus.' : (error?.message || 'Tidak ada baris yang terhapus.'),
+      });
+      setDel((d) => ({ ...d, stage: 'confirm' }));
+      return;
+    }
+    // Bersihkan kodenya dari rencana diagnosa supaya nomor ini tidak pernah menunjuk latihan lain kelak.
+    let cleanupFailed = false;
+    const { data: plans, error: pErr } = await supabase.from('diagnosis_exercise_plans')
+      .select('diagnosis_key, phase1, phase2, phase3').or(`phase1.cs.{${id}},phase2.cs.{${id}},phase3.cs.{${id}}`);
+    if (pErr) cleanupFailed = true;
+    else {
+      for (const pl of plans || []) {
+        const { error: uErr } = await supabase.from('diagnosis_exercise_plans').update({
+          phase1: pl.phase1.filter((x) => x !== id), phase2: pl.phase2.filter((x) => x !== id), phase3: pl.phase3.filter((x) => x !== id),
+        }).eq('diagnosis_key', pl.diagnosis_key);
+        if (uErr) cleanupFailed = true;
+      }
+    }
+    if (path) await supabase.storage.from(BUCKET).remove([path]);
+    setExercises((prev) => prev.filter((x) => x.id !== id));
+    setAssets((prev) => { const next = { ...prev }; delete next[id]; return next; });
+    toast(cleanupFailed
+      ? { variant: 'destructive', title: `Latihan ${id} dihapus, tetapi kodenya masih tertinggal di sebagian rencana diagnosa`, description: 'Jangan buat latihan baru berawalan sama sebelum dibereskan.' }
+      : { title: `Latihan ${id} dihapus` });
+    setEditId(null);
+    setDel(null);
   };
 
   const prefixes = useMemo(() => summarizePrefixes(exercises), [exercises]);
   const groups = useMemo(() => [...new Set(exercises.map((e) => e.grp).filter(Boolean))].sort((a, b) => a.localeCompare(b)), [exercises]);
-  const chosenPrefix = form.mode === 'new' ? form.newPrefix.trim().toUpperCase() : form.prefix;
-  const prefixValid = form.mode === 'new'
-    ? PREFIX_PATTERN.test(chosenPrefix) && !prefixes.some((p) => p.prefix === chosenPrefix)
-    : Boolean(form.prefix);
+  // Awalan baru dibuat otomatis dari nama latihan (tidak diketik); awalan yang ada dipilih dari daftar.
+  const nameReady = form.name.trim().length >= 3;
+  const chosenPrefix = form.mode === 'new'
+    ? (nameReady ? generatePrefix(form.name, new Set(prefixes.map((p) => p.prefix))) || '' : '')
+    : form.prefix;
+  const prefixValid = Boolean(chosenPrefix);
   const codePreview = prefixValid ? nextExerciseCode(chosenPrefix, exercises.map((e) => e.id)) : null;
   const setField = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -160,7 +277,7 @@ const ExerciseVideoManager = () => {
     e.preventDefault();
     const name = form.name.trim();
     const grp = form.grp.trim();
-    if (!prefixValid) { toast({ variant: 'destructive', title: 'Awalan kode belum valid', description: 'Pilih awalan yang ada, atau isi awalan baru 2–3 huruf besar yang belum dipakai.' }); return; }
+    if (!prefixValid) { toast({ variant: 'destructive', title: 'Awalan kode belum ada', description: 'Pilih awalan dari daftar, atau pilih awalan baru (otomatis) dan isi nama latihan dulu.' }); return; }
     if (name.length < 3 || !grp) { toast({ variant: 'destructive', title: 'Nama dan kelompok latihan wajib diisi' }); return; }
     setCreating(true);
     try {
@@ -231,22 +348,11 @@ const ExerciseVideoManager = () => {
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="font-mono text-xs bg-slate-100 text-slate-700 rounded px-2 py-1">{e.id}</span>
                   <div className="min-w-0 flex-1 basis-48">
-                    {editId === e.id ? (
-                      <form className="flex items-center gap-1.5" onSubmit={(ev) => { ev.preventDefault(); saveName(e.id); }}>
-                        <Input value={editName} onChange={(ev) => setEditName(ev.target.value)} maxLength={120} autoFocus
-                          onKeyDown={(ev) => { if (ev.key === 'Escape') cancelEdit(); }} aria-label={`Nama latihan ${e.id}`} />
-                        <Button type="submit" size="sm" disabled={busy} aria-label="Simpan nama">
-                          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                        </Button>
-                        <Button type="button" size="sm" variant="ghost" onClick={cancelEdit} disabled={busy} aria-label="Batal ganti nama"><X className="w-4 h-4" /></Button>
-                      </form>
-                    ) : (
-                      <p className="font-medium text-slate-900 break-words">
-                        {e.name}
-                        <button type="button" onClick={() => startEdit(e)} className="ml-1.5 inline-flex align-middle rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                          aria-label={`Ganti nama ${e.id}`} title="Ganti nama"><Pencil className="w-3.5 h-3.5" /></button>
-                      </p>
-                    )}
+                    <p className="font-medium text-slate-900 break-words">
+                      {e.name}
+                      <button type="button" onClick={() => openEdit(e)} className="ml-1.5 inline-flex align-middle rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                        aria-label={`Edit ${e.id}`} title="Edit latihan"><Pencil className="w-3.5 h-3.5" /></button>
+                    </p>
                     <p className="text-xs text-slate-500">{e.grp}</p>
                   </div>
                   {a ? (
@@ -284,49 +390,20 @@ const ExerciseVideoManager = () => {
                 value={form.mode === 'new' ? '__baru' : form.prefix}
                 onChange={(e) => setForm((f) => (e.target.value === '__baru' ? { ...f, mode: 'new', prefix: '' } : { ...f, mode: 'existing', prefix: e.target.value }))}>
                 <option value="">Pilih awalan…</option>
+                <option value="__baru">Awalan baru (dibuat otomatis)</option>
                 {prefixes.map((p) => <option key={p.prefix} value={p.prefix}>{p.prefix} · {p.samples.join(', ')} ({p.count} latihan)</option>)}
-                <option value="__baru">Awalan baru…</option>
               </select>
               {form.mode === 'new' && (
-                <div className="mt-2">
-                  <Input value={form.newPrefix} onChange={(e) => setForm((f) => ({ ...f, newPrefix: e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3) }))}
-                    placeholder="2–3 huruf besar, mis. TH" aria-label="Awalan baru" maxLength={3} />
-                  {form.newPrefix && !prefixValid && (
-                    <p className="mt-1 text-xs text-red-600">{prefixes.some((p) => p.prefix === form.newPrefix.toUpperCase()) ? 'Awalan ini sudah ada. Pilih dari daftar.' : 'Isi 2–3 huruf besar.'}</p>
-                  )}
-                </div>
+                <p className="mt-2 text-xs text-slate-500">
+                  Awalan dibuat otomatis dari nama latihan (mis. Bridging → BR) dan dijamin belum dipakai. Gunakan ini hanya jika latihan tidak cocok dengan awalan yang ada.
+                </p>
               )}
               <p className="mt-2 text-sm text-slate-600">
                 Kode yang akan dibuat: <b className="font-mono text-slate-900">{codePreview || '—'}</b>
+                {form.mode === 'new' && !nameReady && <span className="ml-2 text-xs text-slate-400">(isi nama latihan dulu)</span>}
               </p>
             </div>
-            <div>
-              <label htmlFor="ex-name" className="block text-sm font-medium text-slate-700 mb-1">Nama latihan</label>
-              <Input id="ex-name" value={form.name} onChange={setField('name')} maxLength={120} placeholder="mis. Chin tuck (retraksi servikal)" required />
-            </div>
-            <div>
-              <label htmlFor="ex-grp" className="block text-sm font-medium text-slate-700 mb-1">Kelompok</label>
-              <Input id="ex-grp" list="ex-grp-list" value={form.grp} onChange={setField('grp')} maxLength={60} placeholder="mis. Penguatan, Peregangan, Mobilitas" required />
-              <datalist id="ex-grp-list">{groups.map((g) => <option key={g} value={g} />)}</datalist>
-            </div>
-            <div>
-              <label htmlFor="ex-how" className="block text-sm font-medium text-slate-700 mb-1">Cara melakukan <span className="font-normal text-slate-400">(tampil ke pasien)</span></label>
-              <Textarea id="ex-how" value={form.howTo} onChange={setField('howTo')} rows={3} placeholder="Langkah singkat dalam bahasa awam." />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label htmlFor="ex-dose" className="block text-sm font-medium text-slate-700 mb-1">Dosis bawaan</label>
-                <Input id="ex-dose" value={form.dose} onChange={setField('dose')} placeholder="mis. 10 kali x 3" />
-              </div>
-              <div>
-                <label htmlFor="ex-prog" className="block text-sm font-medium text-slate-700 mb-1">Progresi</label>
-                <Input id="ex-prog" value={form.progression} onChange={setField('progression')} placeholder="mis. Tambah tahan 5 detik" />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="ex-caution" className="block text-sm font-medium text-slate-700 mb-1">Perhatian</label>
-              <Input id="ex-caution" value={form.caution} onChange={setField('caution')} placeholder="mis. Tanpa nyeri tajam" />
-            </div>
+            <ExerciseFields form={form} onChange={setField} groups={groups} idp="ex" />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setAddOpen(false)} disabled={creating}>Batal</Button>
               <Button type="submit" disabled={creating || !prefixValid || form.name.trim().length < 3 || !form.grp.trim()}>
@@ -334,6 +411,61 @@ const ExerciseVideoManager = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(editId)} onOpenChange={(o) => { if (!o) closeEdit(); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit latihan <span className="font-mono text-slate-500">{editId}</span></DialogTitle>
+            <DialogDescription>Kode tidak berubah. Perubahan langsung tampil di aplikasi pasien dan pencarian Plan SOAP. SOAP yang sudah tersimpan tidak ikut berubah.</DialogDescription>
+          </DialogHeader>
+          {editLoading ? (
+            <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>
+          ) : (
+            <form onSubmit={saveEdit} className="space-y-4">
+              <ExerciseFields form={editForm} onChange={setEditField} groups={groups} idp="ed" />
+              {del?.stage === 'checking' && (
+                <p className="flex items-center gap-2 text-sm text-slate-500"><Loader2 className="h-4 w-4 animate-spin" /> Memeriksa pemakaian latihan…</p>
+              )}
+              {(del?.stage === 'confirm' || del?.stage === 'deleting') && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-900 space-y-2" role="alert">
+                  <p className="font-semibold flex items-center gap-1.5"><AlertTriangle className="h-4 w-4" /> Hapus latihan {editId} secara permanen?</p>
+                  <ul className="list-disc pl-5 space-y-0.5">
+                    <li>Tidak ada SOAP atau catatan latihan pasien yang memakainya.</li>
+                    <li>{del.plans > 0 ? `Kodenya dihapus dari ${del.plans} rencana diagnosa.` : 'Tidak ada rencana diagnosa yang memuatnya.'}</li>
+                    {assets[editId] && <li>Video latihan ini ikut dihapus.</li>}
+                  </ul>
+                  <div className="flex justify-end gap-2 pt-1">
+                    <Button type="button" variant="outline" size="sm" onClick={() => setDel(null)} disabled={del.stage === 'deleting'}>Batal</Button>
+                    <Button type="button" size="sm" className="bg-red-600 hover:bg-red-700 text-white" onClick={confirmDelete} disabled={del.stage === 'deleting'}>
+                      {del.stage === 'deleting' ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash2 className="h-4 w-4 mr-1" />} Ya, hapus
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {del?.stage === 'blocked' && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 space-y-2" role="alert">
+                  <p className="font-semibold flex items-center gap-1.5"><AlertTriangle className="h-4 w-4" /> Latihan ini tidak bisa dihapus</p>
+                  <p>
+                    {[del.soap > 0 && `Dipakai di ${del.soap} SOAP`, del.logs > 0 && `tercatat dikerjakan pasien ${del.logs} kali`].filter(Boolean).join(' dan ')}.
+                    Menghapusnya akan mengubah rekam medis dan riwayat pasien. Anda tetap bisa mengedit nama atau isinya.
+                  </p>
+                  <div className="flex justify-end"><Button type="button" variant="outline" size="sm" onClick={() => setDel(null)}>Mengerti</Button></div>
+                </div>
+              )}
+              <DialogFooter className="sm:justify-between gap-2">
+                <Button type="button" variant="outline" className="text-red-700 border-red-200 hover:bg-red-50" onClick={startDelete}
+                  disabled={savingEdit || Boolean(del)}><Trash2 className="h-4 w-4 mr-1" /> Hapus latihan</Button>
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" onClick={closeEdit} disabled={savingEdit}>Batal</Button>
+                  <Button type="submit" disabled={savingEdit || Boolean(del) || editForm.name.trim().length < 3 || !editForm.grp.trim()}>
+                    {savingEdit && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Simpan perubahan
+                  </Button>
+                </div>
+              </DialogFooter>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
     </Panel>
