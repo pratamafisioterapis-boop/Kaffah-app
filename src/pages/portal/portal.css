@@ -36,11 +36,20 @@
 .pp .powered{font-size:11px;color:var(--muted);text-align:center;letter-spacing:.04em}
 .pp .center{min-height:100dvh;display:grid;place-items:center;padding:24px;text-align:center}
 /* gate */
-.pp .gate{background:var(--hero);color:var(--hero-ink);min-height:100dvh;display:flex;flex-direction:column;gap:20px;padding:48px 24px 28px}
-.pp .gate .logo{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;font-size:21px}
-.pp .gate h1{font-size:30px;line-height:1.08}
+.pp .gate{background:var(--hero);color:var(--hero-ink);min-height:100dvh;display:flex;flex-direction:column;gap:16px;padding:max(28px,env(safe-area-inset-top,0px)) 20px max(20px,env(safe-area-inset-bottom,0px));overflow:hidden}
+.pp .gate .hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;position:relative;padding:8px 4px 24px}
+.pp .gate .logo{display:flex;justify-content:center;margin-bottom:22px;position:relative}
+.pp .gate .logo::before{content:"";position:absolute;top:50%;left:50%;width:340px;height:340px;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle closest-side,transparent 0 25%,hsl(var(--h) 85% 93% / .6) 25% 47%,hsl(var(--h) 85% 93% / .4) 47% 70%,hsl(var(--h) 85% 94% / .22) 70% 100%);pointer-events:none;z-index:0}
+.pp .gate .hero>*:not(.logo){position:relative;z-index:1}
+.pp .gate .logo .mark{position:relative;z-index:1}
+.pp .gate .mark{width:84px;height:84px;border-radius:26px;background:#fff;box-shadow:0 10px 28px hsl(var(--h) 55% 30% / .18);font-size:34px}
+.pp .gate .mark img{object-fit:contain;padding:10px}
+.pp .gate .clinic{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:-.005em}
+.pp .gate h1{font-size:32px;line-height:1.06;max-width:15ch;margin-top:6px}
 .pp .gate p{margin:0;color:var(--hero-mute)}
-.pp .panel{background:var(--surface);color:var(--ink);border-radius:24px;padding:20px;margin-top:auto}
+.pp .gate .hero p{max-width:32ch}
+.pp .gate p.notice{color:var(--hero-ink);font-weight:600}
+.pp .panel{background:var(--surface);color:var(--ink);border-radius:24px;padding:20px;box-shadow:0 -6px 30px hsl(var(--h) 55% 25% / .08)}
 .pp .dob{display:grid;grid-template-columns:1fr 1.3fr 1.2fr;gap:8px;margin:8px 0 12px}
 .pp .dob input{width:100%;font:inherit;font-size:20px;text-align:center;padding:12px 4px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface2);color:var(--ink);font-variant-numeric:tabular-nums}
 .pp .dob input:focus{border-color:var(--brand);outline:0}

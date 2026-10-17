@@ -61,10 +61,13 @@ const Gate = ({ branding, onVerify, notice }) => {
 
   return (
     <div className="gate">
-      <div className="logo"><Mark clinic={branding} />{branding.clinic_name}</div>
-      <h1>Pemulihan Anda ada di sini.</h1>
-      <p>{branding.clinic_name} mengirim tautan ini untuk Anda. Masukkan tanggal lahir agar data Anda tetap aman.</p>
-      {notice && <p style={{ color: 'var(--hero-ink)', fontWeight: 600 }}>{notice}</p>}
+      <div className="hero">
+        <div className="logo"><Mark clinic={branding} /></div>
+        <span className="clinic">{branding.clinic_name}</span>
+        <h1>Pemulihan Anda ada di sini.</h1>
+        <p>{branding.clinic_name} mengirim tautan ini untuk Anda. Masukkan tanggal lahir agar data Anda tetap aman.</p>
+        {notice && <p className="notice">{notice}</p>}
+      </div>
       <form className="panel" onSubmit={submit} autoComplete="off">
         <label htmlFor="pp-dd" style={{ fontWeight: 600, fontSize: 13 }}>Tanggal lahir</label>
         <div className="dob">
