@@ -27,6 +27,7 @@ import { format } from 'date-fns';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useAssessmentMode } from '@/hooks/useAssessmentMode';
+import { usePortalEnabled } from '@/hooks/usePortalEnabled';
 import { id } from 'date-fns/locale';
 
 // daily_recaps.diagnosis bisa berupa array, string JSON, atau string tunggal.
@@ -190,6 +191,8 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     .map((d) => (templateCache[d]?.objective ? { key: d, label: templateCache[d].label, template: templateCache[d].objective } : null))
     .filter(Boolean);
 
+  const portalEnabled = usePortalEnabled();
+  const latestGoals = latestRecord?.plan_data?.goals || null;
   const isKaffahClinic = (userDetails?.clinic_id || therapist?.clinic_id) === KAFFAH_CLINIC_ID;
   const templatesOf = (key) => (key === 'subjective' ? subjectiveTemplates : key === 'objective' ? objectiveTemplates : []);
   // Kaffah: S & O diisi lewat template (pilih variabel); ketikan bebas baru terbuka setelah terisi.
@@ -774,6 +777,8 @@ if (isCreate) {
                     <PlanChecklist
                       diagnosisLabels={diagnosisLabels}
                       value={formData.plan_data}
+                      goalsEnabled={portalEnabled}
+                      previousGoals={latestGoals}
                       onChange={(plan_data, plan, names) => {
                         setFormData((prev) => ({ ...prev, plan_data, plan }));
                         setHomeExercises(names || []);

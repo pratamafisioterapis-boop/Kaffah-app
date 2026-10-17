@@ -94,6 +94,7 @@ export const portalApi = {
   logout: (session) => call('portal_logout', { p_session: session }),
   home: (session) => call('portal_get_home', { p_session: session }),
   progress: (session) => call('portal_get_progress', { p_session: session }),
+  goals: (session) => call('portal_get_goals', { p_session: session }),
   program: (session) => call('portal_get_program', { p_session: session }),
   logExercise: (session, exerciseId, done) =>
     call('portal_log_exercise', { p_session: session, p_exercise_id: exerciseId, p_done: done }),

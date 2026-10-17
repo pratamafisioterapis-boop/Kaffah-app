@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { getPlanForDiagnoses, getPlanOptions, getPlanExercisesByIds, searchPlanExercises } from '@/lib/api';
 import { PHASE_TITLES, REQUIRED_MANUAL_OPTIONS, mergePlanPhases, buildPlanText } from '@/data/planModalities';
+import GoalTreatment from '@/components/therapist/GoalTreatment';
 
 const EMPTY = { epa: [], manual: [], dose: {}, exercises: {}, exDose: {}, notes: '' };
 
@@ -93,7 +94,7 @@ const ExerciseDetail = ({ ex }) => (
  * value: { epa, manual, dose, exercises: {id: true}, exDose: {id: teks}, notes } | null
  * onChange(data, text, exerciseNames): text = ringkasan untuk kolom `plan`; exerciseNames = latihan terpilih.
  */
-const PlanChecklist = ({ diagnosisLabels, value, onChange }) => {
+const PlanChecklist = ({ diagnosisLabels, value, onChange, goalsEnabled = false, previousGoals = null }) => {
   // Daftar latihan diambil dari database untuk diagnosa terpilih (disimpan kumulatif).
   const [catalog, setCatalog] = useState({ byDiagnosis: {}, exercises: {}, fetched: [] });
   const [loading, setLoading] = useState(false);
@@ -311,6 +312,10 @@ const PlanChecklist = ({ diagnosisLabels, value, onChange }) => {
           </p>
         ))}
       </PlanCard>
+
+      {goalsEnabled && (
+        <GoalTreatment goals={data.goals} previousGoals={previousGoals} onChange={(goals) => emit({ ...data, goals })} />
+      )}
 
       <section className="rounded-app-lg border border-slate-200 bg-white px-4 py-3">
         <h4 className="mb-2 text-sm font-semibold text-slate-800">Catatan tambahan</h4>
