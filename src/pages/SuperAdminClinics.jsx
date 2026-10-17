@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Loader2, Plus, Building2, Trash2, Pencil, UserPlus, SlidersHorizontal, Stethoscope, Unlink } from 'lucide-react';
+import { Loader2, Plus, Trash2, Pencil, UserPlus, SlidersHorizontal, Stethoscope, Unlink, Search, ChevronDown, Inbox } from 'lucide-react';
 import { ROLES, ROLE_LABELS, getFeatureCatalogForRole, SETUP_SUB_FEATURES } from '@/lib/featureCatalog';
 import { linkOwnerAsTherapist, setOwnerTherapistActive, reassignTherapistToOwner, separateTherapistFromOwner } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { PageHead, Panel, Pill, EmptyState, Spinner, Initials, SHEET_DIALOG } from '@/components/superadmin/ui';
 
 const emptyForm = {
   id: null, name: '', address: '', phone: '', subscription_status: 'active',
@@ -102,6 +103,9 @@ const SuperAdminClinics = () => {
   const [loadingTherapistLogins, setLoadingTherapistLogins] = useState(false);
   const [selectedTherapistLoginId, setSelectedTherapistLoginId] = useState('');
   const [separating, setSeparating] = useState(false);
+  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'inactive'
+  const [expandedSettings, setExpandedSettings] = useState({}); // { [clinicId]: true }
 
   const fetchClinics = async () => {
     setLoading(true);
@@ -532,32 +536,76 @@ const SuperAdminClinics = () => {
     toast({ title: nextActive ? 'Status terapis diaktifkan kembali' : 'Status terapis dinonaktifkan' });
   };
 
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleClinics = clinics.filter((c) => {
+    const isActive = c.subscription_status === 'active';
+    if (statusFilter === 'active' && !isActive) return false;
+    if (statusFilter === 'inactive' && isActive) return false;
+    if (!normalizedQuery) return true;
+    const ownerText = (owners[c.id] || []).map((o) => `${o.full_name} ${o.email}`).join(' ');
+    return `${c.name} ${c.address || ''} ${c.phone || ''} ${c.subdomain || ''} ${ownerText}`.toLowerCase().includes(normalizedQuery);
+  });
+  const countByStatus = (st) => clinics.filter((c) => (st === 'all' ? true : st === 'active' ? c.subscription_status === 'active' : c.subscription_status !== 'active')).length;
+
   return (
-    <div className="p-6">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Building2 className="w-6 h-6 text-blue-600" /> Manajemen Klinik
-          </h1>
-          <p className="text-sm text-slate-500">Kelola seluruh klinik yang terdaftar di sistem.</p>
+    <>
+      <PageHead
+        title="Manajemen Klinik"
+        description="Kelola seluruh klinik yang terdaftar di sistem."
+        actions={(
+          <Button onClick={openCreate} className="bg-app-accent hover:bg-app-accent-hover min-h-11 justify-center whitespace-nowrap">
+            <Plus className="w-4 h-4 mr-2 shrink-0" /> Tambah Klinik
+          </Button>
+        )}
+      />
+
+      {!loading && clinics.length > 0 && (
+        <div className="flex flex-wrap gap-2.5">
+          <div className="relative flex-1 basis-64 min-w-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-app-muted pointer-events-none" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Cari nama, alamat, atau owner"
+              aria-label="Cari klinik"
+              className="w-full min-h-11 pl-10 pr-3 rounded-xl border border-slate-300 bg-white text-base md:text-sm focus:outline-none focus:border-app-accent focus:ring-2 focus:ring-app-accent/25"
+            />
+          </div>
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter status">
+            {[['all', 'Semua'], ['active', 'Aktif'], ['inactive', 'Nonaktif']].map(([k, l]) => (
+              <button
+                key={k}
+                type="button"
+                aria-pressed={statusFilter === k}
+                onClick={() => setStatusFilter(k)}
+                className={cn(
+                  'min-h-11 px-3.5 rounded-full border text-[13px] font-medium transition-colors',
+                  statusFilter === k ? 'bg-app-soft border-app-accent text-app-accent font-semibold' : 'bg-white border-slate-300 text-app-muted hover:text-app-ink'
+                )}
+              >
+                {l} <span className="tabular-nums opacity-80">{countByStatus(k)}</span>
+              </button>
+            ))}
+          </div>
         </div>
-        <Button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center whitespace-nowrap">
-          <Plus className="w-4 h-4 mr-2 shrink-0" /> Tambah Klinik
-        </Button>
-      </div>
+      )}
 
       {loading ? (
-        <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>
+        <Spinner />
       ) : clinics.length === 0 ? (
-        <p className="p-6 text-center text-slate-500 bg-white rounded-xl border border-slate-200">Belum ada klinik terdaftar.</p>
+        <Panel><EmptyState title="Belum ada klinik terdaftar">Tambahkan klinik pertama lewat tombol Tambah Klinik.</EmptyState></Panel>
+      ) : visibleClinics.length === 0 ? (
+        <Panel><EmptyState title="Tidak ada klinik yang cocok">Coba kata kunci lain atau ubah filter status.</EmptyState></Panel>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {clinics.map((clinic) => (
-            <div key={clinic.id} className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col gap-4">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="font-semibold text-slate-800 break-words sm:truncate">{clinic.name}</p>
-                  <p className="text-sm text-slate-500 break-words sm:truncate">{clinic.address || '-'}</p>
+        <div className="flex flex-col gap-4">
+          {visibleClinics.map((clinic) => (
+            <div key={clinic.id} className="bg-white rounded-2xl border border-app-border p-4 min-[700px]:p-5 flex flex-col gap-4">
+              <div className="flex items-start gap-3">
+                <Initials name={clinic.name} />
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-app-ink break-words leading-snug">{clinic.name}</p>
+                  <p className="text-sm text-slate-500 break-words">{clinic.address || '-'}</p>
                   <p className="text-sm text-slate-500">{clinic.phone || '-'}</p>
                   {(clinic.subdomain || clinic.custom_domain) && (
                     <p className="text-xs text-slate-400 break-words sm:truncate mt-0.5">
@@ -629,23 +677,38 @@ const SuperAdminClinics = () => {
                     )}
                   </div>
                 </div>
-                <span className={`shrink-0 text-xs px-2 py-1 rounded-full ${clinic.subscription_status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                <Pill tone={clinic.subscription_status === 'active' ? 'ok' : 'neutral'} className="shrink-0">
                   {clinic.subscription_status === 'active' ? 'Aktif' : 'Nonaktif'}
-                </span>
+                </Pill>
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                <Button size="sm" variant="outline" onClick={() => openCreateOwner(clinic)}>
+                <Button size="sm" variant="outline" className="min-h-11" onClick={() => openCreateOwner(clinic)}>
                   <UserPlus className="w-4 h-4 mr-1" /> Tambah Owner
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => handleToggleActive(clinic)}>
+                <Button size="sm" variant="outline" className="min-h-11" onClick={() => handleToggleActive(clinic)}>
                   {clinic.subscription_status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => openEdit(clinic)}><Pencil className="w-4 h-4" /></Button>
-                <Button size="sm" variant="ghost" onClick={() => handleDelete(clinic)}><Trash2 className="w-4 h-4 text-red-500" /></Button>
+                <Button size="sm" variant="ghost" className="min-h-11 min-w-11" aria-label={`Edit ${clinic.name}`} title="Edit klinik" onClick={() => openEdit(clinic)}><Pencil className="w-4 h-4" /></Button>
+                <Button size="sm" variant="ghost" className="min-h-11 min-w-11" aria-label={`Hapus ${clinic.name}`} title="Hapus klinik" onClick={() => handleDelete(clinic)}><Trash2 className="w-4 h-4 text-red-500" /></Button>
               </div>
 
-              <div className="pt-3 border-t border-slate-100">
+              <div className="border-t border-app-border pt-3">
+                <button
+                  type="button"
+                  aria-expanded={!!expandedSettings[clinic.id]}
+                  onClick={() => setExpandedSettings((prev) => ({ ...prev, [clinic.id]: !prev[clinic.id] }))}
+                  className="w-full flex items-center justify-between gap-3 min-h-11 px-1 -mx-1 rounded-lg text-left text-sm font-semibold text-app-ink hover:text-app-accent"
+                >
+                  <span className="flex items-center gap-2"><SlidersHorizontal className="w-4 h-4" /> Pengaturan klinik</span>
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-app-muted">
+                    {expandedSettings[clinic.id] ? 'Tutup' : 'Buka'}
+                    <ChevronDown className={cn('w-4 h-4 transition-transform duration-200', expandedSettings[clinic.id] && 'rotate-180')} />
+                  </span>
+                </button>
+                {expandedSettings[clinic.id] && (
+                  <div className="grid gap-x-8 gap-y-6 pt-4 min-[1000px]:grid-cols-2">
+              <div className="min-w-0">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
                   Pengisi Medical Records
                 </p>
@@ -674,7 +737,7 @@ const SuperAdminClinics = () => {
                 </p>
               </div>
 
-              <div className="pt-3 border-t border-slate-100">
+              <div className="min-w-0">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
                   Format Assessment (SOAP)
                 </p>
@@ -703,7 +766,7 @@ const SuperAdminClinics = () => {
                 </p>
               </div>
 
-              <div className="pt-3 border-t border-slate-100">
+              <div className="min-w-0">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
                   Edit Template SOAP oleh Terapis
                 </p>
@@ -732,7 +795,7 @@ const SuperAdminClinics = () => {
                 </p>
               </div>
 
-              <div className="pt-3 border-t border-slate-100">
+              <div className="min-w-0">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
                   Pengajuan Izin oleh Terapis
                 </p>
@@ -761,7 +824,7 @@ const SuperAdminClinics = () => {
                 </p>
               </div>
 
-              <div className="pt-3 border-t border-slate-100">
+              <div className="min-w-0">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
                   Invoice Pasien
                 </p>
@@ -846,7 +909,7 @@ const SuperAdminClinics = () => {
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-100">
+              <div className="min-w-0 min-[1000px]:col-span-2">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1.5 mb-2.5">
                   <SlidersHorizontal className="w-3.5 h-3.5" /> Fitur Klinik per Role
                 </p>
@@ -909,13 +972,16 @@ const SuperAdminClinics = () => {
                   </div>
                 )}
               </div>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent className={SHEET_DIALOG}>
           <DialogHeader><DialogTitle>{form.id ? 'Edit Klinik' : 'Tambah Klinik'}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2"><label className="text-sm font-medium">Nama Klinik</label>
@@ -972,7 +1038,7 @@ const SuperAdminClinics = () => {
       </Dialog>
 
       <Dialog open={ownerOpen} onOpenChange={setOwnerOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent className={SHEET_DIALOG}>
           <DialogHeader><DialogTitle>Tambah Owner untuk {ownerClinic?.name}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2"><label className="text-sm font-medium">Nama Lengkap</label>
@@ -993,7 +1059,7 @@ const SuperAdminClinics = () => {
         </DialogContent>
       </Dialog>
     <Dialog open={editOwnerOpen} onOpenChange={setEditOwnerOpen}>
-        <DialogContent>
+        <DialogContent className={SHEET_DIALOG}>
           <DialogHeader><DialogTitle>Edit Owner</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2"><label className="text-sm font-medium">Nama Lengkap</label>
@@ -1011,7 +1077,7 @@ const SuperAdminClinics = () => {
       </Dialog>
 
       <Dialog open={mergeOpen} onOpenChange={setMergeOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent className={SHEET_DIALOG}>
           <DialogHeader><DialogTitle>Jadikan {mergeTarget?.owner?.full_name} sebagai Terapis</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <p className="text-sm text-slate-500">
@@ -1099,7 +1165,7 @@ const SuperAdminClinics = () => {
         </DialogContent>
       </Dialog>
       <Dialog open={separateOpen} onOpenChange={setSeparateOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent className={SHEET_DIALOG}>
           <DialogHeader><DialogTitle>Pisahkan Terapis dari {separateTarget?.owner?.full_name}</DialogTitle></DialogHeader>
           <div className="space-y-3 py-2">
             <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-2">
@@ -1144,7 +1210,7 @@ const SuperAdminClinics = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 };
 
