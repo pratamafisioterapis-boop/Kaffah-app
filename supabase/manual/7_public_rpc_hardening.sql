@@ -2,7 +2,10 @@
 -- anon karena dipakai halaman booking publik. Review dan uji dulu; jalankan di
 -- SQL Editor (CREATE OR REPLACE FUNCTION pernah timeout lewat tool MCP).
 --
--- 1) create_appointment_safe (dipakai /booking oleh pengunjung tanpa login)
+-- 1) create_appointment_safe -> SQL final ada di
+--    supabase/manual/8_create_appointment_safe_hardening.sql (catatan di bawah
+--    adalah usulan awal).
+--    (dipakai /booking oleh pengunjung tanpa login)
 --    Masalah: anon bebas mengisi p_allow_overlap (lewati cek bentrok),
 --    p_status, p_is_manual, p_action_by* (memalsukan pelaku), dan p_clinic_id
 --    yang tidak cocok dengan klinik terapis. Fungsi juga tanpa search_path.
