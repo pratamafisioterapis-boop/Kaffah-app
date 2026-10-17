@@ -132,7 +132,7 @@ const TherapistDashboard = () => {
       <div>
         <TherapistDashboardWidget initialProfile={therapistProfile} />
       </div>
-      <PortalInboxCard therapistId={therapistProfile.id} />
+      <PortalInboxCard therapistId={therapistProfile?.id} />
     </div>
   );
 
