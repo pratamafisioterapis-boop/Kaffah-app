@@ -36,6 +36,25 @@ const normalizeClone = (clonedDoc) => {
   el.style.width = `${DOC_BASE_WIDTH}px`;
 };
 
+// Posisi (px CSS, relatif ke atas dokumen) setiap baris teks dan gambar. Dipakai
+// supaya batas halaman PDF jatuh di antara baris, bukan memotong satu baris.
+const collectLineRects = (root) => {
+  const rootTop = root.getBoundingClientRect().top;
+  const rects = [];
+  const push = (r) => {
+    if (r.height > 0) rects.push({ top: r.top - rootTop, bottom: r.bottom - rootTop });
+  };
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    if (!n.nodeValue.trim()) continue; // eslint-disable-line no-continue
+    const range = document.createRange();
+    range.selectNodeContents(n);
+    Array.from(range.getClientRects()).forEach(push);
+  }
+  root.querySelectorAll('img').forEach((img) => push(img.getBoundingClientRect()));
+  return rects;
+};
+
 // Waits for every <img loading="lazy" decoding="async"> inside the document (signature, stamp, logo) to
 // actually finish loading before html2canvas rasterizes it — a fixed delay
 // isn't reliable for remote Supabase Storage images on a slow/first fetch,
@@ -123,7 +142,7 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, onSend
 
   // Draws one rasterized document onto the PDF. startOnNewPage is false only
   // for the very first document, which uses jsPDF's initial blank page.
-  const addCanvasToPdf = (pdf, canvas, startOnNewPage) => {
+  const addCanvasToPdf = (pdf, canvas, startOnNewPage, lineRects = []) => {
     const pdfWidth = 210;
     const pdfHeight = 297;
     const pdfImgH = (canvas.height * pdfWidth) / canvas.width;
@@ -149,8 +168,27 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, onSend
       let renderedPx = 0;
       let isFirstPage = true;
 
+      // Skala canvas terhadap px CSS (html2canvas scale: 2).
+      const ratio = canvas.width / DOC_BASE_WIDTH;
+
       while (renderedPx < canvas.height) {
-        const sliceHeightPx = Math.min(pageSlicePx, canvas.height - renderedPx);
+        let endPx = Math.min(renderedPx + pageSlicePx, canvas.height);
+        if (endPx < canvas.height) {
+          // Bila batas halaman memotong sebuah baris, naikkan ke atas baris itu.
+          // Baris yang terlalu tinggi (potongan > setengah halaman) diabaikan.
+          let cut = endPx;
+          let moved = true;
+          while (moved) {
+            moved = false;
+            for (const r of lineRects) {
+              const top = r.top * ratio;
+              const bottom = r.bottom * ratio;
+              if (top < cut - 1 && bottom > cut + 1) { cut = top; moved = true; }
+            }
+          }
+          if (cut > renderedPx + pageSlicePx * 0.5) endPx = Math.floor(cut);
+        }
+        const sliceHeightPx = endPx - renderedPx;
         const pageCanvas = document.createElement('canvas');
         pageCanvas.width = canvas.width;
         pageCanvas.height = sliceHeightPx;
@@ -187,6 +225,7 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, onSend
       // the modal's visible viewport and silently crops everything below the
       // fold (e.g. the REKOMENDASI section and signature block).
       const fullHeight = target.scrollHeight;
+      const lineRects = collectLineRects(target);
       target.setAttribute(PDF_TARGET_ATTR, '');
       // eslint-disable-next-line no-await-in-loop
       const canvas = await html2canvas(target, {
@@ -204,7 +243,7 @@ const ClinicalDocumentPreviewModal = ({ isOpen, onClose, title, fileName, onSend
         onclone: normalizeClone,
       });
       target.removeAttribute(PDF_TARGET_ATTR);
-      addCanvasToPdf(pdf, canvas, i > 0);
+      addCanvasToPdf(pdf, canvas, i > 0, lineRects);
     }
 
     return pdf;
