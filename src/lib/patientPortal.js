@@ -54,16 +54,17 @@ export const extractHonorific = (nickname) => {
   return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
 };
 
+// Tanpa emoji: wa.me di sebagian WhatsApp (mis. Desktop) menampilkan emoji sebagai "�".
 export const buildWhatsAppMessage = ({ patientName, honorific, clinicName, url, now }) => {
   const clinic = clinicName || 'klinik kami';
   const you = honorific || 'Anda';
   return (
-    `Selamat ${greetingByHour(now)}, ${patientName} 🙏\n\n` +
+    `Selamat ${greetingByHour(now)}, ${patientName}\n\n` +
     `Terima kasih telah mempercayakan proses pemulihan Anda kepada *${clinic}*.\n\n` +
     'Kami berkomitmen memberikan pelayanan terbaik, tidak hanya selama sesi terapi berlangsung, tetapi juga setelahnya. ' +
     `Karena itu, kami menyediakan halaman khusus agar ${you} dapat memantau perkembangan terapi secara mudah dan aman. ` +
     `Di halaman ini ${you} juga bisa melihat *home program*, yaitu latihan yang dianjurkan untuk dilakukan secara mandiri di rumah agar pemulihan lebih optimal:\n\n` +
-    `🔗 ${url}\n\n` +
+    `${url}\n\n` +
     `*Cara mengakses:* buka tautan di atas, lalu masukkan tanggal lahir ${you} (format: DD-MM-YYYY) untuk masuk.\n\n` +
     'Jika ada pertanyaan atau keluhan setelah sesi, jangan ragu menghubungi kami. ' +
     `Semoga ${you} lekas pulih dan sehat selalu.\n\n` +
