@@ -16,6 +16,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
 import { confirmAction } from '@/lib/confirmAction';
+import { validatePassword } from '@/lib/passwordPolicy';
 
 const AdminManager = () => {
   const { toast } = useToast();
@@ -149,8 +150,9 @@ const AdminManager = () => {
 
   const handleResetPassword = async () => {
     if (!resetAdmin) return;
-    if (newPassword.length < 6) {
-      toast({ variant: "destructive", title: "Password Lemah", description: "Password minimal 6 karakter." });
+    const resetPwError = await validatePassword(newPassword);
+    if (resetPwError) {
+      toast({ variant: "destructive", title: "Password Kurang Aman", description: resetPwError });
       return;
     }
     setResetting(true);
@@ -192,8 +194,9 @@ const AdminManager = () => {
       return;
     }
     
-    if (password.length < 6) {
-        toast({ variant: "destructive", title: "Password Lemah", description: "Password minimal 6 karakter." });
+    const pwError = await validatePassword(password);
+    if (pwError) {
+        toast({ variant: "destructive", title: "Password Kurang Aman", description: pwError });
         return;
     }
 
@@ -363,7 +366,7 @@ const AdminManager = () => {
                    type="password" 
                    value={password} 
                    onChange={(e) => setPassword(e.target.value)} 
-                   placeholder="Minimal 6 karakter"
+                   placeholder="Min. 8 karakter, huruf & angka"
                    className="bg-white"
                 />
             </div>
@@ -394,7 +397,7 @@ const AdminManager = () => {
                 type={showNewPassword ? 'text' : 'password'}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Minimal 6 karakter"
+                placeholder="Min. 8 karakter, huruf & angka"
                 className="pr-10"
               />
               <button

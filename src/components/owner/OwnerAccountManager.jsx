@@ -16,6 +16,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
 import { confirmAction } from '@/lib/confirmAction';
+import { validatePassword } from '@/lib/passwordPolicy';
 
 const OwnerAccountManager = () => {
   const { toast } = useToast();
@@ -59,8 +60,9 @@ const OwnerAccountManager = () => {
       return;
     }
 
-    if (password.length < 6) {
-      toast({ variant: "destructive", title: "Password Lemah", description: "Password minimal 6 karakter." });
+    const pwError = await validatePassword(password);
+    if (pwError) {
+      toast({ variant: "destructive", title: "Password Kurang Aman", description: pwError });
       return;
     }
 
@@ -195,7 +197,7 @@ const OwnerAccountManager = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Minimal 6 karakter"
+                placeholder="Min. 8 karakter, huruf & angka"
                 className="bg-white"
               />
             </div>

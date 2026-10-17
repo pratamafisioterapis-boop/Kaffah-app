@@ -11,6 +11,7 @@ import TherapistDriveUploadsManager from '@/components/owner/TherapistDriveUploa
 import { prepareImageForUpload } from '@/lib/imageUpload';
 import NotificationPreferencesCard, { NOTIFICATION_CATALOG } from '@/components/shared/NotificationPreferencesCard';
 import PageHero from '@/components/shared/PageHero';
+import { validatePassword, PASSWORD_HINT } from '@/lib/passwordPolicy';
 
 const AdminAccountSettings = () => {
   const { user, userDetails, clinicName } = useAuth();
@@ -80,8 +81,9 @@ const AdminAccountSettings = () => {
   };
 
   const handleUpdatePassword = async () => {
-    if (newPassword.length < 6) {
-      toast({ variant: 'destructive', title: 'Password minimal 6 karakter' });
+    const pwError = await validatePassword(newPassword);
+    if (pwError) {
+      toast({ variant: 'destructive', title: 'Password kurang aman', description: pwError });
       return;
     }
     setSavingPassword(true);
@@ -170,7 +172,7 @@ const AdminAccountSettings = () => {
 
         <div className="bg-white p-6 rounded-app border border-slate-200 space-y-4">
           <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Lock className="w-4 h-4" /> Ubah Password</h3>
-          <Input type="password" placeholder="Password baru (min. 6 karakter)" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+          <Input type="password" placeholder={`Password baru (${PASSWORD_HINT})`} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
           <Button onClick={handleUpdatePassword} disabled={savingPassword} className="bg-app-accent">
             {savingPassword && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan Password
           </Button>

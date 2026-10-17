@@ -6,6 +6,7 @@ import { Building2, User, Mail, Phone, Lock, Loader2, AlertCircle, ArrowRight, C
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabaseUrl, supabaseAnonKey } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
+import { validatePassword, PASSWORD_HINT } from '@/lib/passwordPolicy';
 
 const initialForm = {
   clinic_name: '',
@@ -43,12 +44,13 @@ const RegisterClinicPage = () => {
       setError('Nama klinik, nama pemilik, email, dan password wajib diisi.');
       return;
     }
-    if (form.password.length < 6) {
-      setError('Password minimal 6 karakter.');
-      return;
-    }
     if (form.password !== form.confirm_password) {
       setError('Konfirmasi password tidak cocok.');
+      return;
+    }
+    const pwError = await validatePassword(form.password);
+    if (pwError) {
+      setError(pwError);
       return;
     }
 
@@ -127,7 +129,7 @@ const RegisterClinicPage = () => {
                 <Field icon={User} type="text" name="owner_full_name" value={form.owner_full_name} onChange={setField('owner_full_name')} placeholder="Nama Lengkap Pemilik" autoComplete="off" required />
                 <Field icon={Mail} type="email" name="clinic_owner_email" value={form.email} onChange={setField('email')} placeholder="Email" autoCapitalize="none" autoCorrect="off" autoComplete="off" required />
                 <Field icon={Phone} type="tel" name="phone" value={form.phone} onChange={setField('phone')} placeholder="No. Telepon (opsional)" autoComplete="off" />
-                <Field icon={Lock} type="password" name="new-clinic-password" value={form.password} onChange={setField('password')} placeholder="Password (min. 6 karakter)" autoComplete="new-password" required />
+                <Field icon={Lock} type="password" name="new-clinic-password" value={form.password} onChange={setField('password')} placeholder={`Password (${PASSWORD_HINT})`} autoComplete="new-password" required />
                 <Field icon={Lock} type="password" name="confirm-clinic-password" value={form.confirm_password} onChange={setField('confirm_password')} placeholder="Konfirmasi Password" autoComplete="new-password" required />
 
                 <Button

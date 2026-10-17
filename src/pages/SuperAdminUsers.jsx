@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Switch } from '@/components/ui/switch';
 import { PageHead, Panel, Pill, EmptyState, Spinner, Initials, RowAction, SHEET_DIALOG } from '@/components/superadmin/ui';
 import { cn } from '@/lib/utils';
+import { validatePassword } from '@/lib/passwordPolicy';
 
 const ROLES = ['owner', 'admin', 'clinic_admin', 'therapist', 'physiotherapist', 'super_admin'];
 
@@ -169,8 +170,9 @@ const SuperAdminUsers = () => {
       toast({ variant: 'destructive', title: 'Format email tidak valid', description: 'Contoh: admin@rumahsakit.com' });
       return;
     }
-    if (password.length < 6) {
-      toast({ variant: 'destructive', title: 'Password minimal 6 karakter' });
+    const pwError = await validatePassword(password);
+    if (pwError) {
+      toast({ variant: 'destructive', title: 'Password kurang aman', description: pwError });
       return;
     }
     setCreatingKonversi(true);
@@ -230,8 +232,9 @@ const SuperAdminUsers = () => {
   // the existing one.
   const handleResetPassword = async () => {
     if (!resetPasswordUser) return;
-    if (newPassword.length < 6) {
-      toast({ variant: 'destructive', title: 'Password minimal 6 karakter' });
+    const resetPwError = await validatePassword(newPassword);
+    if (resetPwError) {
+      toast({ variant: 'destructive', title: 'Password kurang aman', description: resetPwError });
       return;
     }
     setResettingPassword(true);

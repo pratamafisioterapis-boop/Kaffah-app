@@ -34,6 +34,7 @@ import { format } from 'date-fns';
 import { useTherapistLeaveRequestEnabled } from '@/hooks/useTherapistLeaveRequests';
 import { WORK_SHIFT_PRESETS } from '@/lib/leaveRequestUtils';
 import { confirmAction } from '@/lib/confirmAction';
+import { validatePassword } from '@/lib/passwordPolicy';
 
 
 const SectionCard = ({ icon: Icon, iconClass, title, description, children }) => (
@@ -461,8 +462,9 @@ const TherapistManager = () => {
     // tabel physiotherapists (yang cuma tampilan kartu) — keduanya harus
     // disinkronkan lewat RPC ini, bukan hanya saat password diganti.
     if (emailChanged || passwordChanged) {
-      if (passwordChanged && password.length < 6) {
-        toast({ variant: "destructive", title: "Password Terlalu Pendek", description: "Password minimal 6 karakter." });
+      const pwError = passwordChanged ? await validatePassword(password) : null;
+      if (pwError) {
+        toast({ variant: "destructive", title: "Password Kurang Aman", description: pwError });
         setSaving(false);
         return;
       }
@@ -489,8 +491,9 @@ const TherapistManager = () => {
       setSaving(false);
       return;
     }
-    if (password.length < 6) {
-      toast({ variant: "destructive", title: "Password Terlalu Pendek", description: "Password minimal 6 karakter." });
+    const newPwError = await validatePassword(password);
+    if (newPwError) {
+      toast({ variant: "destructive", title: "Password Kurang Aman", description: newPwError });
       setSaving(false);
       return;
     }
@@ -1286,7 +1289,7 @@ const headerColorMap = {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder={editingTherapist?.user_id ? "********" : "Minimal 6 karakter"}
+                    placeholder={editingTherapist?.user_id ? "********" : "Min. 8 karakter, huruf & angka"}
                   />
                 </div>
               </SectionCard>
