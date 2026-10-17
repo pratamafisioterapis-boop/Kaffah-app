@@ -47,6 +47,7 @@ const PackageRecapsAdmin = React.lazy(lazyRetry(() => import('@/pages/admin/Pack
 const InventoryStockPage = React.lazy(lazyRetry(() => import('@/pages/owner/InventoryStock'), 'InventoryStockPage'));
 const InventoryTakeOutPage = React.lazy(lazyRetry(() => import('@/pages/admin/InventoryTakeOut'), 'InventoryTakeOutPage'));
 const FollowUpManagementPage = React.lazy(lazyRetry(() => import('@/pages/admin/FollowUpManagementPage'), 'FollowUpManagementPage'));
+const PatientPortalPage = React.lazy(lazyRetry(() => import('@/pages/portal/PatientPortalPage'), 'PatientPortalPage'));
 const PatientFeedbackPage = React.lazy(lazyRetry(() => import('@/pages/PatientFeedbackPage'), 'PatientFeedbackPage'));
 const FeedbackManagementOwner = React.lazy(lazyRetry(() => import('@/pages/owner/FeedbackManagement'), 'FeedbackManagementOwner'));
 const FeedbackManagementAdmin = React.lazy(lazyRetry(() => import('@/pages/admin/FeedbackManagement'), 'FeedbackManagementAdmin'));
@@ -294,6 +295,7 @@ function App() {
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
             <Route path="/booking" element={<ClinicBookingPage />} />
+            <Route path="/p/:token" element={<PatientPortalPage />} />
             <Route path="*" element={<ClinicTenantSitePage />} />
           </Routes>
         </Suspense>
@@ -374,6 +376,7 @@ function App() {
                 <Route path="/artikel/:slug" element={<BlogArticlePage />} />
                 <Route path="/i/:recapId" element={<InvoiceViewPage />} />
                 <Route path="/feedback/:token" element={<PatientFeedbackPage />} />
+                <Route path="/p/:token" element={<PatientPortalPage />} />
                 
                 {/* Protected Routes */}
                 <Route

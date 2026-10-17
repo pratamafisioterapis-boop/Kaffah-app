@@ -13,8 +13,9 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   MoreHorizontal, Edit, Trash2, Search,
-  ChevronLeft, ChevronRight, AlertCircle, CheckCircle, ClipboardList
+  ChevronLeft, ChevronRight, AlertCircle, CheckCircle, ClipboardList, Smartphone
 } from 'lucide-react';
+import SendClinaraDialog from '@/components/admin/patients/SendClinaraDialog';
 import { getPatients } from '@/lib/api';
 import { normalizePatient } from '@/lib/patientHelpers';
 
@@ -22,6 +23,7 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [clinaraPatient, setClinaraPatient] = useState(null);
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -165,8 +167,11 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
                       <MoreHorizontal className="h-4 w-4 text-slate-500" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuContent align="end" className="w-48">
                     <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => setClinaraPatient(patient)} className="cursor-pointer">
+                        <Smartphone className="mr-2 h-4 w-4 text-sky-600" /> Kirim Clinara
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onEdit(patient)} className="cursor-pointer">
                       <Edit className="mr-2 h-4 w-4 text-app-accent" /> Edit Pasien
                     </DropdownMenuItem>
@@ -303,8 +308,11 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
                                               <MoreHorizontal className="h-4 w-4 text-slate-500" />
                                           </Button>
                                       </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end" className="w-40">
+                                      <DropdownMenuContent align="end" className="w-48">
                                           <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                          <DropdownMenuItem onClick={() => setClinaraPatient(patient)} className="cursor-pointer">
+                                              <Smartphone className="mr-2 h-4 w-4 text-sky-600" /> Kirim Clinara
+                                          </DropdownMenuItem>
                                           <DropdownMenuItem onClick={() => onEdit(patient)} className="cursor-pointer">
                                               <Edit className="mr-2 h-4 w-4 text-app-accent" /> Edit Pasien
                                           </DropdownMenuItem>
@@ -351,6 +359,7 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
             </div>
         </div>
       )}
+      <SendClinaraDialog patient={clinaraPatient} onClose={() => setClinaraPatient(null)} />
     </div>
   );
 };
