@@ -1,14 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2, Upload, Trash2, Play, Search, CheckCircle2 } from 'lucide-react';
+import { Loader2, Upload, Trash2, Play, Search, CheckCircle2, Plus } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { nextExerciseCode, summarizePrefixes, PREFIX_PATTERN } from '@/lib/exerciseCodes';
 import { Panel, Pill, EmptyState } from '@/components/superadmin/ui';
 import { confirmAction } from '@/lib/confirmAction';
 
-// Super Admin mengunggah satu video per kode latihan Plan SOAP (plan_exercises). Berkas masuk ke bucket
+// Super Admin menambah jenis latihan baru (kode dibuat otomatis) dan mengunggah satu video per kode latihan
+// Plan SOAP (plan_exercises). Berkas masuk ke bucket
 // privat exercise-videos; pasien memutarnya lewat Edge Function portal-exercise-video, dan hanya jika
 // klinik pasien mengaktifkan Link Clinara. Skema: supabase/manual/9_portal_pasien_clinara.sql
 const BUCKET = 'exercise-videos';
@@ -27,6 +31,9 @@ const readDuration = (file) =>
     v.src = url;
   });
 
+const EMPTY_FORM = { mode: 'existing', prefix: '', newPrefix: '', name: '', grp: '', howTo: '', dose: '', progression: '', caution: '' };
+const nz = (v) => (v && v.trim() ? v.trim() : null);
+
 const ExerciseVideoManager = () => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -37,6 +44,9 @@ const ExerciseVideoManager = () => {
   const [query, setQuery] = useState('');
   const [onlyMissing, setOnlyMissing] = useState(false);
   const [preview, setPreview] = useState(null); // { id, url }
+  const [addOpen, setAddOpen] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [creating, setCreating] = useState(false);
   const fileRef = useRef(null);
   const targetRef = useRef(null);
 
@@ -113,6 +123,51 @@ const ExerciseVideoManager = () => {
     setPreview({ id, url: data.signedUrl });
   };
 
+  const prefixes = useMemo(() => summarizePrefixes(exercises), [exercises]);
+  const groups = useMemo(() => [...new Set(exercises.map((e) => e.grp).filter(Boolean))].sort((a, b) => a.localeCompare(b)), [exercises]);
+  const chosenPrefix = form.mode === 'new' ? form.newPrefix.trim().toUpperCase() : form.prefix;
+  const prefixValid = form.mode === 'new'
+    ? PREFIX_PATTERN.test(chosenPrefix) && !prefixes.some((p) => p.prefix === chosenPrefix)
+    : Boolean(form.prefix);
+  const codePreview = prefixValid ? nextExerciseCode(chosenPrefix, exercises.map((e) => e.id)) : null;
+  const setField = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const createExercise = async (e) => {
+    e.preventDefault();
+    const name = form.name.trim();
+    const grp = form.grp.trim();
+    if (!prefixValid) { toast({ variant: 'destructive', title: 'Awalan kode belum valid', description: 'Pilih awalan yang ada, atau isi awalan baru 2–3 huruf besar yang belum dipakai.' }); return; }
+    if (name.length < 3 || !grp) { toast({ variant: 'destructive', title: 'Nama dan kelompok latihan wajib diisi' }); return; }
+    setCreating(true);
+    try {
+      let ids = exercises.map((x) => x.id);
+      let created = null;
+      // Kode = nomor terbesar + 1. Jika ada Super Admin lain yang baru saja memakai nomor itu (bentrok kunci),
+      // baca ulang dan coba lagi.
+      for (let attempt = 0; attempt < 3 && !created; attempt += 1) {
+        const id = nextExerciseCode(chosenPrefix, ids);
+        const { error } = await supabase.from('plan_exercises').insert({
+          id, name, grp, how_to: nz(form.howTo), dose: nz(form.dose), progression: nz(form.progression), caution: nz(form.caution),
+        });
+        if (!error) { created = id; break; }
+        if (error.code !== '23505') throw error;
+        const { data } = await supabase.from('plan_exercises').select('id').like('id', `${chosenPrefix}%`);
+        ids = (data || []).map((r) => r.id);
+      }
+      if (!created) throw new Error('Kode bentrok berulang kali. Coba lagi sebentar lagi.');
+      toast({ title: `Latihan ${created} dibuat`, description: 'Sudah bisa dipilih di Plan SOAP. Unggah videonya dari daftar ini.' });
+      setAddOpen(false);
+      setForm(EMPTY_FORM);
+      setOnlyMissing(false);
+      setQuery(created);
+      await load();
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Gagal membuat jenis latihan', description: err.message });
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return exercises.filter((e) =>
@@ -133,6 +188,7 @@ const ExerciseVideoManager = () => {
           <input type="checkbox" checked={onlyMissing} onChange={(e) => setOnlyMissing(e.target.checked)} /> Hanya yang belum ada video
         </label>
         <Pill tone={done === exercises.length && done > 0 ? 'ok' : 'neutral'} dot={false}>{done} dari {exercises.length} ada video</Pill>
+        <Button onClick={() => setAddOpen(true)}><Plus className="w-4 h-4 mr-1" /> Tambah jenis latihan</Button>
       </div>
 
       <input ref={fileRef} type="file" accept="video/*" className="hidden" onChange={onFile} />
@@ -175,6 +231,72 @@ const ExerciseVideoManager = () => {
           })}
         </ul>
       )}
+
+      <Dialog open={addOpen} onOpenChange={(o) => { if (!creating) setAddOpen(o); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Tambah jenis latihan</DialogTitle>
+            <DialogDescription>Kode dibuat otomatis dari awalan + nomor berikutnya. Latihan baru langsung bisa dipilih terapis di Plan SOAP.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={createExercise} className="space-y-4">
+            <div>
+              <label htmlFor="ex-prefix" className="block text-sm font-medium text-slate-700 mb-1">Awalan kode</label>
+              <select id="ex-prefix" className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
+                value={form.mode === 'new' ? '__baru' : form.prefix}
+                onChange={(e) => setForm((f) => (e.target.value === '__baru' ? { ...f, mode: 'new', prefix: '' } : { ...f, mode: 'existing', prefix: e.target.value }))}>
+                <option value="">Pilih awalan…</option>
+                {prefixes.map((p) => <option key={p.prefix} value={p.prefix}>{p.prefix} · {p.samples.join(', ')} ({p.count} latihan)</option>)}
+                <option value="__baru">Awalan baru…</option>
+              </select>
+              {form.mode === 'new' && (
+                <div className="mt-2">
+                  <Input value={form.newPrefix} onChange={(e) => setForm((f) => ({ ...f, newPrefix: e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3) }))}
+                    placeholder="2–3 huruf besar, mis. TH" aria-label="Awalan baru" maxLength={3} />
+                  {form.newPrefix && !prefixValid && (
+                    <p className="mt-1 text-xs text-red-600">{prefixes.some((p) => p.prefix === form.newPrefix.toUpperCase()) ? 'Awalan ini sudah ada. Pilih dari daftar.' : 'Isi 2–3 huruf besar.'}</p>
+                  )}
+                </div>
+              )}
+              <p className="mt-2 text-sm text-slate-600">
+                Kode yang akan dibuat: <b className="font-mono text-slate-900">{codePreview || '—'}</b>
+              </p>
+            </div>
+            <div>
+              <label htmlFor="ex-name" className="block text-sm font-medium text-slate-700 mb-1">Nama latihan</label>
+              <Input id="ex-name" value={form.name} onChange={setField('name')} maxLength={120} placeholder="mis. Chin tuck (retraksi servikal)" required />
+            </div>
+            <div>
+              <label htmlFor="ex-grp" className="block text-sm font-medium text-slate-700 mb-1">Kelompok</label>
+              <Input id="ex-grp" list="ex-grp-list" value={form.grp} onChange={setField('grp')} maxLength={60} placeholder="mis. Penguatan, Peregangan, Mobilitas" required />
+              <datalist id="ex-grp-list">{groups.map((g) => <option key={g} value={g} />)}</datalist>
+            </div>
+            <div>
+              <label htmlFor="ex-how" className="block text-sm font-medium text-slate-700 mb-1">Cara melakukan <span className="font-normal text-slate-400">(tampil ke pasien)</span></label>
+              <Textarea id="ex-how" value={form.howTo} onChange={setField('howTo')} rows={3} placeholder="Langkah singkat dalam bahasa awam." />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor="ex-dose" className="block text-sm font-medium text-slate-700 mb-1">Dosis bawaan</label>
+                <Input id="ex-dose" value={form.dose} onChange={setField('dose')} placeholder="mis. 10 kali x 3" />
+              </div>
+              <div>
+                <label htmlFor="ex-prog" className="block text-sm font-medium text-slate-700 mb-1">Progresi</label>
+                <Input id="ex-prog" value={form.progression} onChange={setField('progression')} placeholder="mis. Tambah tahan 5 detik" />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="ex-caution" className="block text-sm font-medium text-slate-700 mb-1">Perhatian</label>
+              <Input id="ex-caution" value={form.caution} onChange={setField('caution')} placeholder="mis. Tanpa nyeri tajam" />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setAddOpen(false)} disabled={creating}>Batal</Button>
+              <Button type="submit" disabled={creating || !prefixValid || form.name.trim().length < 3 || !form.grp.trim()}>
+                {creating ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Plus className="w-4 h-4 mr-1" />} Buat latihan
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Panel>
   );
 };
