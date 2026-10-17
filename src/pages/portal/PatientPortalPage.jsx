@@ -109,7 +109,7 @@ const VasChart = ({ entries }) => {
 };
 
 // ---------------------------------------------------------------- Tabs
-const HomeTab = ({ home, go }) => {
+const HomeTab = ({ home, go, onLogout }) => {
   const na = home.next_appointment;
   const pct = home.program_total ? Math.round((home.program_done_today / home.program_total) * 100) : 0;
   const left = home.program_total - home.program_done_today;
@@ -161,6 +161,7 @@ const HomeTab = ({ home, go }) => {
           <div className="quote"><div className="eyebrow">Catatan dari terapis</div><p>{home.latest_note}</p></div>
         )}
         <div className="powered">Didukung Clinara · {home.clinic?.name}</div>
+        <button className="btn ghost" onClick={onLogout}>Keluar dari perangkat ini</button>
       </div>
     </>
   );
@@ -426,6 +427,11 @@ const PatientPortalPage = () => {
     return () => clearInterval(t);
   }, [phase, session, refreshHome]);
 
+  // Keluar: sesi di perangkat ini dinonaktifkan di server, lalu pasien kembali ke layar tanggal lahir.
+  const logout = async () => {
+    try { await portalApi.logout(session); } catch { /* tetap keluar di perangkat ini */ }
+    backToGate('Anda sudah keluar dari perangkat ini.');
+  };
   const toggleExercise = async (exerciseId, done) => {
     try {
       await portalApi.logExercise(session, exerciseId, done);
@@ -466,7 +472,7 @@ const PatientPortalPage = () => {
     <div className="pp" style={style}>{head}
       <div className="pp-col">
         <div className="pp-body">
-          {tab === 'home' && home && <HomeTab home={home} go={setTab} />}
+          {tab === 'home' && home && <HomeTab home={home} go={setTab} onLogout={logout} />}
           {tab === 'prog' && (progress ? <ProgressTab data={progress} /> : <div className="pp-pad"><p style={{ color: 'var(--muted)' }}>Memuat...</p></div>)}
           {tab === 'lat' && <ProgramTab session={session} items={program} onToggle={toggleExercise} />}
           {tab === 'fb' && <FeedbackTab history={history} onSubmit={submitFeedback} />}

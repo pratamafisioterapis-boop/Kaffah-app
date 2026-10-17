@@ -22,6 +22,10 @@ Deno.serve(async (req: Request) => {
     if (typeof session !== "string" || typeof exercise_id !== "string" || !session || !exercise_id) {
       return json({ error: "Permintaan tidak lengkap" }, 400);
     }
+    // Token sesi sekitar 32 karakter dan kode latihan pendek (mis. AK01); tolak masukan yang tidak wajar.
+    if (session.length > 128 || exercise_id.length > 32) {
+      return json({ error: "Permintaan tidak valid" }, 400);
+    }
 
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
