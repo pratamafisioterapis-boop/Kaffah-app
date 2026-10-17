@@ -304,7 +304,7 @@ const formatTanggal = (date) => {
                                             {patient.isComplete ? 'Lengkap' : 'Tidak Lengkap'}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell className="text-center">
+                                    <TableCell className="text-center cursor-default" onClick={(e) => e.stopPropagation()}>
                                         <div className="flex items-center justify-end gap-1 lg:gap-1.5 whitespace-nowrap">
                                             <Button
                                                 variant="outline"
@@ -316,7 +316,7 @@ const formatTanggal = (date) => {
                                             </Button>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="sm" className="h-8 w-8 shrink-0 p-0 rounded-full hover:bg-slate-200/70 data-[state=open]:bg-slate-200/70" onClick={(e) => e.stopPropagation()} aria-label="Aksi lainnya">
+                                                    <Button variant="ghost" size="sm" className="h-9 w-9 shrink-0 p-0 rounded-full hover:bg-slate-200/70 data-[state=open]:bg-slate-200/70" onClick={(e) => e.stopPropagation()} aria-label="Aksi lainnya">
                                                         <MoreHorizontal className="h-4 w-4 text-slate-500" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
