@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { fetchTherapistPatientIds } from '@/lib/portalScope';
 
 // Kotak masuk staf untuk aplikasi pasien Clinara: membalas chat dan menandai keluhan yang sudah ditinjau.
 // Dipakai oleh halaman admin, owner, dan terapis. Akses data dibatasi RLS per klinik.
@@ -15,7 +16,7 @@ const fmtTime = (iso) =>
   new Date(iso).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).replace(':', '.');
 const nameOf = (p) => p?.nickname || p?.full_name || 'Pasien';
 
-const PatientPortalInboxContent = () => {
+const PatientPortalInboxContent = ({ therapistId = null }) => {
   const { userDetails, user } = useAuth();
   const { toast } = useToast();
   const clinicId = userDetails?.clinic_id;
@@ -30,6 +31,12 @@ const PatientPortalInboxContent = () => {
   const [sending, setSending] = useState(false);
   const [onlyNew, setOnlyNew] = useState(true);
   const boxRef = useRef(null);
+  const [scope, setScope] = useState(null); // terapis: id pasien miliknya; owner/admin: null (seluruh klinik)
+
+  useEffect(() => {
+    if (!therapistId) return;
+    fetchTherapistPatientIds(therapistId).then((ids) => setScope(ids || new Set()));
+  }, [therapistId]);
 
   const load = useCallback(async () => {
     let mq = supabase.from('patient_portal_messages')
@@ -43,17 +50,21 @@ const PatientPortalInboxContent = () => {
       setLoading(false);
       return;
     }
-    setMessages(m.data || []);
-    setFeedback(f.data || []);
-    const ids = [...new Set([...(m.data || []), ...(f.data || [])].map((r) => r.patient_id))];
+    const mine = (r) => !scope || scope.has(r.patient_id);
+    const msgs = (m.data || []).filter(mine);
+    const fbs = (f.data || []).filter(mine);
+    setMessages(msgs);
+    setFeedback(fbs);
+    const ids = [...new Set([...msgs, ...fbs].map((r) => r.patient_id))];
     if (ids.length) {
       const { data } = await supabase.from('patients').select('id, full_name, nickname').in('id', ids.slice(0, 300));
       setPatients(Object.fromEntries((data || []).map((p) => [p.id, p])));
     }
     setLoading(false);
-  }, [clinicId, toast]);
+  }, [clinicId, toast, scope]);
 
   useEffect(() => {
+    if (therapistId && !scope) return undefined; // tunggu daftar pasien terapis
     load();
     const poll = setInterval(load, 20000);
     const channel = supabase.channel('portal-inbox')
@@ -123,7 +134,7 @@ const PatientPortalInboxContent = () => {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl md:text-2xl font-bold text-slate-900">Clinara Pasien</h1>
+        <h1 className="text-xl md:text-2xl font-bold text-slate-900">Pesan dan Keluhan Pasien</h1>
         <p className="text-sm text-slate-500 mt-1">Chat dan keluhan dari aplikasi pasien. Pasien menerima balasan di aplikasinya.</p>
       </div>
 

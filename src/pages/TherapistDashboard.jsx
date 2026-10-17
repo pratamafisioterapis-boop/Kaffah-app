@@ -16,6 +16,7 @@ const TherapistAppointmentScheduler = React.lazy(lazyRetry(() => import('@/compo
 const TherapistBookingCalendar = React.lazy(lazyRetry(() => import('@/components/therapist/TherapistBookingCalendar'), 'TherapistBookingCalendar'));
 import TherapistDashboardWidget from '@/components/therapist/TherapistDashboardWidget';
 const TherapistRemuneration = React.lazy(lazyRetry(() => import('@/components/therapist/TherapistRemuneration'), 'TherapistRemuneration'));
+import PortalInboxCard from '@/components/therapist/PortalInboxCard';
 const PatientPortalInbox = React.lazy(lazyRetry(() => import('@/components/shared/PatientPortalInbox'), 'PatientPortalInbox'));
 const TherapistDocuments = React.lazy(lazyRetry(() => import('@/components/therapist/TherapistDocuments'), 'TherapistDocuments'));
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -120,7 +121,6 @@ const TherapistDashboard = () => {
     ...(canRequestLeave ? [{ label: 'Izin', path: '/therapist/leave', icon: 'Calendar' }] : []),
     { label: 'Remunerasi', path: '/therapist/remuneration', icon: 'Award' },
     { label: 'Dokumen', path: '/therapist/drive-upload', icon: 'UploadCloud' },
-    { label: 'Clinara Pasien', path: '/therapist/clinara-pasien', icon: 'Smartphone', requiresPortal: true },
     { label: 'SK Pimpinan', path: '/therapist/decrees', icon: 'FileText', clinicOnly: KAFFAH_CLINIC_ID },
     { label: 'Settings', path: '#settings', icon: 'Settings', onClick: () => setSettingsOpen(true) },
   ];
@@ -132,6 +132,7 @@ const TherapistDashboard = () => {
       <div>
         <TherapistDashboardWidget initialProfile={therapistProfile} />
       </div>
+      <PortalInboxCard therapistId={therapistProfile.id} />
     </div>
   );
 
@@ -173,7 +174,7 @@ const TherapistDashboard = () => {
           <Route path="/patients" element={<TherapistPatients therapist={therapistProfile} />} />
           <Route path="/remuneration" element={<TherapistRemuneration therapist={therapistProfile} />} />
           <Route path="/drive-upload" element={<TherapistDocuments therapist={therapistProfile} />} />
-          <Route path="/clinara-pasien" element={<PatientPortalInbox />} />
+          <Route path="/clinara-pasien" element={<PatientPortalInbox therapistId={therapistProfile.id} />} />
           <Route path="/decrees" element={<ClinicDecreesViewer />} />
         </Routes>
         </React.Suspense>
