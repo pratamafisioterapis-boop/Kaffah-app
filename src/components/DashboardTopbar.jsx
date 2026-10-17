@@ -499,8 +499,11 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
     return () => clearTimeout(handle);
   }, [query, menuItems, clinicId]);
 
+  // Spinner hanya untuk muat pertama; refresh berikutnya (realtime / buka
+  // lonceng) berjalan diam-diam supaya daftar lama tetap terlihat.
+  const hasLoadedActivities = useRef(false);
   const loadActivities = useCallback(async () => {
-    setIsLoadingActivities(true);
+    if (!hasLoadedActivities.current) setIsLoadingActivities(true);
     try {
       let apptLogQuery = supabase
         .from('audit_logs')
@@ -522,7 +525,10 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
         recapLogQuery = recapLogQuery.eq('clinic_id', clinicId);
       }
 
-      const [{ data: apptLogs }, { data: recapLogs }] = await Promise.all([apptLogQuery, recapLogQuery]);
+      const approvalsPromise = canReviewRequests
+        ? loadPendingApprovals(clinicId, { headUserId: role === 'owner' ? null : user?.id })
+        : Promise.resolve([]);
+      const [{ data: apptLogs }, { data: recapLogs }, approvals] = await Promise.all([apptLogQuery, recapLogQuery, approvalsPromise]);
 
       // Registered-patient appointments only carry patient_id in the audit
       // row, so resolve their names in one batch (guest_name already covers
@@ -553,9 +559,6 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
       // Owner: pengajuan terapis yang belum ditinjau selalu tampil paling atas.
       if (canReviewRequests) {
-        const approvals = await loadPendingApprovals(clinicId, {
-          headUserId: role === 'owner' ? null : user?.id,
-        });
         mapped = [
           ...approvals.sort((a, b) => new Date(b.time) - new Date(a.time)),
           ...mapped,
@@ -569,6 +572,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
       }
 
       setActivities(mapped);
+      hasLoadedActivities.current = true;
     } catch (err) {
       console.error('Failed to load activity center:', err);
     } finally {
@@ -655,7 +659,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
   return (
     <>
-    <div className="relative sticky top-0 z-20 mb-4 -mx-4 sm:mx-0 px-4 sm:px-0 pt-2.5 sm:pt-0 pb-2 sm:pb-0 bg-gradient-to-b from-app-soft/80 via-[#F5F9FC]/95 to-[#F5F9FC]/95 sm:bg-none sm:bg-[#F5F9FC]/95 backdrop-blur-sm rounded-b-[20px] sm:rounded-none">
+    <div className="relative sticky top-0 z-40 mb-4 -mx-4 sm:mx-0 px-4 sm:px-0 pt-2.5 sm:pt-0 pb-2 sm:pb-0 bg-gradient-to-b from-app-soft/80 via-[#F5F9FC]/95 to-[#F5F9FC]/95 sm:bg-none sm:bg-[#F5F9FC]/95 backdrop-blur-sm rounded-b-[20px] sm:rounded-none">
       {/* Clipped separately from the content below so it never crops the
           search results dropdown, which must overflow past this header. */}
       <div className="absolute inset-0 overflow-hidden rounded-b-[20px] pointer-events-none sm:hidden" aria-hidden="true">
@@ -856,7 +860,6 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
         <div className="relative flex-shrink-0" ref={bellRef}>
           <button
             onClick={() => {
-              if (!isActivityOpen && canReviewRequests) loadActivities();
               setIsActivityOpen((o) => !o);
             }}
             className="relative w-9 h-9 rounded-full sm:rounded-app border border-app-border bg-white flex items-center justify-center text-app-ink hover:text-app-accent hover:bg-[#F5F9FC] transition-colors shadow-sm"
