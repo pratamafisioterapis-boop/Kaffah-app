@@ -109,7 +109,38 @@ const VasChart = ({ entries }) => {
 };
 
 // ---------------------------------------------------------------- Tabs
-const HomeTab = ({ home, go, onLogout }) => {
+// Goal treatment dari terapis: bilah progres per goal dan titik riwayat per sesi.
+const GoalsCard = ({ goals, compact = false }) => {
+  if (!goals?.length) return null;
+  return (
+    <div className="card">
+      <div className="eyebrow">Target terapi</div>
+      <h3 style={{ marginBottom: 4 }}>Goal treatment Anda</h3>
+      {goals.map((g) => {
+        const hist = g.history || [];
+        const prev = hist.length > 1 ? hist[hist.length - 2].progress : null;
+        const gain = prev != null && g.progress > prev ? g.progress - prev : 0;
+        return (
+          <div key={g.id} style={{ marginTop: 14 }}>
+            <div className="row" style={{ gap: 8, alignItems: 'baseline' }}>
+              <b className="sp" style={{ fontSize: 14 }}>{g.text}</b>
+              {g.progress >= 100 ? <span className="pill ok">Tercapai</span> : <span className="num" style={{ fontWeight: 700 }}>{g.progress}%</span>}
+            </div>
+            <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={g.progress} aria-label={g.text}><i style={{ width: `${g.progress}%` }} /></div>
+            {!compact && (gain > 0 || hist.length > 1) && (
+              <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>
+                {gain > 0 ? `Naik ${gain} poin sejak sesi sebelumnya. ` : ''}
+                {hist.length > 1 ? `Riwayat: ${hist.map((h) => `${h.progress}%`).join(' → ')}` : ''}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const HomeTab = ({ home, goals, go, onLogout }) => {
   const na = home.next_appointment;
   const pct = home.program_total ? Math.round((home.program_done_today / home.program_total) * 100) : 0;
   const left = home.program_total - home.program_done_today;
@@ -157,6 +188,7 @@ const HomeTab = ({ home, go, onLogout }) => {
           <div><b className="num">{home.streak_days} hari</b><span>Latihan beruntun</span></div>
           <div><b className="num">{home.sessions_done}</b><span>Sesi terapi</span></div>
         </div>
+        <GoalsCard goals={goals} compact />
         {home.latest_note && (
           <div className="quote"><div className="eyebrow">Catatan dari terapis</div><p>{home.latest_note}</p></div>
         )}
@@ -167,7 +199,7 @@ const HomeTab = ({ home, go, onLogout }) => {
   );
 };
 
-const ProgressTab = ({ data }) => {
+const ProgressTab = ({ data, goals }) => {
   const entries = data.entries || [];
   const vasPts = entries.filter((e) => e.vas != null);
   const first = vasPts[0], last = vasPts[vasPts.length - 1];
@@ -187,6 +219,7 @@ const ProgressTab = ({ data }) => {
         ) : <p style={{ margin: 0, color: 'var(--muted)' }}>Nilai nyeri akan tampil setelah terapis mencatatnya saat sesi.</p>}
         <VasChart entries={entries} />
       </div>
+      <GoalsCard goals={goals} />
       <div className="card">
         <h3 style={{ marginBottom: 14 }}>Riwayat sesi</h3>
         {entries.length === 0 ? <p style={{ margin: 0, color: 'var(--muted)' }}>Belum ada sesi tercatat.</p> : (
@@ -365,6 +398,7 @@ const PatientPortalPage = () => {
   const [tab, setTab] = useState('home');
   const [home, setHome] = useState(null);
   const [progress, setProgress] = useState(null);
+  const [goals, setGoals] = useState([]);
   const [program, setProgram] = useState([]);
   const [history, setHistory] = useState([]);
   const [toast, setToast] = useState('');
@@ -415,6 +449,7 @@ const PatientPortalPage = () => {
   useEffect(() => {
     if (phase !== 'app' || !session) return undefined;
     const guard = (e) => { if (e.sessionInvalid) backToGate('Akses Anda dinonaktifkan atau tautan diganti. Hubungi klinik.'); };
+    if (tab === 'prog' || tab === 'home') portalApi.goals(session).then(setGoals).catch(guard);
     if (tab === 'prog') portalApi.progress(session).then(setProgress).catch(guard);
     if (tab === 'lat') portalApi.program(session).then(setProgram).catch(guard);
     if (tab === 'fb') portalApi.listFeedback(session).then(setHistory).catch(guard);
@@ -472,8 +507,8 @@ const PatientPortalPage = () => {
     <div className="pp" style={style}>{head}
       <div className="pp-col">
         <div className="pp-body">
-          {tab === 'home' && home && <HomeTab home={home} go={setTab} onLogout={logout} />}
-          {tab === 'prog' && (progress ? <ProgressTab data={progress} /> : <div className="pp-pad"><p style={{ color: 'var(--muted)' }}>Memuat...</p></div>)}
+          {tab === 'home' && home && <HomeTab home={home} goals={goals} go={setTab} onLogout={logout} />}
+          {tab === 'prog' && (progress ? <ProgressTab data={progress} goals={goals} /> : <div className="pp-pad"><p style={{ color: 'var(--muted)' }}>Memuat...</p></div>)}
           {tab === 'lat' && <ProgramTab session={session} items={program} onToggle={toggleExercise} />}
           {tab === 'fb' && <FeedbackTab history={history} onSubmit={submitFeedback} />}
           {tab === 'chat' && <ChatTab session={session} therapist={home?.therapist} clinicName={home?.clinic?.name} onUnauthorized={() => backToGate('Sesi Anda berakhir.')} />}
