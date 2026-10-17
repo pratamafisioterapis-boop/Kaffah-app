@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { Home, TrendingUp, PlayCircle, ClipboardList, MessageCircle, Send, Check, Play, CalendarPlus, CalendarCheck, ChevronLeft, Activity, User } from 'lucide-react';
+import { formatOnsetAgo } from '@/lib/onsetHelpers';
 import { portalApi, loadSession, saveSession, clearSession, hexToHue } from '@/lib/patientPortal';
 import './portal.css';
 
@@ -260,10 +261,15 @@ const ProgressTab = ({ data, goals, complaint }) => {
   const entries = data.entries || [];
   const vasPts = entries.filter((e) => e.vas != null);
   const first = vasPts[0], last = vasPts[vasPts.length - 1];
-  const since = entries.length ? `sejak ${fmtDate(entries[0].date, { day: 'numeric', month: 'long' })}` : '';
+  const history = data.history || [];
+  const ep = history.find((h) => h.is_current);
+  // Onset dari Subjective berupa perkiraan, jadi tampil sebagai durasi yang ikut bertambah ("sejak 3 minggu yang lalu").
+  const since = ep?.onset_date
+    ? `sejak ${ep.onset_exact ? fmtDate(ep.onset_date, { day: 'numeric', month: 'long', year: 'numeric' }) : formatOnsetAgo(ep.onset_date) || fmtDate(ep.onset_date)}`
+    : entries.length ? `mulai terapi ${fmtDate(entries[0].date, { day: 'numeric', month: 'long' })}` : '';
   return (
     <div className="pp-pad" style={{ paddingTop: TOP_PAD }}>
-      <PageHead title="Perkembangan Anda" sub={[complaint, since].filter(Boolean).join(', ')} />
+      <PageHead title="Perkembangan Anda" sub={[ep?.label || complaint, since].filter(Boolean).join(', ')} />
       {goals?.length > 0 && (
         <div className="seg" role="tablist">
           <button role="tab" aria-selected={view === 'nyeri'} onClick={() => setView('nyeri')}>Nyeri</button>
@@ -304,6 +310,28 @@ const ProgressTab = ({ data, goals, complaint }) => {
           )}
         </section>
       </div>
+      {history.length > 0 && (
+        <section className="card" style={{ marginTop: 16 }}>
+          <h3 style={{ marginBottom: 4 }}>Riwayat diagnosa</h3>
+          <p className="muted" style={{ margin: '0 0 16px' }}>Setiap diagnosa baru mencatat perkembangan dari awal.</p>
+          <ul className="tl">
+            {history.map((h) => (
+              <li key={h.no}>
+                <div>
+                  <b>{h.label || 'Diagnosa belum dicatat'}</b>
+                  <span className={`pill${h.is_current ? ' ok' : ''}`} style={{ marginLeft: 10 }}>{h.is_current ? 'Sedang berjalan' : 'Sebelumnya'}</span>
+                  <p className="muted">
+                    {fmtDate(h.started_on, { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {h.ended_on !== h.started_on && ` – ${fmtDate(h.ended_on, { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                    {` · ${h.sessions} sesi`}
+                    {h.vas_first != null && h.vas_last != null && ` · Nyeri ${h.vas_first}/10${h.sessions > 1 ? ` → ${h.vas_last}/10` : ''}`}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 };

@@ -107,3 +107,21 @@ export const refreshOnsetInSubjective = (subjective, onsetDate, referenceDate = 
   if (!phrase) return subjective;
   return subjective.replace(SINCE_RE, (_, word, __, ___, ago) => `${word} ${phrase}${ago || ''}`);
 };
+
+/**
+ * Durasi satu satuan sejak onset perkiraan, mis. "3 minggu yang lalu". Dibulatkan ke bawah
+ * supaya angkanya naik sendiri tepat saat hari/minggu/bulan bertambah.
+ */
+export const formatOnsetAgo = (onsetDate, referenceDate = new Date()) => {
+  if (!onsetDate) return null;
+  const start = new Date(typeof onsetDate === 'string' && onsetDate.length === 10 ? `${onsetDate}T00:00:00` : onsetDate);
+  const end = new Date(referenceDate);
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+  const days = Math.floor((end.setHours(0, 0, 0, 0) - start.setHours(0, 0, 0, 0)) / 86400000);
+  if (days < 0) return null;
+  if (days === 0) return 'hari ini';
+  if (days < 14) return `${days} hari yang lalu`;
+  if (days < 60) return `${Math.floor(days / 7)} minggu yang lalu`;
+  if (days < 365) return `${Math.floor(days / 30)} bulan yang lalu`;
+  return `${Math.floor(days / 365)} tahun yang lalu`;
+};
