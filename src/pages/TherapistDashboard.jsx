@@ -121,6 +121,7 @@ const TherapistDashboard = () => {
     ...(canRequestLeave ? [{ label: 'Izin', path: '/therapist/leave', icon: 'Calendar' }] : []),
     { label: 'Remunerasi', path: '/therapist/remuneration', icon: 'Award' },
     { label: 'Dokumen', path: '/therapist/drive-upload', icon: 'UploadCloud' },
+    { label: 'Chat Pasien', path: '/therapist/clinara-pasien', icon: 'MessageSquare', requiresPortal: true },
     { label: 'SK Pimpinan', path: '/therapist/decrees', icon: 'FileText', clinicOnly: KAFFAH_CLINIC_ID },
     { label: 'Settings', path: '#settings', icon: 'Settings', onClick: () => setSettingsOpen(true) },
   ];
