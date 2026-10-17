@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2, Upload, Trash2, Play, Search, CheckCircle2, Plus } from 'lucide-react';
+import { Loader2, Upload, Trash2, Play, Search, CheckCircle2, Plus, Pencil, Check, X } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -47,6 +47,8 @@ const ExerciseVideoManager = () => {
   const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [creating, setCreating] = useState(false);
+  const [editId, setEditId] = useState(null); // kode latihan yang namanya sedang diedit
+  const [editName, setEditName] = useState('');
   const fileRef = useRef(null);
   const targetRef = useRef(null);
 
@@ -121,6 +123,28 @@ const ExerciseVideoManager = () => {
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(assets[id].storage_path, 600);
     if (error || !data?.signedUrl) { toast({ variant: 'destructive', title: 'Gagal membuka video' }); return; }
     setPreview({ id, url: data.signedUrl });
+  };
+
+  const startEdit = (e) => { setEditId(e.id); setEditName(e.name || ''); };
+  const cancelEdit = () => { setEditId(null); setEditName(''); };
+
+  // Ganti nama saja; kode tidak pernah berubah. SOAP yang sudah tersimpan menyimpan teks rencana saat itu,
+  // sedangkan aplikasi pasien dan pencarian Plan SOAP langsung memakai nama baru.
+  const saveName = async (id) => {
+    const name = editName.trim();
+    const current = exercises.find((x) => x.id === id);
+    if (!current || name === current.name) { cancelEdit(); return; }
+    if (name.length < 3 || name.length > 120) {
+      toast({ variant: 'destructive', title: 'Nama latihan 3–120 karakter' });
+      return;
+    }
+    setBusyId(id);
+    const { error } = await supabase.from('plan_exercises').update({ name }).eq('id', id);
+    setBusyId(null);
+    if (error) { toast({ variant: 'destructive', title: 'Gagal mengganti nama', description: error.message }); return; }
+    setExercises((prev) => prev.map((x) => (x.id === id ? { ...x, name } : x)));
+    toast({ title: `Nama ${id} diperbarui` });
+    cancelEdit();
   };
 
   const prefixes = useMemo(() => summarizePrefixes(exercises), [exercises]);
@@ -207,7 +231,22 @@ const ExerciseVideoManager = () => {
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="font-mono text-xs bg-slate-100 text-slate-700 rounded px-2 py-1">{e.id}</span>
                   <div className="min-w-0 flex-1 basis-48">
-                    <p className="font-medium text-slate-900 break-words">{e.name}</p>
+                    {editId === e.id ? (
+                      <form className="flex items-center gap-1.5" onSubmit={(ev) => { ev.preventDefault(); saveName(e.id); }}>
+                        <Input value={editName} onChange={(ev) => setEditName(ev.target.value)} maxLength={120} autoFocus
+                          onKeyDown={(ev) => { if (ev.key === 'Escape') cancelEdit(); }} aria-label={`Nama latihan ${e.id}`} />
+                        <Button type="submit" size="sm" disabled={busy} aria-label="Simpan nama">
+                          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                        </Button>
+                        <Button type="button" size="sm" variant="ghost" onClick={cancelEdit} disabled={busy} aria-label="Batal ganti nama"><X className="w-4 h-4" /></Button>
+                      </form>
+                    ) : (
+                      <p className="font-medium text-slate-900 break-words">
+                        {e.name}
+                        <button type="button" onClick={() => startEdit(e)} className="ml-1.5 inline-flex align-middle rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                          aria-label={`Ganti nama ${e.id}`} title="Ganti nama"><Pencil className="w-3.5 h-3.5" /></button>
+                      </p>
+                    )}
                     <p className="text-xs text-slate-500">{e.grp}</p>
                   </div>
                   {a ? (
