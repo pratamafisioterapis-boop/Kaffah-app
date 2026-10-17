@@ -29,11 +29,9 @@ export const toWhatsAppNumber = (phone) => {
   return digits;
 };
 
-// Salam menurut jam kirim di WIB (bukan jam perangkat), supaya konsisten untuk semua admin.
+// Salam menurut jam kirim di zona waktu perangkat tempat akun login (WIB/WITA/WIT mengikuti lokasi admin).
 export const greetingByHour = (date = new Date()) => {
-  const hour = Number(
-    new Intl.DateTimeFormat('en-GB', { hour: '2-digit', hourCycle: 'h23', timeZone: 'Asia/Jakarta' }).format(date),
-  );
+  const hour = date.getHours();
   if (hour >= 4 && hour < 11) return 'pagi';
   if (hour >= 11 && hour < 15) return 'siang';
   if (hour >= 15 && hour < 18) return 'sore';
