@@ -38,12 +38,17 @@ export const greetingByHour = (date = new Date()) => {
   return 'malam';
 };
 
-// Gender tidak diketahui: pakai "Bapak/Ibu" daripada menebak.
+// Data lama memuat 'male'/'female' selain 'Laki-laki'/'Perempuan'. Gender kosong: pakai "Bapak/Ibu" daripada menebak.
 const honorific = (gender) => {
-  if (gender === 'Perempuan') return 'Ibu';
-  if (gender === 'Laki-laki') return 'Bapak';
+  const g = String(gender || '').trim().toLowerCase();
+  if (g === 'perempuan' || g === 'female') return 'Ibu';
+  if (g === 'laki-laki' || g === 'male') return 'Bapak';
   return 'Bapak/Ibu';
 };
+
+// Pakai nama panggilan; jika kosong di database, pakai nama lengkap.
+export const patientDisplayName = (patient) =>
+  String(patient?.nickname || '').trim() || String(patient?.full_name || '').trim();
 
 export const buildWhatsAppMessage = ({ patientName, gender, clinicName, url, now }) => {
   const clinic = clinicName || 'klinik kami';
