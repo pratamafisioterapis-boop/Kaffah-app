@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Users, MonitorSmartphone, FileSpreadsheet, Plus, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { Loader2, MonitorSmartphone, FileSpreadsheet, Plus, KeyRound, Eye, EyeOff, Search, ChevronDown } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
+import { PageHead, Panel, Pill, EmptyState, Spinner, Initials, RowAction, SHEET_DIALOG } from '@/components/superadmin/ui';
+import { cn } from '@/lib/utils';
 
 const ROLES = ['owner', 'admin', 'clinic_admin', 'therapist', 'physiotherapist', 'super_admin'];
 
@@ -18,12 +21,12 @@ const ROLES = ['owner', 'admin', 'clinic_admin', 'therapist', 'physiotherapist',
 const KONVERSI_DOKTER_ROLE = 'konversi_dokter';
 
 const CATEGORIES = [
-  { key: 'owner', label: 'Owner', color: 'bg-purple-100 text-purple-700' },
-  { key: 'terapis', label: 'Terapis', color: 'bg-emerald-100 text-emerald-700' },
-  { key: 'admin', label: 'Admin', color: 'bg-blue-100 text-blue-700' },
-  { key: 'pemilih', label: 'Akun Pemilih', color: 'bg-orange-100 text-orange-700' },
-  { key: 'non_klinik', label: 'Non Klinik', color: 'bg-indigo-100 text-indigo-700' },
-  { key: 'super_admin', label: 'Super Admin', color: 'bg-rose-100 text-rose-700' },
+  { key: 'owner', label: 'Owner', tone: 'info' },
+  { key: 'terapis', label: 'Terapis', tone: 'ok' },
+  { key: 'admin', label: 'Admin', tone: 'info' },
+  { key: 'pemilih', label: 'Akun Pemilih', tone: 'warn' },
+  { key: 'non_klinik', label: 'Non Klinik', tone: 'neutral' },
+  { key: 'super_admin', label: 'Super Admin', tone: 'bad' },
 ];
 const categoryMeta = (key) => CATEGORIES.find((c) => c.key === key);
 
@@ -46,8 +49,9 @@ const SuperAdminUsers = () => {
   const [clinics, setClinics] = useState([]);
   const [konversiDokterAdminIds, setKonversiDokterAdminIds] = useState(new Set());
   const [pemilihUserIds, setPemilihUserIds] = useState(new Set());
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [clinicFilter, setClinicFilter] = useState('all');
+  const [query, setQuery] = useState('');
+  const [groupBy, setGroupBy] = useState('clinic'); // 'clinic' | 'cat'
+  const [openGroups, setOpenGroups] = useState({});
   const [loading, setLoading] = useState(true);
   const [remotingId, setRemotingId] = useState(null);
   const [togglingKonversiId, setTogglingKonversiId] = useState(null);
@@ -91,16 +95,6 @@ const SuperAdminUsers = () => {
     if (u.role === 'admin' || u.role === 'clinic_admin') return 'admin';
     return 'non_klinik';
   };
-
-  const clinicFiltered = users.filter((u) => (
-    clinicFilter === 'all' || (clinicFilter === 'none' ? !u.clinic_id : u.clinic_id === clinicFilter)
-  ));
-  const categoryCounts = clinicFiltered.reduce((acc, u) => {
-    const k = categoryOf(u);
-    acc[k] = (acc[k] || 0) + 1;
-    return acc;
-  }, {});
-  const filteredUsers = clinicFiltered.filter((u) => categoryFilter === 'all' || categoryOf(u) === categoryFilter);
 
   const clinicName = (id) => clinics.find(c => c.id === id)?.name || '-';
 
@@ -272,28 +266,125 @@ const SuperAdminUsers = () => {
     }
   };
 
-  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
+
+  const q = query.trim().toLowerCase();
+  const visibleUsers = users.filter((u) => {
+    if (!q) return true;
+    return [u.full_name, u.email, categoryMeta(categoryOf(u)).label, clinicName(u.clinic_id)]
+      .some((v) => String(v || '').toLowerCase().includes(q));
+  });
+
+  // Grup: per klinik (staf klinik yang sama) atau per kategori. Akun Pemilih,
+  // Non Klinik, dan Super Admin selalu punya grup sendiri karena bukan staf klinik.
+  const SPECIAL = ['pemilih', 'non_klinik', 'super_admin'];
+  const groups = [];
+  if (groupBy === 'clinic') {
+    const staff = visibleUsers.filter((u) => !SPECIAL.includes(categoryOf(u)));
+    clinics.forEach((c) => {
+      const m = staff.filter((u) => u.clinic_id === c.id);
+      if (m.length) groups.push({ key: `c:${c.id}`, title: c.name, members: m, kind: 'clinic' });
+    });
+    const orphans = staff.filter((u) => !u.clinic_id || !clinics.some((c) => c.id === u.clinic_id));
+    if (orphans.length) groups.push({ key: 'c:none', title: 'Tanpa klinik', members: orphans, kind: 'clinic' });
+    SPECIAL.forEach((k) => {
+      const m = visibleUsers.filter((u) => categoryOf(u) === k);
+      if (m.length) groups.push({ key: `k:${k}`, title: categoryMeta(k).label, members: m, kind: 'special', catKey: k });
+    });
+  } else {
+    CATEGORIES.forEach((c) => {
+      const m = visibleUsers.filter((u) => categoryOf(u) === c.key);
+      if (m.length) groups.push({ key: `k:${c.key}`, title: c.label, members: m, kind: 'cat', catKey: c.key });
+    });
+  }
+
+  const groupSubtitle = (g) => {
+    if (g.kind === 'clinic') {
+      return CATEGORIES.map((c) => [c.label, g.members.filter((u) => categoryOf(u) === c.key).length])
+        .filter(([, n]) => n).map(([l, n]) => `${n} ${l.toLowerCase()}`).join(' · ');
+    }
+    if (g.kind === 'cat') {
+      const n = new Set(g.members.map((u) => u.clinic_id).filter(Boolean)).size;
+      return n ? `dari ${n} klinik` : 'tidak terikat klinik';
+    }
+    return { pemilih: 'Modul Pemilih, terpisah dari klinik', non_klinik: 'Akun khusus, tanpa akses klinik', super_admin: 'Akses penuh sistem' }[g.catKey];
+  };
+
+  const isOpen = (key, index) => (q ? true : (openGroups[key] ?? index === 0));
+  const setAll = (value) => setOpenGroups(Object.fromEntries(groups.map((g) => [g.key, value])));
+
+  const ROW_COLS = 'min-[1180px]:grid-cols-[minmax(0,2.2fr)_140px_minmax(0,1.8fr)_76px_96px_96px]';
+  const FieldLabel = ({ children }) => <span className="min-[1180px]:hidden block text-xs font-medium text-app-muted mb-1">{children}</span>;
+
+  const renderRow = (u) => {
+    const cat = categoryMeta(categoryOf(u));
+    const hasKonversi = konversiDokterAdminIds.has(u.id);
+    return (
+      <div key={u.id} className={cn('grid grid-cols-2 gap-x-3 gap-y-3 p-4 border-t border-app-border items-center min-[1180px]:gap-4 min-[1180px]:px-5 min-[1180px]:py-3', ROW_COLS)}>
+        <div className="col-span-2 min-[1180px]:col-auto min-w-0 flex items-center gap-3">
+          <Initials name={u.full_name || u.email} />
+          <div className="min-w-0">
+            <p className="font-semibold leading-snug break-words">{u.full_name || '-'}</p>
+            <p className="text-[13px] text-app-muted break-all">{u.email}</p>
+            <Pill tone={cat.tone} dot={false} className="mt-1 h-5 text-[11px]">{cat.label}</Pill>
+          </div>
+        </div>
+        <div className="min-w-0">
+          <FieldLabel>Role</FieldLabel>
+          <Select value={u.role} onValueChange={(val) => handleChangeRole(u.id, val)}>
+            <SelectTrigger className="w-full min-h-11" aria-label={`Role ${u.full_name || u.email}`}><SelectValue /></SelectTrigger>
+            <SelectContent>{ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div className="min-w-0">
+          <FieldLabel>Klinik</FieldLabel>
+          <Select value={u.clinic_id || 'none'} onValueChange={(val) => handleChangeClinic(u.id, val === 'none' ? null : val)}>
+            <SelectTrigger className="w-full min-h-11 [&>span]:truncate [&>span]:text-left" aria-label={`Klinik ${u.full_name || u.email}`}><SelectValue placeholder="Tanpa klinik" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Tanpa klinik</SelectItem>
+              {clinics.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <label className="flex items-center gap-2.5 min-h-11 cursor-pointer">
+          <Switch checked={!!u.is_active} onCheckedChange={() => handleToggleActive(u)} aria-label={`Akun aktif ${u.full_name || u.email}`} />
+          <span className="min-[1180px]:hidden text-[13px] text-app-muted">{u.is_active ? 'Akun aktif' : 'Akun nonaktif'}</span>
+        </label>
+        <label className="flex items-center gap-2.5 min-h-11 cursor-pointer" title="Akses aplikasi Konversi Jasa/Tindakan Dokter (terpisah dari sistem klinik)">
+          {togglingKonversiId === u.id
+            ? <Loader2 className="w-5 h-5 animate-spin text-app-accent" />
+            : <Switch checked={hasKonversi} onCheckedChange={() => handleToggleKonversiDokterAccess(u)} aria-label={`Akses Konversi Dokter ${u.full_name || u.email}`} />}
+          <span className="min-[1180px]:hidden text-[13px] text-app-muted">{hasKonversi ? 'Konversi Dokter diizinkan' : 'Konversi Dokter tidak'}</span>
+        </label>
+        <div className="col-span-2 min-[1180px]:col-auto flex flex-wrap gap-2 min-[1180px]:justify-end min-[1180px]:gap-0.5">
+          <RowAction
+            icon={remotingId === u.id ? Loader2 : MonitorSmartphone}
+            label="Remote login"
+            title="Login sebagai user ini tanpa password"
+            disabled={u.role === 'super_admin' || !u.is_active || remotingId === u.id}
+            onClick={() => handleRemoteLogin(u)}
+          />
+          <RowAction icon={KeyRound} label="Ganti password" title="Ganti password user ini" onClick={() => setResetPasswordUser(u)} />
+        </div>
+      </div>
+    );
+  };
+
+  if (loading) return <Spinner />;
 
   return (
-    <div className="p-6">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Users className="w-6 h-6 text-blue-600" /> Manajemen User
-          </h1>
-          <p className="text-sm text-slate-500">Semua user lintas klinik, bisa ubah role & klinik.</p>
-        </div>
-        <Button
-          variant="outline"
-          className="gap-1.5 border-indigo-300 text-indigo-700 hover:bg-indigo-50"
-          onClick={() => setCreateKonversiOpen(true)}
-        >
-          <Plus className="w-4 h-4" /> Buat Akun Konversi Dokter
-        </Button>
-      </div>
+    <>
+      <PageHead
+        title="Manajemen User"
+        description="Atur role, klinik, dan akses akun. Dikelompokkan supaya mudah dicari."
+        actions={(
+          <Button variant="outline" className="gap-1.5 min-h-11" onClick={() => setCreateKonversiOpen(true)}>
+            <Plus className="w-4 h-4" /> Buat Akun Konversi Dokter
+          </Button>
+        )}
+      />
 
       <Dialog open={createKonversiOpen} onOpenChange={setCreateKonversiOpen}>
-        <DialogContent>
+        <DialogContent className={SHEET_DIALOG}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileSpreadsheet className="w-5 h-5 text-indigo-600" /> Buat Akun Konversi Dokter
@@ -352,7 +443,7 @@ const SuperAdminUsers = () => {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className={SHEET_DIALOG}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <KeyRound className="w-5 h-5 text-blue-600" /> Ganti Password
@@ -396,224 +487,73 @@ const SuperAdminUsers = () => {
         </DialogContent>
       </Dialog>
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setCategoryFilter('all')}
-          className={`text-xs px-3 py-1.5 rounded-full border ${categoryFilter === 'all' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200'}`}
-        >
-          Semua ({clinicFiltered.length})
-        </button>
-        {CATEGORIES.map((c) => (
-          <button
-            key={c.key}
-            type="button"
-            onClick={() => setCategoryFilter(c.key)}
-            className={`text-xs px-3 py-1.5 rounded-full border ${categoryFilter === c.key ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200'}`}
-          >
-            {c.label} ({categoryCounts[c.key] || 0})
-          </button>
-        ))}
-        <div className="w-full sm:w-56 sm:ml-auto">
-          <Select value={clinicFilter} onValueChange={setClinicFilter}>
-            <SelectTrigger className="w-full"><SelectValue placeholder="Semua klinik" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua klinik</SelectItem>
-              <SelectItem value="none">Tanpa klinik</SelectItem>
-              {clinics.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
+      <div className="flex flex-wrap gap-2.5">
+        <div className="relative flex-1 basis-64 min-w-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-app-muted pointer-events-none" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Cari nama, email, klinik, atau kategori"
+            aria-label="Cari user"
+            className="w-full min-h-11 pl-10 pr-3 rounded-xl border border-slate-300 bg-white text-base md:text-sm focus:outline-none focus:border-app-accent focus:ring-2 focus:ring-app-accent/25"
+          />
         </div>
-      </div>
-
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        {filteredUsers.length === 0 && (
-          <p className="p-6 text-center text-sm text-slate-400">Tidak ada user pada filter ini.</p>
-        )}
-        {/* Mobile / PWA: kartu, tanpa geser horizontal */}
-        <div className="sm:hidden divide-y divide-slate-100">
-          {filteredUsers.map((u) => (
-            <div key={u.id} className="p-4 space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="font-medium text-slate-800 break-words sm:truncate">{u.full_name || '-'}</p>
-                  <p className="text-xs text-slate-500 break-words sm:truncate">{u.email}</p>
-                  <span className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full ${categoryMeta(categoryOf(u)).color}`}>
-                    {categoryMeta(categoryOf(u)).label}
-                  </span>
-                </div>
-                <span className={`text-xs px-2 py-1 rounded-full shrink-0 ${u.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
-                  {u.is_active ? 'Aktif' : 'Nonaktif'}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-1">Role</p>
-                  <Select value={u.role} onValueChange={(val) => handleChangeRole(u.id, val)}>
-                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <p className="text-slate-400 uppercase tracking-wide text-[10px] mb-1">Klinik</p>
-                  <Select value={u.clinic_id || 'none'} onValueChange={(val) => handleChangeClinic(u.id, val === 'none' ? null : val)}>
-                    <SelectTrigger className="w-full"><SelectValue placeholder="Tanpa klinik" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Tanpa klinik</SelectItem>
-                      {clinics.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button size="sm" variant="outline" onClick={() => handleToggleActive(u)}>
-                  {u.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-amber-300 text-amber-700 hover:bg-amber-50"
-                  disabled={u.role === 'super_admin' || !u.is_active || remotingId === u.id}
-                  onClick={() => handleRemoteLogin(u)}
-                >
-                  {remotingId === u.id ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <MonitorSmartphone className="w-4 h-4 mr-1" />
-                  )}
-                  Remote
-                </Button>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full border-blue-300 text-blue-700 hover:bg-blue-50"
-                onClick={() => setResetPasswordUser(u)}
-              >
-                <KeyRound className="w-4 h-4 mr-1" /> Ganti Password
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className={`w-full ${konversiDokterAdminIds.has(u.id) ? 'border-indigo-300 text-indigo-700 hover:bg-indigo-50' : ''}`}
-                disabled={togglingKonversiId === u.id}
-                onClick={() => handleToggleKonversiDokterAccess(u)}
-              >
-                {togglingKonversiId === u.id ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-1" />
-                ) : (
-                  <FileSpreadsheet className="w-4 h-4 mr-1" />
-                )}
-                {konversiDokterAdminIds.has(u.id) ? 'Cabut Akses Konversi Dokter' : 'Beri Akses Konversi Dokter'}
-              </Button>
-            </div>
+        <div className="inline-flex p-[3px] gap-0.5 rounded-xl border border-app-border bg-white self-start" role="group" aria-label="Kelompokkan berdasarkan">
+          {[['clinic', 'Per klinik'], ['cat', 'Per kategori']].map(([k, l]) => (
+            <button
+              key={k}
+              type="button"
+              aria-pressed={groupBy === k}
+              onClick={() => { setGroupBy(k); setOpenGroups({}); }}
+              className={cn('min-h-10 px-3.5 rounded-lg text-[13px] font-medium transition-colors', groupBy === k ? 'bg-app-accent text-white' : 'text-app-muted hover:text-app-ink')}
+            >{l}</button>
           ))}
         </div>
-
-        {/* Desktop: tabel */}
-        <div className="hidden sm:block overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-500 text-left">
-              <tr>
-                <th className="p-3">Nama</th>
-                <th className="p-3">Email</th>
-                <th className="p-3">Kategori</th>
-                <th className="p-3">Role</th>
-                <th className="p-3">Klinik</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Konversi Dokter</th>
-                <th className="p-3">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {filteredUsers.map((u) => (
-                <tr key={u.id}>
-                  <td className="p-3 font-medium text-slate-800">{u.full_name || '-'}</td>
-                  <td className="p-3 text-slate-500">{u.email}</td>
-                  <td className="p-3">
-                    <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${categoryMeta(categoryOf(u)).color}`}>
-                      {categoryMeta(categoryOf(u)).label}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    <Select value={u.role} onValueChange={(val) => handleChangeRole(u.id, val)}>
-                      <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </td>
-                  <td className="p-3">
-                    <Select value={u.clinic_id || 'none'} onValueChange={(val) => handleChangeClinic(u.id, val === 'none' ? null : val)}>
-                      <SelectTrigger className="w-44"><SelectValue placeholder="Tanpa klinik" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Tanpa klinik</SelectItem>
-                        {clinics.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </td>
-                  <td className="p-3">
-                    <span className={`text-xs px-2 py-1 rounded-full ${u.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
-                      {u.is_active ? 'Aktif' : 'Nonaktif'}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className={konversiDokterAdminIds.has(u.id) ? 'border-indigo-300 text-indigo-700 hover:bg-indigo-50' : ''}
-                      disabled={togglingKonversiId === u.id}
-                      onClick={() => handleToggleKonversiDokterAccess(u)}
-                      title="Akses aplikasi Konversi Jasa/Tindakan Dokter (terpisah dari sistem klinik)"
-                    >
-                      {togglingKonversiId === u.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <FileSpreadsheet className="w-4 h-4 mr-1" />
-                      )}
-                      {konversiDokterAdminIds.has(u.id) ? 'Cabut' : 'Beri Akses'}
-                    </Button>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" variant="outline" onClick={() => handleToggleActive(u)}>
-                        {u.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-amber-300 text-amber-700 hover:bg-amber-50"
-                        disabled={u.role === 'super_admin' || !u.is_active || remotingId === u.id}
-                        onClick={() => handleRemoteLogin(u)}
-                        title="Login sebagai user ini tanpa password"
-                      >
-                        {remotingId === u.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <MonitorSmartphone className="w-4 h-4 mr-1" />
-                        )}
-                        Remote
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-blue-300 text-blue-700 hover:bg-blue-50"
-                        onClick={() => setResetPasswordUser(u)}
-                        title="Ganti password user ini"
-                      >
-                        <KeyRound className="w-4 h-4 mr-1" /> Ganti Password
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Button variant="outline" className="min-h-11" onClick={() => setAll(true)}>Buka semua</Button>
+        <Button variant="outline" className="min-h-11" onClick={() => setAll(false)}>Tutup semua</Button>
       </div>
-    </div>
+
+      {groups.length === 0 ? (
+        <Panel><EmptyState title="Tidak ada user yang cocok">Ubah kata kunci pencarian.</EmptyState></Panel>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {groups.map((g, i) => {
+            const open = isOpen(g.key, i);
+            const inactive = g.members.filter((u) => !u.is_active).length;
+            return (
+              <Panel key={g.key} className="overflow-hidden">
+                <button
+                  type="button"
+                  aria-expanded={open}
+                  onClick={() => setOpenGroups((p) => ({ ...p, [g.key]: !open }))}
+                  className={cn('w-full flex items-center gap-3 p-3.5 min-h-16 text-left transition-colors hover:bg-slate-50', open && 'border-b border-app-border')}
+                >
+                  <Initials name={g.title} className={g.kind === 'special' ? 'bg-amber-50 text-amber-800' : undefined} />
+                  <span className="flex-1 min-w-0">
+                    <span className="block font-semibold break-words leading-snug">{g.title}</span>
+                    <span className="block text-[13px] text-app-muted">{groupSubtitle(g)}</span>
+                  </span>
+                  <span className="flex flex-wrap justify-end gap-1.5">
+                    <Pill tone="neutral" dot={false} className="tabular-nums">{g.members.length} user</Pill>
+                    {inactive > 0 && <Pill tone="bad" className="tabular-nums max-sm:hidden">{inactive} nonaktif</Pill>}
+                  </span>
+                  <ChevronDown className={cn('w-5 h-5 text-app-muted shrink-0 transition-transform duration-200', open && 'rotate-180')} />
+                </button>
+                {open && (
+                  <div>
+                    <div className={cn('hidden min-[1180px]:grid gap-4 px-5 py-2.5 bg-slate-50 border-b border-app-border text-xs font-semibold text-app-muted', ROW_COLS)}>
+                      <span>User</span><span>Role</span><span>Klinik</span><span>Aktif</span><span>Konversi</span><span className="text-right">Aksi</span>
+                    </div>
+                    <div className="[&>*:first-child]:border-t-0">{g.members.map(renderRow)}</div>
+                  </div>
+                )}
+              </Panel>
+            );
+          })}
+        </div>
+      )}
+    </>
   );
 };
 

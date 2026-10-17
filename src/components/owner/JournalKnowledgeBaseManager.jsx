@@ -115,8 +115,8 @@ const JournalKnowledgeBaseManager = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <Card className="border-slate-200 shadow-sm rounded-app-lg">
+    <div className="grid gap-5 items-start min-[1180px]:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+      <Card className="border-app-border shadow-none rounded-2xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <BookOpen className="w-5 h-5 text-app-accent" />
@@ -129,7 +129,7 @@ const JournalKnowledgeBaseManager = () => {
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid gap-4 min-[700px]:max-[1179px]:grid-cols-2 min-[1500px]:grid-cols-2">
             <div className="space-y-2">
               <Label>Judul</Label>
               <Input value={form.title} onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))} placeholder="Judul jurnal/ebook" disabled={saving} />
@@ -201,7 +201,7 @@ const JournalKnowledgeBaseManager = () => {
         </CardContent>
       </Card>
 
-      <Card className="border-slate-200 shadow-sm rounded-app-lg">
+      <Card className="border-app-border shadow-none rounded-2xl">
         <CardHeader>
           <CardTitle className="text-lg">Dokumen Referensi ({documents.length})</CardTitle>
         </CardHeader>
