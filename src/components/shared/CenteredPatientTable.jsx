@@ -9,8 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Search, Loader2, ChevronLeft, ChevronRight, User
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { 
+  Search, Loader2, ChevronLeft, ChevronRight, User, MoreHorizontal, Smartphone, History
 } from 'lucide-react';
+import SendClinaraDialog from '@/components/admin/patients/SendClinaraDialog';
+import { usePortalEnabled } from '@/hooks/usePortalEnabled';
 import { cn } from "@/lib/utils";
 
 const CenteredPatientTable = ({ 
@@ -25,6 +30,8 @@ const CenteredPatientTable = ({
 }) => {
     const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     const [selectedPatient, setSelectedPatient] = useState(null);
+    const portalEnabled = usePortalEnabled();
+    const [clinaraPatient, setClinaraPatient] = useState(null);
 const [isOpen, setIsOpen] = useState(false);
 const [historyData, setHistoryData] = useState([]);
 const [loadingHistory, setLoadingHistory] = useState(false);
@@ -184,15 +191,25 @@ const formatTanggal = (date) => {
                                     <span className="text-slate-300">·</span>
                                     <span>{patient.formattedPhone}</span>
                                 </div>
-                                <div className="mt-2" onClick={e => e.stopPropagation()}>
+                                <div className="mt-2 flex items-center gap-2" onClick={e => e.stopPropagation()}>
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        className="h-7 text-xs border-indigo-200 text-indigo-600 hover:bg-indigo-50 w-full"
+                                        className="h-7 text-xs border-indigo-200 text-indigo-600 hover:bg-indigo-50 flex-1"
                                         onClick={() => { setSelectedPatient(patient); setIsOpen(true); }}
                                     >
                                         Lihat Riwayat Kunjungan
                                     </Button>
+                                    {portalEnabled && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-7 text-xs border-sky-200 text-sky-700 hover:bg-sky-50"
+                                        onClick={() => setClinaraPatient(patient)}
+                                    >
+                                        <Smartphone className="mr-1 h-3.5 w-3.5" /> Clinara
+                                    </Button>
+                                    )}
                                 </div>
                             </div>
                         ))
@@ -266,9 +283,29 @@ const formatTanggal = (date) => {
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-center">
+                                        <div className="flex items-center justify-center gap-1">
                                         <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedPatient(patient); setIsOpen(true); }}>
                                             Riwayat
                                         </Button>
+                                        {portalEnabled && (
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full" onClick={(e) => e.stopPropagation()} aria-label="Aksi lainnya">
+                                                    <MoreHorizontal className="h-4 w-4 text-slate-500" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
+                                                <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                                <DropdownMenuItem className="cursor-pointer" onClick={() => setClinaraPatient(patient)}>
+                                                    <Smartphone className="mr-2 h-4 w-4 text-sky-600" /> Kirim Clinara
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem className="cursor-pointer" onClick={() => { setSelectedPatient(patient); setIsOpen(true); }}>
+                                                    <History className="mr-2 h-4 w-4 text-slate-500" /> Lihat Riwayat
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                        )}
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -291,6 +328,8 @@ const formatTanggal = (date) => {
                     </Button>
                 </div>
             </div>
+
+            <SendClinaraDialog patient={clinaraPatient} onClose={() => setClinaraPatient(null)} />
 
             {/* Modal Riwayat */}
             {isOpen && (
