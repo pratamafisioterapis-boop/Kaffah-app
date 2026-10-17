@@ -6,6 +6,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Loader2, AlertCircle, Lock, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { validatePassword, PASSWORD_MIN_LENGTH } from '@/lib/passwordPolicy';
 
 const CLINARA_LOGO_URL = '/clinara-logo.png';
 const CLINARA_ICON_URL = '/clinara-icon.png';
@@ -51,13 +52,14 @@ const ResetPasswordPage = () => {
     e.preventDefault();
     setError(null);
 
-    if (password.length < 6) {
-      setError('Password minimal 6 karakter.');
+    if (password !== confirmPassword) {
+      setError('Konfirmasi password tidak cocok.');
       return;
     }
 
-    if (password !== confirmPassword) {
-      setError('Konfirmasi password tidak cocok.');
+    const pwError = await validatePassword(password);
+    if (pwError) {
+      setError(pwError);
       return;
     }
 
@@ -180,7 +182,7 @@ const ResetPasswordPage = () => {
                       className="w-full pl-12 pr-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 focus:bg-slate-900 transition-all outline-none text-sm"
                       placeholder="Password baru"
                       required
-                      minLength={6}
+                      minLength={PASSWORD_MIN_LENGTH}
                     />
                   </div>
 
@@ -193,7 +195,7 @@ const ResetPasswordPage = () => {
                       className="w-full pl-12 pr-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 focus:bg-slate-900 transition-all outline-none text-sm"
                       placeholder="Konfirmasi password baru"
                       required
-                      minLength={6}
+                      minLength={PASSWORD_MIN_LENGTH}
                     />
                   </div>
 

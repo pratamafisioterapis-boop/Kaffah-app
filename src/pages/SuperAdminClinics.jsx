@@ -10,6 +10,7 @@ import { ROLES, ROLE_LABELS, getFeatureCatalogForRole, SETUP_SUB_FEATURES } from
 import { linkOwnerAsTherapist, setOwnerTherapistActive, reassignTherapistToOwner, separateTherapistFromOwner } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { PageHead, Panel, Pill, EmptyState, Spinner, Initials, SHEET_DIALOG } from '@/components/superadmin/ui';
+import { validatePassword } from '@/lib/passwordPolicy';
 
 const emptyForm = {
   id: null, name: '', address: '', phone: '', subscription_status: 'active',
@@ -180,8 +181,9 @@ const SuperAdminClinics = () => {
         toast({ variant: 'destructive', title: 'Nama, email, dan password owner wajib diisi' });
         return;
       }
-      if (form.owner_password.length < 6) {
-        toast({ variant: 'destructive', title: 'Password owner minimal 6 karakter' });
+      const ownerPwError = await validatePassword(form.owner_password);
+      if (ownerPwError) {
+        toast({ variant: 'destructive', title: 'Password owner kurang aman', description: ownerPwError });
         return;
       }
     }
@@ -402,8 +404,9 @@ const SuperAdminClinics = () => {
       toast({ variant: 'destructive', title: 'Nama, email, dan password wajib diisi' });
       return;
     }
-    if (ownerForm.password.length < 6) {
-      toast({ variant: 'destructive', title: 'Password minimal 6 karakter' });
+    const pwError = await validatePassword(ownerForm.password);
+    if (pwError) {
+      toast({ variant: 'destructive', title: 'Password kurang aman', description: pwError });
       return;
     }
     setCreatingOwner(true);

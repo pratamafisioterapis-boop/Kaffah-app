@@ -23,6 +23,7 @@ import {
 import { format, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { prepareImageForUpload } from '@/lib/imageUpload';
+import { validatePassword } from '@/lib/passwordPolicy';
 
 // ─── Tab konstanta ────────────────────────────────────────────────────────────
 const TABS = [
@@ -627,12 +628,13 @@ const TabAkun = ({ user }) => {
 
   const handleChangePassword = async () => {
     if (!pwForm.newPw) return;
-    if (pwForm.newPw.length < 8) {
-      toast({ variant: 'destructive', title: 'Password minimal 8 karakter' });
-      return;
-    }
     if (pwForm.newPw !== pwForm.confirm) {
       toast({ variant: 'destructive', title: 'Konfirmasi password tidak cocok' });
+      return;
+    }
+    const pwError = await validatePassword(pwForm.newPw);
+    if (pwError) {
+      toast({ variant: 'destructive', title: 'Password kurang aman', description: pwError });
       return;
     }
     setPwForm(f => ({ ...f, saving: true }));
