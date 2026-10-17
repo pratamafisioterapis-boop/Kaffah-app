@@ -138,6 +138,14 @@ function formatActivityDateTime(dateStr) {
   return `${dateLabel}, pukul ${timeLabel}`;
 }
 
+// Jam saja, format 09.00 (id-ID), dipakai untuk waktu SOAP selesai & slot sesi.
+function formatClock(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+}
+
 function formatShortDate(dateStr) {
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return '-';
@@ -210,6 +218,35 @@ function mapRecapLog(row) {
     actorRole: 'therapist',
     actorRoleRaw: 'therapist',
     text: `menyelesaikan sesi terapi untuk ${who}${scheduleSuffix}`,
+  };
+}
+
+// SOAP yang baru diisi terapis. Tidak ada baris audit_logs untuk
+// medical_records, jadi dibaca langsung dari tabelnya: created_at = jam SOAP
+// selesai, slot booking appointment (jam mulai + durasi) = slot pasien; kalau
+// appointment tidak ada, jatuh ke start_time–end_time sesi.
+function mapSoapRecord(row) {
+  const recap = row.daily_recap || {};
+  const who = row.patients?.full_name || recap.full_name || recap.guest_name || 'pasien';
+  const doneAt = formatClock(row.created_at);
+  const appt = recap.appointment;
+  const apptStart = appt?.appointment_date ? new Date(appt.appointment_date) : null;
+  const hasApptSlot = apptStart && !isNaN(apptStart.getTime());
+  const slotStart = hasApptSlot ? formatClock(apptStart) : formatClock(recap.start_time);
+  const slotEnd = hasApptSlot
+    ? (appt.duration_minutes ? formatClock(new Date(apptStart.getTime() + appt.duration_minutes * 60000)) : null)
+    : formatClock(recap.end_time);
+  const slot = slotStart ? `slot ${slotStart}${slotEnd ? `–${slotEnd}` : ''}` : null;
+  const details = [doneAt ? `selesai pukul ${doneAt}` : null, slot].filter(Boolean).join(', ');
+  return {
+    id: `soap-done-${row.id}`,
+    time: row.created_at,
+    isRead: true,
+    isSoapDone: true,
+    actorName: recap.therapist_name || 'Terapis',
+    actorRole: 'therapist',
+    actorRoleRaw: 'therapist',
+    text: `menyelesaikan SOAP ${who}${details ? ` (${details})` : ''}`,
   };
 }
 
@@ -520,15 +557,25 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
         .neq('changes->old->>status', 'completed')
         .order('created_at', { ascending: false })
         .limit(ACTIVITY_LIMIT);
+      let soapQuery = supabase
+        .from('medical_records')
+        .select('id, created_at, patients(full_name), daily_recap:daily_recaps(start_time, end_time, therapist_name, full_name, guest_name, appointment:appointments!appointment_id(appointment_date, duration_minutes))')
+        .is('filled_by_admin_id', null)
+        .not('daily_recap_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(ACTIVITY_LIMIT);
       if (clinicId) {
         apptLogQuery = apptLogQuery.eq('clinic_id', clinicId);
         recapLogQuery = recapLogQuery.eq('clinic_id', clinicId);
+        soapQuery = soapQuery.eq('clinic_id', clinicId);
       }
 
       const approvalsPromise = canReviewRequests
         ? loadPendingApprovals(clinicId, { headUserId: role === 'owner' ? null : user?.id })
         : Promise.resolve([]);
-      const [{ data: apptLogs }, { data: recapLogs }, approvals] = await Promise.all([apptLogQuery, recapLogQuery, approvalsPromise]);
+      // Opsional: kegagalan (mis. RLS) tidak boleh mengosongkan feed lain.
+      const soapPromise = soapQuery.then((r) => r, () => ({ data: [] }));
+      const [{ data: apptLogs }, { data: recapLogs }, approvals, { data: soapRows }] = await Promise.all([apptLogQuery, recapLogQuery, approvalsPromise, soapPromise]);
 
       // Registered-patient appointments only carry patient_id in the audit
       // row, so resolve their names in one batch (guest_name already covers
@@ -553,6 +600,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
       let mapped = [
         ...(apptLogs || []).map((row) => mapAppointmentLog(row, patientNameById)),
         ...(recapLogs || []).map(mapRecapLog),
+        ...(soapRows || []).map(mapSoapRecord),
       ]
         .sort((a, b) => new Date(b.time) - new Date(a.time))
         .slice(0, ACTIVITY_LIMIT);
@@ -588,6 +636,9 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_logs' }, () => {
         loadActivities();
       })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'medical_records' }, () => {
+        loadActivities();
+      })
       .subscribe();
     return () => supabase.removeChannel(channel);
   }, [loadActivities]);
@@ -614,6 +665,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
       navigate(item.link);
       return;
     }
+    if (item.isSoapDone) return;
     markAsRead(item.id);
   };
 
