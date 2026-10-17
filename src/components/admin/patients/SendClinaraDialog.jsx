@@ -95,7 +95,7 @@ const SendClinaraDialog = ({ patient, onClose }) => {
   }, msg);
 
   const wa = fresh && patient
-    ? buildWhatsAppLink({ phone: patient.phone, patientName: patient.nickname || patient.full_name, clinicName, url: fresh.url })
+    ? buildWhatsAppLink({ phone: patient.phone, patientName: patient.nickname || patient.full_name, gender: patient.gender, clinicName, url: fresh.url })
     : null;
   const st = link ? STATUS_LABEL[link.status] : null;
 
