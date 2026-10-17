@@ -24,8 +24,10 @@ export const applyProgressNote = (text, line) => {
     : [base, line].filter(Boolean).join('\n\n');
 };
 
+// Baris "Update Perkembangan" harus satu baris: PROGRESS_NOTE_RE hanya mengganti baris pertama,
+// jadi Enter di kolom catatan dijadikan spasi agar sisa baris tidak menumpuk tiap ketikan.
 const buildNoteLine = (status, note) => {
-  const parts = [status, note.trim()].filter(Boolean);
+  const parts = [status, note.replace(/\s*\n+\s*/g, ' ').trim()].filter(Boolean);
   return parts.length ? `Update Perkembangan: ${parts.join('. ')}` : '';
 };
 

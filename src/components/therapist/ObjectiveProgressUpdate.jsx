@@ -99,7 +99,8 @@ const ObjectiveProgressUpdate = ({ currentText, onApply }) => {
   const reset = () => { setVas(undefined); setStates({}); setHome(undefined); setEdited(null); };
 
   const apply = () => {
-    const text = finalLine.trim();
+    // PROGRESS_LINE_RE hanya mengganti satu baris; Enter di hasil yang diedit dijadikan spasi.
+    const text = finalLine.replace(/\s*\n+\s*/g, ' ').trim();
     if (!text) return;
     const base = (currentText || '').trim();
     const next = PROGRESS_LINE_RE.test(base)
