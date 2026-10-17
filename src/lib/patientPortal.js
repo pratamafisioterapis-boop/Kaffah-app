@@ -71,9 +71,12 @@ export const buildWhatsAppMessage = ({ patientName, honorific, clinicName, url, 
   );
 };
 
+// Pakai api.whatsapp.com/send langsung, bukan wa.me: wa.me hanya mengalihkan ke alamat ini dan
+// pada pengalihan itu emoji di sebagian WhatsApp (mis. Desktop) berubah menjadi "�".
 export const buildWhatsAppLink = ({ phone, patientName, honorific, clinicName, url, now }) => {
   const text = buildWhatsAppMessage({ patientName, honorific, clinicName, url, now });
-  return `https://wa.me/${toWhatsAppNumber(phone)}?text=${encodeURIComponent(text)}`;
+  const number = toWhatsAppNumber(phone);
+  return `https://api.whatsapp.com/send?${number ? `phone=${number}&` : ''}text=${encodeURIComponent(text)}`;
 };
 
 export const getLiveLink = async (patientId) => {
