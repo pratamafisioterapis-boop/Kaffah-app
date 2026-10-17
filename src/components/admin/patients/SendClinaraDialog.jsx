@@ -40,7 +40,7 @@ const SendClinaraDialog = ({ patient, onClose }) => {
     try {
       const live = await getLiveLink(patient.id);
       setLink(live);
-      const token = live && live.status === 'active' ? await getLinkToken(live.id) : null;
+      const token = live && live.status === 'active' ? await getLinkToken(live.id).catch(() => null) : null; // migrasi 10 belum jalan = tanpa token
       setFresh(token ? { linkId: live.id, url: buildPortalUrl(token, clinicDomain) } : null);
     } catch (e) {
       toast({ variant: 'destructive', title: 'Gagal memuat status tautan', description: e.message });
