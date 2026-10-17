@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Search, Loader2, RefreshCw, ChevronLeft, ChevronRight, 
-  ArrowUpDown, ArrowUp, ArrowDown, Edit, Trash2
+  ArrowUpDown, ArrowUp, ArrowDown, Edit, Trash2, Smartphone
 } from 'lucide-react';
+import SendClinaraDialog from '@/components/admin/patients/SendClinaraDialog';
+import { usePortalEnabled } from '@/hooks/usePortalEnabled';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getPatients } from '@/lib/api';
@@ -20,6 +22,8 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [clinaraPatient, setClinaraPatient] = useState(null);
+  const portalEnabled = usePortalEnabled();
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -169,6 +173,11 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
                       <p className="text-xs font-mono text-app-accent mt-0.5">{patient?.rm_number || '-'}</p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
+                      {portalEnabled && (
+                      <Button variant="ghost" size="sm" onClick={() => setClinaraPatient(patient)} className="text-sky-700 hover:text-sky-800 hover:bg-sky-50">
+                        <Smartphone className="w-4 h-4 mr-1" /> Clinara
+                      </Button>
+                      )}
                       <Button variant="ghost" size="sm" onClick={() => onEdit && onEdit(patient)}>
                         <Edit className="w-4 h-4 mr-1" /> Edit
                       </Button>
@@ -239,6 +248,11 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
                       </td>
                       <td className="px-4 py-3 text-right">
                          <div className="flex justify-end gap-2">
+                             {portalEnabled && (
+                             <Button variant="ghost" size="sm" onClick={() => setClinaraPatient(patient)} className="text-sky-700 hover:text-sky-800 hover:bg-sky-50">
+                               <Smartphone className="w-4 h-4 mr-1" /> Clinara
+                             </Button>
+                             )}
                              <Button variant="ghost" size="sm" onClick={() => onEdit && onEdit(patient)}>
                                 <Edit className="w-4 h-4 mr-1" /> Edit
                              </Button>
@@ -312,6 +326,7 @@ const PatientList = ({ onEdit, onDelete, refreshTrigger }) => {
           </div>
         </div>
       )}
+      <SendClinaraDialog patient={clinaraPatient} onClose={() => setClinaraPatient(null)} />
     </div>
   );
 };

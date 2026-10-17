@@ -366,6 +366,19 @@ const SuperAdminClinics = () => {
     }
   };
 
+  const setPatientPortal = async (clinic, value) => {
+    const previous = clinic.patient_portal_enabled === true;
+    if (previous === value) return;
+    setClinics((prev) => prev.map((c) => (c.id === clinic.id ? { ...c, patient_portal_enabled: value } : c)));
+    const { error } = await supabase.from('clinics').update({ patient_portal_enabled: value }).eq('id', clinic.id);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal mengubah fitur Clinara pasien', description: error.message });
+      setClinics((prev) => prev.map((c) => (c.id === clinic.id ? { ...c, patient_portal_enabled: previous } : c)));
+    } else {
+      toast({ title: value ? 'Link Clinara ke pasien diaktifkan' : 'Link Clinara ke pasien dinonaktifkan' });
+    }
+  };
+
   const updateInvoiceSetting = async (clinic, patch) => {
     const previous = {};
     Object.keys(patch).forEach((k) => { previous[k] = clinic[k]; });
@@ -841,6 +854,35 @@ const SuperAdminClinics = () => {
                 </div>
                 <p className="text-[10px] text-slate-400 mt-1.5">
                   Jika "Aktif": terapis klinik ini punya menu Izin untuk mengajukan izin (seharian / jam tertentu) beserta jadwal pengganti. Harus disetujui owner atau terapis kepala.
+                </p>
+              </div>
+
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                  Link Clinara ke Pasien
+                </p>
+                <div className="flex gap-1.5">
+                  {[
+                    { value: false, label: 'Nonaktif (default)' },
+                    { value: true, label: 'Aktif' },
+                  ].map((opt) => (
+                    <button
+                      key={String(opt.value)}
+                      type="button"
+                      onClick={() => setPatientPortal(clinic, opt.value)}
+                      className={cn(
+                        "px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors",
+                        (clinic.patient_portal_enabled === true) === opt.value
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "bg-white text-slate-500 border-slate-200 hover:border-blue-300"
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1.5">
+                  Jika "Aktif": admin dan owner klinik ini bisa mengirim tautan aplikasi pasien (progres, latihan, keluhan, chat) dan pasien bisa memutar video latihan. Jika dimatikan, semua tautan klinik ini berhenti bisa dipakai dan video tidak terlihat di klinik ini.
                 </p>
               </div>
 

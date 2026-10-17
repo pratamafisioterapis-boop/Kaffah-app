@@ -8,7 +8,7 @@ import {
   User, Clock, Menu, ChevronRight, Bell, Search, LayoutDashboard,
   FileText, Package, ClipboardList, Database, DollarSign, ChevronDown,
   MessageSquare, Plus, Boxes, Wallet, FileSearch, FileSpreadsheet, ShieldCheck, Award,
-  UploadCloud, UserCog, MonitorPlay, BookOpen, Star, Crown, Eye
+  UploadCloud, UserCog, MonitorPlay, BookOpen, Star, Crown, Eye, Smartphone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
@@ -36,6 +36,7 @@ const iconMap = {
   Database,
   DollarSign,
   MessageSquare,
+  Smartphone,
   Star,
   Boxes,
   Wallet,
@@ -92,7 +93,7 @@ useEffect(() => {
   useEffect(() => {
     const fetchClinicInfo = async () => {
       if (!userDetails?.clinic_id) return;
-      const { data } = await supabase.from('clinics').select('name, logo_url, disabled_features_by_role').eq('id', userDetails.clinic_id).single();
+      const { data } = await supabase.from('clinics').select('name, logo_url, disabled_features_by_role, patient_portal_enabled').eq('id', userDetails.clinic_id).single();
       if (data) setClinicInfo(data);
       setClinicFeaturesLoaded(true);
     };
@@ -189,7 +190,10 @@ const isPWA =
     if (!clinicFeaturesLoaded) return [];
     let processed = processNavItems(navItems);
     // Menu khusus satu klinik (clinicOnly = id klinik) disembunyikan di klinik lain.
-    const clinicAllowed = (it) => !it.clinicOnly || it.clinicOnly === userDetails?.clinic_id;
+    // Menu yang butuh fitur Clinara pasien hanya tampil di klinik yang diaktifkan Super Admin.
+    const clinicAllowed = (it) =>
+      (!it.clinicOnly || it.clinicOnly === userDetails?.clinic_id) &&
+      (!it.requiresPortal || clinicInfo?.patient_portal_enabled === true);
     processed = processed
       .filter(clinicAllowed)
       .map((it) => (it.submenu ? { ...it, submenu: it.submenu.filter(clinicAllowed) } : it));

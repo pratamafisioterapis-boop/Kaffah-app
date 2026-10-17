@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  LayoutDashboard, Building2, Eye, Users, CreditCard, BookOpen, ShieldCheck, LogOut, MoreHorizontal, X,
+  LayoutDashboard, Building2, Eye, Users, CreditCard, BookOpen, ShieldCheck, LogOut, MoreHorizontal, X, PlayCircle,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { toast } from '@/components/ui/use-toast';
@@ -17,6 +17,8 @@ const NAV = [
   { group: 'Akses & Tagihan' },
   { label: 'Manajemen User', short: 'User', path: '/super-admin/users', icon: Users, tab: true },
   { label: 'Langganan', short: 'Langganan', path: '/super-admin/subscriptions', icon: CreditCard, tab: true },
+  { group: 'Clinara Pasien' },
+  { label: 'Video Latihan', short: 'Video', path: '/super-admin/exercise-videos', icon: PlayCircle },
   { group: 'Asisten AI' },
   { label: 'Basis Jurnal AI', short: 'Jurnal AI', path: '/super-admin/journal-knowledge-base', icon: BookOpen },
 ];
