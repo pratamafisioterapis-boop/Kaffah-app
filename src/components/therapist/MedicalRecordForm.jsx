@@ -118,26 +118,33 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     if (formData.patient_id && isValidUUID(formData.patient_id)) {
       const pid = formData.patient_id;
       let cancelled = false;
-      getPatientOnsetInfo(pid).then(async ({ data }) => {
-        if (cancelled) return;
-        if (data?.complaint_onset_date) { setOnsetInfo(data); return; }
-        // Onset belum pernah diisi di rekam medis lengkap: perkirakan dari SOAP sebelumnya
-        // ("sejak 2 minggu yang lalu" pada tanggal catatan itu).
+      // Onset dibaca dari Subjective yang ditulis terapis ("sejak 2 minggu yang lalu") pada SOAP pertama
+      // episode diagnosa berjalan (mundur sampai SOAP yang dijawab "diagnosa berbeda"). Bila tidak ada,
+      // dipakai tanggal onset dari rekam medis lengkap.
+      (async () => {
         const { data: records } = await getMedicalRecords({ patientId: pid, limit: 20 });
         if (cancelled) return;
         const sorted = [...(records || [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        const episode = [];
         for (const r of sorted) {
+          if (r.id === recordId) continue;
+          episode.push(r);
+          if (r.soap_continuation === 'different') break;
+        }
+        for (const r of episode.reverse()) {
           const onset = deriveOnsetFromSubjective(r.subjective, r.created_at);
           if (onset) { setOnsetInfo({ complaint_onset_date: onset, derived: true }); return; }
         }
-        setOnsetInfo(null);
-      });
+        const { data } = await getPatientOnsetInfo(pid);
+        if (cancelled) return;
+        setOnsetInfo(data?.complaint_onset_date ? data : null);
+      })();
       return () => { cancelled = true; };
     } else {
       setOnsetInfo(null);
       return undefined;
     }
-  }, [formData.patient_id]);
+  }, [formData.patient_id, recordId]);
 
   // Diagnosa disimpan di daily_recaps (satu sumber) sehingga otomatis tampil
   // di Daily Recaps admin/owner, dan sebaliknya yang diisi admin tampil di sini.
@@ -429,6 +436,9 @@ if (isCreate) {
   payload.daily_recap_id = dailyRecapId;
 }
 
+       // Jawaban "diagnosa masih sama?" menentukan apakah portal pasien melanjutkan atau memulai progres baru.
+       if (isCreate && continuation) payload.soap_continuation = continuation;
+
        if (dateParam && !recordId) {
           payload.created_at = `${dateParam}T12:00:00`;
        }
@@ -671,7 +681,7 @@ if (isCreate) {
               {paramPatientId !== 'select' && !patients.find(p => p.id === paramPatientId) && (
                 <p className="text-xs text-amber-600 mt-1">Memuat data pasien terpilih...</p>
               )}
-              {onsetInfo?.complaint_onset_date && (() => {
+              {onsetInfo?.complaint_onset_date && continuation !== 'different' && (() => {
                 const duration = formatOnsetDuration(onsetInfo.complaint_onset_date);
                 const phase = classifyOnsetPhase(onsetInfo.complaint_onset_date);
                 const phaseStyles = {
@@ -684,7 +694,10 @@ if (isCreate) {
                     <Clock className="w-4 h-4 mt-0.5 shrink-0" />
                     <p className="text-xs leading-relaxed">
                       <span className="font-semibold">Pengingat:</span> pasien sudah <strong>{duration}</strong> mengalami keluhan ini
-                      {phase && <> (<strong>{phase.label}</strong>)</>}, sejak {format(new Date(`${onsetInfo.complaint_onset_date}T00:00:00`), 'dd MMMM yyyy', { locale: id })}{onsetInfo.derived && <> (perkiraan dari SOAP sebelumnya)</>}.
+                      {phase && <> (<strong>{phase.label}</strong>)</>}
+                      {onsetInfo.derived
+                        ? <> (perkiraan dari Subjective)</>
+                        : <>, sejak {format(new Date(`${onsetInfo.complaint_onset_date}T00:00:00`), 'dd MMMM yyyy', { locale: id })}</>}.
                     </p>
                   </div>
                 );
