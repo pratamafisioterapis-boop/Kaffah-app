@@ -142,7 +142,7 @@ const SendClinaraDialog = ({ patient, onClose }) => {
                   </Button>
                   <Button variant="outline" onClick={handleCopy} disabled={busy}><Copy className="h-4 w-4 mr-2" /> Salin</Button>
                 </div>
-                {!patient.phone && (
+                {patient && !patient.phone && (
                   <p className="text-xs text-slate-500">Nomor HP pasien kosong. WhatsApp tetap terbuka dan Anda memilih kontaknya sendiri.</p>
                 )}
                 <p className="text-xs text-slate-500">
