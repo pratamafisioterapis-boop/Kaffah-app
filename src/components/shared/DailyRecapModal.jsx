@@ -1461,7 +1461,7 @@ setFormData({
         </div>
     ) : fDiagnosisEditable;
 
-    const fService = (
+    const fServiceEditable = (
         <>
                                 {/* 🔥 LAYANAN KEDUA */}
                                 <div className="space-y-1">
@@ -1477,6 +1477,16 @@ setFormData({
                                 </div>
         </>
     );
+
+    // SOAP-first: tipe layanan terisi otomatis dari diagnosa (induk diagnosa) sehingga dikunci.
+    const fService = sfActive ? (
+        <div className="space-y-1">
+            <Label>Tipe Layanan (otomatis dari diagnosa)</Label>
+            <div className="rounded-app-sm border bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800">
+                {serviceOptions.find(o => o.value === formData.service_type)?.label || formData.service_type || 'Terisi otomatis setelah terapis memilih diagnosa'}
+            </div>
+        </div>
+    ) : fServiceEditable;
 
     const fPatientTypeEditable = (
         <>
