@@ -48,7 +48,7 @@ const TxList = ({ items, kind = 'neutral', onEdit, onDelete, loading, emptyText 
   );
 
   return (
-    <div className={cn(BOX_H, 'divide-y divide-slate-100 overflow-y-auto overscroll-contain pr-1')}>
+    <div className={cn(BOX_H, 'divide-y divide-slate-100 overflow-y-auto overflow-x-hidden overscroll-contain pr-1')}>
       {items.map((item, idx) => (
         <div key={item.id ?? idx}>
           {/* Desktop */}
@@ -72,16 +72,16 @@ const TxList = ({ items, kind = 'neutral', onEdit, onDelete, loading, emptyText 
 
           {/* Mobile / PWA */}
           {/* Ringkas: 2 baris (judul + nominal, lalu kategori/tanggal/bank) */}
-          <div className="sm:hidden grid gap-1 px-1 py-2">
+          <div className="sm:hidden grid grid-cols-[minmax(0,1fr)] gap-1 px-1 py-2">
             <div className="flex items-start justify-between gap-3">
               <span className="min-w-0 break-words text-[13px] leading-snug font-semibold text-slate-800">{item.desc || '-'}</span>
               <span className={cn('text-[13px] leading-snug shrink-0', amountCls)}>{fmtRp(item.amt)}</span>
             </div>
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-x-1.5 min-w-0 text-[11px] text-slate-500">
-                {item.cat ? <Pill tone={toneFor(item.cat)} className="shrink-0 px-1.5 py-0 text-[10.5px]">{item.cat}</Pill> : null}
+                {item.cat ? <Pill tone={toneFor(item.cat)} className="block shrink-0 max-w-[50%] truncate px-1.5 py-0 text-[10.5px]">{item.cat}</Pill> : null}
                 {item.sub ? <span className="truncate min-w-0">{item.sub}</span> : null}
-                {item.badge ? <Pill tone="sky" className="shrink-0 px-1.5 py-0 text-[10.5px]">{item.badge}</Pill> : null}
+                {item.badge ? <Pill tone="sky" className="block shrink-0 max-w-[40%] truncate px-1.5 py-0 text-[10.5px]">{item.badge}</Pill> : null}
                 <span className="shrink-0 whitespace-nowrap tabular-nums">{item.sub || item.cat || item.badge ? '· ' : ''}{fmtDate(item.date)}{item.bank ? ` · ${item.bank}` : ''}</span>
               </div>
               {hasActions && <Actions item={item} />}
