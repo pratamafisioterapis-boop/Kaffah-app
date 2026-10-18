@@ -45,7 +45,8 @@ const TxList = ({ items, kind = 'neutral', onEdit, onDelete, loading, emptyText 
   );
 
   return (
-    <div className="divide-y divide-slate-100">
+    // Tinggi dibatasi; isi di-scroll di dalam kartu.
+    <div className="divide-y divide-slate-100 max-h-[440px] overflow-y-auto overscroll-contain pr-1">
       {items.map((item, idx) => (
         <div key={item.id ?? idx}>
           {/* Desktop */}
@@ -75,11 +76,11 @@ const TxList = ({ items, kind = 'neutral', onEdit, onDelete, loading, emptyText 
               <span className={cn('text-[13px] leading-snug shrink-0', amountCls)}>{fmtRp(item.amt)}</span>
             </div>
             <div className="flex items-center justify-between gap-2">
-              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 min-w-0 text-[11px] text-slate-500">
-                {item.cat ? <Pill tone={toneFor(item.cat)} className="px-1.5 py-0 text-[10.5px]">{item.cat}</Pill> : null}
-                {item.sub ? <span className="break-words">{item.sub}</span> : null}
-                {item.badge ? <Pill tone="sky" className="px-1.5 py-0 text-[10.5px]">{item.badge}</Pill> : null}
-                <span className="whitespace-nowrap tabular-nums">{item.sub || item.cat || item.badge ? '· ' : ''}{fmtDate(item.date)}{item.bank ? ` · ${item.bank}` : ''}</span>
+              <div className="flex items-center gap-x-1.5 min-w-0 text-[11px] text-slate-500">
+                {item.cat ? <Pill tone={toneFor(item.cat)} className="shrink-0 px-1.5 py-0 text-[10.5px]">{item.cat}</Pill> : null}
+                {item.sub ? <span className="truncate min-w-0">{item.sub}</span> : null}
+                {item.badge ? <Pill tone="sky" className="shrink-0 px-1.5 py-0 text-[10.5px]">{item.badge}</Pill> : null}
+                <span className="shrink-0 whitespace-nowrap tabular-nums">{item.sub || item.cat || item.badge ? '· ' : ''}{fmtDate(item.date)}{item.bank ? ` · ${item.bank}` : ''}</span>
               </div>
               {hasActions && <Actions item={item} />}
             </div>
