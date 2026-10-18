@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useCalendarAutoRefresh } from '@/hooks/useCalendarAutoRefresh';
 import {
   Calendar as CalendarIcon, ChevronLeft, ChevronRight, Loader2, RefreshCw, CalendarOff, ClipboardList
 } from 'lucide-react';
@@ -48,16 +49,25 @@ const [historyLoading, setHistoryLoading] = useState(false);
     }
   }, [date, therapist]);
 
-  const fetchDayData = async (selectedDate) => {
+  const dateRef = useRef(date);
+  dateRef.current = date;
+  const fetchSeqRef = useRef(0);
+
+  // silent = refresh latar belakang: tanpa spinner/skeleton supaya layar tidak berkedip.
+  const fetchDayData = async (selectedDate, { silent = false } = {}) => {
     if (!therapist) return;
 
-    setIsRefreshing(true);
-    setLoading(true);
+    const seq = ++fetchSeqRef.current;
+    if (!silent) {
+      setIsRefreshing(true);
+      setLoading(true);
+    }
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
       // 1. Check Leave Status
       const leaveCheck = await getTherapistLeaveStatus(therapist.id, dateStr);
+      if (seq !== fetchSeqRef.current) return;
       setLeaveStatus(leaveCheck.isOnLeave ? leaveCheck.details : null);
 
       // 2. Get Appointments for the day
@@ -66,6 +76,7 @@ const [historyLoading, setHistoryLoading] = useState(false);
         endDate: `${dateStr}T23:59:59`,
         therapistId: therapist.id
       });
+      if (seq !== fetchSeqRef.current) return;
       // Pasien baru = booking belum terhubung ke patient_id (belum terdaftar).
       setAppointments((apps || []).map(a => ({
         ...a,
@@ -75,6 +86,7 @@ const [historyLoading, setHistoryLoading] = useState(false);
       // 3. Get Available Slots using unified API
       if (!leaveCheck.isOnLeave) {
           const { data: slots } = await getAvailableSlots(dateStr, therapist.id);
+          if (seq !== fetchSeqRef.current) return;
           
           if (slots) {
               // Map API slots to component format if needed
@@ -98,10 +110,17 @@ const [historyLoading, setHistoryLoading] = useState(false);
     } catch (error) {
       console.error("Failed to fetch day data", error);
     } finally {
-      setIsRefreshing(false);
-      setLoading(false);
+      if (seq === fetchSeqRef.current) {
+        setIsRefreshing(false);
+        setLoading(false);
+      }
     }
   };
+
+  useCalendarAutoRefresh(
+    () => fetchDayData(dateRef.current, { silent: true }),
+    { enabled: !!therapist }
+  );
 
   const handleSuccess = () => {
     fetchDayData(date);

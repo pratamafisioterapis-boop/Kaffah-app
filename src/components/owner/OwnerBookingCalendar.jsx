@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useCalendarAutoRefresh } from '@/hooks/useCalendarAutoRefresh';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import {
   Calendar as CalendarIcon, ChevronLeft, ChevronRight, Loader2, ClipboardList, Phone, CalendarRange
@@ -44,6 +45,9 @@ const OwnerBookingCalendar = () => {
   
   // Data State
   const [therapists, setTherapists] = useState([]);
+  const therapistsRef = useRef([]);
+  therapistsRef.current = therapists;
+  const fetchSeqRef = useRef(0);
   const [schedulesMap, setSchedulesMap] = useState({});
   const [appointments, setAppointments] = useState([]);
   const [therapistLeaveStatus, setTherapistLeaveStatus] = useState({});
@@ -95,36 +99,15 @@ const OwnerBookingCalendar = () => {
     }
   };
 
-  // Real-time subscription
-  useEffect(() => {
-    
-    const leaveChannel = supabase
-      .channel('public:therapist_time_off')
-      .on(
-        'postgres_changes', 
-        { event: '*', schema: 'public', table: 'therapist_time_off' }, 
-        (payload) => {
-          fetchDayData(date);
-        }
-      )
-      .subscribe();
-
-    const appChannel = supabase
-      .channel('public:appointments')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'appointments' },
-        (payload) => {
-           fetchDayData(date);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(leaveChannel);
-      supabase.removeChannel(appChannel);
-    };
-  }, [date]);
+  // Realtime + refresh saat tab aktif lagi + polling cadangan (lihat hook).
+  const dateRef = useRef(date);
+  dateRef.current = date;
+  useCalendarAutoRefresh(() => {
+    if (therapistsRef.current.length > 0) {
+      fetchDayData(dateRef.current);
+      setWeekRefreshKey((k) => k + 1);
+    }
+  });
 
   // SOAP lock berbasis umur bisa berubah murni karena waktu berjalan (tanpa ada
   // write ke appointments/therapist_time_off), jadi realtime subscription di atas
@@ -150,6 +133,10 @@ const OwnerBookingCalendar = () => {
   };
 
   const fetchDayData = async (selectedDate) => {
+    // Beberapa pemicu (realtime, polling, aksi user) bisa berjalan bersamaan;
+    // hanya hasil fetch terbaru yang boleh menimpa state.
+    const seq = ++fetchSeqRef.current;
+    const currentTherapists = therapistsRef.current;
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       
@@ -160,6 +147,7 @@ const OwnerBookingCalendar = () => {
         startDate: `${dateStr}T00:00:00`,
         endDate: `${dateStr}T23:59:59`
       });
+      if (seq !== fetchSeqRef.current) return;
       // Pasien baru = booking belum terhubung ke patient_id (belum terdaftar).
       setAppointments((appsRes?.data || []).map(a => ({
         ...a,
@@ -177,7 +165,7 @@ const OwnerBookingCalendar = () => {
       const statusMap = {};
 
       // Initialize all therapists with default state
-      therapists.forEach(t => {
+      currentTherapists.forEach(t => {
          statusMap[t.id] = 'tidak_ada_jadwal'; // Default assumption
          newSchedulesMap[t.id] = [];
       });
@@ -202,7 +190,7 @@ const OwnerBookingCalendar = () => {
          });
 
           // Pass 2: Map Slots
-          therapists.forEach(t => {
+          currentTherapists.forEach(t => {
               // Include BOTH 'aktif' and 'terisi' slots so UI can show booked state
               const tSlots = data.filter(s => s.therapist_id === t.id && (s.status === 'aktif' || s.status === 'terisi'));
               newSchedulesMap[t.id] = tSlots.map(s => ({
@@ -258,6 +246,7 @@ const OwnerBookingCalendar = () => {
 
       // === LOGGING END ===
       
+      if (seq !== fetchSeqRef.current) return;
       setSchedulesMap(newSchedulesMap);
       setTherapistLeaveStatus(statusMap);
       setTherapistLeaveReason(reasonMap);
