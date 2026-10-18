@@ -155,7 +155,23 @@
 .pp .form{display:flex;flex-direction:column;gap:22px}
 .pp .field label{display:block;font-weight:600;font-size:var(--fs-md);margin-bottom:10px}
 .pp input[type=range]{width:100%;height:32px;accent-color:var(--brand)}
-.pp .faces{display:flex;justify-content:space-between;font-size:var(--fs-sm);color:var(--muted)}
+.pp .faces{display:flex;justify-content:space-between;font-size:var(--fs-sm);color:var(--muted);margin-top:6px}
+/* skala nyeri */
+.pp .pain{--pc:hsl(calc(130 - var(--pv)*130) 75% 45%);display:flex;flex-direction:column;align-items:center}
+.pp .pain-hero{width:112px;height:112px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--pc) 16%,transparent);transition:background .25s}
+.pp .pain-hero img{width:96px;height:96px;animation:pain-pop .32s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pain-pop{from{transform:scale(.7) rotate(-8deg);opacity:.4}to{transform:none;opacity:1}}
+.pp .pain-read{margin:10px 0 18px;padding:8px 18px;border-radius:99px;font-weight:600;font-size:var(--fs-md);color:var(--pc);background:color-mix(in srgb,var(--pc) 13%,var(--surface));transition:color .25s,background .25s}
+.pp .pain-track{position:relative;width:calc(100% - 36px);margin:0 18px;height:84px;touch-action:none;cursor:pointer;user-select:none;-webkit-user-select:none;border-radius:12px}
+.pp .pain-bar{position:absolute;left:0;right:0;top:17px;height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.pp .pain-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:var(--pc);transition:width .18s,background .25s}
+.pp .pain-dot{position:absolute;top:0;width:36px;margin-left:-18px;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
+.pp .pain-dot img{width:30px;height:30px;filter:saturate(.55);opacity:.7;transition:transform .2s cubic-bezier(.34,1.56,.64,1),opacity .2s,filter .2s}
+.pp .pain-dot em{font-style:normal;font-size:var(--fs-sm);color:var(--muted);font-weight:500}
+.pp .pain-dot.on img{transform:scale(1.5) translateY(-2px);filter:none;opacity:1}
+.pp .pain-dot.on em{color:var(--pc);font-weight:700}
+@media (max-width:520px){.pp .pain-dot img{width:22px;height:22px}.pp .pain-dot{width:26px;margin-left:-13px}.pp .pain-track{width:calc(100% - 26px);margin:0 13px}}
+@media (prefers-reduced-motion:reduce){.pp .pain-hero img{animation:none}.pp .pain-dot img,.pp .pain-bar i{transition:none}}
 .pp .chips{display:flex;flex-wrap:wrap;gap:10px}
 .pp .chip{padding:11px 17px;min-height:46px;border-radius:99px;border:1.5px solid var(--line);font-size:var(--fs-md);font-weight:500;background:var(--surface)}
 .pp .chip[aria-pressed="true"]{background:var(--brand-soft);border-color:var(--brand);color:var(--brand);font-weight:600}
