@@ -205,6 +205,8 @@ const formatTanggal = (date) => {
                                 <div className="flex items-center gap-3 text-xs text-slate-500">
                                     <span>{patient.gender} · {patient.formattedAge}</span>
                                     <span className="text-slate-300">·</span>
+                                    <span>{patient.formattedBirthDate}</span>
+                                    <span className="text-slate-300">·</span>
                                     <span>{patient.formattedPhone}</span>
                                 </div>
                                 <div className="mt-2 flex items-center gap-2" onClick={e => e.stopPropagation()}>
