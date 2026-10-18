@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Target, Loader2, Users, Wallet, Info, Receipt, Bus, Coins, ChevronRight } from 'lucide-react';
+import { Target, Wallet, Info, Receipt, Bus, Coins, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { autoPostFixedCosts, getBepFinancials } from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { cn } from '@/lib/utils';
+import FinanceTile, { TileLoading } from '@/components/owner/finance/FinanceTile';
+import { fmtShort, fmtPct } from '@/components/owner/finance/financeTheme';
 import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import BepItemDetailModal from '@/components/owner/BepItemDetailModal';
@@ -15,8 +17,7 @@ const formatCurrency = (value) =>
 // Perhitungan biaya & pemasukan bulan berjalan (fixed cost, pengeluaran,
 // transport & insentif terapis) dipusatkan di getBepFinancials() (src/lib/api.js)
 // supaya widget ini dan ringkasan Financial Health selalu konsisten.
-const BreakEvenPointWidget = () => {
-  const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+const BreakEvenPointWidget = ({ className }) => {
   const today = new Date();
   const monthStart = startOfMonth(today);
   const monthEnd = endOfMonth(today);
@@ -46,6 +47,9 @@ const BreakEvenPointWidget = () => {
   const [incentiveBreakdown, setIncentiveBreakdown] = useState([]);
   // Baris mana yang lagi dibuka detailnya: 'fixedCost' | 'expense' | 'transport' | 'incentive' | null
   const [activeDetail, setActiveDetail] = useState(null);
+  // Bagian biaya yang disorot di bar; null = tampilkan total biaya.
+  const [selected, setSelected] = useState(null);
+  const [showNote, setShowNote] = useState(false);
 
   const fetchFixedCostItems = useCallback(async () => {
     if (!clinicId) return;
@@ -155,114 +159,132 @@ const BreakEvenPointWidget = () => {
   }), [items, totalFixedCost, expenseItems, ownerExpense, adminExpense, expensePeriodLabel, transportBreakdown, transportTotal, incentiveBreakdown, incentiveTotal]);
   const activeModal = activeDetail ? detailConfigs[activeDetail] : null;
 
+  const segments = [
+    { key: 'fixedCost', label: 'Fixed', value: totalFixedCost, color: '#0d9488', source: null },
+    { key: 'expense', label: 'Belanja', value: ownerExpense + adminExpense, color: '#2563eb', source: null },
+    { key: 'transport', label: 'Transport', value: transportTotal, color: '#d97706', source: transportSource },
+    { key: 'incentive', label: 'Insentif', value: incentiveTotal, color: '#7c3aed', source: incentiveSource },
+  ];
+  const picked = segments.find(sg => sg.key === selected);
+  const scaleMax = Math.max(revenueThisMonth, totalCost, 1) * 1.04;
+  const costPct = (totalCost / scaleMax) * 100;
+  const revPct = (revenueThisMonth / scaleMax) * 100;
+
+  const statusChip = !loading && isConfigured && (
+    <span className={cn(
+      'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap',
+      isBreakEven ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+    )}>
+      {isBreakEven
+        ? `Impas${breakEvenDate ? ` ${format(parseISO(breakEvenDate), 'd MMM', { locale: idLocale })}` : ''}`
+        : `Kurang ${fmtShort(totalCost - revenueThisMonth)}`}
+    </span>
+  );
+
   return (
-    <div className="relative rounded-[28px] overflow-hidden bg-white shadow-lg shadow-slate-200/70">
-      <div className="absolute -top-16 -right-16 w-56 h-56 bg-violet-100/60 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-sky-100/60 rounded-full blur-3xl pointer-events-none" />
-
-      <div className="relative z-10 p-4 md:p-6 space-y-4 md:space-y-5">
-        <div className={cn("flex gap-3", isPWA ? "flex-col" : "items-start justify-between")}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 md:w-11 md:h-11 rounded-app-lg flex items-center justify-center bg-app-soft shrink-0">
-              <Target className="w-5 h-5 text-violet-600" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-app-ink font-bold text-base tracking-tight">Break Even Point</h3>
-              <p className="text-slate-500 text-xs mt-0.5">Total biaya bulan ini vs total pemasukan bulan ini</p>
-              <p className="text-slate-500 text-xs mt-0.5">Per {format(today, 'd MMM yyyy', { locale: idLocale })}</p>
-            </div>
-          </div>
+    <FinanceTile tone="acc" icon={Target} title="Break Even Point" action={statusChip} className={className}>
+      {loading ? (
+        <TileLoading />
+      ) : !isConfigured ? (
+        <div className="rounded-app border border-dashed border-slate-200 bg-slate-50 p-5 text-center">
+          <Info className="w-5 h-5 text-teal-600 mx-auto mb-2" />
+          <p className="text-sm text-slate-500">Belum ada fixed cost. Atur di menu Accounting System untuk melihat titik impas.</p>
         </div>
-
-        {loading ? (
-          <div className="flex justify-center py-10">
-            <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
-          </div>
-        ) : !isConfigured ? (
-          <div className="rounded-app border border-dashed border-slate-200 bg-slate-50 p-5 text-center">
-            <Info className="w-5 h-5 text-violet-500 mx-auto mb-2" />
-            <p className="text-sm text-slate-500">Belum ada fixed cost. Atur di menu Accounting System untuk melihat titik impas.</p>
-          </div>
-        ) : (
-          <>
-            <div className={cn("grid gap-3", isPWA ? "grid-cols-1" : "grid-cols-2")}>
-              <div className="rounded-app-lg bg-gradient-to-r from-rose-50 to-orange-50/60 p-4">
-                <p className="text-xs font-bold tracking-widest text-slate-500 uppercase mb-1">Total Biaya Bulan Ini</p>
-                <p className="text-lg font-bold text-app-ink tabular-nums break-words">{formatCurrency(totalCost)}</p>
-                <p className="text-xs text-slate-500 mt-1">fixed cost + pengeluaran + transport + insentif</p>
-                <p className="text-xs text-slate-500 mt-0.5">{expensePeriodLabel}</p>
-              </div>
-              <div className="rounded-app-lg bg-gradient-to-r from-emerald-50 to-teal-50/60 p-4">
-                <p className="text-xs font-bold tracking-widest text-slate-500 uppercase mb-1">Total Pemasukan Bulan Ini</p>
-                <p className="text-lg font-bold text-app-ink tabular-nums break-words">{formatCurrency(revenueThisMonth)}</p>
-                <p className="text-xs text-slate-500 mt-1">tgl 1 s/d akhir bulan</p>
-                <p className="text-xs text-slate-500 mt-0.5">{revenuePeriodLabel}</p>
-              </div>
+      ) : (
+        <>
+          <div className="flex items-end justify-between gap-3 mb-3">
+            <div className="min-w-0">
+              <p className="text-xs text-slate-500">Biaya</p>
+              <p className="text-2xl font-black tabular-nums leading-tight text-app-ink" title={formatCurrency(totalCost)}>{fmtShort(totalCost)}</p>
             </div>
+            <span className="text-xs font-bold text-slate-500 tabular-nums pb-1">{progressPct}%</span>
+            <div className="min-w-0 text-right">
+              <p className="text-xs text-slate-500">Pemasukan</p>
+              <p className="text-2xl font-black tabular-nums leading-tight text-emerald-600" title={formatCurrency(revenueThisMonth)}>{fmtShort(revenueThisMonth)}</p>
+            </div>
+          </div>
 
-            <div className="space-y-2">
-              <div className={cn("flex text-xs gap-1", isPWA ? "flex-col" : "items-center justify-between")}>
-                <span className="text-slate-500 flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Progress terhadap biaya bulan ini</span>
-                <span className="text-app-ink font-semibold">{progressPct}%</span>
-              </div>
-              <div className="h-2.5 rounded-full bg-slate-200/70 overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressPct}%` }}
-                  transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
-                  className="h-full rounded-full"
-                  style={{ background: isBreakEven ? 'linear-gradient(90deg, #10b981, #34d399)' : 'linear-gradient(90deg, #6366f1, #a855f7)' }}
+          <div className="relative grid gap-2">
+            <div className="absolute -top-1 -bottom-1 w-[3px] -ml-px rounded bg-app-ink z-10 pointer-events-none" style={{ left: `${costPct}%` }} aria-hidden="true" />
+            <div className="flex h-8 gap-0.5 rounded-xl overflow-hidden bg-slate-100" style={{ width: `${costPct}%` }}>
+              {segments.filter(sg => sg.value > 0).map(sg => (
+                <motion.button
+                  key={sg.key}
+                  type="button"
+                  aria-label={sg.label}
+                  onClick={() => setSelected(selected === sg.key ? null : sg.key)}
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1, opacity: selected && selected !== sg.key ? 0.3 : 1 }}
+                  transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
+                  style={{ flexGrow: sg.value, flexBasis: 0, minWidth: 3, backgroundColor: sg.color, transformOrigin: 'left' }}
+                  className="h-full"
                 />
-              </div>
-              <p className="text-xs text-slate-500">
-                {isBreakEven
-                  ? `Sudah melewati titik impas${breakEvenDate ? ` pada ${format(parseISO(breakEvenDate), 'd MMM yyyy', { locale: idLocale })}` : ''} — profit ${formatCurrency(revenueThisMonth - totalCost)} 🎉`
-                  : `Kurang ${formatCurrency(totalCost - revenueThisMonth)} lagi untuk mencapai titik impas`}
-              </p>
+              ))}
             </div>
+            <div className="h-5 rounded-full bg-slate-100 overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${revPct}%` }}
+                transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
+                className="h-full rounded-full bg-emerald-500"
+              />
+            </div>
+          </div>
 
-            <div className={cn("grid gap-3 pt-1", isPWA ? "grid-cols-1" : "grid-cols-2")}>
-              <button type="button" onClick={() => setActiveDetail('fixedCost')} className="flex items-start gap-2 text-xs text-slate-500 text-left rounded-app-sm -m-1 p-1 hover:bg-slate-50 active:bg-slate-100 transition-colors">
-                <Wallet className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-                <div className="min-w-0 flex-1">
-                  <p>Fixed Cost:</p>
-                  <p className="text-app-ink font-semibold tabular-nums break-words">{formatCurrency(totalFixedCost)}</p>
-                </div>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0 mt-0.5" />
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            {segments.map(sg => (
+              <button
+                key={sg.key}
+                type="button"
+                onClick={() => setSelected(selected === sg.key ? null : sg.key)}
+                aria-pressed={selected === sg.key}
+                className={cn(
+                  'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors',
+                  selected === sg.key ? 'bg-slate-100 border-slate-300' : 'border-slate-200 hover:bg-slate-50'
+                )}
+              >
+                <span className="w-2 h-2 rounded-[3px]" style={{ backgroundColor: sg.color }} />
+                {sg.label}
               </button>
-              <button type="button" onClick={() => setActiveDetail('expense')} className="flex items-start gap-2 text-xs text-slate-500 text-left rounded-app-sm -m-1 p-1 hover:bg-slate-50 active:bg-slate-100 transition-colors">
-                <Receipt className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
-                <div className="min-w-0 flex-1">
-                  <p>Pengeluaran ({expensePeriodLabel}):</p>
-                  <p className="text-app-ink font-semibold tabular-nums break-words">{formatCurrency(ownerExpense + adminExpense)}</p>
-                </div>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0 mt-0.5" />
-              </button>
-              <button type="button" onClick={() => setActiveDetail('transport')} className="flex items-start gap-2 text-xs text-slate-500 text-left rounded-app-sm -m-1 p-1 hover:bg-slate-50 active:bg-slate-100 transition-colors">
-                <Bus className="w-3.5 h-3.5 text-cyan-500 shrink-0 mt-0.5" />
-                <div className="min-w-0 flex-1">
-                  <p>Transport Terapis:</p>
-                  <p className="text-app-ink font-semibold tabular-nums break-words">{formatCurrency(transportTotal)}</p>
-                  {transportSource && <p className="text-xs text-slate-500">{transportSource}</p>}
-                </div>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0 mt-0.5" />
-              </button>
-              <button type="button" onClick={() => setActiveDetail('incentive')} className="flex items-start gap-2 text-xs text-slate-500 text-left rounded-app-sm -m-1 p-1 hover:bg-slate-50 active:bg-slate-100 transition-colors">
-                <Coins className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                <div className="min-w-0 flex-1">
-                  <p>Insentif Terapis:</p>
-                  <p className="text-app-ink font-semibold tabular-nums break-words">{formatCurrency(incentiveTotal)}</p>
-                  {incentiveSource && <p className="text-xs text-slate-500">{incentiveSource}</p>}
-                </div>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0 mt-0.5" />
-              </button>
-            </div>
-            <p className="text-xs text-slate-500 italic">
-              *Pengeluaran dihitung dari {expensePeriodLabel}, di luar pos yang sudah masuk Fixed Cost &amp; slip gaji supaya tidak dobel. Gaji pokok karyawan tetap sudah termasuk di Fixed Cost. Transport &amp; insentif terapis diakrual harian dari awal periode gaji masing-masing s/d {format(today, 'd MMM yyyy', { locale: idLocale })}; begitu payroll periode itu dibuat, angkanya mengikuti slip gaji dan akrual harian berhenti sampai akhir bulan.
+            ))}
+            <button
+              type="button"
+              onClick={() => setShowNote(v => !v)}
+              aria-label="Catatan perhitungan"
+              aria-pressed={showNote}
+              className="ml-auto w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100"
+            >
+              <Info className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 mt-3 min-h-[40px]">
+            <p className="text-xl font-black tabular-nums text-app-ink" title={formatCurrency(picked ? picked.value : totalCost)}>
+              {fmtShort(picked ? picked.value : totalCost)}
             </p>
-          </>
-        )}
-      </div>
+            <p className="text-xs text-slate-500 min-w-0 break-words">
+              {picked
+                ? `${picked.label} · ${fmtPct((picked.value / (totalCost || 1)) * 100)}${picked.source ? ` · ${picked.source}` : ''}`
+                : 'Total biaya'}
+            </p>
+            {picked && (
+              <button
+                type="button"
+                onClick={() => setActiveDetail(picked.key)}
+                className="ml-auto shrink-0 inline-flex items-center gap-0.5 text-xs font-semibold text-teal-700 rounded-lg px-2 py-1.5 hover:bg-teal-50"
+              >
+                Rincian <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {showNote && (
+            <p className="text-xs text-slate-500 italic mt-2">
+              *Biaya {expensePeriodLabel}; pemasukan {revenuePeriodLabel}. Pengeluaran di luar pos yang sudah masuk Fixed Cost &amp; slip gaji supaya tidak dobel. Transport &amp; insentif terapis diakrual harian sampai payroll periode itu dibuat, lalu mengikuti slip gaji.
+            </p>
+          )}
+        </>
+      )}
 
       {activeModal && (
         <BepItemDetailModal
@@ -277,7 +299,7 @@ const BreakEvenPointWidget = () => {
           emptyText={activeModal.emptyText}
         />
       )}
-    </div>
+    </FinanceTile>
   );
 };
 

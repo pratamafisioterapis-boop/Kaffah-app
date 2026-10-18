@@ -1,66 +1,74 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import OwnerFinanceForm from '@/components/owner/OwnerFinanceForm';
 import { useToast } from '@/components/ui/use-toast';
-import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
+import { format, parseISO } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 import {
-  DollarSign, TrendingUp, TrendingDown,
-  AlertTriangle, RefreshCw, Loader2, Plus,
-  QrCode, Wallet, Landmark, Package, HelpCircle,
-  BarChart3, Coins, MoreHorizontal,
-  PieChart as PieChartIcon
+  DollarSign, TrendingUp, TrendingDown, Plus, RefreshCw, QrCode, Wallet, Landmark,
+  Package, HelpCircle, HeartPulse, Users,
 } from 'lucide-react';
-import {
-  AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis,
-  CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar
-} from 'recharts';
-import { getOwnerIncome, getOwnerExpenditures, getAdminIncome, getAdminExpenses, getPatientIncomeFromPackages, getServiceRates, getBepFinancials, getCachedClinicId } from '@/lib/api';
+import { getOwnerIncome, getOwnerExpenditures, getAdminIncome, getAdminExpenses, getPatientIncomeFromPackages, getBepFinancials, getCachedClinicId } from '@/lib/api';
 import { supabase } from '@/lib/customSupabaseClient';
 import { cn } from '@/lib/utils';
+import useMonthlyFinance from '@/hooks/useMonthlyFinance';
 import BreakEvenPointWidget from '@/components/owner/BreakEvenPointWidget';
 import ProfitMarginTrendWidget from '@/components/owner/ProfitMarginTrendWidget';
 import ExpenseCategoryWidget from '@/components/owner/ExpenseCategoryWidget';
-import { formatShortCurrency } from '@/components/owner/presentation/presentationFormat';
-
-const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899'];
+import PromoDiscountWidget from '@/components/owner/PromoDiscountWidget';
+import FinanceTile, { TileEmpty, TileLoading } from '@/components/owner/finance/FinanceTile';
+import AnimatedNumber from '@/components/owner/finance/AnimatedNumber';
+import { Ring, Spark } from '@/components/owner/finance/charts';
+import { TONES, CHART_COLORS, fmtShort, fmtRp, fmtPct } from '@/components/owner/finance/financeTheme';
 
 const getPaymentMethodStyle = (method = '') => {
   const key = method.toLowerCase();
-  if (key.includes('qris')) {
-    return { icon: QrCode, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', accent: 'border-l-emerald-500' };
-  }
-  if (key.includes('cash') || key.includes('tunai')) {
-    return { icon: Wallet, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100', accent: 'border-l-amber-500' };
-  }
-  if (key.includes('transfer') || key.includes('bank')) {
-    return { icon: Landmark, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100', accent: 'border-l-indigo-500' };
-  }
-  if (key.includes('paket') || key.includes('package')) {
-    return { icon: Package, color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-100', accent: 'border-l-violet-500' };
-  }
-  return { icon: HelpCircle, color: 'text-slate-500', bg: 'bg-slate-100', border: 'border-slate-100', accent: 'border-l-slate-300' };
+  if (key.includes('qris')) return { icon: QrCode, color: 'text-emerald-600', bg: 'bg-emerald-50' };
+  if (key.includes('cash') || key.includes('tunai')) return { icon: Wallet, color: 'text-amber-600', bg: 'bg-amber-50' };
+  if (key.includes('transfer') || key.includes('bank')) return { icon: Landmark, color: 'text-indigo-600', bg: 'bg-indigo-50' };
+  if (key.includes('paket') || key.includes('package')) return { icon: Package, color: 'text-violet-600', bg: 'bg-violet-50' };
+  return { icon: HelpCircle, color: 'text-slate-500', bg: 'bg-slate-100' };
 };
 
-const formatCurrency = (amount) =>
-  new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount || 0);
+const THERAPIST_COLORS = ['#0d9488', '#2563eb', '#7c3aed', '#d97706', '#059669', '#e11d48'];
 
-const formatFull = (amount) => {
-  const num = Math.round(Number(amount) || 0);
-  return `Rp ${num.toLocaleString('id-ID')}`;
+const Delta = ({ value, inverse = false }) => {
+  if (value == null || !Number.isFinite(value)) return null;
+  const good = inverse ? value <= 0 : value >= 0;
+  return (
+    <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap', good ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700')}>
+      {value >= 0 ? '▲' : '▼'} {fmtPct(Math.abs(value))}
+    </span>
+  );
+};
+
+const BulanIni = () => <span className="text-[11px] font-semibold text-slate-400">Bulan ini</span>;
+
+const KpiTile = ({ tone, icon, title, value, series, inverse, className }) => {
+  const t = TONES[tone];
+  const prev = series.length > 1 ? series[series.length - 2] : null;
+  const delta = prev && prev > 0 ? ((value / prev) - 1) * 100 : null;
+  return (
+    <FinanceTile tone={tone} icon={icon} title={title} tinted className={className}>
+      <div className="flex items-center gap-2 flex-wrap">
+        <p className={cn('text-[26px] sm:text-3xl font-black tabular-nums leading-none', value < 0 ? 'text-rose-600' : 'text-app-ink')} title={fmtRp(value)}>
+          <AnimatedNumber value={value} format={fmtShort} />
+        </p>
+        <Delta value={delta} inverse={inverse} />
+      </div>
+      <Spark values={series} color={t.hex} className="mt-3" label={`Tren ${title}`} />
+    </FinanceTile>
+  );
 };
 
 const RevenueOverview = ({ dateRange }) => {
-  const isPWA =
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.navigator.standalone === true ||
-    document.referrer.includes('android-app://');
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [activeFormType, setActiveFormType] = useState('expenditure');
   const [refreshing, setRefreshing] = useState(false);
+  // Naik tiap kali Refresh/simpan transaksi, supaya widget yang fetch sendiri ikut dimuat ulang.
+  const [refreshKey, setRefreshKey] = useState(0);
   const [danaPacket, setDanaPacket] = useState({ total: 0, sisaSesi: 0, jumlahPaket: 0 });
   const [paymentMethodMap, setPaymentMethodMap] = useState({});
   const [data, setData] = useState({
@@ -69,16 +77,21 @@ const RevenueOverview = ({ dateRange }) => {
     patientIncome: [],
     ownerExpenses: [],
     adminExpenses: [],
-    receivables: [],
-    bankAccounts: [],
     nonPkgRecaps: [],
     pkgRecaps: [],
   });
-  const [serviceRates, setServiceRates] = useState([]);
-  // Financial Health Overview & KPI di atas memakai angka yang sama dengan
-  // widget Break Even Point (bulan berjalan) — bukan angka dateRange yang
-  // bisa dipilih bebas — supaya kedua ringkasan selalu konsisten satu sama lain.
+  // Financial Health & KPI memakai angka yang sama dengan widget Break Even Point
+  // (bulan berjalan), bukan dateRange yang bisa dipilih bebas, supaya keduanya
+  // selalu konsisten.
   const [bepFinancials, setBepFinancials] = useState(null);
+
+  // Interaksi tile
+  const [healthView, setHealthView] = useState('margin');
+  const [selTherapist, setSelTherapist] = useState(null);
+  const [selPackage, setSelPackage] = useState(null);
+  const [selPayment, setSelPayment] = useState(null);
+
+  const { monthly, loading: monthlyLoading } = useMonthlyFinance(bepFinancials, 12, refreshKey);
 
   const fetchData = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -86,10 +99,9 @@ const RevenueOverview = ({ dateRange }) => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const currentUserId = sessionData?.session?.user?.id;
-      const currentUserRow = { clinic_id: await getCachedClinicId(currentUserId) };
-      const clinicId = currentUserRow?.clinic_id;
+      const clinicId = await getCachedClinicId(currentUserId);
 
-      const [ownerInc, adminInc, patientInc, ownerExp, adminExp, nonPkgRecaps, pkgRecaps, serviceRatesRes, bepRes] = await Promise.all([
+      const [ownerInc, adminInc, patientInc, ownerExp, adminExp, nonPkgRecaps, pkgRecaps, bepRes] = await Promise.all([
         getOwnerIncome(dateRange),
         getAdminIncome(dateRange),
         getPatientIncomeFromPackages(dateRange),
@@ -107,11 +119,11 @@ const RevenueOverview = ({ dateRange }) => {
           .gte('recap_date', dateRange.startDate)
           .lte('recap_date', dateRange.endDate)
           .not('package_tracking_id', 'is', null),
-        getServiceRates(),
         getBepFinancials(),
       ]);
       setBepFinancials(bepRes?.data || null);
-// Fetch dana paket aktif
+
+      // Dana paket aktif
       const { data: activePkgs } = await supabase
         .from('package_tracking')
         .select('nominal, total_sessions, sessions_remaining')
@@ -120,15 +132,13 @@ const RevenueOverview = ({ dateRange }) => {
 
       const danaTotal = (activePkgs || []).reduce((s, p) =>
         s + (Number(p.nominal) / Number(p.total_sessions) * Number(p.sessions_remaining)), 0);
-      const sisaSesi = (activePkgs || []).reduce((s, p) => s + Number(p.sessions_remaining), 0);
-
       setDanaPacket({
         total: Math.round(danaTotal),
-        sisaSesi,
-        jumlahPaket: (activePkgs || []).length
+        sisaSesi: (activePkgs || []).reduce((s, p) => s + Number(p.sessions_remaining), 0),
+        jumlahPaket: (activePkgs || []).length,
       });
 
-      // Fetch label metode pembayaran
+      // Label metode pembayaran
       const { data: paymentMethods } = await supabase
         .from('operational_options')
         .select('id, label')
@@ -144,12 +154,9 @@ const RevenueOverview = ({ dateRange }) => {
         patientIncome: patientInc?.data || [],
         ownerExpenses: ownerExp?.data || [],
         adminExpenses: adminExp?.data || [],
-        receivables: [],
-        bankAccounts: [],
         nonPkgRecaps: nonPkgRecaps?.data || [],
         pkgRecaps: pkgRecaps?.data || [],
       });
-      setServiceRates(serviceRatesRes?.data || []);
     } catch (error) {
       console.error('Error fetching finance overview:', error);
       toast({ variant: 'destructive', title: 'Error', description: 'Gagal memuat data finance.' });
@@ -163,87 +170,30 @@ const RevenueOverview = ({ dateRange }) => {
     fetchData();
   }, [dateRange]);
 
+  const handleRefresh = () => {
+    setRefreshKey(k => k + 1);
+    fetchData(true);
+  };
+
   // ── Computed Metrics ──
-  // Financial Health Overview & KPI (Total Revenue/Net Profit/Total
-  // Pengeluaran/alerts) memakai totalCost & revenueThisMonth dari
-  // getBepFinancials() — sama seperti widget Break Even Point — supaya
-  // "biaya" di sini selalu mencakup fixed cost, transport & insentif
-  // terapis, bukan cuma transaksi pengeluaran owner/admin yang tercatat.
+  // Total Revenue/Net Profit/Total Pengeluaran memakai totalCost & revenueThisMonth
+  // dari getBepFinancials() — sama seperti widget Break Even Point — supaya
+  // "biaya" di sini selalu mencakup fixed cost, transport & insentif terapis.
   const metrics = useMemo(() => {
-    const sum = (arr, key = 'amount') => arr.reduce((acc, item) => acc + (Number(item[key]) || 0), 0);
-
-    const ownerIncome = sum(data.ownerIncome);
-    const adminIncome = sum(data.adminIncome);
-    const patientIncome = sum(data.patientIncome);
-
-    const totalRevenue = bepFinancials?.revenueThisMonth ?? (ownerIncome + adminIncome + patientIncome);
+    const sum = (arr) => arr.reduce((acc, item) => acc + (Number(item.amount) || 0), 0);
+    const totalRevenue = bepFinancials?.revenueThisMonth ?? (sum(data.ownerIncome) + sum(data.adminIncome) + sum(data.patientIncome));
     const totalExpenses = bepFinancials?.totalCost ?? (sum(data.ownerExpenses) + sum(data.adminExpenses));
     const netProfit = totalRevenue - totalExpenses;
-
-    const totalReceivable = data.receivables
-      .filter(r => r.status !== 'Paid')
-      .reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
-
-    const totalCash = data.bankAccounts.reduce((acc, b) => acc + (Number(b.balance) || 0), 0);
-
-    return { totalRevenue, totalExpenses, netProfit, totalReceivable, totalCash, ownerIncome, adminIncome, patientIncome };
+    return {
+      totalRevenue,
+      totalExpenses,
+      netProfit,
+      margin: totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0,
+      ratio: totalRevenue > 0 ? (totalExpenses / totalRevenue) * 100 : 0,
+    };
   }, [data, bepFinancials]);
 
-  // ── Revenue Trend Data (group by date) ──
-  const revenueTrendData = useMemo(() => {
-    const allIncome = [
-      ...data.ownerIncome.map(i => ({ date: i.date, amount: Number(i.amount) || 0 })),
-      ...data.adminIncome.map(i => ({ date: i.transaction_date || i.date, amount: Number(i.amount) || 0 })),
-      ...data.patientIncome.map(i => ({ date: i.date, amount: Number(i.amount) || 0 }))
-    ];
-
-    const grouped = {};
-    allIncome.forEach(item => {
-      if (!item.date) return;
-      const d = typeof item.date === 'string' ? item.date.split('T')[0] : format(new Date(item.date), 'yyyy-MM-dd');
-      grouped[d] = (grouped[d] || 0) + item.amount;
-    });
-
-    return Object.entries(grouped)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, amount]) => ({
-        date: format(parseISO(date), 'dd MMM'),
-        fullDate: date,
-        revenue: amount
-      }));
-  }, [data]);
-
-  // ── Expense Breakdown by Category ──
-  const expenseBreakdown = useMemo(() => {
-    const allExpenses = [
-      ...data.ownerExpenses.map(e => ({ category: e.category || 'Lainnya', amount: Number(e.amount) || 0 })),
-      ...data.adminExpenses.map(e => ({ category: e.category || 'Lainnya', amount: Number(e.amount) || 0 }))
-    ];
-
-    const grouped = {};
-    allExpenses.forEach(item => {
-      grouped[item.category] = (grouped[item.category] || 0) + item.amount;
-    });
-
-    return Object.entries(grouped)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 8);
-  }, [data]);
-
-  // ── Top Patients by Revenue ──
-  const topPatients = useMemo(() => {
-    const grouped = {};
-    data.patientIncome.forEach(item => {
-      const name = item.patient_name || 'Unknown';
-      grouped[name] = (grouped[name] || 0) + (Number(item.amount) || 0);
-    });
-    return Object.entries(grouped)
-      .map(([name, amount]) => ({ name, amount }))
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 5);
-  }, [data]);
-// ── Revenue per Terapis ──
+  // ── Revenue per Terapis ──
   const therapistRevenue = useMemo(() => {
     const map = {};
     (data.nonPkgRecaps || []).forEach(r => {
@@ -260,11 +210,11 @@ const RevenueOverview = ({ dateRange }) => {
       .map(([name, revenue]) => ({ name: name.split(',')[0], fullName: name, revenue: Math.round(revenue) }))
       .sort((a, b) => b.revenue - a.revenue);
   }, [data.nonPkgRecaps, data.pkgRecaps]);
+  const therapistTotal = therapistRevenue.reduce((s, t) => s + t.revenue, 0);
 
   // ── Pemasukan Paket vs Non-Paket (sesuai date range) ──
-  // Pemasukan paket dihitung dari pembayaran yang benar-benar masuk (amount
-  // di daily_recaps), bukan diamortisasi per sesi — biasanya cuma tercatat
-  // di sesi pertama saat paket dibeli, sesi berikutnya amount-nya 0.
+  // Pemasukan paket dihitung dari pembayaran yang benar-benar masuk (amount di
+  // daily_recaps), bukan diamortisasi per sesi.
   const packageVsNonPackage = useMemo(() => {
     const nonPaketRecaps = (data.nonPkgRecaps || []).filter(r => (Number(r.amount) || 0) > 0);
     const paketRecaps = (data.pkgRecaps || []).filter(r => (Number(r.amount) || 0) > 0);
@@ -284,14 +234,11 @@ const RevenueOverview = ({ dateRange }) => {
 
   // ── Pemasukan per Metode Pembayaran ──
   const paymentMethodBreakdown = useMemo(() => {
-    // Murni ambil dari kolom amount apa adanya (tidak dibagi rata sesi paket).
-    // Sesi paket yang amount-nya 0 (karena sudah lunas di sesi pertama) otomatis tidak dihitung.
+    // Murni dari kolom amount apa adanya; sesi paket ber-amount 0 tidak dihitung.
     const allRecaps = [...(data.nonPkgRecaps || []), ...(data.pkgRecaps || [])];
-
     const map = {};
     allRecaps.forEach(r => {
-      // Recap dengan split pembayaran (mis. QRIS + Cash) dipecah per metode
-      // supaya breakdown tetap akurat, bukan ditumpuk semua ke satu metode.
+      // Recap dengan split pembayaran (mis. QRIS + Cash) dipecah per metode.
       if (Array.isArray(r.payment_splits) && r.payment_splits.length > 0) {
         r.payment_splits.forEach(s => {
           const amount = Number(s.amount) || 0;
@@ -303,54 +250,49 @@ const RevenueOverview = ({ dateRange }) => {
       }
       const amount = Number(r.amount) || 0;
       if (amount <= 0) return;
-      const raw = r.payment_method;
-      const label = paymentMethodMap[raw] || raw || 'Tidak Diketahui';
+      const label = paymentMethodMap[r.payment_method] || r.payment_method || 'Tidak Diketahui';
       map[label] = (map[label] || 0) + amount;
     });
-
     const total = Object.values(map).reduce((s, v) => s + v, 0);
     return Object.entries(map)
       .map(([method, amount], i) => ({
         method,
         amount: Math.round(amount),
         pct: total > 0 ? Math.round((amount / total) * 100) : 0,
-        color: COLORS[i % COLORS.length],
+        color: CHART_COLORS[i % CHART_COLORS.length],
       }))
       .sort((a, b) => b.amount - a.amount);
   }, [data.nonPkgRecaps, data.pkgRecaps, paymentMethodMap]);
-
-  const totalPemasukanMetode = useMemo(
-    () => paymentMethodBreakdown.reduce((s, pm) => s + pm.amount, 0),
-    [paymentMethodBreakdown]
-  );
-
-  // ── Alerts ──
-  const alerts = useMemo(() => {
-    const items = [];
-    if (metrics.netProfit < 0) {
-      items.push({ type: 'danger', title: 'Loss Alert', message: 'Pengeluaran melebihi pemasukan periode ini' });
-    }
-    if (metrics.totalExpenses > metrics.totalRevenue * 0.5) {
-      items.push({ type: 'warning', title: 'Expense Ratio Tinggi', message: `Pengeluaran mencapai ${metrics.totalRevenue > 0 ? ((metrics.totalExpenses / metrics.totalRevenue) * 100).toFixed(1) : 0}% dari revenue` });
-    }
-    if (items.length === 0) {
-      items.push({ type: 'success', title: 'Financial Health Stable', message: 'Revenue positif, profit terjaga dengan baik' });
-    }
-    return items;
-  }, [metrics]);
+  const totalPemasukanMetode = paymentMethodBreakdown.reduce((s, pm) => s + pm.amount, 0);
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mb-3" />
-        <p className="text-slate-500 text-sm">Memuat data finance...</p>
-      </div>
-    );
+    return <TileLoading className="py-16" />;
   }
 
+  const openForm = (type) => { setActiveFormType(type); setIsFormOpen(true); };
+  const series = (key) => monthly.map(m => m[key]);
+  const isHealthy = metrics.netProfit >= 0;
+  const showMargin = healthView === 'margin';
+  const ringPct = showMargin ? metrics.margin : metrics.ratio;
+  const rangeLabel = `${format(parseISO(dateRange.startDate), 'd MMM', { locale: idLocale })} – ${format(parseISO(dateRange.endDate), 'd MMM yyyy', { locale: idLocale })}`;
+  const pickedPayment = paymentMethodBreakdown.find(p => p.method === selPayment);
+
+  const miniBar = (key, label, value, color) => (
+    <button
+      type="button"
+      onClick={() => setHealthView(key)}
+      aria-pressed={healthView === key}
+      className={cn('grid gap-1 px-2.5 py-2 rounded-xl text-left transition-colors', healthView === key ? 'bg-slate-100' : 'hover:bg-slate-50')}
+    >
+      <span className="flex justify-between text-xs font-semibold text-slate-600"><span>{label}</span><span className="tabular-nums">{fmtPct(value)}</span></span>
+      <span className="h-1.5 rounded-full bg-slate-200 overflow-hidden">
+        <span className="block h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none" style={{ width: `${Math.min(Math.abs(value), 100)}%`, backgroundColor: color }} />
+      </span>
+    </button>
+  );
+
   return (
-    <div className="space-y-5 animate-in fade-in duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]">
-      {/* Quick Action Widget */}
+    <div className="space-y-4 animate-in fade-in duration-200">
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="sm:max-w-[500px] rounded-app-lg">
           <DialogHeader>
@@ -363,6 +305,7 @@ const RevenueOverview = ({ dateRange }) => {
             dateRange={dateRange}
             onSuccess={() => {
               setIsFormOpen(false);
+              setRefreshKey(k => k + 1);
               fetchData(true);
             }}
             onCancel={() => setIsFormOpen(false)}
@@ -370,369 +313,208 @@ const RevenueOverview = ({ dateRange }) => {
         </DialogContent>
       </Dialog>
 
-      <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-app-lg"
-        style={{ background: 'linear-gradient(to right, #f0fdfa, #f0fdf4)', border: '1px solid #99f6e4' }}>
-        <div className={cn("flex items-center gap-2 mr-1", isPWA && "w-full")}>
-          <div className="w-6 h-6 rounded-app-sm flex items-center justify-center shrink-0" style={{ background: '#0d9488' }}>
-            <Plus className="w-3.5 h-3.5 text-white" />
-          </div>
-          <span className="text-xs font-bold text-teal-700">Quick Input Owner</span>
+      {/* Header + input cepat */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-3">
+        <div className="mr-auto min-w-0">
+          <h2 className="text-xl md:text-2xl font-black text-app-ink leading-none">Finance</h2>
+          <p className="text-xs text-slate-500 mt-1">{rangeLabel}</p>
         </div>
-        <button
-          onClick={() => { setActiveFormType('expenditure'); setIsFormOpen(true); }}
-          className={cn(
-            "flex items-center justify-center gap-1.5 px-4 py-2 rounded-app text-xs font-bold text-white transition-[opacity,transform] duration-150 ease-out hover:opacity-90 active:scale-[0.97] shadow-sm",
-            isPWA && "flex-1"
-          )}
-          style={{ background: '#e11d48' }}
+        <div className="flex gap-2 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={() => openForm('expenditure')}
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-xl bg-rose-600 text-white text-[13px] font-semibold shadow-sm transition-[transform,opacity] active:scale-[0.96] hover:opacity-90"
+          >
+            <Plus className="w-4 h-4" /> Keluar
+          </button>
+          <button
+            type="button"
+            onClick={() => openForm('income')}
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-xl bg-emerald-600 text-white text-[13px] font-semibold shadow-sm transition-[transform,opacity] active:scale-[0.96] hover:opacity-90"
+          >
+            <Plus className="w-4 h-4" /> Masuk
+          </button>
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            aria-label="Muat ulang"
+            className="w-10 h-10 shrink-0 inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 active:scale-[0.96] transition-[transform,background-color]"
+          >
+            <RefreshCw className={cn('w-4 h-4', refreshing && 'animate-spin')} />
+          </button>
+        </div>
+      </div>
+
+      {/* ── Bento grid: 2 kolom HP, 4 kolom tablet, 6 kolom desktop ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
+        {/* Kesehatan */}
+        <FinanceTile
+          tone={isHealthy ? 'pos' : 'neg'} icon={HeartPulse} title="Kesehatan" tinted action={<BulanIni />}
+          className="col-span-2 md:col-span-2 md:row-span-2"
         >
-          <TrendingDown className="w-3.5 h-3.5" />
-          + Pengeluaran
-        </button>
-        <button
-          onClick={() => { setActiveFormType('income'); setIsFormOpen(true); }}
-          className={cn(
-            "flex items-center justify-center gap-1.5 px-4 py-2 rounded-app text-xs font-bold text-white transition-[opacity,transform] duration-150 ease-out hover:opacity-90 active:scale-[0.97] shadow-sm",
-            isPWA && "flex-1"
+          <div className="flex flex-wrap items-center gap-4">
+            <Ring pct={ringPct} color={showMargin ? '#059669' : '#d97706'} className="w-[132px] shrink-0 mx-auto sm:mx-0">
+              <b className="text-2xl font-black tabular-nums leading-none text-app-ink">
+                <AnimatedNumber value={ringPct} format={fmtPct} />
+              </b>
+              <small className="text-xs text-slate-500 mt-1">{showMargin ? 'Margin' : 'Biaya'}</small>
+            </Ring>
+            <div className="grid gap-2 flex-1 min-w-[150px]">
+              <span className={cn('inline-flex items-center gap-1.5 w-fit px-2.5 py-1 rounded-full text-xs font-bold', isHealthy ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700')}>
+                <span className="w-2 h-2 rounded-full bg-current" />
+                {isHealthy ? 'Sehat' : 'Waspada'}
+              </span>
+              {miniBar('margin', 'Margin', metrics.margin, '#059669')}
+              {miniBar('ratio', 'Biaya / Pendapatan', metrics.ratio, '#d97706')}
+            </div>
+          </div>
+        </FinanceTile>
+
+        <KpiTile tone="pos" icon={DollarSign} title="Pendapatan" value={metrics.totalRevenue} series={series('revenue')} className="col-span-1 md:col-span-2" />
+        <KpiTile tone="sky" icon={TrendingUp} title="Laba Bersih" value={metrics.netProfit} series={series('profit')} className="col-span-1 md:col-span-2" />
+        <KpiTile tone="neg" icon={TrendingDown} title="Biaya" value={metrics.totalExpenses} series={series('expense')} inverse className="col-span-1 md:col-span-2" />
+
+        {/* Dana paket */}
+        <FinanceTile tone="warn" icon={Package} title="Dana Paket" className="col-span-1 md:col-span-2">
+          <p className="text-[26px] sm:text-3xl font-black tabular-nums leading-none text-amber-600" title={fmtRp(danaPacket.total)}>
+            <AnimatedNumber value={danaPacket.total} format={fmtShort} />
+          </p>
+          <div className="flex flex-wrap gap-2 mt-3">
+            <span className="inline-flex items-baseline gap-1 px-3 py-1.5 rounded-xl bg-slate-100 text-[13px] font-bold tabular-nums">{danaPacket.sisaSesi} <small className="text-xs font-medium text-slate-500">sesi</small></span>
+            <span className="inline-flex items-baseline gap-1 px-3 py-1.5 rounded-xl bg-slate-100 text-[13px] font-bold tabular-nums">{danaPacket.jumlahPaket} <small className="text-xs font-medium text-slate-500">paket</small></span>
+          </div>
+        </FinanceTile>
+
+        <BreakEvenPointWidget key={`bep-${refreshKey}`} className="col-span-2 md:col-span-4 lg:col-span-3" />
+        <ProfitMarginTrendWidget monthly={monthly} loading={monthlyLoading} className="col-span-2 md:col-span-4 lg:col-span-3" />
+        <ExpenseCategoryWidget key={`cat-${refreshKey}`} dateRange={dateRange} className="col-span-2 md:col-span-4 lg:col-span-3" />
+
+        {/* Metode pembayaran */}
+        <FinanceTile tone="sky" icon={Landmark} title="Metode Bayar" className="col-span-2 md:col-span-4 lg:col-span-3">
+          {paymentMethodBreakdown.length === 0 ? (
+            <TileEmpty>Belum ada pemasukan pada periode ini.</TileEmpty>
+          ) : (
+            <>
+              <div className="flex items-baseline gap-2 mb-3 flex-wrap">
+                <p className="text-3xl font-black tabular-nums leading-none text-app-ink" title={fmtRp(pickedPayment ? pickedPayment.amount : totalPemasukanMetode)}>
+                  <AnimatedNumber value={pickedPayment ? pickedPayment.amount : totalPemasukanMetode} format={fmtShort} />
+                </p>
+                <span className="text-xs text-slate-500">{pickedPayment ? `${pickedPayment.method} · ${pickedPayment.pct}%` : 'Total'}</span>
+              </div>
+              <div className="flex h-[22px] gap-0.5 rounded-xl overflow-hidden bg-slate-100">
+                {paymentMethodBreakdown.map(pm => (
+                  <button
+                    key={pm.method}
+                    type="button"
+                    aria-label={pm.method}
+                    onClick={() => setSelPayment(selPayment === pm.method ? null : pm.method)}
+                    className="h-full transition-opacity duration-200"
+                    style={{ flexGrow: pm.amount, flexBasis: 0, minWidth: 3, backgroundColor: pm.color, opacity: selPayment && selPayment !== pm.method ? 0.3 : 1 }}
+                  />
+                ))}
+              </div>
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2.5 mt-3">
+                {paymentMethodBreakdown.map(pm => {
+                  const st = getPaymentMethodStyle(pm.method);
+                  const dim = selPayment && selPayment !== pm.method;
+                  return (
+                    <button
+                      key={pm.method}
+                      type="button"
+                      onClick={() => setSelPayment(selPayment === pm.method ? null : pm.method)}
+                      aria-pressed={selPayment === pm.method}
+                      className={cn('grid gap-1.5 p-3 rounded-2xl text-left transition-[opacity,transform] duration-200 active:scale-[0.97]', st.bg, st.color, dim && 'opacity-40')}
+                    >
+                      <span className="flex items-center justify-between gap-2 text-[13px] font-bold">
+                        <span className="min-w-0 break-words">{pm.method}</span>
+                        <st.icon className="w-4 h-4 shrink-0" />
+                      </span>
+                      <span className="text-lg font-black tabular-nums leading-none" title={fmtRp(pm.amount)}>{fmtShort(pm.amount)}</span>
+                      <span className="text-xs opacity-80">{pm.pct}%</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
           )}
-          style={{ background: '#059669' }}
-        >
-          <TrendingUp className="w-3.5 h-3.5" />
-          + Pemasukan
-        </button>
-        <span className="text-xs text-teal-500 hidden sm:inline ml-1">Catat transaksi tanpa berpindah halaman</span>
-      </div>
+        </FinanceTile>
 
-      {/* Refresh Button */}
-      <div className="flex justify-end">
-        <Button onClick={() => fetchData(true)} variant="outline" size="sm" disabled={refreshing} className="rounded-app">
-          <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
-      </div>
-
-      {/* ── Executive Hero: Financial Health Overview ── */}
-      <Card className="overflow-hidden border-0 rounded-[28px] bg-white shadow-lg shadow-slate-200/70 relative">
-        {/* Decorative soft-blue glows */}
-        <div className="absolute -top-16 -right-16 w-56 h-56 bg-sky-100/70 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-6 left-1/3 w-40 h-40 bg-cyan-50 rounded-full blur-3xl pointer-events-none" />
-
-        <CardContent className="p-4 md:p-8 pb-0 relative z-10">
-          <div className="relative mb-2.5 md:mb-5">
-            <button type="button" className="absolute top-0 right-0 text-slate-300 hover:text-slate-500 transition-colors" aria-label="More options">
-              <MoreHorizontal className="w-5 h-5" />
-            </button>
-
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 md:gap-3 pr-6">
-              <div className="flex items-start gap-2.5 md:gap-4 min-w-0">
-                <div className="w-9 h-9 md:w-14 md:h-14 rounded-app md:rounded-app-lg bg-gradient-to-br from-app-accent/15 to-sky-50 flex items-center justify-center shrink-0">
-                  <BarChart3 className="w-4.5 h-4.5 md:w-7 md:h-7 text-app-accent" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-0.5 leading-none">Financial Health Overview</p>
-                  <p className="text-xl sm:text-3xl md:text-5xl font-black text-app-ink leading-none mt-1">
-                    {metrics.netProfit >= 0 ? 'Healthy' : 'Warning'}
-                  </p>
-                  <p className="text-slate-500 text-xs mt-1 leading-tight">
-                    {format(startOfMonth(new Date()), 'dd MMM yyyy')} — {format(endOfMonth(new Date()), 'dd MMM yyyy')}
-                    <span className="hidden sm:inline"> (sama seperti Break Even Point)</span>
-                  </p>
-                  <p className="sm:hidden text-slate-500 text-xs leading-tight">(sama seperti Break Even Point)</p>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-start sm:items-end gap-1 shrink-0 sm:pt-1">
-                <div className={`px-3 py-1 md:px-3.5 md:py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 whitespace-nowrap ${
-                  metrics.netProfit >= 0
-                    ? 'bg-emerald-50 border border-emerald-100 text-emerald-600'
-                    : 'bg-rose-50 border border-rose-100 text-rose-600'
-                }`}>
-                  {metrics.netProfit >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                  {metrics.netProfit >= 0 ? 'Net Profit Positive' : 'Net Profit Negative'}
-                </div>
-                <span className="text-xs text-slate-500">
-                  {metrics.netProfit >= 0 ? 'Keep up the good work!' : 'Perlu perhatian segera'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-1.5 md:space-y-2">
-            <div className="rounded-app-lg p-2 md:p-4 bg-gradient-to-r from-emerald-50 to-teal-50/60">
-              <div className="flex items-center gap-2.5 md:gap-3 mb-1 md:mb-2.5">
-                <div className="w-7 h-7 md:w-10 md:h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                  <Coins className="w-3.5 h-3.5 md:w-4.5 md:h-4.5 text-emerald-600" />
-                </div>
-                <span className="text-xs md:text-sm font-bold text-app-ink flex-1">Profit Margin</span>
-                <span className="text-base md:text-xl font-black text-emerald-600">
-                  {metrics.totalRevenue > 0 ? ((metrics.netProfit / metrics.totalRevenue) * 100).toFixed(1) : 0}%
-                </span>
-              </div>
-              <div className="h-2 md:h-2.5 w-full bg-slate-200/70 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
-                  style={{ width: `${Math.min(Math.abs(metrics.totalRevenue > 0 ? (metrics.netProfit / metrics.totalRevenue) * 100 : 0), 100)}%` }} />
-              </div>
-            </div>
-
-            <div className="rounded-app-lg p-2 md:p-4 bg-gradient-to-r from-amber-50 to-orange-50/60">
-              <div className="flex items-center gap-2.5 md:gap-3 mb-1 md:mb-2.5">
-                <div className="w-7 h-7 md:w-10 md:h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                  <PieChartIcon className="w-3.5 h-3.5 md:w-4.5 md:h-4.5 text-amber-600" />
-                </div>
-                <span className="text-xs md:text-sm font-bold text-app-ink flex-1">Expense Ratio</span>
-                <span className="text-base md:text-xl font-black text-amber-600">
-                  {metrics.totalRevenue > 0 ? ((metrics.totalExpenses / metrics.totalRevenue) * 100).toFixed(1) : 0}%
-                </span>
-              </div>
-              <div className="h-2 md:h-2.5 w-full bg-slate-200/70 rounded-full overflow-hidden">
-                <div className="h-full bg-amber-500 rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
-                  style={{ width: `${Math.min(metrics.totalRevenue > 0 ? (metrics.totalExpenses / metrics.totalRevenue) * 100 : 0, 100)}%` }} />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-
-        {/* Subtle soft-blue wave footer */}
-        <div className="relative mt-1 md:mt-4 pt-0 md:pt-9 overflow-hidden">
-          <svg viewBox="0 0 1440 110" className="w-full h-14 md:h-20 block" preserveAspectRatio="none">
-            <path fill="#dbeafe" d="M0,58L80,53C160,48,320,38,480,42C640,47,800,67,960,72C1120,77,1280,67,1360,62L1440,57L1440,110L0,110Z" />
-            <path fill="#bfdbfe" opacity="0.55" d="M0,82L120,78C240,73,480,64,720,66C960,68,1200,82,1320,88L1440,94L1440,110L0,110Z" />
-          </svg>
-          <div className="absolute inset-0 flex items-end justify-between px-4 md:px-8 pb-2.5 md:pb-4">
-            <p className="hidden sm:flex items-start gap-2 text-xs text-app-ink/70 font-semibold leading-tight">
-              <BarChart3 className="w-3.5 h-3.5 text-app-ink/40 mt-0.5 shrink-0" />
-              <span>Better Financial Health<br />for a Stronger Tomorrow</span>
-            </p>
-            <p className="sm:hidden text-xs text-app-ink/60 font-semibold leading-tight">
-              Better Financial Health<br />for a Stronger Tomorrow
-            </p>
-            <p className="hidden sm:block text-xs tracking-widest text-app-accent-hover/50 font-bold uppercase">
-              Care &bull; Manage &bull; Grow Together
-            </p>
-          </div>
-        </div>
-      </Card>
-
-      {/* ── Break Even Point ── */}
-      <BreakEvenPointWidget />
-
-      {/* ── Tren Margin Profit Bulanan ── */}
-      <ProfitMarginTrendWidget />
-
-      {/* ── KPI Cards ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-        <div className="bg-white rounded-app-lg border border-emerald-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="w-12 h-12 rounded-app bg-emerald-50 flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-emerald-600" />
-            </div>
-          </div>
-          <p className="text-3xl sm:text-4xl md:text-5xl font-black leading-none text-emerald-600 break-words">{formatShortCurrency(metrics.totalRevenue)}</p>
-          <p className="text-sm text-slate-500 font-semibold mt-2">Total Revenue</p>
-          <p className="text-xs text-slate-500 mt-0.5 break-words">{formatCurrency(metrics.totalRevenue)}</p>
-        </div>
-
-        <div className={`bg-white rounded-app-lg border shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6 ${
-          metrics.netProfit >= 0 ? 'border-indigo-100' : 'border-rose-100'
-        }`}>
-          <div className="flex items-start justify-between mb-4">
-            <div className={`w-12 h-12 rounded-app flex items-center justify-center ${metrics.netProfit >= 0 ? 'bg-indigo-50' : 'bg-rose-50'}`}>
-              {metrics.netProfit >= 0 ? <TrendingUp className="w-6 h-6 text-indigo-600" /> : <TrendingDown className="w-6 h-6 text-rose-600" />}
-            </div>
-            <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${metrics.netProfit >= 0 ? 'bg-indigo-50 text-indigo-600' : 'bg-rose-50 text-rose-600'}`}>
-              Margin {metrics.totalRevenue > 0 ? ((metrics.netProfit / metrics.totalRevenue) * 100).toFixed(1) : 0}%
-            </span>
-          </div>
-          <p className={`text-3xl sm:text-4xl md:text-5xl font-black leading-none break-words ${metrics.netProfit >= 0 ? 'text-slate-900' : 'text-rose-600'}`}>{formatShortCurrency(metrics.netProfit)}</p>
-          <p className="text-sm text-slate-500 font-semibold mt-2">Net Profit</p>
-          <p className="text-xs text-slate-500 mt-0.5 break-words">{formatCurrency(metrics.netProfit)}</p>
-        </div>
-
-        <div className="bg-white rounded-app-lg border border-rose-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="w-12 h-12 rounded-app bg-rose-50 flex items-center justify-center">
-              <TrendingDown className="w-6 h-6 text-rose-600" />
-            </div>
-            <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-rose-50 text-rose-600">
-              Ratio {metrics.totalRevenue > 0 ? ((metrics.totalExpenses / metrics.totalRevenue) * 100).toFixed(1) : 0}%
-            </span>
-          </div>
-          <p className="text-3xl sm:text-4xl md:text-5xl font-black leading-none text-rose-600 break-words">{formatShortCurrency(metrics.totalExpenses)}</p>
-          <p className="text-sm text-slate-500 font-semibold mt-2">Total Pengeluaran</p>
-          <p className="text-xs text-slate-500 mt-0.5 break-words">{formatCurrency(metrics.totalExpenses)}</p>
-        </div>
-      </div>
-      {/* ── Dana Paket ── */}
-      <div className="bg-white rounded-app-lg border border-amber-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200 p-5 md:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-12 h-12 rounded-app bg-amber-50 flex items-center justify-center shrink-0">
-              <DollarSign className="w-6 h-6 text-amber-600" />
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-base font-bold text-slate-800 leading-snug">Dana Paket Belum Terealisasi</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Sisa sesi paket aktif yang belum dilakukan</p>
-            </div>
-          </div>
-          <span className="self-start sm:self-auto shrink-0 text-xs font-bold px-3 py-1.5 rounded-full bg-amber-50 text-amber-600 whitespace-nowrap">
-            {danaPacket.jumlahPaket} paket aktif
-          </span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
-          <div className="bg-amber-50 rounded-app p-4 min-w-0">
-            <p className="text-2xl md:text-3xl font-black text-amber-600 leading-none whitespace-nowrap">{formatShortCurrency(danaPacket.total)}</p>
-            <p className="text-xs text-slate-500 font-semibold mt-2">Total Dana Tertahan</p>
-            <p className="text-xs text-slate-500 mt-0.5 break-words">{formatFull(danaPacket.total)}</p>
-          </div>
-          <div className="bg-slate-50 rounded-app p-4">
-            <p className="text-2xl md:text-3xl font-black text-slate-700 leading-none">{danaPacket.sisaSesi}</p>
-            <p className="text-xs text-slate-500 font-semibold mt-2">Sisa Sesi</p>
-          </div>
-          <div className="bg-slate-50 rounded-app p-4">
-            <p className="text-2xl md:text-3xl font-black text-slate-700 leading-none">{danaPacket.jumlahPaket}</p>
-            <p className="text-xs text-slate-500 font-semibold mt-2">Paket Aktif</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Pengeluaran per Kategori ── */}
-      <ExpenseCategoryWidget dateRange={dateRange} />
-
-      {/* ── Revenue per Terapis ── */}
-      <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-5 md:p-6">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h2 className="text-base font-bold text-slate-800">Revenue per Terapis</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Kontribusi revenue per terapis periode ini</p>
-          </div>
-          <span className="text-xs text-slate-500">{therapistRevenue.length} terapis</span>
-        </div>
-        {therapistRevenue.length === 0 ? (
-          <p className="text-slate-500 text-sm text-center py-8">Belum ada data</p>
-        ) : (
-          <div className="space-y-4">
-            {therapistRevenue.map((t, i) => {
-              const pct = Math.round((t.revenue / (therapistRevenue[0]?.revenue || 1)) * 100);
-              const colors = ['#6366f1', '#10b981', '#f59e0b', '#f43f5e', '#06b6d4', '#8b5cf6'];
-              const color = colors[i % colors.length];
-              return (
-                <div key={t.fullName} className="space-y-1.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-xs font-black text-slate-300 w-5 shrink-0">#{i + 1}</span>
-                      <span className="text-sm font-semibold text-slate-700 break-words sm:truncate">{t.name}</span>
-                    </div>
-                    <div className="shrink-0">
-                      <span className="text-sm font-black text-slate-800">{formatFull(t.revenue)}</span>
-                    </div>
-                  </div>
-                  <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none" style={{ width: `${pct}%`, backgroundColor: color }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* ── Pemasukan Paket vs Non-Paket ── */}
-      <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-5 md:p-6">
-        <div className="flex items-start justify-between mb-5 gap-3">
-          <div>
-            <h2 className="text-sm font-bold text-slate-800">Pemasukan Paket vs Non-Paket</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {format(parseISO(dateRange.startDate), 'dd MMM yyyy')} — {format(parseISO(dateRange.endDate), 'dd MMM yyyy')}
-            </p>
-          </div>
-          <div className="text-right shrink-0">
-            <p className="text-lg md:text-xl font-black text-slate-800 leading-none">{formatFull(packageVsNonPackage.total)}</p>
-            <p className="text-xs text-slate-500 font-medium mt-1">Total Pemasukan</p>
-          </div>
-        </div>
-
-        {packageVsNonPackage.total === 0 ? (
-          <p className="text-sm text-slate-500 text-center py-6">Belum ada data pemasukan pada periode ini.</p>
-        ) : (
-          <>
-            <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden flex mb-5">
-              <div className="h-full bg-violet-500 transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none" style={{ width: `${packageVsNonPackage.paketPct}%` }} />
-              <div className="h-full bg-sky-500 transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none" style={{ width: `${packageVsNonPackage.nonPaketPct}%` }} />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-              <div className="rounded-app-lg border border-violet-100 bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-9 h-9 rounded-app bg-violet-50 flex items-center justify-center">
-                    <Package className="w-4 h-4 text-violet-600" />
-                  </div>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-violet-50 text-violet-600">
-                    {packageVsNonPackage.paketPct}%
-                  </span>
-                </div>
-                <p className="text-lg font-black leading-none text-violet-600">{formatFull(packageVsNonPackage.paket)}</p>
-                <p className="text-xs text-slate-500 font-medium mt-1.5">Pemasukan Paket &bull; {packageVsNonPackage.paketCount} transaksi</p>
-              </div>
-              <div className="rounded-app-lg border border-sky-100 bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-9 h-9 rounded-app bg-sky-50 flex items-center justify-center">
-                    <Wallet className="w-4 h-4 text-sky-600" />
-                  </div>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-sky-50 text-sky-600">
-                    {packageVsNonPackage.nonPaketPct}%
-                  </span>
-                </div>
-                <p className="text-lg font-black leading-none text-sky-600">{formatFull(packageVsNonPackage.nonPaket)}</p>
-                <p className="text-xs text-slate-500 font-medium mt-1.5">Pemasukan Non-Paket &bull; {packageVsNonPackage.nonPaketCount} transaksi</p>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* ── Pemasukan per Metode Pembayaran ── */}
-      <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm p-5 md:p-6">
-        <div className="flex items-start justify-between mb-5 gap-3">
-          <div>
-            <h2 className="text-sm font-bold text-slate-800">Pemasukan per Metode Pembayaran</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {format(parseISO(dateRange.startDate), 'dd MMM yyyy')} — {format(parseISO(dateRange.endDate), 'dd MMM yyyy')}
-            </p>
-          </div>
-          <div className="text-right shrink-0">
-            <p className="text-lg md:text-xl font-black text-slate-800 leading-none">{formatFull(totalPemasukanMetode)}</p>
-            <p className="text-xs text-slate-500 font-medium mt-1">Total Pemasukan</p>
-          </div>
-        </div>
-
-        {paymentMethodBreakdown.length === 0 ? (
-          <p className="text-sm text-slate-500 text-center py-6">Belum ada data pemasukan pada periode ini.</p>
-        ) : (
-          <div className="flex flex-wrap gap-3 md:gap-4">
-            {paymentMethodBreakdown.map((pm, i) => {
-              const style = getPaymentMethodStyle(pm.method);
-              return (
-                <div
-                  key={i}
-                  className={`flex-1 basis-[160px] rounded-app-lg border ${style.border} bg-white p-4 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-shadow duration-200`}
+        {/* Per terapis */}
+        <FinanceTile tone="acc" icon={Users} title="Per Terapis" className="col-span-2 md:col-span-4 lg:col-span-2">
+          {therapistRevenue.length === 0 ? (
+            <TileEmpty>Belum ada data.</TileEmpty>
+          ) : (
+            <div className="grid gap-0.5">
+              {therapistRevenue.map((t, i) => (
+                <button
+                  key={t.fullName}
+                  type="button"
+                  onClick={() => setSelTherapist(selTherapist === t.fullName ? null : t.fullName)}
+                  aria-pressed={selTherapist === t.fullName}
+                  className={cn('grid gap-1 w-full px-2 py-2 rounded-xl text-left transition-colors', selTherapist === t.fullName ? 'bg-slate-100' : 'hover:bg-slate-50')}
                 >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className={`w-9 h-9 rounded-app ${style.bg} flex items-center justify-center`}>
-                      <style.icon className={`w-4 h-4 ${style.color}`} />
-                    </div>
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${style.bg} ${style.color}`}>
-                      {pm.pct}%
+                  <span className="flex items-center gap-2 text-[13px] font-semibold">
+                    <span className="w-4 text-[11px] text-slate-400">{i + 1}</span>
+                    <span className="flex-1 min-w-0 break-words text-slate-700">{t.name}</span>
+                    <span className="tabular-nums" title={fmtRp(t.revenue)}>
+                      {selTherapist === t.fullName ? fmtPct(therapistTotal > 0 ? (t.revenue / therapistTotal) * 100 : 0) : fmtShort(t.revenue)}
                     </span>
-                  </div>
-                  <p className={`text-lg font-black leading-none ${style.color}`}>{formatFull(pm.amount)}</p>
-                  <p className="text-xs text-slate-500 font-medium mt-1.5 break-words sm:truncate">{pm.method}</p>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                  </span>
+                  <span className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                    <span
+                      className="block h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+                      style={{ width: `${(t.revenue / (therapistRevenue[0]?.revenue || 1)) * 100}%`, backgroundColor: THERAPIST_COLORS[i % THERAPIST_COLORS.length] }}
+                    />
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </FinanceTile>
 
-      
+        {/* Paket vs non-paket */}
+        <FinanceTile tone="vio" icon={Package} title="Paket vs Non-Paket" className="col-span-2 md:col-span-2 lg:col-span-2">
+          {packageVsNonPackage.total === 0 ? (
+            <TileEmpty>Belum ada pemasukan pada periode ini.</TileEmpty>
+          ) : (
+            <>
+              <div className="flex h-8 gap-0.5 rounded-xl overflow-hidden bg-slate-100">
+                {[['paket', packageVsNonPackage.paket, '#7c3aed'], ['non', packageVsNonPackage.nonPaket, '#2563eb']].map(([k, v, c]) => (
+                  <button
+                    key={k}
+                    type="button"
+                    aria-label={k === 'paket' ? 'Paket' : 'Non-Paket'}
+                    onClick={() => setSelPackage(selPackage === k ? null : k)}
+                    className="h-full transition-opacity duration-200"
+                    style={{ flexGrow: v, flexBasis: 0, backgroundColor: c, opacity: selPackage && selPackage !== k ? 0.3 : 1 }}
+                  />
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2.5 mt-3">
+                {[
+                  { k: 'paket', label: 'Paket', v: packageVsNonPackage.paket, pct: packageVsNonPackage.paketPct, n: packageVsNonPackage.paketCount, cls: 'bg-violet-50 text-violet-600' },
+                  { k: 'non', label: 'Non-Paket', v: packageVsNonPackage.nonPaket, pct: packageVsNonPackage.nonPaketPct, n: packageVsNonPackage.nonPaketCount, cls: 'bg-blue-50 text-blue-600' },
+                ].map(c => (
+                  <button
+                    key={c.k}
+                    type="button"
+                    onClick={() => setSelPackage(selPackage === c.k ? null : c.k)}
+                    aria-pressed={selPackage === c.k}
+                    className={cn('grid gap-1 p-3 rounded-2xl text-left transition-[opacity,transform] duration-200 active:scale-[0.97]', c.cls, selPackage && selPackage !== c.k && 'opacity-40')}
+                  >
+                    <span className="text-xs font-semibold opacity-80">{c.label} · {c.n}x</span>
+                    <span className="text-xl font-black tabular-nums leading-none" title={fmtRp(c.v)}>{fmtShort(c.v)}</span>
+                    <span className="text-xs opacity-80">{c.pct}%</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </FinanceTile>
+
+        <PromoDiscountWidget key={`promo-${refreshKey}`} dateRange={dateRange} className="col-span-2 md:col-span-2 lg:col-span-2" />
+      </div>
     </div>
   );
 };

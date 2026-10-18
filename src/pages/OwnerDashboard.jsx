@@ -42,7 +42,6 @@ import BulletChartTargetVsRealization from '@/components/owner/operational/Bulle
 import ServiceDistributionChart from '@/components/owner/operational/ServiceDistributionChart';
 import PatientSourceChart from '@/components/owner/operational/PatientSourceChart';
 import PromoUsageWidget from '@/components/owner/operational/PromoUsageWidget';
-import PromoDiscountWidget from '@/components/owner/PromoDiscountWidget';
 import { OWNER_NAV_ITEMS } from '@/lib/navItems';
 const AttendanceManagement = React.lazy(lazyRetry(() => import('@/pages/admin/AttendanceManagement'), 'AttendanceManagement'));
 const OwnerDecreesPage = React.lazy(lazyRetry(() => import('@/pages/owner/OwnerDecreesPage'), 'OwnerDecreesPage'));
@@ -504,7 +503,6 @@ setTherapists(enrichedTherapists);
 
           <TabsContent value="finance" className="space-y-4 animate-in fade-in-0 duration-150 focus-visible:outline-none focus-visible:ring-0">
             <RevenueOverview dateRange={dateRange} />
-            <PromoDiscountWidget dateRange={dateRange} />
           </TabsContent>
         </Tabs>
       </div>
