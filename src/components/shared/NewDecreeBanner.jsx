@@ -6,8 +6,11 @@ import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { getClinicDecrees } from '@/lib/api';
 import { getSeenDecreeIds } from '@/lib/decreeSeen';
 
+const DECREE_BANNER_DAYS = 7;
+
 // Banner "Ada SK baru" di dashboard terapis/admin Kaffah. Hilang setelah
-// daftar SK dibuka (lihat ClinicDecreesViewer).
+// daftar SK dibuka (lihat ClinicDecreesViewer), atau otomatis setelah 7 hari
+// sejak SK terbit.
 const NewDecreeBanner = ({ to }) => {
   const { user, userDetails } = useAuth();
   const [unseen, setUnseen] = useState([]);
@@ -18,7 +21,13 @@ const NewDecreeBanner = ({ to }) => {
     getClinicDecrees().then(({ data }) => {
       if (!active) return;
       const seen = getSeenDecreeIds(user?.id);
-      setUnseen((data || []).filter((d) => d.status === 'issued' && !seen.includes(d.id)));
+      const now = Date.now();
+      setUnseen((data || []).filter((d) => {
+        if (d.status !== 'issued' || seen.includes(d.id)) return false;
+        // updated_at ikut berubah saat SK diterbitkan (status draft -> issued)
+        const publishedAt = new Date(d.updated_at || d.created_at).getTime();
+        return Number.isNaN(publishedAt) || now - publishedAt <= DECREE_BANNER_DAYS * 86400000;
+      }));
     });
     return () => { active = false; };
   }, [userDetails?.clinic_id, user?.id]);
