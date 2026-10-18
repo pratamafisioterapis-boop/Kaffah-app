@@ -263,6 +263,7 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
     })();
     const sfActive = isSoapFirstActiveOn(sfSettings, recapIso);
     const sfEdit = sfActive && mode === 'edit' && !!initialData?.id;
+    const sfDateLocked = sfEdit;
     const { quote, refresh: refreshQuote } = useRecapQuote(initialData?.id, formData.package_type, isOpen && sfEdit);
 
     const loadRecapMeta = useCallback(async () => {
@@ -1359,9 +1360,10 @@ setFormData({
                                 <div className="space-y-1 relative">
                                     <Label>Tanggal Sesi <span className="text-red-500">*</span></Label>
                                     <div className="flex gap-2">
-                                        <Input value={formData.recap_date || ''} onChange={(e) => handleChange('recap_date', e.target.value)} />
-                                        <Button variant="outline" size="icon" onClick={() => setShowDatePicker(p => !p)}><CalendarIcon className="w-4 h-4" /></Button>
+                                        <Input value={formData.recap_date || ''} onChange={(e) => handleChange('recap_date', e.target.value)} disabled={sfDateLocked} />
+                                        <Button variant="outline" size="icon" disabled={sfDateLocked} onClick={() => setShowDatePicker(p => !p)}><CalendarIcon className="w-4 h-4" /></Button>
                                     </div>
+                                    {sfDateLocked && <p className="text-xs text-slate-500">Tanggal sesi mengikuti appointment dan tidak dapat diubah di sini. Ubah jadwal lewat appointment.</p>}
                                     {errors.recap_date && <p className="text-xs text-red-500">{errors.recap_date}</p>}
                                     {showDatePicker && <div className="absolute z-50 mt-1"><DatePicker value={parseDateFromDisplay(formData.recap_date)} onChange={handleDateSelect} onClose={() => setShowDatePicker(false)} /></div>}
                                 </div>
@@ -1501,7 +1503,7 @@ setFormData({
         <div className="space-y-1">
             <Label>Tipe Pasien (otomatis dari SOAP)</Label>
             <div className="rounded-app-sm border bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800">
-                {quote?.type_label || formData.patient_type || 'Menunggu SOAP'}
+                {quote?.type_label || (['registered', 'guest'].includes(String(formData.patient_type || '').toLowerCase()) ? '' : formData.patient_type) || 'Menunggu SOAP'}
             </div>
         </div>
     ) : fPatientTypeEditable;
@@ -1780,7 +1782,7 @@ setFormData({
                 </div>
                 <div>
                     <div className="text-xs text-slate-500">Tipe pasien</div>
-                    <div className="font-medium text-slate-800">{quote?.type_label || formData.patient_type || '-'}</div>
+                    <div className="font-medium text-slate-800">{quote?.type_label || (['registered', 'guest'].includes(String(formData.patient_type || '').toLowerCase()) ? '' : formData.patient_type) || 'Menunggu SOAP'}</div>
                 </div>
                 <div>
                     <div className="text-xs text-slate-500">Tagihan</div>
