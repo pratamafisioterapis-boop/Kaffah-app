@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell 
-} from 'recharts';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Loader2, AlertCircle } from 'lucide-react';
-import { Button } from "@/components/ui/button";
+import { AlertCircle, Timer } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import FinanceTile, { TileEmpty, TileLoading } from '@/components/owner/finance/FinanceTile';
+import { Ring } from '@/components/owner/finance/charts';
 import { getCachedClinicId } from '@/lib/api';
-import { CHART_MOTION } from '@/lib/chartMotion';
 
-const SessionTimelinessChart = ({ dateRange }) => {
+const SessionTimelinessChart = ({ dateRange, className }) => {
   const [chartData, setChartData] = useState([]);
   const [complianceRate, setComplianceRate] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Kategori yang disorot di grafik (on | late | over).
+  const [focus, setFocus] = useState(null);
   const [stats, setStats] = useState({ onTime: 0, lateStart: 0, overDuration: 0, total: 0 });
 
   const fetchTimelinessData = async () => {
@@ -121,111 +120,76 @@ const SessionTimelinessChart = ({ dateRange }) => {
 
   const complianceColor = complianceRate >= 80 ? '#10b981' : complianceRate >= 50 ? '#f59e0b' : '#ef4444';
 
+  const bars = [
+    { key: 'on', label: 'On-Time', value: stats.onTime, color: '#10b981', cls: 'bg-emerald-50 text-emerald-600', hint: 'Sesi tepat waktu' },
+    { key: 'late', label: 'Late Start', value: stats.lateStart, color: '#f59e0b', cls: 'bg-amber-50 text-amber-600', hint: 'Mulai terlambat lebih dari 5 menit' },
+    { key: 'over', label: 'Over Dur.', value: stats.overDuration, color: '#ef4444', cls: 'bg-rose-50 text-rose-600', hint: 'Durasi lebih dari 5 menit dari jadwal' },
+  ];
+  const maxValue = Math.max(...bars.map(b => b.value), 1) * 1.12;
+  const picked = bars.find(b => b.key === focus);
+
   return (
-    <Card className="rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
-      <div className="p-5 md:p-6 pb-0">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-base font-bold text-slate-800">Ketepatan Waktu Sesi</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Analisis kepatuhan waktu terapis</p>
-          </div>
-          {!loading && stats.total > 0 && (
-            <div className="text-right">
-              <p className="text-xl font-black leading-none" style={{ color: complianceColor }}>{complianceRate}%</p>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">Compliance</p>
-            </div>
-          )}
+    <FinanceTile tone="pos" icon={Timer} title="Ketepatan Waktu Sesi" className={className}>
+      {loading ? (
+        <TileLoading className="py-16" />
+      ) : error ? (
+        <div className="h-48 flex flex-col items-center justify-center gap-2 text-rose-500 text-sm">
+          <AlertCircle className="h-5 w-5" />
+          <p>{error}</p>
+          <button type="button" onClick={fetchTimelinessData} className="px-3 h-8 rounded-[10px] border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50">Coba Lagi</button>
         </div>
-      </div>
-
-      <CardContent className="pt-4 pb-5 px-5 md:px-6">
-        {loading ? (
-          <div className="h-48 flex items-center justify-center">
-            <Loader2 className="h-7 w-7 animate-spin text-slate-200" />
-          </div>
-        ) : error ? (
-          <div className="h-48 flex flex-col items-center justify-center gap-2 text-rose-500 text-sm">
-            <AlertCircle className="h-5 w-5" />
-            <p>{error}</p>
-            <Button variant="outline" size="sm" onClick={fetchTimelinessData}>Coba Lagi</Button>
-          </div>
-        ) : stats.total === 0 ? (
-          <div className="h-48 flex items-center justify-center text-slate-500 text-sm">
-            Tidak ada data sesi pada periode ini.
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {/* Compliance ring + stats */}
-            <div className="flex items-center gap-4">
-              {/* SVG Ring kecil */}
-              <div className="relative shrink-0" style={{ width: 88, height: 88 }}>
-                <svg width="88" height="88" viewBox="0 0 88 88">
-                  <circle cx="44" cy="44" r="36" fill="none" stroke="#f1f5f9" strokeWidth="8" />
-                  <circle
-                    cx="44" cy="44" r="36"
-                    fill="none"
-                    stroke={complianceColor}
-                    strokeWidth="8"
-                    strokeLinecap="round"
-                    strokeDasharray={`${(complianceRate / 100) * 2 * Math.PI * 36} ${2 * Math.PI * 36}`}
-                    strokeDashoffset={2 * Math.PI * 36 / 4}
-                    style={{ transition: 'stroke-dasharray 0.7s ease' }}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-base font-black leading-none" style={{ color: complianceColor }}>{complianceRate}%</span>
-                  <span className="text-xs text-slate-500 font-bold uppercase mt-0.5">Compliance</span>
-                </div>
-              </div>
-
-              {/* 3 stats vertikal */}
-              <div className="flex-1 grid grid-cols-3 gap-2">
-                {[
-                  { label: 'On-Time', value: stats.onTime, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                  { label: 'Late Start', value: stats.lateStart, color: 'text-amber-600', bg: 'bg-amber-50' },
-                  { label: 'Over Dur.', value: stats.overDuration, color: 'text-rose-600', bg: 'bg-rose-50' },
-                ].map(s => (
-                  <div key={s.label} className={`${s.bg} rounded-app py-3 text-center`}>
-                    <p className={`text-xl md:text-2xl font-black leading-none ${s.color}`}>{s.value}</p>
-                    <p className="text-xs text-slate-500 font-semibold mt-1 leading-tight">{s.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Bar chart */}
-            <div className="h-[150px] md:h-[170px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} width={24} />
-                  <Tooltip
-                    cursor={{ fill: '#f8fafc', radius: 8 }}
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', fontSize: '12px' }}
-                    formatter={(value) => [`${value} Sesi`, 'Jumlah']}
-                  />
-                  <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={40} {...CHART_MOTION}>
-                    {chartData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Progress bar */}
-            <div>
-              <div className="flex justify-between text-xs font-medium text-slate-500 mb-1.5">
-                <span>Compliance Rate</span>
-                <span className="font-bold" style={{ color: complianceColor }}>{complianceRate}%</span>
-              </div>
-              <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none" style={{ width: `${complianceRate}%`, backgroundColor: complianceColor }} />
-              </div>
+      ) : stats.total === 0 ? (
+        <TileEmpty>Tidak ada data sesi pada periode ini.</TileEmpty>
+      ) : (
+        <>
+          <div className="flex flex-wrap items-center gap-4">
+            <Ring pct={complianceRate} color={complianceColor} className="w-[92px] shrink-0">
+              <b className="text-lg font-black leading-none tabular-nums" style={{ color: complianceColor }}>{complianceRate}%</b>
+            </Ring>
+            <div className="flex-1 min-w-[210px] grid grid-cols-3 gap-2">
+              {bars.map(b => (
+                <button
+                  key={b.key}
+                  type="button"
+                  onClick={() => setFocus(focus === b.key ? null : b.key)}
+                  aria-pressed={focus === b.key}
+                  className={cn('py-3 rounded-2xl text-center border transition-colors', b.cls, focus === b.key ? 'border-current' : 'border-transparent')}
+                >
+                  <b className="block text-xl md:text-2xl font-black leading-none tabular-nums">{b.value}</b>
+                  <small className="block text-xs font-semibold mt-1 opacity-85">{b.label}</small>
+                </button>
+              ))}
             </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+
+          <svg viewBox="0 0 320 130" className="w-full h-auto block mt-4 overflow-visible" role="img" aria-label="Ketepatan waktu sesi">
+            {[0, 1, 2].map(g => <line key={g} x1="8" x2="312" y1={10 + g * 45} y2={10 + g * 45} stroke="#e2e8f0" strokeDasharray="3 4" />)}
+            {bars.map((b, i) => {
+              const h = (b.value / maxValue) * 100;
+              const x = 40 + i * 95;
+              return (
+                <g key={b.key} opacity={focus && focus !== b.key ? 0.3 : 1}>
+                  <rect x={x} y={110 - h} width="56" height={h} rx="8" fill={b.color} />
+                  <text x={x + 28} y={104 - h} textAnchor="middle" fontSize="11" fontWeight="700" fill="#0f172a">{b.value}</text>
+                  <text x={x + 28} y="124" textAnchor="middle" fontSize="9.5" fontWeight="600" fill="#64748b">{b.label}</text>
+                  <rect x={x - 10} y="0" width="76" height="130" fill="transparent" className="cursor-pointer" onClick={() => setFocus(focus === b.key ? null : b.key)} />
+                </g>
+              );
+            })}
+          </svg>
+
+          <div>
+            <div className="flex justify-between gap-3 text-xs font-medium text-slate-500 mb-1.5">
+              <span>{picked ? picked.hint : `Compliance Rate · ${stats.total} sesi`}</span>
+              <span className="font-bold" style={{ color: complianceColor }}>{complianceRate}%</span>
+            </div>
+            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none" style={{ width: `${complianceRate}%`, backgroundColor: complianceColor }} />
+            </div>
+          </div>
+        </>
+      )}
+    </FinanceTile>
   );
 };
 

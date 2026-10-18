@@ -444,61 +444,44 @@ setTherapists(enrichedTherapists);
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="operational" className="space-y-8 animate-in fade-in-0 duration-150 focus-visible:outline-none focus-visible:ring-0">
-             {/* Section 1: Top Level KPI Cards */}
-             <section className="space-y-4">
-                <OperationalDashboardUI 
-                  totalSessions={totalSessions}
-                  totalPatients={totalPatients}
-                  totalPackages={totalPackages}
-                  todaySessions={todaySessions}
-                  ongoingSessions={ongoingSessions}
-                  completedSessions={completedSessions}
-                  cancelledAppointments={cancelledAppointments}
-                  activeTherapists={activeTherapists}
-                  emptySlots={emptySlots}
-                  newPatientsToday={newPatientsToday}
-                  returningPatientsToday={returningPatientsToday}
-                  isLoading={isLoading || isLoadingKPI}
-                />
-             </section>
+          <TabsContent value="operational" className="animate-in fade-in-0 duration-150 focus-visible:outline-none focus-visible:ring-0">
+            {/* Grid bento: 2 kolom di HP, 4 kolom di tablet, 6 kolom di desktop */}
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
+              <OperationalDashboardUI
+                totalSessions={totalSessions}
+                totalPatients={totalPatients}
+                totalPackages={totalPackages}
+                todaySessions={todaySessions}
+                ongoingSessions={ongoingSessions}
+                completedSessions={completedSessions}
+                cancelledAppointments={cancelledAppointments}
+                activeTherapists={activeTherapists}
+                emptySlots={emptySlots}
+                newPatientsToday={newPatientsToday}
+                returningPatientsToday={returningPatientsToday}
+                isLoading={isLoading || isLoadingKPI}
+              />
 
-             {/* Section 2: Therapist Status Strip */}
-             <section className="space-y-4">
-                <TherapistStatusCards
-                  therapists={therapists}
-                  therapistSessions={therapistSessions}
-                  isLoading={isLoadingTherapists}
-                  unfilledSoapCounts={unfilledSoapCounts}
-                  isLoadingSoap={isLoadingSoap}
-                  patientMetrics={patientMetrics}
-                  isLoadingPatientMetrics={isLoadingPatientMetrics}
-                  dateRange={dateRange}
-                />
-             </section>
+              <TherapistStatusCards
+                className="col-span-2 md:col-span-4 lg:col-span-6"
+                therapists={therapists}
+                therapistSessions={therapistSessions}
+                isLoading={isLoadingTherapists}
+                unfilledSoapCounts={unfilledSoapCounts}
+                isLoadingSoap={isLoadingSoap}
+                patientMetrics={patientMetrics}
+                isLoadingPatientMetrics={isLoadingPatientMetrics}
+                dateRange={dateRange}
+              />
 
-             {/* Section 3: Charts Grid */}
-             <section className="space-y-4 md:space-y-5">
-               {/* Row 1: Tren + Kapasitas */}
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
-                 <TrendSessionChart />
-                 <CapacityVsDemandChart />
-               </div>
-               {/* Row 2: Ketepatan (Utilisasi Slot Hari Ini dipindah ke section KPI operational) */}
-               <div className="grid grid-cols-1 gap-4 md:gap-5">
-                 <SessionTimelinessChart dateRange={dateRange} />
-               </div>
-               {/* Row 3: Target vs Realisasi + Distribusi Layanan SEBELAHAN */}
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5 items-stretch">
-                 <BulletChartTargetVsRealization dateRange={dateRange} />
-                 <ServiceDistributionChart dateRange={dateRange} />
-               </div>
-               {/* Row 4: Sumber Pasien + Promo */}
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5 items-start">
-                 <PatientSourceChart dateRange={dateRange} />
-                 <PromoUsageWidget dateRange={dateRange} />
-               </div>
-             </section>
+              <TrendSessionChart className="col-span-2 md:col-span-2 lg:col-span-3" />
+              <CapacityVsDemandChart className="col-span-2 md:col-span-2 lg:col-span-3" />
+              <SessionTimelinessChart dateRange={dateRange} className="col-span-2 md:col-span-2 lg:col-span-3" />
+              <BulletChartTargetVsRealization dateRange={dateRange} className="col-span-2 md:col-span-2 lg:col-span-3" />
+              <ServiceDistributionChart dateRange={dateRange} className="col-span-2 md:col-span-2 lg:col-span-2" />
+              <PatientSourceChart dateRange={dateRange} className="col-span-2 md:col-span-2 lg:col-span-2" />
+              <PromoUsageWidget dateRange={dateRange} className="col-span-2 md:col-span-4 lg:col-span-2" />
+            </div>
           </TabsContent>
 
           <TabsContent value="finance" className="space-y-4 animate-in fade-in-0 duration-150 focus-visible:outline-none focus-visible:ring-0">

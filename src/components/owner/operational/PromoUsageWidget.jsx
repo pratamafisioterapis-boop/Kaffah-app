@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Loader2, Gift, ChevronRight, HelpCircle, X } from 'lucide-react';
+import { Loader2, Gift, ChevronRight, HelpCircle, X, Tag } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { getCachedClinicId, getDiscountTypeOptions } from '@/lib/api';
+import { cn } from '@/lib/utils';
+import FinanceTile, { TileLoading } from '@/components/owner/finance/FinanceTile';
 
 const UNCATEGORIZED_LABEL = 'Tanpa Kategori';
 
@@ -22,7 +23,7 @@ const COLOR_PALETTE = [
   { color: '#84cc16', bg: 'bg-lime-50',    text: 'text-lime-600'    },
 ];
 
-const PromoUsageWidget = ({ dateRange }) => {
+const PromoUsageWidget = ({ dateRange, className }) => {
   const { toast } = useToast();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +34,8 @@ const PromoUsageWidget = ({ dateRange }) => {
   const [showUncategorizedModal, setShowUncategorizedModal] = useState(false);
   const [discountOptions, setDiscountOptions] = useState([]);
   const [savingRowId, setSavingRowId] = useState(null);
+  // Kategori promo yang disorot di daftar.
+  const [selected, setSelected] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -177,90 +180,67 @@ const PromoUsageWidget = ({ dateRange }) => {
   // Jumlah sesi yang memakai jenis diskon (bukan seluruh sesi pada periode).
   const promoSessionCount = data.reduce((sum, s) => sum + s.count, 0);
 
+  const maxCount = data[0]?.count || 1;
+
   return (
-    <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden h-full">
-      {/* Header */}
-      <div className="px-5 md:px-6 pt-5 md:pt-6 pb-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-base font-bold text-slate-800">Sesi Promo</h2>
+    <FinanceTile tone="warn" icon={Tag} title="Sesi Promo" className={className}>
+      {loading ? (
+        <TileLoading className="py-14" />
+      ) : (
+        <>
+          <div className="flex items-baseline gap-2 mb-3">
+            <b className="text-3xl font-black tabular-nums leading-none text-slate-900">{promoSessionCount.toLocaleString('id-ID')}</b>
+            <span className="text-xs text-slate-500">Sesi Berdiskon</span>
           </div>
-          {!loading && (
-            <div className="text-right">
-              <p className="text-xl font-black text-slate-900 leading-none">{promoSessionCount.toLocaleString('id-ID')}</p>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">Sesi Berdiskon</p>
+
+          <div className="flex items-start justify-between gap-3 bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3 mb-3">
+            <div className="flex items-start gap-2 min-w-0">
+              <Gift className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <span className="text-xs font-semibold text-emerald-800">Pasien Free (sesi Rp 0 di luar paket)</span>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-sm font-black text-emerald-700 leading-none">{freeCount.toLocaleString('id-ID')} sesi</p>
+              <p className="text-xs text-emerald-600 mt-0.5">{freePatientCount.toLocaleString('id-ID')} pasien</p>
+            </div>
+          </div>
+
+          {data.length === 0 ? (
+            <div className="h-20 flex items-center justify-center text-slate-500 text-sm text-center">
+              Belum ada sesi dengan promo pada periode ini.
+            </div>
+          ) : (
+            <div className="grid gap-0.5">
+              {data.map((s) => {
+                const isUncategorized = s.key === UNCATEGORIZED_LABEL;
+                const isClickable = isUncategorized && uncategorizedRecaps.length > 0;
+                return (
+                  <button
+                    key={s.key}
+                    type="button"
+                    onClick={() => (isClickable ? setShowUncategorizedModal(true) : setSelected(selected === s.key ? null : s.key))}
+                    aria-pressed={selected === s.key}
+                    className={cn('w-full grid gap-1.5 px-2 py-2 rounded-xl text-left transition-colors', selected === s.key ? 'bg-slate-100' : 'hover:bg-slate-50')}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                      <span className="flex-1 min-w-0 text-xs font-semibold text-slate-700 break-words">{s.key}</span>
+                      {isClickable && <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${s.bg} ${s.text}`}>{s.count.toLocaleString('id-ID')}</span>
+                      <span className="text-xs text-slate-500 w-8 text-right shrink-0">{s.pct}%</span>
+                    </span>
+                    <span className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                      <span
+                        className="block h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+                        style={{ width: `${Math.min(100, (s.count / maxCount) * 100)}%`, backgroundColor: s.color }}
+                      />
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           )}
-        </div>
-      </div>
-
-      <div className="h-px bg-slate-50 mx-5" />
-
-      <CardContent className="px-5 md:px-6 py-4 space-y-4">
-        {loading ? (
-          <div className="h-48 flex items-center justify-center">
-            <Loader2 className="h-7 w-7 animate-spin text-slate-200" />
-          </div>
-        ) : (
-          <>
-            <div className="flex items-start justify-between gap-3 bg-emerald-50 border border-emerald-100 rounded-app px-4 py-3">
-              <div className="flex items-start gap-2 min-w-0">
-                <Gift className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <span className="text-xs font-semibold text-emerald-800">Pasien Free (sesi Rp 0 di luar paket)</span>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-sm font-black text-emerald-700 leading-none">{freeCount.toLocaleString('id-ID')} sesi</p>
-                <p className="text-xs text-emerald-600 mt-0.5">{freePatientCount.toLocaleString('id-ID')} pasien</p>
-              </div>
-            </div>
-
-            {data.length === 0 ? (
-              <div className="h-24 flex items-center justify-center text-slate-500 text-sm">
-                Belum ada sesi dengan promo pada periode ini.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {data.map((s) => {
-                  const isUncategorized = s.key === UNCATEGORIZED_LABEL;
-                  const isClickable = isUncategorized && uncategorizedRecaps.length > 0;
-                  return (
-                    <div
-                      key={s.key}
-                      className={`space-y-1 ${isClickable ? 'cursor-pointer group -mx-2 px-2 py-1 rounded-app-sm hover:bg-slate-50 transition-colors' : ''}`}
-                      onClick={isClickable ? () => setShowUncategorizedModal(true) : undefined}
-                      role={isClickable ? 'button' : undefined}
-                      tabIndex={isClickable ? 0 : undefined}
-                      onKeyDown={isClickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') setShowUncategorizedModal(true); } : undefined}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
-                          <span className="text-xs font-semibold text-slate-700 break-words sm:truncate">{s.key}</span>
-                          {isClickable && (
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${s.bg} ${s.text}`}>
-                            {s.count.toLocaleString('id-ID')}
-                          </span>
-                          <span className="text-xs text-slate-500 w-8 text-right">{s.pct}%</span>
-                        </div>
-                      </div>
-                      <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
-                          style={{ width: `${s.pct}%`, backgroundColor: s.color }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
-        )}
-      </CardContent>
+        </>
+      )}
 
       {/* Full-viewport transparent shell — see ServiceDistributionChart.jsx for why
           this avoids horizontal clipping on mobile widths instead of the shared
@@ -322,7 +302,7 @@ const PromoUsageWidget = ({ dateRange }) => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </FinanceTile>
   );
 };
 

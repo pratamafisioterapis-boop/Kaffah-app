@@ -1,19 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
-} from 'recharts';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Loader2 } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
+import FinanceTile, { TileLoading } from '@/components/owner/finance/FinanceTile';
 import { getCachedClinicId } from '@/lib/api';
-import { CHART_MOTION } from '@/lib/chartMotion';
 
-const TrendSessionChart = () => {
+const TrendSessionChart = ({ className }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Hari yang dipilih di grafik (null = hari terakhir).
+  const [picked, setPicked] = useState(null);
 
   useEffect(() => {
     const fetchSessionTrend = async () => {
@@ -89,104 +87,71 @@ const TrendSessionChart = () => {
 
   if (error) {
     return (
-      <Card className="rounded-app border-red-200 shadow-sm bg-red-50">
-        <CardContent className="pt-6 flex items-center justify-center text-red-600">
-          <p>Gagal memuat data grafik.</p>
-        </CardContent>
-      </Card>
+      <FinanceTile tone="ind" icon={TrendingUp} title="Tren Sesi Minggu Ini" className={className}>
+        <p className="py-8 text-center text-sm text-rose-600">Gagal memuat data grafik.</p>
+      </FinanceTile>
     );
   }
 
   const totalSessions = data.reduce((s, d) => s + d.sessions, 0);
   const peakDay = data.reduce((max, d) => d.sessions > max.sessions ? d : max, data[0] || { sessions: 0, date: '-' });
 
+  const W = 320, H = 150, L = 10, R = 10, T = 16, B = 22;
+  const n = data.length;
+  const sel = n === 0 ? 0 : picked == null || picked >= n ? n - 1 : picked;
+  const mx = Math.max(...data.map(d => d.sessions), 1) + 8;
+  const X = (i) => L + (i * (W - L - R)) / Math.max(n - 1, 1);
+  const Y = (v) => T + (1 - v / mx) * (H - T - B);
+  const line = data.map((p, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(p.sessions).toFixed(1)}`).join('');
+  const colW = (W - L - R) / Math.max(n - 1, 1);
+  const cur = data[sel];
+
   return (
-    <Card className="rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
-      {/* Header */}
-      <div className="p-5 md:p-6 pb-0">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold text-slate-800">Tren Sesi Minggu Ini</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Total kunjungan per hari</p>
+    <FinanceTile tone="ind" icon={TrendingUp} title="Tren Sesi Minggu Ini" className={className}>
+      {loading && data.length === 0 ? (
+        <TileLoading />
+      ) : (
+        <>
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mb-1.5">
+            <b className="text-3xl font-black tabular-nums leading-none text-slate-900">{cur?.sessions ?? 0}</b>
+            <span className="text-xs text-slate-500">sesi · {cur?.fullDate}</span>
+            {peakDay.sessions > 0 && (
+              <span className="ml-auto px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 text-xs font-semibold">
+                Peak {peakDay.date} · {peakDay.sessions}
+              </span>
+            )}
           </div>
-          <div className="flex items-center gap-3">
-            {/* Mini stats */}
-            <div className="text-right">
-              <p className="text-xl font-black text-slate-900 leading-none">{totalSessions}</p>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">Total Minggu</p>
-            </div>
-            {loading && <Loader2 className="h-4 w-4 animate-spin text-slate-300 shrink-0" />}
+          <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto block overflow-visible" role="img" aria-label="Tren sesi per hari minggu ini">
+            <defs>
+              <linearGradient id="opTrendFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#6366f1" stopOpacity="0.3" />
+                <stop offset="1" stopColor="#6366f1" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            {[0, 1, 2].map(g => {
+              const y = T + (g * (H - T - B)) / 2;
+              return <line key={g} x1={L} x2={W - R} y1={y} y2={y} stroke="#e2e8f0" strokeDasharray="3 4" />;
+            })}
+            {n > 1 && <path d={`${line}L${X(n - 1)} ${H - B}L${X(0)} ${H - B}Z`} fill="url(#opTrendFill)" />}
+            <path d={line} fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+            {n > 0 && <line x1={X(sel)} x2={X(sel)} y1={T - 6} y2={H - B} stroke="#6366f1" strokeOpacity="0.4" />}
+            {data.map((p, i) => (
+              <g key={p.fullDate}>
+                <circle cx={X(i)} cy={Y(p.sessions)} r={i === sel ? 5.5 : 3.2} fill={i === sel ? '#6366f1' : '#fff'} stroke="#6366f1" strokeWidth="2" />
+                <text x={X(i)} y={H - 5} textAnchor="middle" fontSize="9.5" fontWeight="600" fill="#64748b">{p.date}</text>
+              </g>
+            ))}
+            {data.map((p, i) => (
+              <rect key={`h${p.fullDate}`} x={X(i) - colW / 2} y="0" width={colW} height={H} fill="transparent" className="cursor-pointer" onClick={() => setPicked(i)} />
+            ))}
+          </svg>
+          <div className="flex items-baseline justify-between mt-1.5">
+            <small className="text-xs text-slate-500">Total kunjungan per hari</small>
+            <span><b className="text-xl font-black tabular-nums">{totalSessions}</b> <small className="text-xs text-slate-500">total minggu</small></span>
           </div>
-        </div>
-
-        {/* Peak day badge */}
-        {!loading && peakDay.sessions > 0 && (
-          <div className="mt-3 inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 text-xs font-semibold px-2.5 py-1 rounded-full border border-blue-100">
-            <span>📈</span> Peak: {peakDay.date} — {peakDay.sessions} sesi
-          </div>
-        )}
-      </div>
-
-      <CardContent className="p-0 pt-4">
-        <div className="h-[200px] md:h-[280px] w-full px-2">
-          {loading && data.length === 0 ? (
-            <div className="h-full flex items-center justify-center">
-              <Loader2 className="h-7 w-7 animate-spin text-slate-200" />
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} margin={{ top: 10, right: 16, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.25}/>
-                    <stop offset="100%" stopColor="#6366f1" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis
-                  dataKey="date"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }}
-                  padding={{ left: 16, right: 16 }}
-                  dy={8}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 11, fill: '#94a3b8' }}
-                  allowDecimals={false}
-                  width={28}
-                />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: '12px',
-                    border: 'none',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                    padding: '10px 14px',
-                    fontSize: '13px'
-                  }}
-                  labelStyle={{ color: '#1e293b', fontWeight: 700, marginBottom: '4px' }}
-                  labelFormatter={(_, payload) => payload?.[0]?.payload?.fullDate || ''}
-                  formatter={(value) => [value, 'Sesi']}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="sessions"
-                  stroke="#6366f1"
-                  strokeWidth={2.5}
-                  fillOpacity={1}
-                  fill="url(#trendGrad)"
-                  dot={{ r: 4, fill: '#6366f1', strokeWidth: 2, stroke: '#fff' }}
-                  activeDot={{ r: 6, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }}
-                  {...CHART_MOTION}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+        </>
+      )}
+    </FinanceTile>
   );
 };
 

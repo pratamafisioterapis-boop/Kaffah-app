@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { format } from 'date-fns';
+import { AlertCircle, RefreshCw, LayoutGrid } from 'lucide-react';
+import FinanceTile, { TileLoading } from '@/components/owner/finance/FinanceTile';
+import { Ring } from '@/components/owner/finance/charts';
 import { getCachedClinicId } from '@/lib/api';
 
-const SlotUtilizationChart = () => {
+const SlotUtilizationChart = ({ className }) => {
   const [data, setData] = useState([]);
   const [metrics, setMetrics] = useState({ filled: 0, empty: 0, utilization: 0 });
   const [loading, setLoading] = useState(true);
@@ -116,101 +114,53 @@ const SlotUtilizationChart = () => {
   };
   const utilizationColor = getUtilizationColor(metrics.utilization);
 
-  // SVG donut manual — versi ringkas, ukurannya sengaja dijaga tetap kecil
-  // supaya kartu ini tidak melebihi luas gabungan 4 kartu KPI hari ini
-  // (Terapis Aktif, Slot Kosong, Pasien Baru, Pasien Lama) di atasnya.
-  const radius = 40;
-  const circumference = 2 * Math.PI * radius;
-  // Busur mulai dari jam 12 searah jarum jam. Pangkal busur diputar -90° lewat
-  // transform (bukan strokeDashoffset, yang membuat pola dash terbungkus dan
-  // menggambar busur di posisi yang salah), dan ujungnya butt supaya panjang busur
-  // persis sebanding dengan persentase — round cap menambah ~strokeWidth/2 di tiap sisi.
-  const isFull = metrics.utilization >= 100;
-  const strokeDash = (metrics.utilization / 100) * circumference;
-
   return (
-    <Card className="rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
-      {/* Header */}
-      <div className="px-4 md:px-5 pt-4 md:pt-5 pb-2 flex items-start justify-between">
-        <div>
-          <h2 className="text-sm font-bold text-slate-800">Utilisasi Slot Hari Ini</h2>
-          <p className="text-xs text-slate-500 mt-0.5">Real-time slot capacity</p>
-        </div>
-        {!loading && !error && (
-          <button onClick={fetchUtilizationData} aria-label="Muat ulang utilisasi slot" className="tap-target relative before:absolute before:-inset-2.5 before:content-[''] w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-[0.97] shrink-0">
-            <RefreshCw className="h-3 w-3 text-slate-500" />
+    <FinanceTile
+      tone="ind"
+      icon={LayoutGrid}
+      title="Utilisasi Slot Hari Ini"
+      className={className}
+      action={
+        !loading && !error && (
+          <button
+            type="button"
+            onClick={fetchUtilizationData}
+            aria-label="Muat ulang utilisasi slot"
+            className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-700 flex items-center justify-center active:scale-[0.95] transition-transform"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
           </button>
-        )}
-      </div>
-
-      <CardContent className="pt-1 pb-4 px-4 md:px-5">
-        {loading ? (
-          <div className="h-20 flex items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-slate-200" />
-          </div>
-        ) : error ? (
-          <div className="h-20 flex flex-col items-center justify-center gap-1.5 text-rose-500 text-xs">
-            <AlertCircle className="h-4 w-4" /><p>{error}</p>
-          </div>
-        ) : total === 0 ? (
-          <div className="h-20 flex items-center justify-center text-slate-500 text-xs">
-            Tidak ada data jadwal hari ini.
-          </div>
-        ) : (
-          <div className="flex items-center gap-4">
-            {/* SVG Donut — ringkas */}
-            <div className="relative flex items-center justify-center shrink-0" style={{ width: 100, height: 100 }}>
-              <svg width="100" height="100" viewBox="0 0 100 100">
-                {/* Track */}
-                <circle cx="50" cy="50" r={radius} fill="none" stroke="#f1f5f9" strokeWidth="10" />
-                {/* Progress — saat 100% gambar lingkaran solid tanpa dasharray sama
-                    sekali, supaya tidak bergantung pada perhitungan panjang lingkaran
-                    (circumference) milik browser yang bisa sedikit meleset di sebagian
-                    WebView/mobile dan menyisakan celah walau nilainya sudah penuh. */}
-                {isFull ? (
-                  <circle
-                    cx="50" cy="50" r={radius}
-                    fill="none"
-                    stroke={utilizationColor}
-                    strokeWidth="10"
-                    style={{ transition: 'stroke 0.8s ease' }}
-                  />
-                ) : (
-                  <circle
-                    cx="50" cy="50" r={radius}
-                    fill="none"
-                    stroke={utilizationColor}
-                    strokeWidth="10"
-                    strokeDasharray={`${strokeDash} ${circumference}`}
-                    transform="rotate(-90 50 50)"
-                    style={{ transition: 'stroke-dasharray 0.8s ease, stroke 0.8s ease' }}
-                  />
-                )}
-              </svg>
-              {/* Center text */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xl font-black leading-none" style={{ color: utilizationColor }}>
-                  {metrics.utilization}%
-                </span>
-              </div>
-            </div>
-
-            {/* Info terisi — Slot Kosong sudah tampil di kartu KPI hari ini,
-                jadi di sini cukup tampilkan jumlah yang terisi & progress bar. */}
-            <div className="flex-1 min-w-0">
-              <p className="text-2xl md:text-3xl font-black leading-none text-slate-900">{metrics.filled}</p>
-              <p className="text-xs text-slate-500 font-medium mt-1">slot terisi dari {total} total</p>
-              <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden mt-2.5">
-                <div
-                  className="h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
-                  style={{ width: `${metrics.utilization}%`, backgroundColor: utilizationColor }}
-                />
-              </div>
+        )
+      }
+    >
+      {loading ? (
+        <TileLoading className="py-6" />
+      ) : error ? (
+        <div className="h-24 flex flex-col items-center justify-center gap-1.5 text-rose-500 text-xs">
+          <AlertCircle className="h-4 w-4" /><p>{error}</p>
+        </div>
+      ) : total === 0 ? (
+        <div className="h-24 flex items-center justify-center text-slate-500 text-xs text-center">
+          Tidak ada data jadwal hari ini.
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-4">
+          <Ring pct={metrics.utilization} color={utilizationColor} className="w-[104px] shrink-0">
+            <b className="text-2xl font-black leading-none tabular-nums" style={{ color: utilizationColor }}>{metrics.utilization}%</b>
+          </Ring>
+          <div className="flex-1 min-w-[130px]">
+            <p className="text-4xl font-black leading-none text-slate-900 tabular-nums">{metrics.filled}</p>
+            <p className="text-xs text-slate-500 font-medium mt-1">slot terisi dari {total} total</p>
+            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden mt-2.5">
+              <div
+                className="h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+                style={{ width: `${metrics.utilization}%`, backgroundColor: utilizationColor }}
+              />
             </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+    </FinanceTile>
   );
 };
 
