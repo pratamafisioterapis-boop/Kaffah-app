@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { Home, TrendingUp, PlayCircle, ClipboardList, MessageCircle, Send, Check, Play, CalendarPlus, CalendarCheck, ChevronLeft, Activity, User, Ban, AlertTriangle, Flame, Snowflake } from 'lucide-react';
 import { formatOnsetAgo } from '@/lib/onsetHelpers';
-import { portalApi, loadSession, saveSession, clearSession, hexToHue } from '@/lib/patientPortal';
+import { portalApi, loadSession, saveSession, clearSession, loadDraft, saveDraft, hexToHue } from '@/lib/patientPortal';
 import './portal.css';
 
 // Aplikasi pasien Clinara, dibuka dari tautan /p/<token> yang dikirim admin.
@@ -39,6 +39,13 @@ const toSteps = (t) => {
   return parts.length > 1 ? parts.map((x) => x.replace(/^\d+[.)]\s*/, '')) : null;
 };
 const initials = (n) => (n || '?').trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+
+// State yang ikut tersimpan di perangkat (per tautan), jadi tidak hilang saat refresh.
+const useDraft = (token, name, initial) => {
+  const [value, setValue] = useState(() => loadDraft(token, name, initial));
+  useEffect(() => { saveDraft(token, name, value); }, [token, name, value]);
+  return [value, setValue];
+};
 
 const Mark = ({ clinic }) => (
   <span className="mark">{clinic?.logo_url ? <img src={clinic.logo_url} alt="" /> : (clinic?.name || 'C')[0]}</span>
@@ -545,17 +552,19 @@ const PainScale = ({ value, onChange }) => {
   );
 };
 
-const FeedbackTab = ({ history, onSubmit }) => {
-  const [vas, setVas] = useState(3);
-  const [tags, setTags] = useState([]);
-  const [msg, setMsg] = useState('');
+const FeedbackTab = ({ token, history, onSubmit }) => {
+  const [draft, setDraft] = useDraft(token, 'draft-feedback', { vas: 3, tags: [], msg: '' });
+  const { vas = 3, tags = [], msg = '' } = draft || {};
+  const setVas = (v) => setDraft((d) => ({ ...d, vas: v }));
+  const setTags = (fn) => setDraft((d) => ({ ...d, tags: fn(d?.tags || []) }));
+  const setMsg = (m) => setDraft((d) => ({ ...d, msg: m }));
   const [busy, setBusy] = useState(false);
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
     const ok = await onSubmit(vas, tags, msg.trim());
     setBusy(false);
-    if (ok) { setTags([]); setMsg(''); }
+    if (ok) setDraft({ vas, tags: [], msg: '' });
   };
   return (
     <div className="pp-pad" style={{ paddingTop: TOP_PAD }}>
@@ -588,13 +597,13 @@ const FeedbackTab = ({ history, onSubmit }) => {
 
 // Booking jadwal terapi. Terapis yang terakhir menangani pasien tampil lebih dulu; bila jadwalnya penuh
 // di tanggal itu, terapis lain yang masih punya slot ditawarkan di bawahnya.
-const BookingTab = ({ session, onBack, onBooked, onUnauthorized }) => {
+const BookingTab = ({ token, session, onBack, onBooked, onUnauthorized }) => {
   const [opts, setOpts] = useState(null);
   const [slots, setSlots] = useState(null);
   const [loadError, setLoadError] = useState('');
   const [date, setDate] = useState(null);
   const [pick, setPick] = useState(null); // { therapist_id, start }
-  const [note, setNote] = useState('');
+  const [note, setNote] = useDraft(token, 'draft-booking-note', '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(null);
@@ -657,6 +666,7 @@ const BookingTab = ({ session, onBack, onBooked, onUnauthorized }) => {
     setBusy(true); setError('');
     try {
       setDone(await portalApi.book(session, pick.therapist_id, date, pick.start, note.trim()));
+      setNote('');
     } catch (e) {
       if (e.sessionInvalid) onUnauthorized();
       else { setError(e.message || 'Booking gagal. Coba lagi.'); setPick(null); load(); }
@@ -731,9 +741,9 @@ const BookingTab = ({ session, onBack, onBooked, onUnauthorized }) => {
   );
 };
 
-const ChatTab = ({ session, therapist, clinicName, onUnauthorized }) => {
+const ChatTab = ({ token, session, therapist, clinicName, onUnauthorized }) => {
   const [msgs, setMsgs] = useState([]);
-  const [text, setText] = useState('');
+  const [text, setText] = useDraft(token, 'draft-chat', '');
   const [error, setError] = useState('');
   const box = useRef();
   const lastCount = useRef(0);
@@ -786,18 +796,19 @@ const ChatTab = ({ session, therapist, clinicName, onUnauthorized }) => {
 // ---------------------------------------------------------------- Page
 const PatientPortalPage = () => {
   const { token } = useParams();
-  const [phase, setPhase] = useState('loading'); // loading | blocked | gate | app
+  const [phase, setPhase] = useState('loading'); // loading | retry | blocked | gate | app
   const [branding, setBranding] = useState(null);
   const [blockedReason, setBlockedReason] = useState('invalid');
   const [session, setSession] = useState(null);
   const [notice, setNotice] = useState('');
-  const [tab, setTab] = useState('home');
+  const [tab, setTab] = useDraft(token, 'tab', 'home');
   const [home, setHome] = useState(null);
   const [progress, setProgress] = useState(null);
   const [goals, setGoals] = useState([]);
   const [program, setProgram] = useState([]);
   const [history, setHistory] = useState([]);
   const [toast, setToast] = useState('');
+  const [attempt, setAttempt] = useState(0);
 
   const flash = (m) => { setToast(m); setTimeout(() => setToast(''), 2200); };
   const hue = hexToHue(branding?.brand_color);
@@ -824,13 +835,21 @@ const PatientPortalPage = () => {
         setBranding(b);
         if (b.status !== 'active') { setBlockedReason(b.status); setPhase('blocked'); return; }
         const saved = loadSession(token);
-        if (saved && (await portalApi.home(saved).then((h) => { setHome(h); return true; }).catch(() => false))) {
-          setSession(saved); setPhase('app');
-        } else { clearSession(token); setPhase('gate'); }
-      } catch { if (alive) { setBlockedReason('invalid'); setPhase('blocked'); } }
+        if (!saved) { setPhase('gate'); return; }
+        try {
+          const h = await portalApi.home(saved);
+          if (!alive) return;
+          setHome(h); setSession(saved); setPhase('app');
+        } catch (e) {
+          if (!alive) return;
+          // Hanya sesi yang benar-benar tidak berlaku yang dihapus. Gangguan jaringan saat refresh
+          // tidak boleh mengeluarkan pasien; sesi tetap disimpan dan pasien bisa mencoba lagi.
+          if (e.sessionInvalid) { clearSession(token); setPhase('gate'); } else setPhase('retry');
+        }
+      } catch { if (alive) setPhase('retry'); }
     })();
     return () => { alive = false; };
-  }, [token]);
+  }, [token, attempt]);
 
   const verify = async (dob) => {
     try {
@@ -868,9 +887,11 @@ const PatientPortalPage = () => {
   const toggleExercise = async (exerciseId, done) => {
     try {
       await portalApi.logExercise(session, exerciseId, done);
-      setProgram(await portalApi.program(session));
-      flash(done ? 'Latihan dicatat selesai' : 'Tanda selesai dibatalkan');
-    } catch (e) { if (e.sessionInvalid) backToGate('Sesi Anda berakhir.'); else flash('Gagal menyimpan. Coba lagi.'); }
+    } catch (e) { if (e.sessionInvalid) backToGate('Sesi Anda berakhir.'); else flash('Gagal menyimpan. Coba lagi.'); return; }
+    // Sudah tersimpan di server: tampilkan langsung, lalu segarkan daftar dari server.
+    setProgram((p) => p.map((i) => (i.exercise_id === exerciseId ? { ...i, done_today: done } : i)));
+    flash(done ? 'Latihan dicatat selesai' : 'Tanda selesai dibatalkan');
+    portalApi.program(session).then(setProgram).catch(() => {});
   };
   const submitFeedback = async (vas, tags, message) => {
     try {
@@ -888,6 +909,17 @@ const PatientPortalPage = () => {
   const head = <Helmet><title>{branding?.clinic_name ? `${branding.clinic_name} · Clinara` : 'Clinara'}</title><meta name="robots" content="noindex,nofollow" /></Helmet>;
 
   if (phase === 'loading') return <div className="pp" style={style}>{head}<div className="center"><p className="muted">Memuat...</p></div></div>;
+  if (phase === 'retry') {
+    return (
+      <div className="pp" style={style}>{head}
+        <div className="center"><div style={{ maxWidth: 380 }}>
+          <h2 style={{ marginBottom: 8 }}>Belum bisa terhubung</h2>
+          <p className="muted" style={{ margin: '0 0 16px' }}>Periksa koneksi internet Anda. Data Anda tetap aman tersimpan.</p>
+          <button className="btn" onClick={() => { setPhase('loading'); setAttempt((n) => n + 1); }}>Coba lagi</button>
+        </div></div>
+      </div>
+    );
+  }
   if (phase === 'blocked') {
     return (
       <div className="pp" style={style}>{head}
@@ -908,9 +940,9 @@ const PatientPortalPage = () => {
           {tab === 'home' && home && <HomeTab home={home} goals={goals} go={setTab} onLogout={logout} />}
           {tab === 'prog' && (progress ? <ProgressTab data={progress} goals={goals} complaint={home?.complaint} /> : <div className="pp-pad" style={{ paddingTop: TOP_PAD }}><p className="muted">Memuat...</p></div>)}
           {tab === 'lat' && <ProgramTab session={session} items={program} therapist={home?.therapist} onToggle={toggleExercise} />}
-          {tab === 'fb' && <FeedbackTab history={history} onSubmit={submitFeedback} />}
-          {tab === 'book' && <BookingTab session={session} onBack={() => setTab('home')} onBooked={() => { refreshHome(session); setTab('home'); }} onUnauthorized={onUnauthorizedBook} />}
-          {tab === 'chat' && <ChatTab session={session} therapist={home?.therapist} clinicName={home?.clinic?.name} onUnauthorized={() => backToGate('Sesi Anda berakhir.')} />}
+          {tab === 'fb' && <FeedbackTab token={token} history={history} onSubmit={submitFeedback} />}
+          {tab === 'book' && <BookingTab token={token} session={session} onBack={() => setTab('home')} onBooked={() => { refreshHome(session); setTab('home'); }} onUnauthorized={onUnauthorizedBook} />}
+          {tab === 'chat' && <ChatTab token={token} session={session} therapist={home?.therapist} clinicName={home?.clinic?.name} onUnauthorized={() => backToGate('Sesi Anda berakhir.')} />}
         </div>
         <nav className="nav" role="tablist" aria-label="Menu">
           {TABS.map(([k, label, Icon]) => (

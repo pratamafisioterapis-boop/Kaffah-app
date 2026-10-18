@@ -134,8 +134,28 @@ export const loadSession = (token) => {
 export const saveSession = (token, session) => {
   try { window.localStorage.setItem(sessionKey(token), session); } catch { /* mode privat: sesi tidak tersimpan */ }
 };
+// Keluar/sesi berakhir: hapus sesi beserta draf dan tab terakhir milik tautan ini (bisa berisi keluhan pasien).
 export const clearSession = (token) => {
-  try { window.localStorage.removeItem(sessionKey(token)); } catch { /* abaikan */ }
+  try {
+    const ls = window.localStorage;
+    Object.keys(ls).filter((k) => k === sessionKey(token) || k.startsWith(`${sessionKey(token)}:`)).forEach((k) => ls.removeItem(k));
+  } catch { /* abaikan */ }
+};
+
+// Isian yang belum terkirim (form keluhan, chat, catatan booking) dan tab aktif disimpan di perangkat
+// supaya tidak hilang saat halaman di-refresh atau aplikasi ditutup. null = hapus.
+const draftKey = (token, name) => `${sessionKey(token)}:${name}`;
+export const loadDraft = (token, name, fallback) => {
+  try {
+    const raw = window.localStorage.getItem(draftKey(token, name));
+    return raw == null ? fallback : JSON.parse(raw);
+  } catch { return fallback; }
+};
+export const saveDraft = (token, name, value) => {
+  try {
+    if (value == null) window.localStorage.removeItem(draftKey(token, name));
+    else window.localStorage.setItem(draftKey(token, name), JSON.stringify(value));
+  } catch { /* mode privat: draf tidak tersimpan */ }
 };
 
 const call = async (fn, args) => {
