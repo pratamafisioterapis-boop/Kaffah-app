@@ -7,7 +7,7 @@ Berlaku untuk klinik yang punya baris di `soap_first_settings` dengan `enabled =
 - Non-paket (termasuk sesi 1 paket dan paket 1 sesi): pembayaran terkunci sampai SOAP lengkap (S, O, A, P) dan diagnosa terisi.
 - Paket sesi 2+ dan homecare: pembayaran tidak dikunci; SOAP boleh menyusul sampai 23.59 WITA.
 - Tipe pasien dihitung server (prioritas: Free > Konsultasi > Homecare > Xtratime > DOMS > jumlah diagnosa). Diagnosa maksimal 2.
-- Nominal dari daftar harga (`clinic_service_prices`, harga paket di `operational_options.price`), diskon hanya dari daftar owner. Paket tidak bisa diskon; diskon homecare butuh persetujuan owner. Tambahan paket 2 keluhan = Rp25.000 × jumlah sesi, dibayar di awal. Paket RU (label berakhiran " RU") boleh untuk diagnosa apa pun dan tanpa tambahan.
+- Nominal dari daftar harga (`clinic_service_prices`, harga paket di `operational_options.price`), diskon hanya dari daftar owner (jenis diskon tanpa nilai, mis. "Keluarga", diisi manual oleh admin dan wajib disetujui owner). Paket tidak bisa diskon; diskon homecare butuh persetujuan owner. Tambahan paket 2 keluhan = Rp25.000 × jumlah sesi, dibayar di awal. Paket RU (label berakhiran " RU") boleh untuk diagnosa apa pun dan tanpa tambahan.
 - Insentif terapis nol bila SOAP selesai lewat batas (non-paket: akhir slot + 20 menit; paket 2+/homecare: 23.59 WITA) atau ditandai owner. Terapis hanya melihat label netral.
 - SOAP terkunci setelah invoice terbit; revisi lewat `soap_first_revise_soap` (tercatat di `soap_revisions`).
 - Pengecualian (buka kunci bayar, Xtratime, diskon homecare, ubah nominal, pulihkan insentif, perpanjang paket) diajukan admin, diputuskan owner (`soap_overrides`).

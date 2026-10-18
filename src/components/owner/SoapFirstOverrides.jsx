@@ -37,6 +37,10 @@ const StatusPill = ({ status }) => {
 const describePayload = (o) => {
   if (o.kind === 'package_extend') return `Berakhir baru: ${o.payload?.new_end_date || '-'}`;
   if (o.kind === 'amount_adjust') return `Nominal baru: ${formatCurrency(o.payload?.amount || 0)}`;
+  if (o.kind === 'manual_discount') {
+    const v = Number(o.payload?.discount_value || 0);
+    return `Diskon ${o.payload?.discount_label || 'manual'}: ${o.payload?.discount_type === 'percentage' ? `${v}%` : formatCurrency(v)}`;
+  }
   return null;
 };
 
