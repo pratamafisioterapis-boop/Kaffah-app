@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Loader2, TrendingUp, TrendingDown, DollarSign, FileText, Download, Calendar, ChevronDown } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, DollarSign, Download, ChevronDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -14,6 +11,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { cn } from '@/lib/utils';
+import FinanceTile from '@/components/owner/finance/FinanceTile';
+import TxSection from '@/components/owner/finance/TxSection';
+import SegControl from '@/components/owner/finance/SegControl';
+import { Ring } from '@/components/owner/finance/charts';
+import { fmtShort, fmtRp, fmtPct } from '@/components/owner/finance/financeTheme';
 import { 
   getOwnerExpenditures, 
   getOwnerIncome, 
@@ -26,134 +28,6 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { generateAccountingReportPDF } from '@/lib/accountingReportPdfGenerator';
 
-const ReportTable = ({ title, data, columns, total, type }) => {
-    const isIncome = type === 'income';
-    const accentColor = isIncome ? '#059669' : '#e11d48';
-    const accentLight = isIncome ? '#f0fdf4' : '#fff1f2';
-    const accentPill = isIncome ? '#dcfce7' : '#ffe4e6';
-    const accentMid = isIncome ? '#bbf7d0' : '#fecdd3';
-    const fmt = (n) => new Intl.NumberFormat('id-ID').format(n);
-
-    return (
-        <div className="overflow-hidden mb-3" style={{
-            borderRadius: '14px',
-            border: `1px solid ${accentMid}`,
-            boxShadow: `0 1px 4px ${accentColor}10`
-        }}>
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3" style={{ background: accentLight }}>
-                <div className="flex items-center gap-2.5">
-                    <div className="w-1 h-5 rounded-full" style={{ background: accentColor }} />
-                    <div>
-                        <span className="text-xs font-bold uppercase tracking-widest" style={{ color: accentColor }}>{title}</span>
-                        <span className="ml-2 text-xs font-medium px-1.5 py-0.5 rounded-md" style={{ background: accentPill, color: accentColor }}>
-                            {data.length} entri
-                        </span>
-                    </div>
-                </div>
-                <div className="text-right">
-                    <div className="text-xs font-medium" style={{ color: accentColor + 'aa' }}>Subtotal</div>
-                    <div className="text-sm font-bold tabular-nums" style={{ color: accentColor }}>
-                        Rp {fmt(total)}
-                    </div>
-                </div>
-            </div>
-
-            {/* Mobile / PWA: Card List */}
-            <div className="sm:hidden" style={{ borderTop: `1px solid ${accentMid}`, maxHeight: '320px', overflowY: 'auto' }}>
-                    {data.length === 0 ? (
-                        <div style={{ padding: '28px 16px', textAlign: 'center', color: '#cbd5e1' }}>
-                            <div style={{ fontSize: '13px' }}>Tidak ada data</div>
-                        </div>
-                    ) : (
-                        data.map((item, idx) => (
-                            <div key={idx} className="px-4 py-3"
-                                style={{
-                                    background: idx % 2 === 0 ? 'white' : accentLight + '80',
-                                    borderBottom: '1px solid #f1f5f9'
-                                }}>
-                                <div className="flex items-start justify-between gap-2 mb-1.5">
-                                    {columns[0] && (
-                                        <span className="text-xs font-semibold text-slate-700">
-                                            {columns[0].render ? columns[0].render(item) : item[columns[0].accessor]}
-                                        </span>
-                                    )}
-                                    <span className="text-sm font-bold tabular-nums shrink-0" style={{ color: accentColor }}>
-                                        Rp {fmt(item.amount)}
-                                    </span>
-                                </div>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {columns.slice(1).map((col, cIdx) => {
-                                        const val = col.render ? col.render(item) : item[col.accessor];
-                                        if (!val || val === '-') return null;
-                                        return (
-                                            <span key={cIdx} className="text-xs px-2 py-0.5 rounded-md"
-                                                style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
-                                                {col.header}: {val}
-                                            </span>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
-
-            {/* Desktop: Table */}
-            <div className="hidden sm:block overflow-x-auto" style={{ borderTop: `1px solid ${accentMid}` }}>
-                <table className="w-full text-left table-fixed" style={{ fontSize: '11px' }}>
-                    <thead>
-                        <tr style={{ background: '#f8fafc' }}>
-                            {columns.map((col, idx) => (
-                                <th key={idx} className="px-4 py-2 whitespace-nowrap"
-                                    style={{ color: '#94a3b8', fontWeight: 600, letterSpacing: '0.06em', fontSize: '10px', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' }}>
-                                    {col.header}
-                                </th>
-                            ))}
-                            <th className="px-4 py-2 text-right w-28 whitespace-nowrap"
-                                style={{ color: '#94a3b8', fontWeight: 600, letterSpacing: '0.06em', fontSize: '10px', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' }}>
-                                Jumlah
-                            </th>
-                        </tr>
-                    </thead>
-                </table>
-                {/* Scrollable body */}
-                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                    <table className="w-full text-left table-fixed" style={{ fontSize: '11px' }}>
-                        <tbody>
-                            {data.length === 0 ? (
-                                <tr>
-                                    <td colSpan={columns.length + 1} style={{ padding: '28px 16px', textAlign: 'center', color: '#cbd5e1' }}>
-                                        <div style={{ fontSize: '13px' }}>Tidak ada data</div>
-                                    </td>
-                                </tr>
-                            ) : (
-                                data.map((item, idx) => (
-                                    <tr key={idx}
-                                        style={{ background: idx % 2 === 0 ? 'white' : accentLight + '80', transition: 'background 0.12s' }}
-                                        onMouseEnter={e => e.currentTarget.style.background = accentLight}
-                                        onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? 'white' : accentLight + '80'}>
-                                        {columns.map((col, cIdx) => (
-                                            <td key={cIdx} className="px-4 break-words sm:truncate"
-                                                style={{ padding: '9px 16px', color: '#475569', borderBottom: '1px solid #f1f5f9' }}>
-                                                {col.render ? col.render(item) : item[col.accessor]}
-                                            </td>
-                                        ))}
-                                        <td className="w-28 text-right tabular-nums"
-                                            style={{ padding: '9px 16px', fontWeight: 700, color: accentColor, borderBottom: '1px solid #f1f5f9' }}>
-                                            {fmt(item.amount)}
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 const AccountingReport = ({
   dateRange,
   onDateRangeChange
@@ -162,6 +36,8 @@ const AccountingReport = ({
   const { clinicName } = useAuth();
   const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState('income');
+  // Sumber yang disorot di bar (owner/admin/pasien); null = tampilkan semua.
+  const [source, setSource] = useState(null);
   
 
   const [data, setData] = useState({
@@ -460,29 +336,61 @@ combinedExpenses.sort((a, b) => {
       return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-app-accent" /></div>;
   }
 
+  const isIncome = activeSection === 'income';
+  const chooseSection = (key) => { setActiveSection(key); setSource(null); };
+  const toggleSource = (key) => setSource(prev => (prev === key ? null : key));
+
+  const sources = isIncome
+    ? [
+        { key: 'owner', label: 'Owner', value: subTotalOwnerInc, color: '#0d9488' },
+        { key: 'admin', label: 'Admin', value: subTotalAdminInc, color: '#2563eb' },
+        { key: 'patient', label: 'Pasien', value: subTotalPatientInc, color: '#7c3aed' },
+      ]
+    : [
+        { key: 'owner', label: 'Owner', value: subTotalOwnerExp, color: '#d97706' },
+        { key: 'admin', label: 'Admin', value: subTotalAdminExp, color: '#e11d48' },
+      ];
+
+  const incomeRow = (row, idx) => ({
+    id: row.id ?? idx,
+    date: row.transaction_date || row.date,
+    cat: row.category,
+    sub: row.subcategory?.subcategory_name || row.sub_category,
+    desc: row.description,
+    bank: row.bank_accounts?.bank_name,
+    amt: Number(row.amount) || 0,
+  });
+  const patientRow = (row, idx) => ({
+    id: row.id ?? idx,
+    date: row.date,
+    cat: row.patient_type,
+    sub: row.package_name,
+    desc: row.patient_name,
+    amt: Number(row.amount) || 0,
+  });
+
+  const kpis = [
+    { key: 'in', label: 'Pemasukan', icon: TrendingUp, tone: 'pos', value: totalIncome },
+    { key: 'out', label: 'Pengeluaran', icon: TrendingDown, tone: 'neg', value: totalExpenses },
+    { key: 'net', label: 'Net Profit', icon: DollarSign, tone: netProfit >= 0 ? 'sky' : 'warn', value: netProfit },
+  ];
+  const margin = totalIncome > 0 ? (netProfit / totalIncome) * 100 : 0;
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-app flex items-center justify-center shrink-0" style={{ background: '#eef2ff' }}>
-            <FileText className="w-4 h-4" style={{ color: '#4f46e5' }} />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-base font-bold text-slate-800 break-words sm:truncate">Laporan Akuntansi Lengkap</h2>
-            <p className="text-xs text-slate-500 mt-0.5 break-words sm:truncate">
-              Periode: {formatDate(dateRange.startDate)} s/d {formatDate(dateRange.endDate)}
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={handleExportPDF} variant="outline" className="h-8 px-3 text-xs border-slate-200 text-slate-600 hover:bg-slate-50 flex-1 sm:flex-none">
+    <div className="space-y-4">
+      {/* Periode + ekspor */}
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="px-3 py-1.5 rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
+          {formatDate(dateRange.startDate)} – {formatDate(dateRange.endDate)}
+        </span>
+        <div className="flex gap-2 ml-auto">
+          <Button onClick={handleExportPDF} variant="outline" className="h-9 px-3 text-xs rounded-[10px] border-slate-200 text-slate-600 hover:bg-slate-50">
             <Download className="w-3.5 h-3.5 mr-1.5" />
             PDF
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="h-8 px-3 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50 flex-1 sm:flex-none">
+              <Button variant="outline" className="h-9 px-3 text-xs rounded-[10px] border-emerald-200 text-emerald-700 hover:bg-emerald-50">
                 <Download className="w-3.5 h-3.5 mr-1.5" />
                 Excel
                 <ChevronDown className="w-3 h-3 ml-1.5" />
@@ -504,143 +412,83 @@ combinedExpenses.sort((a, b) => {
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {[
-          { label: 'Total Pemasukan', value: totalIncome, icon: TrendingUp, bg: '#f0fdf4', iconBg: '#dcfce7', color: '#16a34a' },
-          { label: 'Total Pengeluaran', value: totalExpenses, icon: TrendingDown, bg: '#fff1f2', iconBg: '#ffe4e6', color: '#e11d48' },
-          { label: 'Net Profit', value: netProfit, icon: DollarSign,
-            bg: netProfit >= 0 ? '#eff6ff' : '#fffbeb',
-            iconBg: netProfit >= 0 ? '#dbeafe' : '#fef3c7',
-            color: netProfit >= 0 ? '#2563eb' : '#d97706' },
-        ].map(({ label, value, icon: Icon, bg, iconBg, color }) => (
-          <div key={label} className="rounded-app p-4 flex items-center gap-3 min-w-0" style={{ background: bg }}>
-            <div className="w-10 h-10 rounded-app flex items-center justify-center shrink-0" style={{ background: iconBg }}>
-              <Icon className="w-5 h-5" style={{ color }} />
+      {/* Ringkasan */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+        {kpis.map(({ key, label, icon, tone, value }) => (
+          <FinanceTile key={key} tone={tone} icon={icon} title={label} tinted>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className={cn('text-3xl font-black tabular-nums leading-none', value < 0 ? 'text-rose-600' : 'text-app-ink')}>{fmtShort(value)}</p>
+                <p className="text-xs text-slate-500 mt-1.5 break-words">{fmtRp(value)}</p>
+              </div>
+              {key === 'net' && (
+                <Ring pct={margin} color={netProfit >= 0 ? '#2563eb' : '#d97706'} className="w-[84px] shrink-0">
+                  <b className="text-sm font-black tabular-nums text-app-ink">{fmtPct(margin)}</b>
+                </Ring>
+              )}
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium break-words sm:truncate" style={{ color }}>{label}</p>
-              <p className="text-base sm:text-lg font-bold leading-tight break-words" style={{ color }}>
-                Rp {new Intl.NumberFormat('id-ID').format(value)}
-              </p>
-            </div>
-          </div>
+          </FinanceTile>
         ))}
       </div>
 
-      {/* Tab switcher */}
-      <div className="flex gap-1 p-1 w-fit" style={{ background: '#f1f5f9', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-        {[
-          { key: 'income', label: 'Pemasukan', icon: TrendingUp, color: '#059669', activeBg: '#ecfdf5', activeBorder: '#bbf7d0' },
-          { key: 'expense', label: 'Pengeluaran', icon: TrendingDown, color: '#e11d48', activeBg: '#fff1f2', activeBorder: '#fecdd3' },
-        ].map(({ key, label, icon: Icon, color, activeBg, activeBorder }) => (
-          <button
-            key={key}
-            onClick={() => setActiveSection(key)}
-            className="flex items-center gap-2 px-5 py-2 text-xs font-bold transition-[color,background-color,border-color,box-shadow,transform,opacity]"
-            style={{
-              borderRadius: '9px',
-              background: activeSection === key ? activeBg : 'transparent',
-              color: activeSection === key ? color : '#94a3b8',
-              border: activeSection === key ? `1px solid ${activeBorder}` : '1px solid transparent',
-              boxShadow: activeSection === key ? `0 1px 4px ${color}18` : 'none',
-              letterSpacing: '0.02em',
-            }}
-          >
-            <Icon className="w-3.5 h-3.5" />
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* Pemasukan / Pengeluaran */}
+      <SegControl
+        items={[{ value: 'income', label: 'Pemasukan', icon: TrendingUp }, { value: 'expense', label: 'Pengeluaran', icon: TrendingDown }]}
+        value={activeSection}
+        onChange={chooseSection}
+      />
 
-      {/* Income Section */}
-      {activeSection === 'income' && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 px-1">
-            <TrendingUp className="w-4 h-4 text-emerald-500" />
-            <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Pemasukan (Income)</span>
-            <span className="ml-auto text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-app-sm">
-              Total: Rp {new Intl.NumberFormat('id-ID').format(totalIncome)}
-            </span>
-          </div>
-          <ReportTable
-            title="Pemasukan Owner"
-            data={data.ownerIncome}
-            total={subTotalOwnerInc}
-            type="income"
-            columns={[
-              { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
-              { header: 'Kategori', accessor: 'category' },
-              { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || row.sub_category || '-' },
-              { header: 'Deskripsi', accessor: 'description' },
-              { header: 'Bank', accessor: 'bank_accounts', render: (row) => row.bank_accounts?.bank_name || '-' }
-            ]}
-          />
-          <ReportTable
-            title="Pemasukan Admin"
-            data={data.adminIncome}
-            total={subTotalAdminInc}
-            type="income"
-            columns={[
-              { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
-              { header: 'Kategori', accessor: 'category' },
-              { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || row.sub_category || '-' },
-              { header: 'Deskripsi', accessor: 'description' },
-              { header: 'Bank', accessor: 'bank_accounts', render: (row) => row.bank_accounts?.bank_name || '-' }
-            ]}
-          />
-          <ReportTable
-            title="Pendapatan Pasien (Paket/Visit)"
-            data={data.patientIncome}
-            total={subTotalPatientInc}
-            type="income"
-            columns={[
-              { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
-              { header: 'Pasien', accessor: 'patient_name' },
-              { header: 'Tipe Pasien', accessor: 'patient_type' },
-              { header: 'Paket', accessor: 'package_name' }
-            ]}
-          />
+      {/* Bar sumber: ketuk untuk menyorot satu sumber */}
+      <FinanceTile tone={isIncome ? 'pos' : 'neg'} title={isIncome ? 'Sumber pemasukan' : 'Sumber pengeluaran'}>
+        <div className="flex h-[30px] gap-0.5 rounded-xl overflow-hidden bg-slate-100">
+          {sources.map(sc => (
+            <button
+              key={sc.key}
+              type="button"
+              aria-label={sc.label}
+              onClick={() => toggleSource(sc.key)}
+              className="h-full transition-opacity duration-200"
+              style={{ flexGrow: Math.max(sc.value, 1), flexBasis: 0, minWidth: 3, backgroundColor: sc.color, opacity: source && source !== sc.key ? 0.3 : 1 }}
+            />
+          ))}
         </div>
-      )}
+        <div className="flex flex-wrap gap-1.5 mt-3">
+          {sources.map(sc => (
+            <button
+              key={sc.key}
+              type="button"
+              onClick={() => toggleSource(sc.key)}
+              aria-pressed={source === sc.key}
+              className={cn('inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors', source === sc.key ? 'bg-slate-100 border-slate-300' : 'border-slate-200 hover:bg-slate-50')}
+            >
+              <span className="w-2 h-2 rounded-[3px]" style={{ backgroundColor: sc.color }} />
+              {sc.label} <b className="tabular-nums">{fmtShort(sc.value)}</b>
+            </button>
+          ))}
+        </div>
+      </FinanceTile>
 
-      {/* Expense Section */}
-      {activeSection === 'expense' && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 px-1">
-            <TrendingDown className="w-4 h-4 text-rose-500" />
-            <span className="text-xs font-bold text-rose-700 uppercase tracking-wider">Pengeluaran (Expense)</span>
-            <span className="ml-auto text-xs font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-app-sm">
-              Total: Rp {new Intl.NumberFormat('id-ID').format(totalExpenses)}
-            </span>
-          </div>
-          <ReportTable
-            title="Pengeluaran Owner"
-            data={data.ownerExpenses}
-            total={subTotalOwnerExp}
-            type="expense"
-            columns={[
-              { header: 'Tanggal', accessor: 'date', render: (row) => formatDate(row.date) },
-              { header: 'Kategori', accessor: 'category' },
-              { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || row.sub_category || '-' },
-              { header: 'Deskripsi', accessor: 'description' },
-              { header: 'Bank', accessor: 'bank_accounts', render: (row) => row.bank_accounts?.bank_name || '-' }
-            ]}
-          />
-          <ReportTable
-            title="Pengeluaran Admin"
-            data={data.adminExpenses}
-            total={subTotalAdminExp}
-            type="expense"
-            columns={[
-              { header: 'Tanggal', accessor: 'transaction_date', render: (row) => formatDate(row.transaction_date) },
-              { header: 'Kategori', accessor: 'category' },
-              { header: 'Sub Category', accessor: 'subcategory', render: (row) => row.subcategory?.subcategory_name || row.sub_category || '-' },
-              { header: 'Deskripsi', accessor: 'description' },
-              { header: 'Bank', accessor: 'bank_accounts', render: (row) => row.bank_accounts?.bank_name || '-' }
-            ]}
-          />
-        </div>
+      {isIncome ? (
+        <>
+          {(!source || source === 'owner') && (
+            <TxSection tone="pos" icon={TrendingUp} title="Pemasukan Owner" kind="in" items={data.ownerIncome.map(incomeRow)} emptyText="Tidak ada data" />
+          )}
+          {(!source || source === 'admin') && (
+            <TxSection tone="pos" icon={TrendingUp} title="Pemasukan Admin" kind="in" items={data.adminIncome.map(incomeRow)} emptyText="Tidak ada data" />
+          )}
+          {(!source || source === 'patient') && (
+            <TxSection tone="pos" icon={TrendingUp} title="Pendapatan Pasien (Paket/Visit)" kind="in" items={data.patientIncome.map(patientRow)} emptyText="Tidak ada data" />
+          )}
+        </>
+      ) : (
+        <>
+          {(!source || source === 'owner') && (
+            <TxSection tone="neg" icon={TrendingDown} title="Pengeluaran Owner" kind="out" items={data.ownerExpenses.map(incomeRow)} emptyText="Tidak ada data" />
+          )}
+          {(!source || source === 'admin') && (
+            <TxSection tone="neg" icon={TrendingDown} title="Pengeluaran Admin" kind="out" items={data.adminExpenses.map(incomeRow)} emptyText="Tidak ada data" />
+          )}
+        </>
       )}
     </div>
   );
