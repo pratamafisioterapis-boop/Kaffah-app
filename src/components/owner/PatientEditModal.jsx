@@ -22,6 +22,7 @@ import {
     autoFillNickname
 } from '@/lib/patientFormHelpers';
 import { deletePatient, getCachedClinicId } from '@/lib/api';
+import { formatPatientNameForClinic } from '@/utils/patientName';
 import { confirmAction } from '@/lib/confirmAction';
 
 const PatientEditModal = ({ isOpen, onClose, onSuccess, patient }) => {
@@ -136,7 +137,7 @@ const PatientEditModal = ({ isOpen, onClose, onSuccess, patient }) => {
         try {
             // 2. Prepare Payload
             const payload = {
-                full_name: formData.full_name,
+                full_name: formatPatientNameForClinic(formData.full_name, await getCachedClinicId((await supabase.auth.getSession()).data?.session?.user?.id)),
                 nickname: formData.nickname,
                 nickname_custom: nicknameManuallyEdited,
                 birth_date: parseDateFromDisplay(formData.birth_date), // Convert DD/MM/YYYY -> YYYY-MM-DD
