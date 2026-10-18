@@ -46,9 +46,9 @@ const SoapPendingBanner = ({ therapistId = null, role = 'therapist' }) => {
   if (!active || items.length === 0) return null;
 
   return (
-    <div className="rounded-app-lg border border-amber-300 bg-amber-50 p-4 space-y-2">
-      <div className="flex items-center gap-2 text-sm font-semibold text-amber-900">
-        <AlertTriangle className="h-4 w-4" />
+    <div className="space-y-2 rounded-[16px] border border-[#F2A93B]/45 bg-[#FDF0D8] p-3.5">
+      <div className="flex items-center gap-2.5 text-sm font-bold text-[#10242F]">
+        <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-[#F2A93B] text-[#3A2504]"><AlertTriangle className="h-[18px] w-[18px]" /></span>
         {role === 'admin'
           ? `${items.length} sesi hari ini belum ada SOAP — pembayaran terkunci. Mohon ingatkan terapis.`
           : `${items.length} SOAP menunggu diisi — isi sebelum pasien membayar.`}
@@ -63,7 +63,7 @@ const SoapPendingBanner = ({ therapistId = null, role = 'therapist' }) => {
               type="button"
               disabled={!canOpen}
               onClick={() => canOpen && navigate(`/therapist/records/new/${r.patient_id}?date=${today}&dailyRecapId=${r.id}`)}
-              className={`w-full flex items-center justify-between rounded-app-sm bg-white px-3 py-2 text-left text-sm border border-amber-200 ${canOpen ? 'hover:bg-amber-100' : 'cursor-default'}`}
+              className={`w-full flex items-center justify-between rounded-xl bg-white px-3 py-2 text-left text-sm border border-[#F2A93B]/40 ${canOpen ? 'hover:bg-[#FDF0D8]' : 'cursor-default'}`}
             >
               <span className="font-medium text-slate-800">{name}</span>
               <span className="text-xs text-slate-500">

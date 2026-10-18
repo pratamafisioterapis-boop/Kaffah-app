@@ -36,10 +36,10 @@ const PortalInboxCard = ({ therapistId }) => {
   const total = counts.messages + counts.feedback;
 
   return (
-    <Link to="/therapist/clinara-pasien" className="block rounded-app-lg border border-slate-200 bg-white p-4 shadow-sm hover:border-app-accent/40 transition-colors">
+    <Link to="/therapist/clinara-pasien" className="block h-full rounded-[18px] border border-app-border bg-white p-4 transition hover:-translate-y-0.5 hover:border-app-accent/40 lg:p-5">
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-semibold text-slate-900">Pesan dan keluhan pasien</h3>
+          <h3 className="text-[17px] font-extrabold text-app-ink">Pesan pasien</h3>
           <p className="text-sm text-slate-500">{total === 0 ? 'Tidak ada yang baru dari aplikasi pasien.' : 'Dari aplikasi pasien (Clinara). Ketuk untuk membalas.'}</p>
         </div>
         <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${counts.messages ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'}`}>

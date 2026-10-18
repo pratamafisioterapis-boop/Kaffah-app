@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { LogOut, Menu, X } from 'lucide-react';
 import DashboardTopbar from '@/components/DashboardTopbar';
 import { cn } from '@/lib/utils';
+import './therapistTheme.css';
 
 // Kerangka halaman akun terapis: rail ikon di desktop (melebar saat disorot), tab bar bawah
 // dengan tombol Menu di tengah di HP. Daftar menu, filter fitur klinik, dan aksinya tetap
@@ -81,7 +82,7 @@ const TherapistShell = ({ navItems, iconMap, userName, clinicInfo, clinicId, onL
   };
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-[#F5F9FC]" style={{ fontFamily: 'var(--app-font, inherit)' }}>
+    <div className="tv2 min-h-screen w-full overflow-x-hidden bg-[#EDF3F7]">
       {/* Rail desktop */}
       <aside
         className={cn('group fixed inset-y-0 left-0 z-50 hidden flex-col gap-1 overflow-hidden border-r border-app-border bg-white px-3 py-3.5 transition-[width,box-shadow] duration-300 lg:flex hover:w-[248px] hover:shadow-2xl focus-within:w-[248px]', pinned)}
@@ -136,7 +137,7 @@ const TherapistShell = ({ navItems, iconMap, userName, clinicInfo, clinicId, onL
       <main className="min-h-screen w-full max-w-full lg:pl-[76px]">
         <div className="mx-auto w-full max-w-[1400px] px-4 pb-32 pt-2 sm:px-8 sm:pt-4 lg:pb-10">
           <div className="sticky top-0 z-40">
-            <DashboardTopbar role="therapist" userName={userName} clinicName={clinicInfo?.name || ''} navItems={navItems} clinicId={clinicId} />
+            <DashboardTopbar variant="v2" role="therapist" userName={userName} clinicName={clinicInfo?.name || ''} navItems={navItems} clinicId={clinicId} />
             {topSlot}
           </div>
           {children}
@@ -201,7 +202,7 @@ const TherapistShell = ({ navItems, iconMap, userName, clinicInfo, clinicId, onL
             onClick={() => setMenuOpen((v) => !v)}
             aria-label="Semua menu"
             aria-expanded={menuOpen}
-            className="-mt-6 flex h-14 w-14 items-center justify-center rounded-full border-[5px] border-[#F5F9FC] bg-gradient-to-br from-app-accent-hover to-app-accent-bright text-white shadow-lg transition-transform active:scale-95"
+            className="-mt-6 flex h-14 w-14 items-center justify-center rounded-full border-[5px] border-[#EDF3F7] bg-gradient-to-br from-[#0A5A8A] to-[#14A5A4] text-white shadow-[0_12px_24px_-8px_rgba(10,90,140,.7)] transition-transform active:scale-95"
           >
             {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>

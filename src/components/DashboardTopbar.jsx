@@ -369,7 +369,7 @@ async function loadDetailData(type, id) {
   return null;
 }
 
-const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }) => {
+const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId, variant = 'default' }) => {
   const topbarLocation = useLocation();
   // Admin accounts (incl. an owner viewing as admin) may only hop into a
   // therapist's SOAP page — never to the owner or another admin account.
@@ -742,7 +742,12 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
   return (
     <>
-    <div className="relative sticky top-0 z-40 mb-4 -mx-4 sm:mx-0 px-4 sm:px-0 pt-2.5 sm:pt-0 pb-2 sm:pb-0 bg-gradient-to-b from-app-soft/80 via-[#F5F9FC]/95 to-[#F5F9FC]/95 sm:bg-none sm:bg-[#F5F9FC]/95 backdrop-blur-sm rounded-b-[20px] sm:rounded-none">
+    <div className={cn(
+        'relative sticky top-0 z-40 mb-4 -mx-4 sm:mx-0 px-4 sm:px-0 pt-2.5 sm:pt-0 pb-2 sm:pb-0 backdrop-blur-sm rounded-b-[20px] sm:rounded-none',
+        variant === 'v2'
+          ? 'bg-gradient-to-b from-app-soft/80 via-[#EDF3F7]/95 to-[#EDF3F7]/95 sm:bg-none sm:bg-[#EDF3F7]/95'
+          : 'bg-gradient-to-b from-app-soft/80 via-[#F5F9FC]/95 to-[#F5F9FC]/95 sm:bg-none sm:bg-[#F5F9FC]/95'
+      )}>
       {/* Clipped separately from the content below so it never crops the
           search results dropdown, which must overflow past this header. */}
       <div className="absolute inset-0 overflow-hidden rounded-b-[20px] pointer-events-none sm:hidden" aria-hidden="true">
