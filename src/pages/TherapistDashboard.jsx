@@ -30,6 +30,8 @@ import { lazyRetry } from '@/lib/lazyRetry';
 import PageSkeleton from '@/components/shared/PageSkeleton';
 import NewDecreeBanner from '@/components/shared/NewDecreeBanner';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
+import { useTherapistToday } from '@/hooks/useTherapistToday';
+import SoapSessionReminder from '@/components/therapist/SoapSessionReminder';
 const ClinicDecreesViewer = React.lazy(lazyRetry(() => import('@/pages/shared/ClinicDecreesViewer'), 'ClinicDecreesViewer'));
 
 const TherapistDashboard = () => {
@@ -43,6 +45,7 @@ const TherapistDashboard = () => {
   const therapistFillsMedicalRecords = medicalRecordsFilledBy === 'therapist';
   const { enabled: canRequestSoapTemplates } = useTherapistSoapTemplateEdit();
   const { enabled: canRequestLeave } = useTherapistLeaveRequestEnabled();
+  const today = useTherapistToday(therapistProfile?.id);
 
   useEffect(() => {
     const requestedTab = new URLSearchParams(location.search).get('settings');
@@ -130,7 +133,7 @@ const TherapistDashboard = () => {
   const dashboardHome = (
     <div className="grid grid-cols-1 gap-6">
       <div>
-        <TherapistDashboardWidget initialProfile={therapistProfile} />
+        <TherapistDashboardWidget initialProfile={therapistProfile} today={today} />
       </div>
       <PortalInboxCard therapistId={therapistProfile?.id} />
     </div>
@@ -154,7 +157,7 @@ const TherapistDashboard = () => {
         <title>Therapist Dashboard - Kaffah System Care</title>
         <meta name="description" content="Therapist dashboard" />
       </Helmet>
-      <DashboardLayout navItems={navItems} role="therapist" userName={therapistProfile.name}>
+      <DashboardLayout navItems={navItems} role="therapist" userName={therapistProfile.name} topSlot={<SoapSessionReminder today={today} />}>
         <NewDecreeBanner to="/therapist/decrees" />
         <React.Suspense fallback={<PageSkeleton />}>
         <Routes>
