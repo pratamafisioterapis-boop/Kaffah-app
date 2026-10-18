@@ -954,13 +954,13 @@ const getPremiumPastelBadge = (text) => {
                         </Button>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 text-xs font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded border border-slate-200 w-fit">
                           <span>{formatTime(new Date(recap.start_time))}</span>
                           <span className="text-slate-300">→</span>
                           <span>{formatTime(new Date(recap.end_time))}</span>
                         </div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex flex-wrap items-center justify-end gap-1.5 ml-auto">
                           {parseFloat(recap.amount || 0) > 0 && (
                             <span
                               title={
