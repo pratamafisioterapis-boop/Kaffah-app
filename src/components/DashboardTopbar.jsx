@@ -630,29 +630,36 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
 
   useEffect(() => { loadActivities(); }, [loadActivities]);
 
+  // Setiap perubahan daily_recaps/appointments menulis baris audit_logs, jadi
+  // event realtime bisa datang beruntun. Gabungkan jadi satu muat ulang agar
+  // tidak membanjiri database (yang ikut memperlambat semua menu).
+  const reloadTimerRef = useRef(null);
+  const scheduleReload = useCallback(() => {
+    clearTimeout(reloadTimerRef.current);
+    reloadTimerRef.current = setTimeout(() => loadActivities(), 2000);
+  }, [loadActivities]);
+  useEffect(() => () => clearTimeout(reloadTimerRef.current), []);
+
   useEffect(() => {
+    const clinicFilter = clinicId ? { filter: `clinic_id=eq.${clinicId}` } : {};
     const channel = supabase
       .channel('topbar-audit-logs')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_logs' }, () => {
-        loadActivities();
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'medical_records' }, () => {
-        loadActivities();
-      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_logs', ...clinicFilter }, scheduleReload)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'medical_records', ...clinicFilter }, scheduleReload)
       .subscribe();
     return () => supabase.removeChannel(channel);
-  }, [loadActivities]);
+  }, [scheduleReload, clinicId]);
 
   // Pengajuan baru / yang baru ditinjau memperbarui lonceng owner langsung.
   useEffect(() => {
     if (!canReviewRequests) return undefined;
     let channel = supabase.channel('topbar-approval-requests');
     ['therapist_leave_requests', 'therapist_shift_swap_requests', 'therapist_sunday_swap_requests', 'soap_template_change_requests'].forEach((table) => {
-      channel = channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => loadActivities());
+      channel = channel.on('postgres_changes', { event: '*', schema: 'public', table }, scheduleReload);
     });
     channel.subscribe();
     return () => supabase.removeChannel(channel);
-  }, [canReviewRequests, loadActivities]);
+  }, [canReviewRequests, scheduleReload]);
 
   const unreadCount = activities.filter((a) => !a.isRead).length;
   const filteredActivities = activityFilter === 'all'
