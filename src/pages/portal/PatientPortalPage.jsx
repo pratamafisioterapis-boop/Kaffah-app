@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import { Home, TrendingUp, PlayCircle, ClipboardList, MessageCircle, Send, Check, Play, CalendarPlus, CalendarCheck, ChevronLeft, Activity, User } from 'lucide-react';
+import { Home, TrendingUp, PlayCircle, ClipboardList, MessageCircle, Send, Check, Play, CalendarPlus, CalendarCheck, ChevronLeft, Activity, User, Ban, AlertTriangle, Flame, Snowflake } from 'lucide-react';
 import { formatOnsetAgo } from '@/lib/onsetHelpers';
 import { portalApi, loadSession, saveSession, clearSession, hexToHue } from '@/lib/patientPortal';
 import './portal.css';
@@ -229,15 +229,87 @@ const HomeTab = ({ home, goals, go, onLogout }) => {
           )}
         </div>
         {home.latest_education && (
-          <section className="card edu">
-            <h3>Edukasi dari terapis</h3>
-            <p className="edu-text">{home.latest_education}</p>
-          </section>
+          <EduCard text={home.latest_education} />
         )}
         <div className="powered">Didukung Clinara · {home.clinic?.name}</div>
         <button className="btn ghost logout" onClick={onLogout}>Keluar dari perangkat ini</button>
       </div>
     </>
+  );
+};
+
+// Edukasi terapis tersimpan sebagai teks bebas dengan satu poin per baris ("- ...").
+// Dipecah ke kelompok Lakukan / Hindari / Kompres / Waspada lewat kata awal tiap poin.
+const BULLET = /^\s*[-•*]\s+/;
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+const parseEducation = (text) => {
+  const lines = String(text || '').split('\n').map((l) => l.trim()).filter(Boolean);
+  if (!lines.some((l) => BULLET.test(l))) return null;
+  const g = { do: [], avoid: [], warn: [], compress: null };
+  lines.forEach((raw) => {
+    const l = raw.replace(BULLET, '');
+    if (/^(informasikan|segera|hubungi)\b/i.test(l) || /kesemutan|kelemahan/i.test(l)) g.warn.push(l);
+    else if (/^hindari\b/i.test(l)) g.avoid.push(l);
+    else if (/kompres/i.test(l)) {
+      const [hot, cold] = l.split(/,?\s*(?:dan\s+)?(?=kompres\s+dingin)/i);
+      g.compress = cold && /hangat/i.test(hot)
+        ? { hot: cap(hot.replace(/[,\s]+$/, '')), cold: cap(cold) }
+        : { plain: l };
+    } else g.do.push(l);
+  });
+  return g;
+};
+
+const EduCard = ({ text }) => {
+  const [kind, setKind] = useState('hot');
+  const g = parseEducation(text);
+  if (!g) {
+    return (
+      <section className="card edu">
+        <h3>Edukasi dari terapis</h3>
+        <p className="edu-text">{text}</p>
+      </section>
+    );
+  }
+  const c = g.compress;
+  return (
+    <section className="card edu">
+      <h3>Edukasi dari terapis</h3>
+      {g.do.length > 0 && (
+        <div className="edu-sec">
+          <h4 className="ok">Lakukan</h4>
+          {g.do.map((t, i) => <div className="edu-item ok" key={i}><span className="edu-tile"><Check size={20} strokeWidth={2.4} /></span><p>{cap(t)}</p></div>)}
+        </div>
+      )}
+      {g.avoid.length > 0 && (
+        <div className="edu-sec">
+          <h4 className="warm">Hindari</h4>
+          {g.avoid.map((t, i) => <div className="edu-item warm" key={i}><span className="edu-tile"><Ban size={20} strokeWidth={2.2} /></span><p>{cap(t)}</p></div>)}
+        </div>
+      )}
+      {c && (
+        <div className="edu-sec">
+          <h4 className="brand">Kompres</h4>
+          {c.plain ? (
+            <div className="edu-item"><span className="edu-tile"><Flame size={20} /></span><p>{cap(c.plain)}</p></div>
+          ) : (
+            <>
+              <div className="edu-seg" role="group" aria-label="Pilih kondisi kompres">
+                <button className={kind === 'hot' ? 'on' : ''} aria-pressed={kind === 'hot'} onClick={() => setKind('hot')}><Flame size={18} />Terasa kaku</button>
+                <button className={kind === 'cold' ? 'on' : ''} aria-pressed={kind === 'cold'} onClick={() => setKind('cold')}><Snowflake size={18} />Nyeri naik</button>
+              </div>
+              <p className="edu-tip">{kind === 'hot' ? c.hot : c.cold}</p>
+            </>
+          )}
+        </div>
+      )}
+      {g.warn.length > 0 && (
+        <div className="edu-warn" role="note">
+          <b><AlertTriangle size={20} />Kapan harus menghubungi terapis</b>
+          {g.warn.map((t, i) => <p key={i}>{cap(t)}</p>)}
+        </div>
+      )}
+    </section>
   );
 };
 
