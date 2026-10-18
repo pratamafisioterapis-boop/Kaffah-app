@@ -844,7 +844,7 @@ if (isCreate) {
               <div className={`${isPWA ? 'px-4 py-3' : 'px-6 py-4'} border-b bg-cyan-50/50 flex items-start gap-3`}>
                 <Activity className="w-4 h-4 text-cyan-700 mt-0.5 shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-cyan-800">Tanda Vital (dari admin)</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-cyan-800">Tanda Vital</p>
                   <p className="text-sm text-slate-800 break-words">{vitalsLine}</p>
                   {recapVitals?.notes && <p className="text-xs text-slate-500 mt-0.5">{recapVitals.notes}</p>}
                 </div>

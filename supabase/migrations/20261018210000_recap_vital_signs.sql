@@ -2,7 +2,7 @@
 -- lewat medical_records.daily_recap_id (= recap_id di sini). Tidak memakai DROP.
 CREATE TABLE IF NOT EXISTS public.recap_vital_signs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  clinic_id uuid NOT NULL DEFAULT (SELECT public.get_my_clinic_id()) REFERENCES public.clinics(id) ON DELETE CASCADE,
+  clinic_id uuid NOT NULL DEFAULT public.get_my_clinic_id() REFERENCES public.clinics(id) ON DELETE CASCADE,
   recap_id uuid NOT NULL UNIQUE REFERENCES public.daily_recaps(id) ON DELETE CASCADE,
   patient_id uuid REFERENCES public.patients(id) ON DELETE SET NULL,
   systolic integer CHECK (systolic IS NULL OR systolic BETWEEN 30 AND 300),
