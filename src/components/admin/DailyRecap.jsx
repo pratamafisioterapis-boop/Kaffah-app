@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Calendar, Loader2, Plus, Search, X, Clock, Play, Square,
-  ChevronLeft, ChevronRight, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, BarChart3, CreditCard, Users
+  ChevronLeft, ChevronRight, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, BarChart3, CreditCard, Users, Link2
 } from 'lucide-react';
 import { getDailyRecaps, getDailyRecapsTotalAmount, getPhysiotherapists, getCachedClinicId } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,10 @@ import DailyRecapModal from '@/components/shared/DailyRecapModal';
 import DailyRecapDetailModal from '@/components/shared/DailyRecapDetailModal';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import PageHero from '@/components/shared/PageHero';
+import SendClinaraDialog from '@/components/admin/patients/SendClinaraDialog';
+
+// Pasien yang menerima layanan (bukan pemilik paket) berhak atas tautan portal.
+const getPortalPatient = (recap) => recap.actual_patients || recap.patients || null;
 
 // Tanggal WITA (UTC+8) untuk offset hari tertentu dari hari ini, dipakai
 // oleh navigasi panah kiri/kanan pada tombol "Hari Ini".
@@ -184,6 +188,7 @@ const DailyRecap = ({ hideControls = false, showPaymentFilter = false }) => {
   const [selectedRecap, setSelectedRecap] = useState(null);
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
 const [selectedInvoiceData, setSelectedInvoiceData] = useState(null);
+  const [portalPatient, setPortalPatient] = useState(null);
   const [modalMode, setModalMode] = useState('add');
 useEffect(() => {
   fetchRecaps();
@@ -980,6 +985,16 @@ const getPremiumPastelBadge = (text) => {
                                 : '● Belum Dikirim'}
                             </span>
                           )}
+                          {getPortalPatient(recap) && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 text-xs text-green-700 border-green-200 hover:bg-green-50 rounded-app-sm"
+                              onClick={() => setPortalPatient(getPortalPatient(recap))}
+                            >
+                              <Link2 className="w-3 h-3 mr-1.5" />Portal
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="outline"
@@ -1134,6 +1149,16 @@ const getPremiumPastelBadge = (text) => {
   >
     Invoice
   </Button>
+    {getPortalPatient(recap) && (
+      <Button
+        size="sm"
+        variant="outline"
+        className="text-green-700 border-green-200 hover:bg-green-50 h-7 px-2 text-xs xl:h-9 xl:px-3 xl:text-sm"
+        onClick={() => setPortalPatient(getPortalPatient(recap))}
+      >
+        <Link2 className="w-3 h-3 mr-1" />Portal
+      </Button>
+    )}
     {parseFloat(recap.amount || 0) > 0 && (
     <span
       title={
@@ -1192,6 +1217,7 @@ const getPremiumPastelBadge = (text) => {
         onEdit={handleEditFromDetail}
         onDelete={fetchRecaps}
       />
+      <SendClinaraDialog patient={portalPatient} onClose={() => setPortalPatient(null)} />
       <InvoiceModal
   isOpen={invoiceModalOpen}
   onClose={() => setInvoiceModalOpen(false)}
