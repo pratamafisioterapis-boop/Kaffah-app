@@ -20,7 +20,7 @@ const PageHero = ({
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-app-border shadow-sm h-44 sm:h-52 md:h-60 lg:h-72',
+        'relative overflow-hidden rounded-[18px] sm:rounded-[22px] border border-app-border shadow-sm h-36 sm:h-52 md:h-60 lg:h-72',
         className
       )}
     >
@@ -32,13 +32,13 @@ const PageHero = ({
         className="absolute inset-0 w-full h-full object-cover"
       />
       <div
-        className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-50% to-transparent to-80% pointer-events-none"
+        className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-60% sm:via-50% to-transparent to-90% sm:to-80% pointer-events-none"
         aria-hidden="true"
       />
       <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14">
         <div
           className={cn(
-            'max-w-[74%] sm:max-w-[62%]',
+            'max-w-full sm:max-w-[62%]',
             wide ? 'md:max-w-md lg:max-w-xl' : 'md:max-w-sm'
           )}
         >
@@ -47,13 +47,13 @@ const PageHero = ({
           </p>
           <h1
             style={{ fontFamily: "'Caveat', cursive" }}
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-app-ink leading-[0.85]"
+            className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-app-ink leading-[1.1] sm:leading-[0.85]"
           >
             {title}
             <br />
             <span
               className={cn(
-                'text-app-accent-bright underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8',
+                'whitespace-nowrap sm:whitespace-normal text-[length:min(1.75rem,calc((100vw-4rem)/12))] sm:text-[length:1em] text-app-accent-bright underline decoration-wavy decoration-2 md:decoration-[3px] underline-offset-4 md:underline-offset-8',
                 wide && 'block md:whitespace-nowrap md:text-[1.75rem] lg:text-[2.35rem]'
               )}
             >
@@ -61,7 +61,7 @@ const PageHero = ({
             </span>
           </h1>
           {description ? (
-            <p className="text-app-muted text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
+            <p className="hidden sm:block text-app-muted text-xs md:text-sm mt-1.5 md:mt-3 leading-snug md:leading-relaxed">
               {description}
             </p>
           ) : null}
