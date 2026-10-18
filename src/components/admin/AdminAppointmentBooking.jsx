@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useCalendarAutoRefresh } from '@/hooks/useCalendarAutoRefresh';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -120,22 +121,15 @@ const formattedDateFull = date
     }
   };
 
-  useEffect(() => {
-    const leaveChannel = supabase
-      .channel('public:therapist_time_off')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'therapist_time_off' }, () => fetchDayData(date))
-      .subscribe();
-
-    const appChannel = supabase
-      .channel('public:appointments')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, () => fetchDayData(date))
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(leaveChannel);
-      supabase.removeChannel(appChannel);
-    };
-  }, [date, therapists]);
+  // Realtime + refresh saat tab aktif lagi + polling cadangan (lihat hook).
+  // Ref dipakai agar callback selalu membaca tanggal & terapis terbaru.
+  const dateRef = useRef(date);
+  dateRef.current = date;
+  const therapistsRef = useRef(therapists);
+  therapistsRef.current = therapists;
+  useCalendarAutoRefresh(() => {
+    if (therapistsRef.current.length > 0) fetchDayData(dateRef.current);
+  });
 
   // SOAP lock berbasis umur bisa berubah murni karena waktu berjalan (tanpa ada
   // write ke appointments/therapist_time_off), jadi realtime subscription di atas
