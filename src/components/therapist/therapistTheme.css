@@ -1,0 +1,56 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Albert+Sans:wght@400;500;600;700&display=swap");
+
+/* Tampilan akun terapis (redesain). Berlaku untuk semua klinik, jadi tidak ikut tema warna klinik.
+   Token Tailwind app-* (app-accent, app-ink, dst) ditimpa di dalam .tv2, sehingga widget lama
+   otomatis ikut palet baru. */
+.tv2 {
+  --app-font: 'Albert Sans', 'Segoe UI', system-ui, sans-serif;
+  --app-radius: 0.8438rem;
+  --app-accent: #0B6FA4;
+  --app-accent-hover: #0A5A8A;
+  --app-accent-bright: #0C86A3;
+  --app-accent-soft: #E0F0F8;
+  --app-card-border: #DCE7EE;
+  --app-text-main: #10242F;
+  --app-text-muted: #53697A;
+  --app-accent-rgb: 11 111 164;
+  --app-accent-hover-rgb: 10 90 138;
+  --app-accent-bright-rgb: 12 134 163;
+  --app-accent-soft-rgb: 224 240 248;
+  --app-border-rgb: 220 231 238;
+  --app-ink-rgb: 16 36 47;
+  --app-muted-rgb: 83 105 122;
+  --primary: 201 88% 34%;
+  --primary-foreground: 0 0% 100%;
+  --ring: 201 88% 34%;
+  font-family: var(--app-font);
+  background-color: #EDF3F7;
+  color: #10242F;
+}
+.tv2 h1, .tv2 h2, .tv2 h3, .tv2 h4, .tv2 .tv2-display {
+  font-family: 'Manrope', 'Segoe UI', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+/* Kartu widget lama: garis dan bayangan seperti kartu baru */
+.tv2 .border-slate-100, .tv2 .border-slate-200 { border-color: #DCE7EE; }
+.tv2 .shadow-sm { box-shadow: none; }
+.tv2 .text-slate-800, .tv2 .text-slate-700 { color: #10242F; }
+.tv2 .text-slate-500 { color: #53697A; }
+
+@keyframes tv2-live {
+  0% { box-shadow: 0 0 0 0 rgba(242, 169, 59, 0.7); }
+  80%, 100% { box-shadow: 0 0 0 9px rgba(242, 169, 59, 0); }
+}
+@keyframes tv2-blink { 50% { opacity: 0.25; } }
+@keyframes tv2-nudge {
+  0%, 60%, 100% { transform: none; }
+  70% { transform: rotate(-12deg); }
+  80% { transform: rotate(10deg); }
+  90% { transform: rotate(-6deg); }
+}
+.tv2-live { animation: tv2-live 1.8s infinite; }
+.tv2-blink { animation: tv2-blink 1s steps(2) infinite; }
+.tv2-nudge { animation: tv2-nudge 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .tv2-live, .tv2-blink, .tv2-nudge { animation: none; }
+}

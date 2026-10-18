@@ -16,7 +16,6 @@ const TherapistAppointmentScheduler = React.lazy(lazyRetry(() => import('@/compo
 const TherapistBookingCalendar = React.lazy(lazyRetry(() => import('@/components/therapist/TherapistBookingCalendar'), 'TherapistBookingCalendar'));
 import TherapistDashboardWidget from '@/components/therapist/TherapistDashboardWidget';
 const TherapistRemuneration = React.lazy(lazyRetry(() => import('@/components/therapist/TherapistRemuneration'), 'TherapistRemuneration'));
-import PortalInboxCard from '@/components/therapist/PortalInboxCard';
 const PatientPortalInbox = React.lazy(lazyRetry(() => import('@/components/shared/PatientPortalInbox'), 'PatientPortalInbox'));
 const ExerciseReview = React.lazy(lazyRetry(() => import('@/components/therapist/ExerciseReview'), 'ExerciseReview'));
 const TherapistDocuments = React.lazy(lazyRetry(() => import('@/components/therapist/TherapistDocuments'), 'TherapistDocuments'));
@@ -134,12 +133,7 @@ const TherapistDashboard = () => {
   // Elemen biasa (bukan komponen yang didefinisikan di dalam render) supaya widget
   // tidak di-remount dan refetch setiap kali state halaman ini berubah.
   const dashboardHome = (
-    <div className="grid grid-cols-1 gap-6">
-      <div>
-        <TherapistDashboardWidget initialProfile={therapistProfile} today={today} />
-      </div>
-      <PortalInboxCard therapistId={therapistProfile?.id} />
-    </div>
+    <TherapistDashboardWidget initialProfile={therapistProfile} today={today} />
   );
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><Loader2 className="animate-spin w-8 h-8 text-app-accent" /></div>;

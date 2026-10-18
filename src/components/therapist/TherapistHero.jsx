@@ -1,11 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Check, Sparkles } from 'lucide-react';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
-import HeroClock from '@/components/shared/HeroClock';
+import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { fmtClock } from '@/lib/soapReminder';
+import { fmtClock, reminderLevel } from '@/lib/soapReminder';
 
 const MOTIVATIONS = [
   'Setiap sentuhan menyembuhkan, setiap kata memberi harapan. Semangat!',
@@ -46,18 +44,29 @@ const statusOf = (s, now) => {
   return 'next';
 };
 
-const STATUS_LABEL = { done: 'Selesai', now: 'Berlangsung', late: 'Belum diakhiri', next: 'Menunggu' };
+const dateLabel = (d) => new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+
+// Jam HH:mm, berdetak per menit (titik dua berkedip).
+const Clock = () => {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 15000);
+    return () => clearInterval(t);
+  }, []);
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  return <>{hh}<i className="tv2-blink not-italic">:</i>{mm}</>;
+};
 
 const Kpi = ({ value, label }) => (
-  <div className="rounded-app border border-white/20 bg-white/10 px-3 py-2 backdrop-blur-sm">
-    <b className="block text-lg font-extrabold leading-tight tabular-nums sm:text-2xl">{value}</b>
-    <span className="block text-[11.5px] leading-tight text-white/85 sm:text-xs">{label}</span>
+  <div className="rounded-[14px] border border-white/20 bg-white/[.12] px-2.5 py-[7px] backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/20 lg:px-3 lg:py-[9px]">
+    <b className="tv2-display block text-[clamp(1.0625rem,4.6vw,1.625rem)] font-extrabold leading-[1.1] tabular-nums lg:text-[26px]">{value}</b>
+    <span className="block text-[11.5px] leading-tight opacity-85 lg:text-xs">{label}</span>
   </div>
 );
 
 // Banner dashboard terapis: sapaan, angka kunci hari ini, dan strip agenda sesi (slot asli).
 const TherapistHero = ({ therapistName, today }) => {
-  const { clinicName } = useAuth();
   const navigate = useNavigate();
   const greeting = useMemo(() => greetingFor(new Date().getHours()), []);
   const motivation = useMemo(motivationToday, []);
@@ -84,85 +93,102 @@ const TherapistHero = ({ therapistName, today }) => {
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-      className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-app-accent-hover via-app-accent to-app-accent-bright p-4 text-white shadow-lg sm:p-6"
+      className="relative overflow-hidden rounded-3xl bg-[linear-gradient(125deg,#0A5A8A,#0C86A3_62%,#14A5A4)] px-3.5 py-3.5 text-white lg:px-[26px] lg:py-5"
       aria-label="Ringkasan hari ini"
     >
-      <div className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-white/20 blur-3xl motion-safe:animate-pulse" aria-hidden="true" />
+      <motion.div
+        className="pointer-events-none absolute -right-[120px] -top-[210px] h-[420px] w-[420px] rounded-full bg-[radial-gradient(closest-side,rgba(255,255,255,.22),transparent)]"
+        animate={{ x: [0, -60], y: [0, 50], scale: [1, 1.2] }}
+        transition={{ duration: 9, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
+        aria-hidden="true"
+      />
 
-      <div className="relative flex flex-col gap-3 sm:gap-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
+      <div className="relative flex flex-col gap-[11px] lg:gap-3.5">
+        <div className="flex flex-col gap-[11px] lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-end lg:gap-6">
           <div className="min-w-0">
-            {clinicName && (
-              <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white/80 break-words">{clinicName}</p>
-            )}
-            <p className="text-xs font-semibold text-white/80"><HeroClock /></p>
-            <h1 className="mt-1 break-words text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl lg:text-4xl">
+            <span className="block text-xs font-bold uppercase tracking-[0.14em] opacity-80">{dateLabel(new Date(now))}</span>
+            <h1 className="tv2-display mt-1 break-words text-[clamp(1.375rem,6.1vw,2.375rem)] font-extrabold leading-[1.1] tracking-[-0.025em] lg:text-[38px]">
               {greeting}, {shortName}
             </h1>
-            <p className="mt-1 flex items-start gap-1.5 text-[13px] italic leading-snug text-white/90 sm:text-sm">
-              <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              <span className="line-clamp-1 sm:line-clamp-none">{motivation}</span>
-            </p>
+            <p className="mt-1 line-clamp-1 max-w-[48ch] text-[13px] opacity-90 lg:mt-2 lg:line-clamp-none lg:text-sm">{motivation}</p>
           </div>
-          <div className="grid grid-cols-3 gap-2 lg:w-[26rem] lg:shrink-0">
-            <Kpi value={rows.length} label="Pasien hari ini" />
-            <Kpi value={`${done}/${rows.length}`} label="Sesi selesai" />
-            {!soapLoaded
-              ? <Kpi value="–" label="Sesi menunggu" />
-              : soapActive
-                ? <Kpi value={soapPending} label="SOAP belum diisi" />
-                : <Kpi value={rows.length - done} label="Sesi menunggu" />}
+          <div className="flex flex-col gap-[11px] lg:items-end lg:gap-2.5">
+            <div className="tv2-display hidden text-[40px] font-extrabold leading-none tabular-nums tracking-[-0.02em] lg:block"><Clock /></div>
+            <div className="grid grid-cols-3 gap-2 lg:w-full">
+              <Kpi value={rows.length} label="Pasien hari ini" />
+              <Kpi value={`${done}/${rows.length}`} label="Sesi selesai" />
+              {!soapLoaded
+                ? <Kpi value="–" label="Sesi menunggu" />
+                : soapActive
+                  ? <Kpi value={soapPending} label="SOAP belum diisi" />
+                  : <Kpi value={rows.length - done} label="Sesi menunggu" />}
+            </div>
           </div>
         </div>
 
         <div>
-          <div className="mb-1 flex items-baseline justify-between gap-3 text-xs">
-            <b className="text-sm font-extrabold">Agenda hari ini</b>
-            <span className="min-w-0 truncate text-white/85">
+          <div className="mb-0.5 flex items-baseline justify-between gap-2.5 text-[12.5px] lg:text-[13px]">
+            <b className="tv2-display whitespace-nowrap text-[14.5px] font-extrabold lg:text-[15px]">Agenda hari ini</b>
+            <span className="min-w-0 truncate text-right opacity-90">
               {nextUp ? `Berikutnya ${nextUp.slot ? fmtClock(nextUp.slot.start) : ''} ${nextUp.name}`.replace('  ', ' ') : rows.length ? 'Semua sesi selesai' : 'Belum ada sesi'}
             </span>
           </div>
           {rows.length === 0 ? (
-            <p className="rounded-app border border-white/20 bg-white/10 px-3 py-4 text-center text-sm text-white/85">
+            <p className="rounded-[14px] border border-white/20 bg-white/[.12] px-3 py-4 text-center text-sm opacity-90">
               Belum ada sesi terjadwal hari ini.
             </p>
           ) : (
-            <div className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {rows.map((s, i) => (
-                <motion.button
-                  key={s.id}
-                  type="button"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.12 + i * 0.05, duration: 0.4 }}
-                  onClick={() => openSession(s)}
-                  disabled={!soapActive || !s.patientId}
-                  className={cn(
-                    'relative min-w-[8.6rem] flex-1 snap-start overflow-hidden rounded-app border px-2.5 pb-2.5 pt-3 text-left transition-transform enabled:hover:-translate-y-0.5 disabled:cursor-default sm:min-w-[10.5rem] sm:px-3',
-                    s.st === 'now' || s.st === 'late'
-                      ? 'border-transparent bg-white text-slate-900 shadow-lg'
-                      : 'border-white/20 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20',
-                  )}
-                >
-                  <span className={cn('absolute inset-x-0 top-0 h-1', s.st === 'done' ? 'bg-emerald-300' : s.st === 'now' || s.st === 'late' ? 'bg-amber-400' : 'bg-white/25')} />
-                  <span className="block font-mono text-[13px] font-bold tabular-nums sm:text-sm">
-                    {s.slot ? `${fmtClock(s.slot.start)}–${fmtClock(s.slot.end)}` : 'Tanpa jadwal'}
-                  </span>
-                  <b className="mt-1 block truncate text-sm leading-tight">{s.name}</b>
-                  <small className={cn('block truncate text-xs', s.st === 'now' || s.st === 'late' ? 'text-slate-500' : 'text-white/75')}>{s.diagnosis || 'Belum ada diagnosa'}</small>
-                  <span className="mt-1.5 flex flex-wrap gap-1">
-                    <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold', s.st === 'now' || s.st === 'late' ? 'bg-amber-400 text-amber-950' : 'bg-white/20')}>
-                      {s.st === 'done' && <Check className="h-3 w-3" />}
-                      {STATUS_LABEL[s.st]}
-                    </span>
-                    {soapActive && s.st !== 'next' && (
-                      <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-bold', s.soapDone ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-700')}>
-                        {s.soapDone ? 'SOAP terisi' : 'SOAP belum'}
-                      </span>
+            <div className="-mx-0.5 flex snap-x snap-mandatory gap-2 overflow-x-auto px-0.5 pb-1.5 pt-1 [scrollbar-width:none] lg:gap-2.5 lg:overflow-visible [&::-webkit-scrollbar]:hidden">
+              {rows.map((s, i) => {
+                const live = s.st === 'now' || s.st === 'late';
+                const remaining = s.slot ? Math.ceil((s.slot.end - now) / 60000) : null;
+                const showSoap = soapActive && s.st !== 'next' && s.st !== 'done';
+                const lvl = remaining === null ? 'info' : reminderLevel(remaining);
+                return (
+                  <motion.button
+                    key={s.id}
+                    type="button"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.12 + i * 0.05, duration: 0.4 }}
+                    onClick={() => openSession(s)}
+                    disabled={!soapActive || !s.patientId}
+                    className={cn(
+                      'relative snap-start overflow-hidden rounded-[14px] border px-2.5 pb-2.5 pt-[9px] text-left transition enabled:hover:-translate-y-0.5 disabled:cursor-default lg:min-w-0 lg:max-w-[22rem] lg:flex-1 lg:px-3 lg:pb-3 lg:pt-[11px]',
+                      live ? 'min-w-[12.75rem] lg:min-w-0' : 'min-w-[8.6rem] lg:min-w-0',
+                      live
+                        ? 'border-transparent bg-white/95 text-[#10242F] shadow-[0_14px_30px_-14px_rgba(0,0,0,.5)]'
+                        : 'border-white/20 bg-white/[.12] text-white enabled:hover:bg-white/20',
                     )}
-                  </span>
-                </motion.button>
-              ))}
+                  >
+                    <span className={cn('absolute inset-x-0 top-0 h-1', s.st === 'done' ? 'bg-[#5FD6A0]' : live ? 'bg-[#F2A93B]' : 'bg-white/25')} />
+                    <span className="tv2-display flex items-center gap-[7px] whitespace-nowrap text-base font-extrabold tabular-nums lg:text-[17px]">
+                      {live && <i className="tv2-live h-[9px] w-[9px] shrink-0 rounded-full bg-[#F2A93B]" />}
+                      {s.slot ? `${fmtClock(s.slot.start)}–${fmtClock(s.slot.end)}` : 'Tanpa jadwal'}
+                      {showSoap && !s.soapDone && remaining !== null && (
+                        <span className={cn('ml-auto shrink-0 rounded-full px-[7px] py-0.5 font-sans text-[11px] font-bold', lvl === 'crit' ? 'bg-[#C5432F] text-white' : 'bg-[#F2A93B] text-[#3A2504]')}>
+                          {remaining > 0 ? `${remaining} mnt` : 'habis'}
+                        </span>
+                      )}
+                    </span>
+                    <b className="mt-1 block truncate text-sm leading-tight lg:mt-1.5 lg:text-[14.5px]">{s.name}</b>
+                    <small className={cn('block truncate text-xs', live ? 'text-slate-500' : 'opacity-80')}>{s.diagnosis || 'Belum ada diagnosa'}</small>
+                    <span
+                      className={cn(
+                        'mt-1.5 inline-flex max-w-full items-center gap-[5px] whitespace-nowrap rounded-full px-2 py-0.5 text-[11.5px] font-bold',
+                        showSoap
+                          ? (s.soapDone ? 'bg-[#DDF3E8] text-[#1E8A5F]' : lvl === 'crit' ? 'bg-[#C5432F] text-white' : 'bg-[#F2A93B] text-[#3A2504]')
+                          : live ? 'bg-[#F2A93B] text-[#3A2504]' : 'bg-white/[.18]',
+                      )}
+                    >
+                      {s.st === 'done' && <Check className="h-3 w-3" />}
+                      {showSoap
+                        ? (s.soapDone ? 'SOAP terisi' : 'SOAP belum diisi')
+                        : s.st === 'done' ? 'Selesai' : s.st === 'late' ? 'Belum diakhiri' : s.st === 'now' ? 'Berlangsung' : 'Menunggu'}
+                    </span>
+                  </motion.button>
+                );
+              })}
             </div>
           )}
         </div>

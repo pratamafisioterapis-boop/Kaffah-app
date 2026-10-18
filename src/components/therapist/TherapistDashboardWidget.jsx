@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { getPhysiotherapistByUserId, getDailyRecaps } from '@/lib/api';
 import TherapistHero from './TherapistHero';
+import PortalInboxCard from './PortalInboxCard';
+import { usePortalEnabled } from '@/hooks/usePortalEnabled';
 import SoapPendingBanner from '@/components/shared/SoapPendingBanner';
 import AvailableSlotsWidget from './AvailableSlotsWidget';
 import TherapistMetrics from './TherapistMetrics';
@@ -18,6 +20,7 @@ const TherapistDashboardWidget = ({ initialProfile = null, today = null }) => {
   const [loading, setLoading] = useState(!initialProfile);
   const [error, setError] = useState(null);
   const [todayRecapsCount, setTodayRecapsCount] = useState(0);
+  const portalEnabled = usePortalEnabled();
 
   const loadData = async () => {
     if (!user?.id) return;
@@ -94,15 +97,31 @@ const TherapistDashboardWidget = ({ initialProfile = null, today = null }) => {
       return null; // Should be handled by error state above, but safety check
   }
 
+  // Susunan desktop: Pasien Hari Ini memanjang dua baris di kiri, kartu lain sejajar per baris di kanan.
+  // Tanpa Clinara pasien, Distribusi melebar mengisi baris pertama.
+  const cell = 'min-w-0 [&>*]:h-full empty:hidden';
   return (
-    <div className="space-y-6 animate-in fade-in duration-200 ease-out">
+    <div className="space-y-4 animate-in fade-in duration-200 ease-out">
       <TherapistHero therapistName={therapistProfile.name} today={today} />
       <SoapPendingBanner therapistId={therapistProfile.id} role="therapist" />
+      <div className="grid grid-cols-1 items-stretch gap-3 lg:grid-cols-12 lg:gap-4">
+        <div className={`${cell} lg:col-span-5 lg:row-span-2`}>
+          <TherapistTodayPatientHistory therapist={therapistProfile} />
+        </div>
+        <div className={`${cell} ${portalEnabled ? 'lg:col-span-3' : 'lg:col-span-7'}`}>
+          <TherapistPatientTypeDistribution therapist={therapistProfile} />
+        </div>
+        {portalEnabled && (
+          <div className={`${cell} lg:col-span-4`}>
+            <PortalInboxCard therapistId={therapistProfile.id} />
+          </div>
+        )}
+        <div className={`${cell} lg:col-span-7`}>
+          <TherapistPerformanceWidget therapist={therapistProfile} userId={user.id} />
+        </div>
+      </div>
       <MonthlyReportWidget therapistId={therapistProfile.id} therapistUserId={therapistProfile.user_id} />
       <TherapistMetrics therapist={therapistProfile} userId={user.id} />
-      <TherapistTodayPatientHistory therapist={therapistProfile} />
-      <TherapistPatientTypeDistribution therapist={therapistProfile} />
-      <TherapistPerformanceWidget therapist={therapistProfile} userId={user.id} />
     </div>
   );
 };

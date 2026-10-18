@@ -5,9 +5,9 @@ import { cn } from '@/lib/utils';
 import { fmtClock, pickReminder } from '@/lib/soapReminder';
 
 const LEVEL_STYLE = {
-  info: { bar: 'bg-app-soft border-app-border', icon: 'bg-app-accent text-white', fill: 'bg-app-accent', btn: 'bg-app-accent hover:bg-app-accent-hover text-white', sub: 'text-app-muted' },
-  warn: { bar: 'bg-amber-50 border-amber-200', icon: 'bg-amber-400 text-amber-950', fill: 'bg-amber-400', btn: 'bg-amber-400 hover:bg-amber-500 text-amber-950', sub: 'text-amber-800' },
-  crit: { bar: 'bg-red-50 border-red-200', icon: 'bg-red-600 text-white', fill: 'bg-red-600', btn: 'bg-red-600 hover:bg-red-700 text-white', sub: 'text-red-700 font-semibold' },
+  info: { bar: 'bg-[#E0F0F8] border-[#DCE7EE]', icon: 'bg-[#0B6FA4] text-white', fill: 'bg-[#0B6FA4]', btn: 'bg-[#0B6FA4] hover:brightness-110 text-white', sub: 'text-[#53697A]' },
+  warn: { bar: 'bg-[#FDF0D8] border-[#F2A93B]/45', icon: 'bg-[#F2A93B] text-[#3A2504]', fill: 'bg-[#F2A93B]', btn: 'bg-[#F2A93B] hover:brightness-105 text-[#3A2504]', sub: 'text-[#53697A]' },
+  crit: { bar: 'bg-[#FBE6E1] border-[#C5432F]/30', icon: 'bg-[#C5432F] text-white', fill: 'bg-[#C5432F]', btn: 'bg-[#C5432F] hover:brightness-110 text-white', sub: 'text-[#C5432F] font-semibold' },
 };
 
 // Bar pengingat di bawah header dashboard terapis: tampil di semua halaman selama ada sesi
@@ -28,17 +28,17 @@ const SoapSessionReminder = ({ today }) => {
     : '/therapist/records');
 
   return (
-    <div role="status" className={cn('relative mb-4 flex items-center gap-3 overflow-hidden rounded-app border px-3 py-2.5 sm:px-4', style.bar)}>
-      <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-app-sm', style.icon, level === 'crit' && 'motion-safe:animate-pulse')}>
+    <div role="status" className={cn('relative mb-4 flex items-center gap-[11px] overflow-hidden rounded-[14px] border px-3.5 py-[9px] lg:px-6 lg:py-2.5', style.bar)}>
+      <span className={cn('flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px]', style.icon, level === 'crit' && 'tv2-nudge')}>
         <AlertTriangle className="h-[18px] w-[18px]" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[13.5px] font-bold leading-tight text-app-ink sm:text-sm">Isi SOAP {firstName} sebelum sesi berakhir</p>
+        <p className="text-[13.5px] font-bold leading-tight text-[#10242F] lg:text-[15px]">Isi SOAP {firstName} sebelum sesi berakhir</p>
         <p className={cn('mt-0.5 text-xs leading-snug', style.sub)}>
           Sesi {fmtClock(session.slot.start)}–{fmtClock(session.slot.end)} · {sisa}
         </p>
       </div>
-      <button type="button" onClick={open} className={cn('h-9 shrink-0 rounded-app-sm px-3.5 text-sm font-semibold transition-colors', style.btn)}>
+      <button type="button" onClick={open} className={cn('h-9 shrink-0 rounded-xl px-3.5 text-sm font-bold transition', style.btn)}>
         Isi SOAP
       </button>
       <span className={cn('absolute bottom-0 left-0 h-[3px] transition-[width] duration-500', style.fill)} style={{ width: `${Math.round(progress * 100)}%` }} />
