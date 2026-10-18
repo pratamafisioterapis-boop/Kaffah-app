@@ -19,6 +19,10 @@ const formatShortDate = (dateStr) => {
   }
 };
 
+// Gelar sering ditulis tanpa spasi setelah koma ("Pratama,S.Fis.,Ftr"); beri spasi
+// supaya nama bisa turun baris di batas gelar, bukan terpotong di tengah kata.
+const formatName = (name = '') => name.replace(/,(?=\S)/g, ', ');
+
 const LEAVE_LABELS = {
   cuti: 'Cuti',
   sakit: 'Sakit',
@@ -162,7 +166,7 @@ const TherapistStatusCards = ({
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-1">
-                        <h3 className="min-w-0 font-bold text-slate-900 text-sm leading-snug [overflow-wrap:anywhere]">{therapist.name}</h3>
+                        <h3 className="min-w-0 font-bold text-slate-900 text-sm leading-snug break-words">{formatName(therapist.name)}</h3>
                         <span className={`shrink-0 whitespace-nowrap text-xs font-bold px-2.5 py-1 rounded-full ${badge}`}>{label}</span>
                       </div>
                       <p className="text-xs text-slate-500">{therapist.specialization || 'Physiotherapist'}</p>
@@ -273,7 +277,7 @@ const TherapistStatusCards = ({
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <h3 className="min-w-0 font-bold text-slate-900 text-sm [overflow-wrap:anywhere] sm:truncate">{therapist.name}</h3>
+                        <h3 className="min-w-0 font-bold text-slate-900 text-sm break-words sm:truncate">{formatName(therapist.name)}</h3>
                         <span className={`shrink-0 whitespace-nowrap text-xs font-bold px-2 py-0.5 rounded-full ${badge}`}>{label}</span>
                       </div>
                       <div className="flex items-center gap-3 mt-1.5">
