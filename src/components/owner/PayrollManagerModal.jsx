@@ -22,6 +22,7 @@ import PdfPreviewModal from '@/components/shared/PdfPreviewModal';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { confirmAction } from '@/lib/confirmAction';
+import { markIncentiveFlags, NEUTRAL_ZERO_LABEL } from '@/lib/soapFirst';
 
 const emptyForm = (therapist) => ({
   payroll_period_start: '',
@@ -138,7 +139,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
       const days = calculateAttendanceDays(scheduleRes.data || [], timeOffRes.data || [], startDateStr, endDateStr, extraShiftRes.data || []);
       setAttendanceDays(days);
 
-      const therapistRecaps = recapsRes.data || [];
+      const therapistRecaps = await markIncentiveFlags(recapsRes.data || []);
 
       getUnfilledSOAPVisits(null, therapist.id, startDateStr, endDateStr).then(({ count, error: soapError }) => {
         if (!soapError) {
@@ -174,7 +175,8 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
               date: r.recap_date,
               name: getPatientName(r),
               type: type || '-',
-              amount: resolvePatientTypeRate(type, rateIndex, { typeIds: r.patient_type_ids }),
+              amount: r._incentiveZeroed ? 0 : resolvePatientTypeRate(type, rateIndex, { typeIds: r.patient_type_ids }),
+              zeroed: !!r._incentiveZeroed,
             };
           });
         }
@@ -461,7 +463,10 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
                         {item.type ? ` • ${item.type}` : ''}
                       </div>
                     </div>
-                    <span className="font-medium text-emerald-700 shrink-0">{formatCurrency(item.amount)}</span>
+                    <span className="font-medium text-emerald-700 shrink-0 text-right">
+                      {formatCurrency(item.amount)}
+                      {item.zeroed && <span className="block text-[10px] font-normal text-amber-600">{NEUTRAL_ZERO_LABEL}</span>}
+                    </span>
                   </div>
                 ))}
               </div>

@@ -6,6 +6,7 @@ import {
   Package as PackageIcon, FileText as FileTextIcon, Award, Loader2, ClipboardCheck
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { OVERRIDE_KIND_LABELS } from '@/lib/soapFirst';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import OwnerAccountSwitcher from '@/components/owner/OwnerAccountSwitcher';
 import AdminTherapistSwitcher from '@/components/admin/AdminTherapistSwitcher';
@@ -40,7 +41,7 @@ async function loadPendingApprovals(clinicId, { headUserId = null } = {}) {
   };
   const link = isHead ? '/therapist/leave' : null;
   const safe = (promise) => promise.then((r) => r, () => ({ data: [] }));
-  const [leaveRes, swapRes, sundayRes, soapRes] = await Promise.all([
+  const [leaveRes, swapRes, sundayRes, soapRes, overrideRes] = await Promise.all([
     safe(scope(supabase
       .from('therapist_leave_requests')
       .select('id, therapist_name, leave_date, is_partial, start_time, end_time, created_at')
@@ -69,6 +70,14 @@ async function loadPendingApprovals(clinicId, { headUserId = null } = {}) {
         .eq('status', 'pending')
         .order('created_at', { ascending: false })
         .limit(ACTIVITY_LIMIT))),
+    isHead
+      ? Promise.resolve({ data: [] })
+      : safe(scope(supabase
+        .from('soap_overrides')
+        .select('id, kind, reason, requested_by_name, requested_at')
+        .eq('status', 'pending')
+        .order('requested_at', { ascending: false })
+        .limit(ACTIVITY_LIMIT))),
   ]);
 
   const base = { isRead: false, actorRole: 'therapist', actorRoleRaw: 'therapist', isApproval: true };
@@ -96,6 +105,16 @@ async function loadPendingApprovals(clinicId, { headUserId = null } = {}) {
       link: APPROVAL_LINKS.swap,
       actorName: r.therapist_name || 'Terapis',
       text: `tukar jadwal Minggu ${formatShortDate(r.swap_date)} dengan ${r.substitute_name || 'rekan'} (sudah disetujui ${r.substitute_name || 'rekan'}) — menunggu persetujuan`,
+    })),
+    ...(overrideRes.data || []).map((r) => ({
+      ...base,
+      id: `override-${r.id}`,
+      time: r.requested_at,
+      link: '/owner/overrides',
+      actorName: r.requested_by_name || 'Admin',
+      actorRole: 'admin',
+      actorRoleRaw: 'admin',
+      text: `mengajukan pengecualian "${OVERRIDE_KIND_LABELS[r.kind] || r.kind}" — ${r.reason} — menunggu persetujuan`,
     })),
     ...(soapRes.data || []).map((r) => ({
       ...base,
@@ -654,7 +673,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
   useEffect(() => {
     if (!canReviewRequests) return undefined;
     let channel = supabase.channel('topbar-approval-requests');
-    ['therapist_leave_requests', 'therapist_shift_swap_requests', 'therapist_sunday_swap_requests', 'soap_template_change_requests'].forEach((table) => {
+    ['therapist_leave_requests', 'therapist_shift_swap_requests', 'therapist_sunday_swap_requests', 'soap_template_change_requests', 'soap_overrides'].forEach((table) => {
       channel = channel.on('postgres_changes', { event: '*', schema: 'public', table }, scheduleReload);
     });
     channel.subscribe();

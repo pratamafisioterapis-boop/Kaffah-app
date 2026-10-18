@@ -23,6 +23,8 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatus = 'aktif' }) => {
   const getLastValidDate = (pkg) => {
@@ -53,8 +55,10 @@ const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatu
     duration: slot?.duration_minutes || 60,
     isRecurring: false,
     recurringEndDate: '',
-    is_homecare: false
+    is_homecare: false,
+    homecare_time_type: ''
   });
+  const { settings: soapFirstSettings } = useSoapFirstSettings();
 
   const [conflictData, setConflictData] = useState(null);
   const [showConflictModal, setShowConflictModal] = useState(false);
@@ -214,7 +218,14 @@ setPackageInfo(pkg);
           }
       }
 
+      if (soapFirstSettings && formData.is_homecare && !formData.homecare_time_type) {
+        toast({ variant: "destructive", title: "Pilih jenis homecare", description: "Tentukan homecare di dalam atau di luar jam kerja." });
+        setLoading(false);
+        return;
+      }
+
      const result = await bookAppointmentSafe({
+  homecareTimeType: formData.is_homecare ? (formData.homecare_time_type || null) : null,
   p_therapist_id: therapist.id,
   p_clinic_id: therapist.clinic_id,
   p_appointment_date: appointmentDate,
@@ -443,6 +454,18 @@ action_by: user?.id,
           <Checkbox id="recurring" checked={formData.isRecurring} onCheckedChange={(c) => setFormData(p => ({ ...p, isRecurring: !!c }))} disabled={isLeave || loading} />
           <Label htmlFor="recurring" className="text-xs font-medium cursor-pointer">Recurring</Label>
       </div>
+      {soapFirstSettings && formData.is_homecare && (
+        <div className="space-y-1">
+          <Label className="text-xs">Waktu Homecare <span className="text-red-500">*</span></Label>
+          <Select value={formData.homecare_time_type} onValueChange={(v) => setFormData(p => ({ ...p, homecare_time_type: v }))}>
+            <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Dalam atau luar jam kerja" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="dalam">Dalam jam kerja</SelectItem>
+              <SelectItem value="luar">Luar jam kerja</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {formData.isRecurring && (
         <div className="grid grid-cols-2 gap-3 animate-in slide-in-from-top-1">

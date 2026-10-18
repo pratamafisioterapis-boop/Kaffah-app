@@ -15,6 +15,8 @@ import { getPatientInfoOptions, createPatientInfoOption, updatePatientInfoOption
 import { Palette, Wallet } from 'lucide-react';
 import DesignStyleManager from '@/components/owner/DesignStyleManager';
 import ServiceRateManager from '@/components/owner/ServiceRateManager';
+import SoapFirstSettingsPanel from '@/components/owner/SoapFirstSettingsPanel';
+import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
 import PriceCatalogManager from '@/components/owner/PriceCatalogManager';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -1067,6 +1069,7 @@ const SETTINGS_TAB_GROUPS = [
       { value: 'price_catalog', icon: Tag, label: 'Katalog Harga' },
       { value: 'payment', icon: null, label: 'Pembayaran' },
       { value: 'discount', icon: Tag, label: 'Jenis Diskon' },
+      { value: 'soap_first', icon: Wallet, label: 'SOAP & Harga' },
     ],
   },
   {
@@ -1134,10 +1137,12 @@ const SettingsPage = () => {
 
   // Jam Buka Klinik hanya dipakai form izin terapis, jadi disembunyikan untuk klinik tanpa fitur itu.
   const { enabled: leaveEnabled, loaded: leaveLoaded } = useTherapistLeaveRequestEnabled();
-  const hiddenTabs = useMemo(
-    () => (leaveLoaded && !leaveEnabled ? [...disabledFeatures, 'operating_hours'] : disabledFeatures),
-    [disabledFeatures, leaveLoaded, leaveEnabled],
-  );
+  const { settings: soapFirstSettings, loaded: soapFirstLoaded } = useSoapFirstSettings();
+  const hiddenTabs = useMemo(() => {
+    const base = leaveLoaded && !leaveEnabled ? [...disabledFeatures, 'operating_hours'] : disabledFeatures;
+    // Tab SOAP & Harga hanya untuk klinik yang memakai alur SOAP sebelum pembayaran.
+    return soapFirstLoaded && !soapFirstSettings ? [...base, 'soap_first'] : (soapFirstLoaded ? base : [...base, 'soap_first']);
+  }, [disabledFeatures, leaveLoaded, leaveEnabled, soapFirstLoaded, soapFirstSettings]);
 
   const visibleTabGroups = useMemo(() => (
     SETTINGS_TAB_GROUPS
@@ -1264,6 +1269,9 @@ const SettingsPage = () => {
           </TabsContent>
           <TabsContent value="discount">
             <DiscountTypeManager />
+          </TabsContent>
+          <TabsContent value="soap_first">
+            <SoapFirstSettingsPanel />
           </TabsContent>
           <TabsContent value="design_style">
             <DesignStyleManager />

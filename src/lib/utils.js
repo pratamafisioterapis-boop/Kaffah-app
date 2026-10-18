@@ -723,6 +723,9 @@ export function calculateCustomSalary(recaps, rates) {
   if (!recaps || !Array.isArray(recaps)) return 0;
 
   return recaps.reduce((total, r) => {
+    // SOAP-first: sesi yang SOAP-nya terlambat / tidak diisi tidak mendapat jasa
+    // (ditandai markIncentiveFlags() di src/lib/soapFirst.js).
+    if (r._incentiveZeroed) return total;
     const type = r.patient_type || r.service_type || '';
     return total + resolvePatientTypeRate(type, rates, { typeIds: r.patient_type_ids });
   }, 0);

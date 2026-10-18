@@ -20,6 +20,7 @@ import { validateSchedulePayload } from '@/lib/therapistScheduleValidation';
 import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, subMonths, addDays, differenceInCalendarDays } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { safeQuery } from '@/lib/supabaseErrorHandler';
+import { markIncentiveFlags } from '@/lib/soapFirst';
 
 // Supabase/PostgREST caps unbounded selects at a server-side max row count
 // (commonly 1000). Queries that can plausibly return more rows than that
@@ -779,6 +780,15 @@ console.log("PAYLOAD RPC FINAL", payload);
 
     if (error) {
       return { error };
+    }
+
+    // SOAP-first: homecare dalam / luar jam kerja menentukan tipe pasien & tarif.
+    if ((params.p_is_homecare ?? false) && params.homecareTimeType && data) {
+      const { error: hcError } = await supabase
+        .from('appointments')
+        .update({ homecare_time_type: params.homecareTimeType })
+        .eq('id', data);
+      if (hcError) console.error('Gagal menyimpan jenis homecare', hcError);
     }
 
     supabase.functions
@@ -8858,7 +8868,7 @@ export const getBepFinancials = async () => {
         getTherapistTimeOff(t.id),
         getTherapistExtraShifts(t.id),
         supabase.from('daily_recaps')
-          .select('amount, amount_package, package_tracking_id, patient_type, patient_type_ids')
+          .select('id, amount, amount_package, package_tracking_id, patient_type, patient_type_ids')
           .eq('therapist_id', t.id)
           .gte('recap_date', accrualStartStr)
           .lte('recap_date', effectiveEndStr)
@@ -8868,7 +8878,9 @@ export const getBepFinancials = async () => {
       const therapistTransport = (parseFloat(t.transport_per_day) || 0) * attendanceDays;
       transportLive += therapistTransport;
 
-      const recaps = recapsRes.data || [];
+      const recaps = salaryScheme === 'full_salary'
+        ? (recapsRes.data || [])
+        : await markIncentiveFlags(recapsRes.data || [], { strict: false });
       const therapistIncentive = salaryScheme === 'full_salary'
         ? calculateFullSalary(recaps)
         : calculateCustomSalary(recaps, buildPatientTypeRateIndex(serviceRateRows, t.id));

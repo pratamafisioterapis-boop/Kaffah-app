@@ -28,6 +28,8 @@ import { format, isValid } from 'date-fns';
 
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 const MIN_DURATION = 60; // 🔥 Minimum 60 menit
@@ -54,6 +56,8 @@ const [showDropdown, setShowDropdown] = useState(false);
     recurringEndDate: ''
   });
   const [isHomecare, setIsHomecare] = useState(false);
+  const [homecareTimeType, setHomecareTimeType] = useState('');
+  const { settings: soapFirstSettings } = useSoapFirstSettings();
   const [isRecurring, setIsRecurring] = useState(false);
   const [conflictData, setConflictData] = useState(null);
   const [showConflictModal, setShowConflictModal] = useState(false);
@@ -265,7 +269,11 @@ console.log({
   action_by_name: userDetails?.full_name,
   action_by_role: userDetails?.role
 });
+      if (soapFirstSettings && isHomecare && !homecareTimeType) {
+        throw new Error("Tentukan homecare di dalam atau di luar jam kerja.");
+      }
       const result = await bookAppointmentSafe({
+        homecareTimeType: isHomecare ? (homecareTimeType || null) : null,
         therapistId: therapist.id,
         clinicId: therapist.clinic_id,
         appointmentDate: appointmentDate,
@@ -642,6 +650,18 @@ const handleConfirmRecurring = async () => {
           Recurring
         </Label>
       </div>
+      {soapFirstSettings && isHomecare && (
+        <div className="space-y-1">
+          <Label className="text-xs">Waktu Homecare <span className="text-red-500">*</span></Label>
+          <Select value={homecareTimeType} onValueChange={setHomecareTimeType}>
+            <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Dalam atau luar jam kerja" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="dalam">Dalam jam kerja</SelectItem>
+              <SelectItem value="luar">Luar jam kerja</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       {isRecurring && (
         <div className="mt-2">
           <Label className="text-xs">Sampai Tanggal</Label>

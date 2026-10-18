@@ -13,6 +13,7 @@ import {
   calculateTotalSalary, formatCurrency, cn, getTherapistPeriodRange,
   resolvePatientTypeRate, buildPatientTypeRateIndex
 } from '@/lib/utils';
+import { markIncentiveFlags, NEUTRAL_ZERO_LABEL } from '@/lib/soapFirst';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -110,7 +111,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
       // Filter recaps for this therapist specifically
       // Note: getDailyRecaps might return all, so we filter client side if API doesn't support specific therapist filter in one go
       // API update in Task 5 requested ensure getDailyRecaps supports filters. We'll filter here to be safe.
-      const therapistRecaps = recapsRes.data || [];
+      const therapistRecaps = await markIncentiveFlags(recapsRes.data || []);
       
       // 1. Calculate Attendance
       const attendanceDays = calculateAttendanceDays(scheduleRes.data || [], timeOffRes.data || [], startDateStr, endDateStr, extraShiftRes.data || []);
@@ -218,7 +219,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
     ]);
 
     const optionsMap = (optionsRes.data || []).reduce((acc, o) => { acc[o.id] = o.label; return acc; }, {});
-    const therapistRecaps = rawRecaps || [];
+    const therapistRecaps = await markIncentiveFlags(rawRecaps || []);
     const therapistRates = buildPatientTypeRateIndex(serviceRateRows, therapist.id);
 
     const attendanceDays = calculateAttendanceDays(scheduleRes.data || [], timeOffRes.data || [], startDateStr, endDateStr, extraShiftRes.data || []);
@@ -254,7 +255,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
         // pecah-kombinasi) untuk recap lama yang belum punya patient_type_ids.
         // Kalau rate tidak ketemu sama sekali, hasilnya 0 (tidak diketahui) — jangan
         // fallback ke amount karena amount = yang dibayar pasien bukan rate terapis.
-        sessionAmount = resolvePatientTypeRate(r.patient_type, therapistRates, { typeIds: r.patient_type_ids });
+        sessionAmount = r._incentiveZeroed ? 0 : resolvePatientTypeRate(r.patient_type, therapistRates, { typeIds: r.patient_type_ids });
       }
 
       commission += sessionAmount;
@@ -280,7 +281,8 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
         isPackage: totalSessions > 1,
         discountType: r.discount_type || 'none',
         discountValue: r.discount_value || 0,
-        rawAmount: originalAmount
+        rawAmount: originalAmount,
+        incentiveZeroed: !!r._incentiveZeroed
       });
     });
 
@@ -393,6 +395,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
                             <span className="col-span-2 flex flex-wrap items-center gap-1.5 text-slate-500">
                               <span>{fmtDate(s.date)}</span>
                               {s.isPackage && <Pill tone="vio">{s.totalSessions} sesi</Pill>}
+                              {s.incentiveZeroed && <Pill tone="warn">{NEUTRAL_ZERO_LABEL}</Pill>}
                               <span>Nominal {fmtRp(s.pkgNominal)}</span>
                               {s.discountType && s.discountType !== 'none' && s.discountValue > 0 && (
                                 <>
