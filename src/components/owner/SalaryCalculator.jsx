@@ -1,17 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getServiceRates } from '@/lib/api';
-import { 
-  Card, CardContent, CardHeader, CardTitle, CardDescription 
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { 
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
-} from "@/components/ui/select";
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { 
-  Loader2, Calculator, AlertCircle, DollarSign, Calendar, User, 
-  TrendingUp, Wallet, ShieldCheck, Briefcase 
+import { Switch } from '@/components/ui/switch';
+import {
+  Loader2, Calculator, Calendar, User, TrendingUp, Wallet, Users, ChevronRight, ArrowLeft,
 } from 'lucide-react';
 import { 
   getAllPhysiotherapists, getActivePhysiotherapists, getDailyRecaps, getTherapistSchedules, 
@@ -26,7 +17,9 @@ import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
-import { motion } from 'framer-motion';
+import FinanceTile from '@/components/owner/finance/FinanceTile';
+import { Pill } from '@/components/owner/finance/TxList';
+import { fmtShort, fmtRp } from '@/components/owner/finance/financeTheme';
 
 const SalaryCalculator = ({ dateRange, setDateRange }) => {
   useEffect(() => {
@@ -181,10 +174,6 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
     }
   };
 
-  const handleRateChange = (type, value) => {
-      setCustomRates(prev => ({ ...prev, [type]: value }));
-  };
-
   // Rentang efektif untuk satu terapis: mengikuti Periode yang diatur di kartu
   // terapis (default), atau rentang tanggal manual jika useAutoPeriod dimatikan.
   const getEffectiveRange = (therapist) => {
@@ -327,434 +316,221 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
     }
   };
 
-  const fmt = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n || 0);
-  const fmtShort = (n) => {
-    if (n >= 1000000) return `${(n / 1000000).toFixed(1)}jt`;
-    if (n >= 1000) return `${(n / 1000).toFixed(0)}rb`;
-    return String(n);
-  };
   const fmtDate = (d) => { try { return format(new Date(d), 'dd MMM yyyy', { locale: idLocale }); } catch { return d; } };
-
-  const salaryBadgeStyle = (salaryType) => {
-    if (salaryType === 'Full Salary') return { background: '#ecfdf5', color: '#059669', border: '1px solid #bbf7d0' };
-    if (salaryType === 'Probation') return { background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' };
-    return { background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' };
-  };
+  const schemeTone = (salaryType) => (salaryType === 'Full Salary' ? 'pos' : salaryType === 'Probation' ? 'warn' : 'sky');
 
   // ── Detail panel saat klik nama terapis ──
   if (selectedTherapistDetail) {
     const d = selectedTherapistDetail;
+    const parts = [
+      { label: 'Gaji Pokok', value: d.baseSalary, cls: 'bg-blue-50 text-blue-600' },
+      { label: `Transport (${d.attendanceDays} hari × ${fmtShort(d.transportPerDay)})`, value: d.transportAllowance, cls: 'bg-teal-50 text-teal-600' },
+      { label: d.salaryType === 'Full Salary' ? 'Total Omzet' : d.salaryType === 'Probation' ? 'Jasa (Tidak Berlaku)' : 'Total Insentif', value: d.commission, cls: 'bg-violet-50 text-violet-600' },
+    ];
     return (
       <div className="space-y-4">
-        {/* Back header */}
         <div className="flex items-center gap-3">
-          <button onClick={() => { setSelectedTherapistDetail(null); setSelectedPatientType(null); }}
-            className="flex items-center gap-1.5 px-3 h-8 rounded-app text-xs font-semibold transition-[color,background-color,border-color,box-shadow,transform,opacity]"
-            style={{ background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0' }}>
-            ← Kembali
+          <button
+            type="button"
+            onClick={() => { setSelectedTherapistDetail(null); setSelectedPatientType(null); }}
+            className="inline-flex items-center gap-1.5 px-3 h-9 rounded-[10px] bg-slate-100 text-xs font-semibold text-slate-600 hover:bg-slate-200 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Kembali
           </button>
-          <div>
-            <h3 className="text-sm font-bold text-slate-800">{d.name}</h3>
+          <div className="min-w-0">
+            <h3 className="text-sm font-bold text-slate-800 break-words">{d.name}</h3>
             <p className="text-xs text-slate-500">{d.period} · {d.salaryType}</p>
           </div>
         </div>
 
-        {/* Summary komponen gaji */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {[
-            { label: 'Gaji Pokok', value: fmt(d.baseSalary), color: '#4f46e5', bg: '#eef2ff' },
-            { label: `Transport (${d.attendanceDays} hari × ${fmtShort(d.transportPerDay)})`, value: fmt(d.transportAllowance), color: '#0891b2', bg: '#ecfeff' },
-            { label: d.salaryType === 'Full Salary' ? 'Total Omzet' : d.salaryType === 'Probation' ? 'Jasa (Tidak Berlaku)' : 'Total Insentif', value: fmt(d.commission), color: '#7c3aed', bg: '#ede9fe' },
-          ].map(({ label, value, color, bg }) => (
-            <div key={label} className="rounded-app p-4 min-w-0" style={{ background: bg }}>
-              <div className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color }}>{label}</div>
-              <div className="text-base font-bold break-words" style={{ color }}>{value}</div>
+          {parts.map(({ label, value, cls }) => (
+            <div key={label} className={cn('rounded-2xl p-4 min-w-0', cls)}>
+              <p className="text-xs font-semibold opacity-85 break-words">{label}</p>
+              <p className="text-lg font-black tabular-nums mt-1 break-words" title={fmtRp(value)}>{fmtRp(value)}</p>
             </div>
           ))}
         </div>
 
-        {/* Total */}
-        <div className="rounded-app p-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #0f172a, #1e293b)' }}>
+        <div className="rounded-2xl px-4 py-3.5 flex items-center justify-between gap-3 bg-slate-900">
           <span className="text-xs font-bold text-white uppercase tracking-wider">Total Estimasi Gaji</span>
-          <span className="text-lg font-bold" style={{ color: '#4ade80' }}>{fmt(d.total)}</span>
+          <span className="text-xl font-black tabular-nums text-emerald-300">{fmtRp(d.total)}</span>
         </div>
 
-        {/* Breakdown per tipe pasien */}
-        <div className="rounded-app-lg overflow-hidden" style={{ border: '1px solid #e2e8f0' }}>
-          <div className="px-4 py-3" style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Insentif / Omzet per Tipe Pasien</span>
-            <span className="ml-2 text-xs text-slate-500">— klik untuk lihat detail</span>
-          </div>
-          {Object.entries(d.breakdownByType).map(([type, info], idx) => (
-            <div key={type}>
-              <button
-                onClick={() => setSelectedPatientType(selectedPatientType === type ? null : type)}
-                className="w-full flex items-center justify-between px-4 py-3 transition-colors text-left"
-                style={{ background: selectedPatientType === type ? '#eef2ff' : idx % 2 === 0 ? 'white' : '#fafafa', borderBottom: '1px solid #f1f5f9' }}>
-                <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-app-sm flex items-center justify-center text-xs font-bold shrink-0"
-                    style={{ background: '#ede9fe', color: '#7c3aed' }}>
-                    {info.count}
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-slate-700">{type}</div>
-                    <div className="text-xs text-slate-500">{info.count} sesi</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-bold" style={{ color: '#7c3aed' }}>{fmt(info.totalAmount)}</div>
-                  <div className="text-xs text-slate-500">{selectedPatientType === type ? '▲ tutup' : '▼ detail'}</div>
-                </div>
-              </button>
+        <FinanceTile tone="vio" icon={Users} title="Per Tipe Pasien" action={<span className="text-xs text-slate-500">Ketuk untuk detail</span>}>
+          {Object.keys(d.breakdownByType).length === 0 ? (
+            <p className="text-sm text-slate-500 text-center py-6">Tidak ada jasa untuk skema ini.</p>
+          ) : (
+            <div className="grid gap-0.5">
+              {Object.entries(d.breakdownByType).map(([type, info]) => {
+                const open = selectedPatientType === type;
+                return (
+                  <div key={type}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPatientType(open ? null : type)}
+                      aria-expanded={open}
+                      className={cn('w-full grid grid-cols-[32px_1fr_auto_16px] items-center gap-3 px-2 py-2.5 rounded-xl text-left transition-colors', open ? 'bg-slate-100' : 'hover:bg-slate-50')}
+                    >
+                      <span className="w-8 h-8 rounded-[10px] bg-violet-50 text-violet-600 flex items-center justify-center text-[13px] font-bold">{info.count}</span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-slate-800 break-words">{type}</span>
+                        <small className="text-xs text-slate-500">{info.count} sesi</small>
+                      </span>
+                      <span className="font-bold tabular-nums text-violet-600">{fmtRp(info.totalAmount)}</span>
+                      <ChevronRight className={cn('w-4 h-4 text-slate-400 transition-transform', open && 'rotate-90')} />
+                    </button>
 
-              {/* Drill-down: list sesi per tipe pasien */}
-              {selectedPatientType === type && (
-                <>
-                  <div className="sm:hidden" style={{ background: '#faf9ff', borderBottom: '1px solid #e2e8f0' }}>
-                    {info.sessions.map((s, i) => (
-                      <div key={i} className="px-4 py-3" style={{ borderBottom: '1px solid #f1f0ff', background: i % 2 === 0 ? 'white' : '#faf9ff' }}>
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <span className="text-xs font-semibold text-slate-700">{s.patientName}</span>
-                          <span className="text-sm font-bold shrink-0" style={{ color: '#059669' }}>{fmt(s.amount)}</span>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5 mb-1">
-                          <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ede9fe' }}>
-                            {fmtDate(s.date)}
-                          </span>
-                          <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ede9fe' }}>
-                            {s.packageName}
-                          </span>
-                          {s.isPackage && (
-                            <span className="text-xs px-2 py-0.5 rounded-md font-bold" style={{ background: '#ede9fe', color: '#7c3aed' }}>
-                              {s.totalSessions} sesi
+                    {open && (
+                      <div className="pl-3 sm:pl-11 pr-1 pb-2">
+                        {info.sessions.map((s, i) => (
+                          <div key={i} className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 py-2.5 border-t border-dashed border-slate-200 text-[12.5px]">
+                            <span className="min-w-0 break-words">
+                              <b className="font-semibold text-slate-800">{s.patientName}</b>
+                              <span className="text-slate-500"> · {s.packageName}</span>
                             </span>
-                          )}
-                          <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
-                            Nominal paket: {fmt(s.pkgNominal)}
-                          </span>
-                        </div>
-                        {s.discountType && s.discountType !== 'none' && s.discountValue > 0 && (
-                          <div className="flex items-center gap-1.5">
-                            <span className="line-through text-slate-500 text-xs">
-                              {s.discountType === 'percentage'
-                                ? fmt(Math.round(s.rawAmount / (1 - s.discountValue / 100)))
-                                : fmt(s.rawAmount + s.discountValue)}
-                            </span>
-                            <span className="px-1.5 py-0.5 rounded text-xs font-bold" style={{ background: '#fef3c7', color: '#92400e' }}>
-                              {s.discountType === 'percentage' ? `-${s.discountValue}%` : `-${fmtShort(s.discountValue)}`}
+                            <b className="font-bold tabular-nums text-emerald-600">{fmtRp(s.amount)}</b>
+                            <span className="col-span-2 flex flex-wrap items-center gap-1.5 text-slate-500">
+                              <span>{fmtDate(s.date)}</span>
+                              {s.isPackage && <Pill tone="vio">{s.totalSessions} sesi</Pill>}
+                              <span>Nominal {fmtRp(s.pkgNominal)}</span>
+                              {s.discountType && s.discountType !== 'none' && s.discountValue > 0 && (
+                                <>
+                                  <span className="line-through">
+                                    {s.discountType === 'percentage'
+                                      ? fmtRp(Math.round(s.rawAmount / (1 - s.discountValue / 100)))
+                                      : fmtRp(s.rawAmount + s.discountValue)}
+                                  </span>
+                                  <Pill tone="warn">{s.discountType === 'percentage' ? `-${s.discountValue}%` : `-${fmtShort(s.discountValue)}`}</Pill>
+                                </>
+                              )}
                             </span>
                           </div>
-                        )}
-                      </div>
-                    ))}
-                    <div className="px-4 py-2.5 flex items-center justify-between" style={{ background: '#f5f3ff', borderTop: '2px solid #ede9fe' }}>
-                      <span className="text-xs font-bold" style={{ color: '#7c3aed' }}>Subtotal:</span>
-                      <span className="font-bold text-sm" style={{ color: '#059669' }}>{fmt(info.totalAmount)}</span>
-                    </div>
-                  </div>
-                <div className="hidden sm:block overflow-x-auto" style={{ background: '#faf9ff', borderBottom: '1px solid #e2e8f0' }}>
-                  <table className="w-full" style={{ fontSize: '11px' }}>
-                    <thead>
-                      <tr style={{ background: '#f5f3ff', borderBottom: '1px solid #ede9fe' }}>
-                        {['Tanggal', 'Nama Pasien', 'Paket', 'Total Sesi', 'Nominal Paket', 'Diskon', 'Insentif/Sesi'].map(h => (
-                          <th key={h} className="px-4 py-2 text-left"
-                            style={{ color: '#7c3aed', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            {h}
-                          </th>
                         ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {info.sessions.map((s, i) => (
-                        <tr key={i} style={{ borderBottom: '1px solid #f1f0ff', background: i % 2 === 0 ? 'white' : '#faf9ff' }}>
-                          <td className="px-4 py-2 text-slate-500 whitespace-nowrap">{fmtDate(s.date)}</td>
-                          <td className="px-4 py-2 font-semibold text-slate-700">{s.patientName}</td>
-                          <td className="px-4 py-2 text-slate-500">{s.packageName}</td>
-                          <td className="px-4 py-2 text-center">
-                            {s.isPackage
-                              ? <span className="px-2 py-0.5 rounded text-xs font-bold" style={{ background: '#ede9fe', color: '#7c3aed' }}>{s.totalSessions} sesi</span>
-                              : <span className="text-slate-500">Visit</span>}
-                          </td>
-                          <td className="px-4 py-2 text-slate-500">
-                            {fmt(s.pkgNominal)}
-                          </td>
-                          <td className="px-4 py-2">
-                            {s.discountType && s.discountType !== 'none' && s.discountValue > 0 ? (
-                              <div>
-                                <span className="line-through text-slate-500 text-xs mr-1">
-                                  {s.discountType === 'percentage'
-                                    ? fmt(Math.round(s.rawAmount / (1 - s.discountValue / 100)))
-                                    : fmt(s.rawAmount + s.discountValue)}
-                                </span>
-                                <span className="px-1.5 py-0.5 rounded text-xs font-bold" style={{ background: '#fef3c7', color: '#92400e' }}>
-                                  {s.discountType === 'percentage' ? `-${s.discountValue}%` : `-${fmtShort(s.discountValue)}`}
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-slate-300 text-xs">—</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-2 font-bold" style={{ color: '#059669' }}>{fmt(s.amount)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr style={{ background: '#f5f3ff', borderTop: '2px solid #ede9fe' }}>
-                        <td colSpan={6} className="px-4 py-2 text-right text-xs font-bold" style={{ color: '#7c3aed' }}>Subtotal:</td>
-                        <td className="px-4 py-2 font-bold text-sm" style={{ color: '#059669' }}>{fmt(info.totalAmount)}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-                </>
-              )}
+                        <div className="flex items-center justify-between pt-2.5 border-t border-slate-200 text-xs font-bold">
+                          <span className="text-violet-600">Subtotal</span>
+                          <span className="text-emerald-600 tabular-nums text-sm">{fmtRp(info.totalAmount)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          ))}
-        </div>
+          )}
+        </FinanceTile>
       </div>
     );
   }
 
+  const totalPayroll = allResults.reduce((s, r) => s + r.total, 0);
+  const totalSessions = allResults.reduce((s, r) => s + r.sessionCount, 0);
+  const topTotal = allResults[0]?.total || 1;
+
   return (
-    <div className="space-y-5">
-
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-app flex items-center justify-center" style={{ background: '#ede9fe' }}>
-            <Calculator className="w-4 h-4" style={{ color: '#7c3aed' }} />
-          </div>
-          <div>
-            <h2 className="text-base font-bold text-slate-800">Salary Calculator</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Estimasi gaji semua terapis aktif dalam periode</p>
-          </div>
-        </div>
-        <span className="text-xs font-bold px-2.5 py-1 rounded-full w-fit" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
-          Estimasi — Frontend Only
-        </span>
-      </div>
-
-      {/* Controls */}
-      <div className="flex flex-col gap-2.5 p-3 rounded-app" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-            <Calendar className="w-3.5 h-3.5" />
-            Periode:
-          </div>
-          <label className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer select-none" style={{ color: '#7c3aed' }}>
-            <input
-              type="checkbox"
-              checked={useAutoPeriod}
-              onChange={e => setUseAutoPeriod(e.target.checked)}
-              className="w-3.5 h-3.5"
-            />
-            Otomatis (dari kartu terapis)
+    <div className="space-y-4">
+      {/* Periode + hitung */}
+      <FinanceTile tone="vio" icon={Calendar} title="Periode">
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="inline-flex items-center gap-2.5 cursor-pointer select-none">
+            <Switch checked={useAutoPeriod} onCheckedChange={setUseAutoPeriod} aria-label="Periode otomatis" />
+            <span className="text-[13px] font-semibold text-slate-700">Otomatis dari kartu terapis</span>
           </label>
+          <button
+            type="button"
+            onClick={handleCalculateAll}
+            disabled={calculatingAll || !therapists.length}
+            className="ml-auto inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-violet-600 text-white text-[13px] font-semibold disabled:opacity-60 active:scale-[0.96] transition-transform"
+          >
+            {calculatingAll
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Menghitung</>
+              : <><Calculator className="w-4 h-4" /> Hitung Semua</>}
+          </button>
         </div>
 
-        {useAutoPeriod ? (
-          <div className="text-xs px-3 py-2 rounded-app-sm" style={{ background: '#ede9fe', color: '#7c3aed', border: '1px solid #ddd6fe' }}>
-            Setiap terapis dihitung memakai Periode masing-masing (diatur di kartu terapis, tab Data Terapis). Matikan toggle di atas untuk memakai rentang tanggal manual.
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center gap-2 w-full">
-              <input
-                type="date"
-                value={dateRange?.startDate || ''}
-                onChange={e => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-                className="text-xs border border-slate-200 rounded-app-sm px-2.5 py-1.5 outline-none bg-white flex-1 min-w-0"
-                style={{ colorScheme: 'light' }}
-              />
-              <span className="text-slate-300 text-sm shrink-0">–</span>
-              <input
-                type="date"
-                value={dateRange?.endDate || ''}
-                onChange={e => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-                className="text-xs border border-slate-200 rounded-app-sm px-2.5 py-1.5 outline-none bg-white flex-1 min-w-0"
-                style={{ colorScheme: 'light' }}
-              />
-            </div>
+        {!useAutoPeriod && (
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            <input
+              type="date"
+              value={dateRange?.startDate || ''}
+              onChange={e => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+              className="h-10 text-sm border border-slate-200 rounded-[10px] px-3 outline-none bg-slate-50 flex-1 min-w-[130px]"
+              style={{ colorScheme: 'light' }}
+              aria-label="Tanggal mulai"
+            />
+            <span className="text-slate-300">–</span>
+            <input
+              type="date"
+              value={dateRange?.endDate || ''}
+              onChange={e => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+              className="h-10 text-sm border border-slate-200 rounded-[10px] px-3 outline-none bg-slate-50 flex-1 min-w-[130px]"
+              style={{ colorScheme: 'light' }}
+              aria-label="Tanggal selesai"
+            />
             <button
+              type="button"
               onClick={handlePeriodeIni}
-              className="text-xs px-3 py-2 rounded-app-sm font-semibold transition-[color,background-color,border-color,box-shadow,transform,opacity] w-full"
-              style={{ background: '#ede9fe', color: '#7c3aed', border: '1px solid #ddd6fe' }}
+              className="h-10 px-3 rounded-[10px] bg-violet-50 text-violet-700 text-xs font-semibold hover:bg-violet-100 transition-colors"
             >
-              Periode Ini (28 - 27)
+              Periode 28 – 27
             </button>
-          </>
+          </div>
         )}
+      </FinanceTile>
 
-        <button
-          onClick={handleCalculateAll}
-          disabled={calculatingAll || !therapists.length}
-          className="flex items-center justify-center gap-2 px-4 py-2 rounded-app-sm text-xs font-bold text-white transition-[color,background-color,border-color,box-shadow,transform,opacity] w-full"
-          style={{ background: calculatingAll ? '#a78bfa' : '#7c3aed' }}
-        >
-          {calculatingAll
-            ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Menghitung...</>
-            : <><Calculator className="w-3.5 h-3.5" /> Hitung Semua</>
-          }
-        </button>
-      </div>
+      {allResults.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-14 rounded-[22px] border border-dashed border-violet-200 bg-violet-50/40 text-center px-4">
+          <div className="w-12 h-12 rounded-2xl bg-violet-100 text-violet-600 flex items-center justify-center mb-3">
+            <Calculator className="w-6 h-6" />
+          </div>
+          <p className="text-sm font-semibold text-slate-700">Belum ada hitungan</p>
+          <p className="text-xs text-slate-500 mt-1">Tekan Hitung Semua</p>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4">
+            {[
+              { label: 'Terapis', value: `${allResults.length} orang`, icon: User, tone: 'vio' },
+              { label: 'Sesi', value: `${totalSessions} sesi`, icon: TrendingUp, tone: 'sky' },
+              { label: 'Payroll', value: fmtShort(totalPayroll), full: fmtRp(totalPayroll), icon: Wallet, tone: 'pos' },
+            ].map(({ label, value, full, icon, tone }) => (
+              <FinanceTile key={label} tone={tone} icon={icon} title={label} tinted>
+                <p className="text-base sm:text-2xl font-black tabular-nums leading-none text-app-ink break-words">{value}</p>
+                {full && <p className="hidden sm:block text-xs text-slate-500 mt-1.5 break-words">{full}</p>}
+              </FinanceTile>
+            ))}
+          </div>
 
-      {/* Table */}
-      {allResults.length > 0 ? (
-        <div className="overflow-hidden rounded-app-lg" style={{ border: '1px solid #ede9fe', boxShadow: '0 1px 6px #7c3aed12' }}>
-          <>
-            <div className="sm:hidden">
+          <FinanceTile tone="vio" icon={Users} title="Ranking Gaji" action={<span className="text-xs text-slate-500">Ketuk nama untuk detail</span>}>
+            <div className="grid gap-0.5">
               {allResults.map((r, idx) => (
                 <button
                   key={r.id}
+                  type="button"
                   onClick={() => { setSelectedTherapistDetail(r); setSelectedPatientType(null); }}
-                  className="w-full text-left px-4 py-3"
-                  style={{ background: idx % 2 === 0 ? 'white' : '#faf9ff', borderBottom: '1px solid #f1f0ff' }}
+                  className="grid grid-cols-[26px_1fr_auto] items-center gap-3 px-1.5 py-2.5 rounded-2xl text-left hover:bg-slate-50 transition-colors"
                 >
-                  <div className="flex items-center gap-2.5 mb-1.5">
-                    <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-                      style={{ background: idx === 0 ? '#fef3c7' : '#f1f5f9', color: idx === 0 ? '#92400e' : '#64748b' }}>
-                      {idx + 1}
+                  <span className={cn('w-[26px] h-[26px] rounded-full flex items-center justify-center text-xs font-bold', idx === 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500')}>{idx + 1}</span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-slate-800 break-words">{r.name}</span>
+                    <span className="flex flex-wrap gap-1.5 mt-1.5">
+                      <Pill tone={schemeTone(r.salaryType)}>{r.salaryType}</Pill>
+                      <Pill>{r.sessionCount} sesi</Pill>
+                      <Pill>{r.attendanceDays} hari</Pill>
                     </span>
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
-                      style={{ background: '#ede9fe', color: '#7c3aed' }}>
-                      {r.name?.charAt(0)?.toUpperCase()}
-                    </div>
-                    <span className="font-semibold flex-1 break-words sm:truncate" style={{ color: '#7c3aed' }}>{r.name}</span>
-                    <div className="font-bold text-sm shrink-0" style={{ color: '#059669' }}>{fmt(r.total)}</div>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    <span className="px-2 py-0.5 rounded-md text-xs font-bold"
-                      style={salaryBadgeStyle(r.salaryType)}>
-                      {r.salaryType}
+                    <span className="block h-1.5 rounded-full bg-slate-100 overflow-hidden mt-2">
+                      <span className="block h-full rounded-full bg-violet-500 transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${(r.total / topTotal) * 100}%` }} />
                     </span>
-                    <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
-                      {r.sessionCount} sesi
-                    </span>
-                    <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
-                      {r.attendanceDays} hari kerja
-                    </span>
-                    <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
-                      Pokok: {fmtShort(r.baseSalary)}
-                    </span>
-                    <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
-                      Transport: {fmtShort(r.transportAllowance)}
-                    </span>
-                    <span className="text-xs px-2 py-0.5 rounded-md font-semibold" style={{ background: '#ede9fe', color: '#7c3aed' }}>
-                      Komisi: {fmtShort(r.commission)}
-                    </span>
-                  </div>
+                  </span>
+                  <span className="text-right">
+                    <b className="block text-base font-black tabular-nums text-emerald-600" title={fmtRp(r.total)}>{fmtShort(r.total)}</b>
+                    <small className="text-[11px] text-slate-500">{fmtShort(r.baseSalary)} + {fmtShort(r.transportAllowance)} + {fmtShort(r.commission)}</small>
+                  </span>
                 </button>
               ))}
-              <div className="px-4 py-3 flex items-center justify-between" style={{ background: '#f5f3ff', borderTop: '2px solid #ede9fe' }}>
-                <span className="font-bold text-xs" style={{ color: '#7c3aed' }}>Total Seluruh Gaji:</span>
-                <span className="font-bold text-sm" style={{ color: '#059669' }}>
-                  {fmt(allResults.reduce((s, r) => s + r.total, 0))}
-                </span>
-              </div>
             </div>
-          <div className="hidden sm:block overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr style={{ background: '#f5f3ff', borderBottom: '2px solid #ede9fe' }}>
-                  {['#', 'Fisioterapis', 'Tipe Gaji', 'Periode', 'Sesi', 'Hari Kerja', 'Gaji Pokok', 'Transport', 'Komisi/Omzet', 'Total Estimasi'].map((h, i) => (
-                    <th key={i} className="px-4 py-3 whitespace-nowrap text-left"
-                      style={{ color: '#7c3aed', fontWeight: 700, fontSize: '10px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {allResults.map((r, idx) => (
-                  <tr key={r.id}
-                    style={{ background: idx % 2 === 0 ? 'white' : '#faf9ff', borderBottom: '1px solid #f1f0ff', transition: 'background 0.1s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#f5f3ff'}
-                    onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? 'white' : '#faf9ff'}>
-                    {/* Rank */}
-                    <td className="px-4 py-3">
-                      <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
-                        style={{ background: idx === 0 ? '#fef3c7' : '#f1f5f9', color: idx === 0 ? '#92400e' : '#64748b' }}>
-                        {idx + 1}
-                      </span>
-                    </td>
-                    {/* Name — klik untuk detail */}
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => { setSelectedTherapistDetail(r); setSelectedPatientType(null); }}
-                        className="flex items-center gap-2.5 hover:underline text-left">
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
-                          style={{ background: '#ede9fe', color: '#7c3aed' }}>
-                          {r.name?.charAt(0)?.toUpperCase()}
-                        </div>
-                        <span className="font-semibold break-words sm:truncate max-w-[130px]" style={{ color: '#7c3aed' }}>{r.name}</span>
-                      </button>
-                    </td>
-                    {/* Salary type badge */}
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 rounded-md text-xs font-bold"
-                        style={{
-                          background: r.salaryType === 'Full Salary' ? '#ecfdf5' : '#eff6ff',
-                          color: r.salaryType === 'Full Salary' ? '#059669' : '#2563eb',
-                          border: `1px solid ${r.salaryType === 'Full Salary' ? '#bbf7d0' : '#bfdbfe'}`
-                        }}>
-                        {r.salaryType}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap">{r.period}</td>
-                    <td className="px-4 py-3 text-slate-600 font-medium">{r.sessionCount}</td>
-                    <td className="px-4 py-3 text-slate-600 font-medium">{r.attendanceDays} hari</td>
-                    <td className="px-4 py-3 text-slate-500">{fmtShort(r.baseSalary)}</td>
-                    <td className="px-4 py-3 text-slate-500">{fmtShort(r.transportAllowance)}</td>
-                    <td className="px-4 py-3 font-semibold" style={{ color: '#7c3aed' }}>{fmtShort(r.commission)}</td>
-                    <td className="px-4 py-3">
-                      <div className="font-bold text-sm" style={{ color: '#059669' }}>{fmt(r.total)}</div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr style={{ background: '#f5f3ff', borderTop: '2px solid #ede9fe' }}>
-                  <td colSpan={9} className="px-4 py-3 text-right font-bold text-xs" style={{ color: '#7c3aed' }}>
-                    Total Seluruh Gaji:
-                  </td>
-                  <td className="px-4 py-3 font-bold text-sm" style={{ color: '#059669' }}>
-                    {fmt(allResults.reduce((s, r) => s + r.total, 0))}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-          </>
-
-          {/* Summary strip */}
-          <div className="grid grid-cols-1 sm:grid-cols-3" style={{ borderTop: '1px solid #ede9fe', background: '#faf9ff' }}>
-            {[
-              { label: 'Total Terapis', value: `${allResults.length} orang`, icon: User },
-              { label: 'Total Sesi', value: `${allResults.reduce((s, r) => s + r.sessionCount, 0)} sesi`, icon: TrendingUp },
-              { label: 'Total Payroll', value: fmt(allResults.reduce((s, r) => s + r.total, 0)), icon: Wallet },
-            ].map(({ label, value, icon: Icon }, i) => (
-              <div key={label} className="flex items-center gap-3 px-5 py-3 min-w-0"
-                style={{ borderRight: !isPWA && i < 2 ? '1px solid #ede9fe' : 'none', borderBottom: isPWA && i < 2 ? '1px solid #ede9fe' : 'none' }}>
-                <div className="w-7 h-7 rounded-app-sm flex items-center justify-center shrink-0" style={{ background: '#ede9fe' }}>
-                  <Icon className="w-3.5 h-3.5" style={{ color: '#7c3aed' }} />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-medium" style={{ color: '#a78bfa' }}>{label}</div>
-                  <div className="text-sm font-bold text-slate-700 break-words">{value}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-16 rounded-app-lg"
-          style={{ background: '#faf9ff', border: '1px dashed #ddd6fe' }}>
-          <div className="w-14 h-14 rounded-app-lg flex items-center justify-center mb-4" style={{ background: '#ede9fe' }}>
-            <Calculator className="w-7 h-7" style={{ color: '#7c3aed' }} />
-          </div>
-          <p className="text-sm font-semibold text-slate-600">Belum ada data kalkulasi</p>
-          <p className="text-xs text-slate-500 mt-1">Pilih periode lalu tekan <strong>Hitung Semua</strong></p>
-        </div>
+          </FinanceTile>
+        </>
       )}
     </div>
   );

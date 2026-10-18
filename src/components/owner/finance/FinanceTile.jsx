@@ -14,7 +14,7 @@ const FinanceTile = ({ tone = 'acc', icon: Icon, title, action, tinted = false, 
         className
       )}
     >
-      <header className="flex items-center gap-2 mb-3 min-h-[28px]">
+      <header className="flex flex-wrap items-center gap-x-2 gap-y-2 mb-3 min-h-[28px]">
         {Icon && (
           <span className={cn('w-7 h-7 rounded-[10px] flex items-center justify-center shrink-0', t.icon)}>
             <Icon className="w-4 h-4" />

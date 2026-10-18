@@ -26,3 +26,11 @@ export const fmtShort = (value) => {
 
 export const fmtRp = (value) => `Rp ${Math.round(Number(value) || 0).toLocaleString('id-ID')}`;
 export const fmtPct = (value) => `${dec(Number(value) || 0)}%`;
+
+// Warna stabil per teks (mis. nama kategori) supaya kategori yang sama selalu sama warnanya.
+const CATEGORY_TONES = ['acc', 'sky', 'warn', 'vio', 'pos', 'neg'];
+export const toneFor = (text = '') => {
+  let h = 0;
+  for (let i = 0; i < text.length; i += 1) h = (h * 31 + text.charCodeAt(i)) % 997;
+  return CATEGORY_TONES[h % CATEGORY_TONES.length];
+};

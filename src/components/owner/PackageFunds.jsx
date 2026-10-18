@@ -1,38 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table';
-
-import {
-  Loader2,
-  Package
-} from 'lucide-react';
-
-const formatCurrency = (value) => {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0
-  }).format(value || 0);
-};
+import { Package } from 'lucide-react';
+import FinanceTile, { TileEmpty, TileLoading } from '@/components/owner/finance/FinanceTile';
+import SegControl from '@/components/owner/finance/SegControl';
+import AnimatedNumber from '@/components/owner/finance/AnimatedNumber';
+import { Pill } from '@/components/owner/finance/TxList';
+import { fmtShort, fmtRp } from '@/components/owner/finance/financeTheme';
 
 const PackageFunds = () => {
   const [loading, setLoading] = useState(true);
   const [packages, setPackages] = useState([]);
+  const [sortBy, setSortBy] = useState('value');
 
   useEffect(() => {
     fetchPackageFunds();
@@ -93,125 +72,67 @@ const PackageFunds = () => {
     (sum, item) => sum + item.remainingValue,
     0
   );
+  const totalSisaSesi = packages.reduce((sum, item) => sum + Number(item.sessions_remaining || 0), 0);
+
+  const sorted = [...packages].sort((a, b) =>
+    sortBy === 'value' ? b.remainingValue - a.remainingValue : a.sessions_remaining - b.sessions_remaining
+  );
 
   return (
-    <Card className="border-cyan-100 shadow-md">
-      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <CardTitle className="flex items-center gap-2 text-slate-800">
-            <Package className="w-5 h-5 text-cyan-600" />
-            Dana Paket
-          </CardTitle>
-
-          <p className="text-sm text-slate-500 mt-1">
-            Nilai remaining paket pasien aktif
+    <div className="grid gap-4">
+      <FinanceTile tone="sky" icon={Package} title="Total Dana Paket" tinted>
+        <div className="flex flex-wrap items-baseline gap-2">
+          <p className="text-3xl sm:text-4xl font-black tabular-nums leading-none text-app-ink" title={fmtRp(totalDanaPaket)}>
+            <AnimatedNumber value={totalDanaPaket} format={fmtShort} />
           </p>
+          <Pill tone="sky">{packages.length} paket</Pill>
+          <Pill>{totalSisaSesi} sesi</Pill>
         </div>
+        <p className="text-xs text-slate-500 mt-1.5">{fmtRp(totalDanaPaket)}</p>
+      </FinanceTile>
 
-        <div className="sm:text-right">
-          <p className="text-xs text-slate-500">
-            Total Dana Paket
-          </p>
-
-          <p className="text-2xl font-bold text-cyan-700">
-            {formatCurrency(totalDanaPaket)}
-          </p>
-        </div>
-      </CardHeader>
-
-      <CardContent>
+      <FinanceTile
+        tone="sky"
+        icon={Package}
+        title="Paket Aktif"
+        action={
+          <SegControl
+            items={[{ value: 'value', label: 'Nilai' }, { value: 'sessions', label: 'Sisa sesi' }]}
+            value={sortBy}
+            onChange={setSortBy}
+          />
+        }
+      >
         {loading ? (
-          <div className="flex justify-center items-center gap-2 h-24 text-slate-500">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Memuat data...
-          </div>
-        ) : packages.length === 0 ? (
-          <div className="h-24 flex items-center justify-center text-slate-500">
-            Tidak ada paket aktif
-          </div>
+          <TileLoading />
+        ) : sorted.length === 0 ? (
+          <TileEmpty>Tidak ada paket aktif</TileEmpty>
         ) : (
-          <>
-            {/* Mobile: kartu */}
-            <div className="sm:hidden rounded-app border bg-white divide-y divide-slate-100">
-              {packages.map((item) => (
-                <div key={item.id} className="p-3 space-y-1.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="font-semibold text-slate-700">{item.patientName}</span>
-                    <span className="px-2 py-1 rounded-md text-xs font-semibold bg-emerald-100 text-emerald-700 shrink-0">
-                      {item.status}
-                    </span>
-                  </div>
-                  <div className="text-sm text-slate-600">{item.package_name || '-'}</div>
-                  <div className="flex items-center justify-between text-sm pt-1">
-                    <span className="text-slate-500">
-                      Sisa sesi: <span className="font-bold text-cyan-600">{item.sessions_remaining}</span>
-                    </span>
-                    <span className="font-bold text-cyan-700">{formatCurrency(item.remainingValue)}</span>
-                  </div>
+          <div className="divide-y divide-slate-100">
+            {sorted.map((item) => {
+              const total = Number(item.total_sessions || 0);
+              const used = Math.max(total - Number(item.sessions_remaining || 0), 0);
+              const pct = total > 0 ? (used / total) * 100 : 0;
+              return (
+                <div key={item.id} className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1.5 px-1 py-3">
+                  <span className="min-w-0 break-words text-sm font-semibold text-slate-800">{item.patientName}</span>
+                  <span className="text-base font-black tabular-nums text-blue-600" title={fmtRp(item.remainingValue)}>{fmtShort(item.remainingValue)}</span>
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    <Pill>{item.package_name || '-'}</Pill>
+                    <Pill tone={item.sessions_remaining <= 2 ? 'warn' : 'pos'}>sisa {item.sessions_remaining}</Pill>
+                    <Pill tone="pos">{item.status}</Pill>
+                  </span>
+                  <span />
+                  <span className="col-span-2 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                    <span className="block h-full rounded-full bg-blue-500 transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${pct}%` }} />
+                  </span>
                 </div>
-              ))}
-            </div>
-
-            {/* Desktop: tabel */}
-            <div className="hidden sm:block rounded-app border overflow-x-auto bg-white">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nama Pasien</TableHead>
-
-                    <TableHead>
-                      Jenis Paket
-                    </TableHead>
-
-                    <TableHead className="text-center">
-                      Sisa Sesi
-                    </TableHead>
-
-                    <TableHead>
-                      Status
-                    </TableHead>
-
-                    <TableHead className="text-right">
-                      Nominal
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  {packages.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-semibold text-slate-700">
-                        {item.patientName}
-                      </TableCell>
-
-                      <TableCell className="text-slate-600">
-                        {item.package_name || '-'}
-                      </TableCell>
-
-                      <TableCell className="text-center">
-                        <span className="font-bold text-cyan-600">
-                          {item.sessions_remaining}
-                        </span>
-                      </TableCell>
-
-                      <TableCell>
-                        <span className="px-2 py-1 rounded-md text-xs font-semibold bg-emerald-100 text-emerald-700">
-                          {item.status}
-                        </span>
-                      </TableCell>
-
-                      <TableCell className="text-right font-bold text-cyan-700">
-                        {formatCurrency(item.remainingValue)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </>
+              );
+            })}
+          </div>
         )}
-      </CardContent>
-    </Card>
+      </FinanceTile>
+    </div>
   );
 };
 

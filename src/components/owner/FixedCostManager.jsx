@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, Loader2, AlertCircle, Wallet, RefreshCw, Banknote } from 'lucide-react';
+import { Plus, Trash2, Loader2, AlertCircle, Wallet, RefreshCw, Banknote, Info, Repeat } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { autoPostFixedCosts, getAccountingSubcategories } from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import SearchableSelect from '@/components/ui/searchable-select';
+import FinanceTile from '@/components/owner/finance/FinanceTile';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
@@ -27,6 +28,7 @@ const FixedCostManager = () => {
   const [subcategories, setSubcategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newItemName, setNewItemName] = useState('');
@@ -167,23 +169,43 @@ const FixedCostManager = () => {
   };
 
   return (
-    <div className="bg-white rounded-app shadow-sm border border-slate-200 overflow-hidden mt-0">
-      <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-800">Pengeluaran Rutin Bulanan</h2>
-          <p className="text-sm text-slate-500 flex items-center gap-1.5 mt-1">
-            <RefreshCw className="w-3.5 h-3.5" />
-            Item dengan Auto-Posting aktif akan otomatis tercatat sebagai pengeluaran tiap tanggal yang ditentukan. Item gaji tidak auto-posting di sini — nanti terposting otomatis setelah payroll dibuat.
-          </p>
+    <FinanceTile
+      tone="warn"
+      icon={Repeat}
+      title="Pengeluaran Rutin Bulanan"
+      action={
+        <div className="flex items-center gap-2">
+          {items.length > 0 && (
+            <b className="hidden sm:inline text-base font-black tabular-nums text-violet-600">{formatCurrency(totalMonthly)}</b>
+          )}
+          <button
+            type="button"
+            onClick={() => setShowInfo(v => !v)}
+            aria-label="Cara kerja auto-posting"
+            aria-pressed={showInfo}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100"
+          >
+            <Info className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsAddOpen(true)}
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[10px] text-[12.5px] font-semibold text-white bg-teal-600 active:scale-[0.96] transition-transform"
+          >
+            <Plus className="w-3.5 h-3.5" /> Tambah
+          </button>
         </div>
-        <Button onClick={() => setIsAddOpen(true)} className="bg-app-accent hover:bg-app-accent-hover">
-          <Plus className="w-4 h-4 mr-2" />
-          Tambah Item
-        </Button>
-      </div>
+      }
+    >
+      {showInfo && (
+        <p className="text-xs text-slate-500 flex items-start gap-1.5 mb-3">
+          <RefreshCw className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+          Item dengan Auto-Posting aktif otomatis tercatat sebagai pengeluaran tiap tanggal yang ditentukan. Item gaji tidak auto-posting di sini; terposting otomatis setelah payroll dibuat.
+        </p>
+      )}
 
-      <div className="p-6">
-        <div className="space-y-2">
+      <div>
+        <div className="divide-y divide-slate-100">
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-slate-300" /></div>
           ) : items.length === 0 ? (
@@ -197,11 +219,11 @@ const FixedCostManager = () => {
                 key={item.id}
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="group flex flex-col gap-3 p-4 rounded-app-sm border border-slate-100 bg-white hover:border-slate-300 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200"
+                className="flex flex-col gap-3 px-1 py-3"
               >
                 <div className="flex flex-col md:flex-row md:items-center gap-3">
                   <div className="flex items-center gap-3 min-w-0 md:flex-1">
-                    <div className="w-9 h-9 rounded-app-sm bg-amber-50 flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-[11px] bg-amber-50 flex items-center justify-center shrink-0">
                       <Wallet className="w-4 h-4 text-amber-600" />
                     </div>
                     <Input
@@ -340,7 +362,7 @@ const FixedCostManager = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </FinanceTile>
   );
 };
 
