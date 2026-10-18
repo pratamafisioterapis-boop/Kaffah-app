@@ -130,6 +130,7 @@ DECLARE
   v_pkg_sessions integer;
   v_pkg_price numeric;
   v_is_purchase boolean := false;
+  v_is_ru boolean := false;
   v_base numeric;
   v_surcharge numeric := 0;
   v_total numeric;
@@ -166,6 +167,8 @@ BEGIN
     LIMIT 1;
     IF COALESCE(v_pkg_sessions, 0) > 1 AND d.package_tracking_id IS NULL THEN
       v_is_purchase := true;
+      -- Paket RU: boleh untuk diagnosa apa pun, tanpa tambahan 2 keluhan.
+      v_is_ru := v_pkg_label ILIKE '% RU';
     END IF;
   END IF;
 
@@ -173,6 +176,12 @@ BEGIN
     v_err := 'SOAP belum diisi oleh terapis. Pembayaran terkunci sampai SOAP selesai.';
   ELSIF d.special_type = 'free' THEN
     v_base := 0;
+  ELSIF v_is_ru THEN
+    IF v_pkg_price IS NULL THEN
+      v_err := 'Harga paket "' || v_pkg_label || '" belum diatur owner.';
+    ELSE
+      v_base := v_pkg_price;
+    END IF;
   ELSIF v_label IS NULL THEN
     IF v_hc THEN
       v_err := 'Pilih homecare di dalam atau di luar jam kerja pada appointment terlebih dahulu.';
@@ -225,7 +234,7 @@ BEGIN
     'base', v_base,
     'surcharge', v_surcharge,
     'total', v_total,
-    'package_allowed', (v_label IN ('NORMAL', 'DUA KELUHAN'))
+    'package_allowed', (COALESCE(v_label IN ('NORMAL', 'DUA KELUHAN'), false) OR v_is_ru)
   );
 END;
 $fn$;
