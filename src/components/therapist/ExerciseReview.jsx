@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Loader2, Play, CheckCircle2, Search, Save, Film } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { isReviewExempt } from '@/lib/exerciseReviewExempt';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,14 +37,14 @@ const ExerciseReview = ({ therapist }) => {
       supabase.from('plan_exercises').select('id, name, grp, how_to, dose').order('id'),
       supabase.from('exercise_video_assets').select('exercise_id'),
       supabase.from('exercise_reviews').select('exercise_id, reviewer_name, reviewed_at'),
-      supabase.from('physiotherapists').select('id').eq('clinic_id', therapist.clinic_id).eq('is_active', true).order('id'),
+      supabase.from('physiotherapists').select('id, name').eq('clinic_id', therapist.clinic_id).eq('is_active', true).order('id'),
     ]);
     const err = ex.error || vi.error || rv.error;
     if (err) toast({ variant: 'destructive', title: 'Gagal memuat daftar latihan', description: err.message });
     setExercises(ex.data || []);
     setVideos(new Set((vi.data || []).map((v) => v.exercise_id)));
     setReviews(Object.fromEntries((rv.data || []).map((r) => [r.exercise_id, r])));
-    setMates((th.data || []).map((t) => t.id));
+    setMates((th.data || []).filter((t) => !isReviewExempt(t.name)).map((t) => t.id));
     setLoading(false);
   }, [therapist.clinic_id, toast]);
 
