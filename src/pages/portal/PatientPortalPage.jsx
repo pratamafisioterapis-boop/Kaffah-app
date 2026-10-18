@@ -196,7 +196,7 @@ const HomeTab = ({ home, goals, go, onLogout }) => {
           ) : (
             <section className="card">
               <h3>Belum ada jadwal sesi</h3>
-              <p className="muted" style={{ margin: '6px 0 16px' }}>Pilih hari dan jam terapi berikutnya. Terapis yang terakhir menangani Anda ditampilkan lebih dulu.</p>
+              <p className="muted" style={{ margin: '6px 0 16px' }}>Pilih hari dan jam terapi berikutnya.</p>
               <button className="btn" onClick={() => go('book')}><CalendarPlus size={20} aria-hidden="true" />Booking jadwal</button>
             </section>
           )}
@@ -410,6 +410,47 @@ const ProgramTab = ({ session, items, therapist, onToggle }) => {
   );
 };
 
+const PAIN_LEVELS = [[0, 'Tidak nyeri'], [3, 'Nyeri ringan'], [6, 'Nyeri sedang'], [10, 'Nyeri berat']];
+const painLabel = (v) => PAIN_LEVELS.find(([max]) => v <= max)[1];
+const painFace = (v) => `/pain/${Math.round(v * 0.9)}.png`;
+
+// Skala nyeri 0-10: wajah besar yang berubah mengikuti pilihan, geser atau ketuk angka.
+const PainScale = ({ value, onChange }) => {
+  const track = useRef(null);
+  const pick = (clientX) => {
+    const r = track.current.getBoundingClientRect();
+    onChange(Math.max(0, Math.min(10, Math.round(((clientX - r.left) / r.width) * 10))));
+  };
+  const onKey = (e) => {
+    const step = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[e.key];
+    if (step) { e.preventDefault(); onChange(Math.max(0, Math.min(10, value + step))); }
+    else if (e.key === 'Home') { e.preventDefault(); onChange(0); }
+    else if (e.key === 'End') { e.preventDefault(); onChange(10); }
+  };
+  return (
+    <div className="pain" style={{ '--pv': value / 10 }}>
+      <div className="pain-hero" aria-hidden="true">
+        <img key={Math.round(value * 0.9)} src={painFace(value)} alt="" width="96" height="96" draggable="false" />
+      </div>
+      <div className="pain-read" aria-live="polite"><b className="num">{value}</b>/10 — {painLabel(value)}</div>
+      <div ref={track} className="pain-track" role="slider" tabIndex={0} aria-labelledby="pp-vas-l"
+        aria-valuemin={0} aria-valuemax={10} aria-valuenow={value} aria-valuetext={`${value} dari 10, ${painLabel(value)}`}
+        onKeyDown={onKey}
+        onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); pick(e.clientX); }}
+        onPointerMove={(e) => { if (e.buttons || e.pointerType === 'touch') pick(e.clientX); }}>
+        <div className="pain-bar"><i style={{ width: `${value * 10}%` }} /></div>
+        {Array.from({ length: 11 }, (_, v) => (
+          <span key={v} className={`pain-dot${v === value ? ' on' : ''}`} style={{ left: `${v * 10}%` }}>
+            <img src={painFace(v)} alt="" draggable="false" loading="lazy" />
+            <em className="num">{v}</em>
+          </span>
+        ))}
+      </div>
+      <div className="faces"><span>Tidak nyeri</span><span>Nyeri terberat</span></div>
+    </div>
+  );
+};
+
 const FeedbackTab = ({ history, onSubmit }) => {
   const [vas, setVas] = useState(3);
   const [tags, setTags] = useState([]);
@@ -427,9 +468,8 @@ const FeedbackTab = ({ history, onSubmit }) => {
       <PageHead title="Apa yang Anda rasakan hari ini?" sub="Terapis membaca ini sebelum sesi berikutnya." />
       <div className="pair">
         <form className="card form" onSubmit={submit}>
-          <div className="field"><label htmlFor="pp-vas">Tingkat nyeri sekarang: <b className="num">{vas}</b>/10</label>
-            <input id="pp-vas" type="range" min="0" max="10" value={vas} onChange={(e) => setVas(+e.target.value)} />
-            <div className="faces"><span>Tidak nyeri</span><span>Sangat nyeri</span></div></div>
+          <div className="field"><label id="pp-vas-l">Seberapa nyeri yang Anda rasakan saat ini?</label>
+            <PainScale value={vas} onChange={setVas} /></div>
           <div className="field"><label>Keluhan yang muncul</label>
             <div className="chips">{TAGS.map((t) => (
               <button type="button" key={t} className="chip" aria-pressed={tags.includes(t)} onClick={() => setTags((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]))}>{t}</button>
@@ -454,7 +494,7 @@ const FeedbackTab = ({ history, onSubmit }) => {
 
 // Booking jadwal terapi. Terapis yang terakhir menangani pasien tampil lebih dulu; bila jadwalnya penuh
 // di tanggal itu, terapis lain yang masih punya slot ditawarkan di bawahnya.
-const BookingTab = ({ session, lastTherapist, onBack, onBooked, onUnauthorized }) => {
+const BookingTab = ({ session, onBack, onBooked, onUnauthorized }) => {
   const [opts, setOpts] = useState(null);
   const [slots, setSlots] = useState(null);
   const [loadError, setLoadError] = useState('');
@@ -496,7 +536,7 @@ const BookingTab = ({ session, lastTherapist, onBack, onBooked, onUnauthorized }
   const head = (
     <>
       <button className="back" onClick={onBack}><ChevronLeft size={22} aria-hidden="true" />Kembali</button>
-      <PageHead title="Booking jadwal" sub={lastTherapist ? `Terapis terakhir Anda, ${shortName(lastTherapist)}, ditampilkan lebih dulu.` : 'Pilih hari, terapis, dan jam.'} />
+      <PageHead title="Booking jadwal" sub="Pilih hari, terapis, dan jam." />
     </>
   );
 
@@ -775,7 +815,7 @@ const PatientPortalPage = () => {
           {tab === 'prog' && (progress ? <ProgressTab data={progress} goals={goals} complaint={home?.complaint} /> : <div className="pp-pad" style={{ paddingTop: TOP_PAD }}><p className="muted">Memuat...</p></div>)}
           {tab === 'lat' && <ProgramTab session={session} items={program} therapist={home?.therapist} onToggle={toggleExercise} />}
           {tab === 'fb' && <FeedbackTab history={history} onSubmit={submitFeedback} />}
-          {tab === 'book' && <BookingTab session={session} lastTherapist={home?.therapist} onBack={() => setTab('home')} onBooked={() => { refreshHome(session); setTab('home'); }} onUnauthorized={onUnauthorizedBook} />}
+          {tab === 'book' && <BookingTab session={session} onBack={() => setTab('home')} onBooked={() => { refreshHome(session); setTab('home'); }} onUnauthorized={onUnauthorizedBook} />}
           {tab === 'chat' && <ChatTab session={session} therapist={home?.therapist} clinicName={home?.clinic?.name} onUnauthorized={() => backToGate('Sesi Anda berakhir.')} />}
         </div>
         <nav className="nav" role="tablist" aria-label="Menu">
