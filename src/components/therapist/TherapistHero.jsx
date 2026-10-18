@@ -63,7 +63,10 @@ const TherapistHero = ({ therapistName, today }) => {
   const motivation = useMemo(motivationToday, []);
   const sessions = today?.sessions || [];
   const now = today?.now || Date.now();
+  // Alur SOAP-sebelum-pembayaran hanya ada di klinik tertentu. Di klinik lain status SOAP tidak
+  // tercatat, jadi semua penanda dan tautan SOAP disembunyikan.
   const soapActive = !!today?.soapActive;
+  const soapLoaded = !!today?.soapLoaded;
   const shortName = String(therapistName || 'Terapis').split(',')[0].trim();
 
   const rows = sessions.map((s) => ({ ...s, st: statusOf(s, now) }));
@@ -72,7 +75,7 @@ const TherapistHero = ({ therapistName, today }) => {
   const nextUp = rows.find((s) => s.st === 'now') || rows.find((s) => s.st === 'next');
 
   const openSession = (s) => {
-    if (!s.patientId) return;
+    if (!soapActive || !s.patientId) return;
     navigate(`/therapist/records/new/${s.patientId}?date=${today.today}&dailyRecapId=${s.id}`);
   };
 
@@ -104,9 +107,11 @@ const TherapistHero = ({ therapistName, today }) => {
           <div className="grid grid-cols-3 gap-2 lg:w-[26rem] lg:shrink-0">
             <Kpi value={rows.length} label="Pasien hari ini" />
             <Kpi value={`${done}/${rows.length}`} label="Sesi selesai" />
-            {soapActive
-              ? <Kpi value={soapPending} label="SOAP belum diisi" />
-              : <Kpi value={rows.length - done} label="Sesi menunggu" />}
+            {!soapLoaded
+              ? <Kpi value="–" label="Sesi menunggu" />
+              : soapActive
+                ? <Kpi value={soapPending} label="SOAP belum diisi" />
+                : <Kpi value={rows.length - done} label="Sesi menunggu" />}
           </div>
         </div>
 
@@ -131,9 +136,9 @@ const TherapistHero = ({ therapistName, today }) => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.12 + i * 0.05, duration: 0.4 }}
                   onClick={() => openSession(s)}
-                  disabled={!s.patientId}
+                  disabled={!soapActive || !s.patientId}
                   className={cn(
-                    'relative min-w-[8.6rem] flex-1 snap-start overflow-hidden rounded-app border px-2.5 pb-2.5 pt-3 text-left transition-transform hover:-translate-y-0.5 disabled:cursor-default sm:min-w-[10.5rem] sm:px-3',
+                    'relative min-w-[8.6rem] flex-1 snap-start overflow-hidden rounded-app border px-2.5 pb-2.5 pt-3 text-left transition-transform enabled:hover:-translate-y-0.5 disabled:cursor-default sm:min-w-[10.5rem] sm:px-3',
                     s.st === 'now' || s.st === 'late'
                       ? 'border-transparent bg-white text-slate-900 shadow-lg'
                       : 'border-white/20 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20',

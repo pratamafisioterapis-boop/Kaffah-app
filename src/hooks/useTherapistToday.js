@@ -33,7 +33,7 @@ export const useNow = (intervalMs = 30000) => {
 
 // Sesi terapis hari ini (dari daily_recaps + slot appointment) untuk banner agenda dan pengingat SOAP.
 export const useTherapistToday = (therapistId) => {
-  const { settings } = useSoapFirstSettings();
+  const { settings, loaded: soapLoaded } = useSoapFirstSettings();
   const today = todayWita();
   const soapActive = isSoapFirstActiveOn(settings, today);
   const [sessions, setSessions] = useState([]);
@@ -68,5 +68,5 @@ export const useTherapistToday = (therapistId) => {
     return () => clearInterval(t);
   }, [load]);
 
-  return { sessions, loading, soapActive, now, today, reload: load };
+  return { sessions, loading, soapActive, soapLoaded, now, today, reload: load };
 };
