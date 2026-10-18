@@ -167,29 +167,19 @@ const CapacityVsDemandChart = () => {
       {/* Header */}
       <div className="p-5 md:p-6 pb-0">
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold text-slate-800">Kapasitas vs Permintaan</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {view === 'monthly'
-                ? `Overview per minggu · ${format(anchorDate, 'MMMM yyyy', { locale: id })}`
-                : `Overview mingguan · ${format(startOfWeek(anchorDate, { weekStartsOn: 1 }), 'dd MMM', { locale: id })} - ${format(endOfWeek(anchorDate, { weekStartsOn: 1 }), 'dd MMM yyyy', { locale: id })}`}
+          <h2 className="min-w-0 text-base font-bold text-slate-800">Kapasitas vs Permintaan</h2>
+          <div className="shrink-0 text-right whitespace-nowrap">
+            <p className={`text-xl font-black leading-none ${avgUtilization >= 75 ? 'text-amber-600' : 'text-emerald-600'}`}>
+              {avgUtilization}%
             </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className={`text-xl font-black leading-none ${avgUtilization >= 75 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                {avgUtilization}%
-              </p>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">Avg Utilisasi</p>
-            </div>
-            {loading
-              ? <Loader2 className="h-4 w-4 animate-spin text-slate-300 shrink-0" />
-              : <button onClick={fetchData} aria-label="Muat ulang kapasitas dan permintaan" className="tap-target relative before:absolute before:-inset-2 before:content-[''] w-7 h-7 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-[0.97]">
-                  <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
-                </button>
-            }
+            <p className="text-xs text-slate-500 font-medium mt-0.5">Avg Utilisasi</p>
           </div>
         </div>
+        <p className="text-xs text-slate-500 mt-0.5 whitespace-nowrap">
+          {view === 'monthly'
+            ? `Overview per minggu · ${format(anchorDate, 'MMMM yyyy', { locale: id })}`
+            : `Overview mingguan · ${format(startOfWeek(anchorDate, { weekStartsOn: 1 }), 'dd MMM', { locale: id })} - ${format(endOfWeek(anchorDate, { weekStartsOn: 1 }), 'dd MMM yyyy', { locale: id })}`}
+        </p>
 
         {/* Weekly / Monthly toggle + period navigation */}
         <div className="flex items-center justify-between gap-2 mt-3 flex-wrap">
@@ -213,6 +203,12 @@ const CapacityVsDemandChart = () => {
           </div>
 
           <div className="flex items-center gap-1">
+            {loading
+              ? <Loader2 className="h-4 w-4 animate-spin text-slate-300 shrink-0 mr-1" />
+              : <button onClick={fetchData} aria-label="Muat ulang kapasitas dan permintaan" className="tap-target relative before:absolute before:-inset-2 before:content-[''] w-6 h-6 mr-1 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-[0.97]">
+                  <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
+                </button>
+            }
             <button
               onClick={goToPrevious}
               className="tap-target relative before:absolute before:-inset-2.5 before:content-[''] w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-[0.97]"
