@@ -291,9 +291,11 @@ const tokenSignature = (sentence) => JSON.stringify([sentence.kind, sentence.tok
  *
  * @param templates   [{ key, label, template }] — satu per diagnosa yang punya template
  * @param currentText isi Subjective saat ini (untuk menentukan ganti / tambahkan)
+ * @param replaceableText awal teks yang boleh diganti template (salinan kunjungan lalu, isi SOAP yang
+ *                    sedang diedit, atau hasil template sebelumnya); teks di belakangnya tetap dipertahankan
  * @param onApply     (text, { replace }) => void
  */
-const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, onApply, compact = false, variables, previewOnly = false, defaultOpen = true, mode = 'subjective', embedded = false, variantSel, onVariantSel }) => {
+const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, replaceableText = '', onApply, compact = false, variables, previewOnly = false, defaultOpen = true, mode = 'subjective', embedded = false, variantSel, onVariantSel }) => {
   const [activeKey, setActiveKey] = useState(rawTemplates[0]?.key);
   const [valuesByKey, setValuesByKey] = useState({});
   // Diagnosa dengan beberapa varian template: terapis memilih varian, template yang dipakai = varian itu.
@@ -430,7 +432,8 @@ const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, onApp
     [parsedAll, valuesByKey]
   );
   const existing = (currentText || '').trim();
-  const willReplace = !existing || existing === lastApplied.trim();
+  const replaceable = (replaceableText || '').trim();
+  const willReplace = !existing || existing === lastApplied.trim() || (!!replaceable && existing.startsWith(replaceable));
 
   const output = useMemo(() => {
     const body = merged

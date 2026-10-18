@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -268,27 +268,24 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     });
   };
 
-  // Teks hasil salin kunjungan lalu (terapi lanjutan). Template yang dipilih setelahnya
-  // menggantikan salinan ini, bukan ditumpuk di bawahnya, supaya SOAP tidak ganda.
-  const copiedBaselineRef = useRef({});
+  // Teks yang boleh diganti template: salinan kunjungan lalu (terapi lanjutan), isi SOAP yang
+  // sedang diedit, atau hasil template sebelumnya. Template yang dipilih ulang menggantikan teks
+  // ini, bukan ditumpuk di bawahnya, supaya SOAP tidak ganda.
+  const [templateBase, setTemplateBase] = useState({});
 
   const handleApplyTemplate = (field) => (text, { replace }) => {
     const existing = (formData[field] || '').trim();
-    const baseline = (copiedBaselineRef.current[field] || '').trim();
-    const replacesCopy = !replace && !!existing && !!baseline && existing.startsWith(baseline);
-    if (replace || replacesCopy) delete copiedBaselineRef.current[field];
-    setFormData((prev) => {
-      const prevText = (prev[field] || '').trim();
-      if (replacesCopy) {
-        // Tambahan terapis setelah salinan (mis. baris Update Kondisi) tetap dipertahankan.
-        const extra = prevText.slice(baseline.length).trim();
-        return { ...prev, [field]: extra ? `${text}\n${extra}` : text };
-      }
-      return { ...prev, [field]: replace || !prevText ? text : `${prevText}\n\n${text}` };
-    });
+    const base = (templateBase[field] || '').trim();
+    const replacesBase = !!existing && !!base && existing.startsWith(base);
+    // Tambahan terapis setelah teks itu (mis. baris Update Kondisi) tetap dipertahankan.
+    const extra = replacesBase ? existing.slice(base.length).trim() : '';
+    const appends = !replacesBase && !replace && !!existing;
+    const next = appends ? `${existing}\n\n${text}` : extra ? `${text}\n${extra}` : text;
+    setFormData((prev) => ({ ...prev, [field]: next }));
+    setTemplateBase((prev) => ({ ...prev, [field]: appends ? null : text }));
     toast({
-      title: replace || replacesCopy ? `${field === 'objective' ? 'Objective' : 'Subjective'} terisi` : 'Template ditambahkan',
-      description: replacesCopy ? 'Template menggantikan salinan kunjungan lalu.' : 'Silakan cek dan lengkapi bila perlu.',
+      title: appends ? 'Template ditambahkan' : `${field === 'objective' ? 'Objective' : 'Subjective'} terisi`,
+      description: replacesBase ? 'Template menggantikan isi sebelumnya.' : 'Silakan cek dan lengkapi bila perlu.',
       className: 'bg-blue-50 border-blue-200 text-blue-800',
     });
   };
@@ -314,6 +311,9 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     // Assessment yang sudah ada dianggap hasil edit terapis: jangan ditimpa otomatis.
     setAssessmentAuto(!(data.assessment || '').trim());
     setEducationAuto(!(data.education || '').trim());
+
+    // Isi lama boleh diganti template yang dipilih ulang saat edit, bukan ditumpuk.
+    setTemplateBase({ subjective: data.subjective || '', objective: data.objective || '' });
 
     // Isi form SOAP
     setFormData({
@@ -542,7 +542,7 @@ if (isCreate) {
       onsetInfo?.complaint_onset_date || deriveOnsetFromSubjective(record.subjective, record.created_at)
     ), '');
     const copiedObjective = record.objective || '';
-    copiedBaselineRef.current = { subjective: copiedSubjective, objective: copiedObjective };
+    setTemplateBase({ subjective: copiedSubjective, objective: copiedObjective });
     setFormData(prev => ({
       ...prev,
       subjective: copiedSubjective,
@@ -577,6 +577,7 @@ if (isCreate) {
       setDiagnosis([]);
       setAssessmentAuto(true);
       setFormData((prev) => ({ ...prev, subjective: '', objective: '', assessment: '', plan: '', plan_data: null }));
+      setTemplateBase({});
     }
     setContinuation('different');
   };
@@ -833,6 +834,7 @@ if (isCreate) {
                         variantSel={variantSel}
                         onVariantSel={handleVariantSel}
                         currentText={formData[field.key]}
+                        replaceableText={templateBase[field.key]}
                         onApply={handleApplyTemplate(field.key)}
                         mode={field.key}
                       />
@@ -936,6 +938,7 @@ if (isCreate) {
                   variantSel={variantSel}
                   onVariantSel={handleVariantSel}
                   currentText={formData[key]}
+                  replaceableText={templateBase[key]}
                   onApply={(text, opts) => { handleApplyTemplate(key)(text, opts); setTemplateDialog(null); }}
                   mode={key}
                 />
