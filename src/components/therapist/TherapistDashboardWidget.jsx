@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { getPhysiotherapistByUserId, getDailyRecaps } from '@/lib/api';
-import TherapistGreetingMotivation from './TherapistGreetingMotivation';
+import TherapistHero from './TherapistHero';
 import SoapPendingBanner from '@/components/shared/SoapPendingBanner';
 import AvailableSlotsWidget from './AvailableSlotsWidget';
 import TherapistMetrics from './TherapistMetrics';
@@ -12,7 +12,7 @@ import TherapistPatientTypeDistribution from './TherapistPatientTypeDistribution
 import { Loader2, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const TherapistDashboardWidget = ({ initialProfile = null }) => {
+const TherapistDashboardWidget = ({ initialProfile = null, today = null }) => {
   const { user } = useAuth();
   const [therapistProfile, setTherapistProfile] = useState(initialProfile);
   const [loading, setLoading] = useState(!initialProfile);
@@ -96,7 +96,7 @@ const TherapistDashboardWidget = ({ initialProfile = null }) => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200 ease-out">
-      <TherapistGreetingMotivation therapistName={therapistProfile.name} />
+      <TherapistHero therapistName={therapistProfile.name} today={today} />
       <SoapPendingBanner therapistId={therapistProfile.id} role="therapist" />
       <MonthlyReportWidget therapistId={therapistProfile.id} therapistUserId={therapistProfile.user_id} />
       <TherapistMetrics therapist={therapistProfile} userId={user.id} />

@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { isNavItemDisabled } from '@/lib/featureCatalog';
 import { isLightLoadModeEnabled, LIGHT_LOAD_ALLOWED_PATHS } from '@/lib/lightLoadMode';
 import DashboardTopbar from '@/components/DashboardTopbar';
+import TherapistShell from '@/components/therapist/TherapistShell';
 import { preloadHeroImages } from '@/lib/preloadHeroImages';
 
 // Icon Mapping
@@ -79,7 +80,7 @@ const writeClinicInfoCache = (clinicId, data) => {
   try { window.localStorage.setItem(CLINIC_INFO_CACHE_KEY, JSON.stringify({ clinicId, data })); } catch { /* mode privat: abaikan */ }
 };
 
-const DashboardLayout = ({ children, navItems = [], role, userName }) => {
+const DashboardLayout = ({ children, navItems = [], role, userName, topSlot = null }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
 useEffect(() => {
@@ -503,6 +504,23 @@ const isPWA =
       </div>
     </div>
   );
+
+  // Akun terapis memakai kerangka sendiri (rail ikon + tab bar bawah); logika menu di atas tetap dipakai bersama.
+  if (role === 'therapist') {
+    return (
+      <TherapistShell
+        navItems={finalNavItems}
+        iconMap={iconMap}
+        userName={userName}
+        clinicInfo={clinicInfo}
+        clinicId={userDetails?.clinic_id}
+        onLogout={handleLogout}
+        topSlot={topSlot}
+      >
+        {children}
+      </TherapistShell>
+    );
+  }
 
   return (
     <div className="flex min-h-screen w-full overflow-x-hidden bg-[#F5F9FC]" style={{ fontFamily: 'var(--app-font, inherit)' }}>
