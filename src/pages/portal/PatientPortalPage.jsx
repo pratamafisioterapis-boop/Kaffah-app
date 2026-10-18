@@ -446,7 +446,6 @@ const PainScale = ({ value, onChange }) => {
           </span>
         ))}
       </div>
-      <div className="faces"><span>Tidak nyeri</span><span>Nyeri terberat</span></div>
     </div>
   );
 };
