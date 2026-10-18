@@ -377,6 +377,11 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
   const navigate = useNavigate();
   const { impersonationOrigin, user } = useAuth();
   const ownerOrigin = impersonationOrigin?.origin_role === 'owner' ? impersonationOrigin : null;
+  // An owner who hopped into an admin account keeps the owner switcher (back to
+  // Owner, full admin/therapist views). The SOAP-only admin switcher is for
+  // admins who logged in with their own username/password.
+  const showOwnerSwitcher = !!ownerOrigin || (role === 'owner' && !isAdminSwitcherContext);
+  const showAdminTherapistSwitcher = isAdminSwitcherContext && !ownerOrigin;
   const searchRef = useRef(null);
   const bellRef = useRef(null);
   const inputRef = useRef(null);
@@ -927,11 +932,11 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId }
           )}
         </div>
 
-        {(role === 'owner' || ownerOrigin) && !isAdminSwitcherContext && (
+        {showOwnerSwitcher && (
           <OwnerAccountSwitcher clinicId={ownerOrigin?.origin_clinic_id || clinicId} />
         )}
 
-        {isAdminSwitcherContext && !isLightLoadModeEnabled() && (
+        {showAdminTherapistSwitcher && !isLightLoadModeEnabled() && (
           <AdminTherapistSwitcher clinicId={clinicId} />
         )}
 
