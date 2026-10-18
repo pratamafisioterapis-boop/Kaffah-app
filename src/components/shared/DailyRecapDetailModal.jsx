@@ -7,6 +7,7 @@ import { formatDateIndonesian, formatTime } from '@/lib/dateFormatHelpers';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
+import { fetchRecapVitals, formatVitalsLine } from '@/lib/recapVitals';
 import { 
     getAllRecapOptions
 } from '@/lib/api';
@@ -43,6 +44,15 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
     // Cache for options (diagnosa, service_type, etc.)
     const [optionsMap, setOptionsMap] = useState({});
     const [isLoadingOptions, setIsLoadingOptions] = useState(false);
+    const [vitalsRow, setVitalsRow] = useState(null);
+
+    useEffect(() => {
+        setVitalsRow(null);
+        if (!isOpen || !recap?.id) return undefined;
+        let cancelled = false;
+        fetchRecapVitals(recap.id).then((row) => { if (!cancelled) setVitalsRow(row); });
+        return () => { cancelled = true; };
+    }, [isOpen, recap?.id]);
 
     useEffect(() => {
         if (isOpen) {
@@ -246,6 +256,18 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                             </div>
                         </div>
                     </div>
+
+                    {/* Tanda Vital (input admin, tertaut ke SOAP) */}
+                    {formatVitalsLine(vitalsRow) && (
+                        <div className="space-y-2 md:col-span-2 p-5 rounded-app-lg border border-cyan-200/60 bg-cyan-50/40 shadow-sm">
+                            <div className="flex items-center gap-2 mb-2 pb-2 border-b border-cyan-200/60">
+                                <Activity className="w-4 h-4 text-cyan-700" />
+                                <h4 className="text-sm font-bold text-slate-800">Tanda-Tanda Vital</h4>
+                            </div>
+                            <p className="text-[15px] font-semibold text-slate-900 break-words">{formatVitalsLine(vitalsRow)}</p>
+                            {vitalsRow?.notes && <p className="text-xs text-slate-500">{vitalsRow.notes}</p>}
+                        </div>
+                    )}
 
                     {/* Section 4: Keuangan */}
             <div className="space-y-4 md:col-span-2 p-5 rounded-app-lg border border-blue-200/40 bg-gradient-to-br from-app-soft via-white to-app-soft shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200">

@@ -36,6 +36,8 @@ import { createOperationalOption } from '@/lib/api';
 import { useSoapFirstSettings, useRecapQuote } from '@/hooks/useSoapFirst';
 import { isSoapFirstActiveOn } from '@/lib/soapFirst';
 import SoapOverrideDialog from './SoapOverrideDialog';
+import VitalSignsFields from '@/components/admin/VitalSignsFields';
+import { EMPTY_VITALS, fetchRecapVitals, hasAnyVital, saveRecapVitals, vitalsFromRow } from '@/lib/recapVitals';
 
 import { 
     parseDateFromDisplay,
@@ -57,7 +59,9 @@ const useDebounce = (value, delay) => {
 
 const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, onSuccess }) => {
     const { toast } = useToast();
-    const { userDetails } = useAuth();
+    const { userDetails, user: authUser } = useAuth();
+    const [vitals, setVitals] = useState({ ...EMPTY_VITALS });
+    const [hadVitals, setHadVitals] = useState(false);
 
     // Klinik dengan template invoice "kwitansi": item invoice dipilih dari katalog
     // harga langsung di recap, field "Tipe Layanan" & diskon recap tidak dipakai.
@@ -275,6 +279,20 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
             .maybeSingle();
         setRecapMeta(data || null);
     }, [initialData?.id]);
+
+    // Tanda vital sesi ini (diinput admin, tertaut ke SOAP lewat daily_recap_id).
+    useEffect(() => {
+        setVitals({ ...EMPTY_VITALS });
+        setHadVitals(false);
+        if (!isOpen || mode !== 'edit' || !initialData?.id) return undefined;
+        let cancelled = false;
+        fetchRecapVitals(initialData.id).then((row) => {
+            if (cancelled) return;
+            setVitals(vitalsFromRow(row));
+            setHadVitals(!!row);
+        });
+        return () => { cancelled = true; };
+    }, [isOpen, mode, initialData?.id]);
 
     useEffect(() => {
         if (isOpen && mode === 'edit') loadRecapMeta(); else setRecapMeta(null);
@@ -1334,6 +1352,15 @@ setFormData({
 
             if (result.error) throw result.error;
 
+            const vitalsRecapId = mode === 'add' ? result.data?.recap_id : initialData.id;
+            // Kosong & memang tidak pernah terisi = tidak ada yang perlu disimpan/dihapus.
+            if (vitalsRecapId && (hasAnyVital(vitals) || hadVitals)) {
+                const { error: vitalsError } = await saveRecapVitals(vitalsRecapId, formData.patient_id, vitals, { id: authUser?.id, name: userDetails?.name || userDetails?.full_name });
+                if (vitalsError) {
+                    toast({ variant: "destructive", title: "Recap tersimpan, tanda vital gagal", description: vitalsError.message });
+                }
+            }
+
             if (isKwitansi) {
                 const recapId = mode === 'add' ? result.data?.recap_id : initialData.id;
                 if (recapId) {
@@ -1897,6 +1924,9 @@ setFormData({
                                 {fPatientType}
                                 {fPackageType}
                             </div>
+                            <div className="space-y-3">
+                                <VitalSignsFields value={vitals} onChange={setVitals} />
+                            </div>
                         </div>
                         <div className="space-y-6">
                             <div className="space-y-3">
@@ -1924,6 +1954,9 @@ setFormData({
                                 <h3 className="text-sm font-bold text-slate-800 border-b pb-2">Diagnosa & Layanan</h3>
                                 {fDiagnosis}
                                 {fService}
+                            </div>
+                            <div className="space-y-3">
+                                <VitalSignsFields value={vitals} onChange={setVitals} />
                             </div>
                         </div>
                         {/* RIGHT COLUMN */}
