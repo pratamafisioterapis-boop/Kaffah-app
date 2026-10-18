@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Database, Plus, Upload } from 'lucide-react';
 import { usePatientList } from '@/hooks/usePatientList';
 import CenteredPatientTable from '@/components/shared/CenteredPatientTable';
+import PatientPreviewModal from '@/components/shared/PatientPreviewModal';
 import PatientModal from '@/components/shared/PatientModal';
 import ImportPatientExcelModal from '@/components/shared/ImportPatientExcelModal';
 import PageHero from '@/components/shared/PageHero';
@@ -19,6 +20,7 @@ const AdminDatabasePatients = () => {
     const [modalMode, setModalMode] = useState('add');
     const [selectedPatient, setSelectedPatient] = useState(null);
     const [isImportOpen, setIsImportOpen] = useState(false);
+    const [previewPatient, setPreviewPatient] = useState(null);
 
     const handlePaginationChange = (newPagination) => {
         setPagination(newPagination);
@@ -31,6 +33,11 @@ const AdminDatabasePatients = () => {
     };
 
     const handleRowClick = (patient) => {
+        setPreviewPatient(patient);
+    };
+
+    const handleEditFromPreview = (patient) => {
+        setPreviewPatient(null);
         setModalMode('edit');
         setSelectedPatient(patient);
         setModalOpen(true);
@@ -70,6 +77,14 @@ const AdminDatabasePatients = () => {
                 onFilterChange={handleFilterChange}
                 onRefresh={handleRefresh}
                 onRowClick={handleRowClick}
+            />
+
+            {/* Preview Data Diri */}
+            <PatientPreviewModal
+                isOpen={!!previewPatient}
+                onClose={() => setPreviewPatient(null)}
+                patient={previewPatient}
+                onEdit={handleEditFromPreview}
             />
 
             {/* Modal */}
