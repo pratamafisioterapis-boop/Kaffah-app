@@ -19,7 +19,7 @@ export const Pill = ({ tone, children, className }) => {
   );
 };
 
-// Tinggi kartu tetap, tidak tergantung jumlah baris; isi di-scroll di dalam kartu.
+// Tinggi kartu tetap (kecuali saat kosong), tidak tergantung jumlah baris; isi di-scroll di dalam kartu.
 const BOX_H = 'h-[320px] sm:h-[400px]';
 
 const AMOUNT_COLOR = { in: 'text-emerald-600', out: 'text-rose-600', neutral: 'text-slate-700' };
@@ -28,7 +28,7 @@ const AMOUNT_COLOR = { in: 'text-emerald-600', out: 'text-rose-600', neutral: 't
 // items: [{ id, date, cat, sub, badge, desc, bank, amt }]. onEdit/onDelete opsional.
 const TxList = ({ items, kind = 'neutral', onEdit, onDelete, loading, emptyText = 'Belum ada data' }) => {
   if (loading) return <div className={BOX_H}><TileLoading /></div>;
-  if (!items || items.length === 0) return <div className={cn(BOX_H, 'grid place-items-center')}><TileEmpty>{emptyText}</TileEmpty></div>;
+  if (!items || items.length === 0) return <TileEmpty>{emptyText}</TileEmpty>;
   const hasActions = !!(onEdit || onDelete);
   const amountCls = cn('font-bold tabular-nums whitespace-nowrap', AMOUNT_COLOR[kind]);
 
