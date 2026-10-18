@@ -954,13 +954,13 @@ const getPremiumPastelBadge = (text) => {
                         </Button>
                       </div>
                     ) : (
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 text-xs font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded border border-slate-200 w-fit">
-                          <span>{formatTime(new Date(recap.start_time))}</span>
-                          <span className="text-slate-300">→</span>
-                          <span>{formatTime(new Date(recap.end_time))}</span>
-                        </div>
-                        <div className="flex flex-wrap items-center justify-end gap-1.5 ml-auto">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 text-xs font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded border border-slate-200 w-fit">
+                            <span>{formatTime(new Date(recap.start_time))}</span>
+                            <span className="text-slate-300">→</span>
+                            <span>{formatTime(new Date(recap.end_time))}</span>
+                          </div>
                           {parseFloat(recap.amount || 0) > 0 && (
                             <span
                               title={
@@ -970,7 +970,7 @@ const getPremiumPastelBadge = (text) => {
                                   ? 'Status berdasarkan respons API — bukan konfirmasi pasien menerima.'
                                   : 'Invoice belum pernah dikirim ke WhatsApp pasien'
                               }
-                              className={`text-xs font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+                              className={`text-xs font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0 ${
                                 recap.invoice_wa_status === 'gagal'
                                   ? 'bg-red-50 text-red-600'
                                   : recap.invoice_wa_status
@@ -985,11 +985,13 @@ const getPremiumPastelBadge = (text) => {
                                 : '● Belum Dikirim'}
                             </span>
                           )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 [&>*:only-child]:col-span-2">
                           {getPortalPatient(recap) && (
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-8 text-xs text-green-700 border-green-200 hover:bg-green-50 rounded-app-sm"
+                              className="h-9 w-full text-xs text-green-700 border-green-200 hover:bg-green-50 rounded-app-sm"
                               onClick={() => setPortalPatient(getPortalPatient(recap))}
                             >
                               <Link2 className="w-3 h-3 mr-1.5" />Portal
@@ -999,7 +1001,7 @@ const getPremiumPastelBadge = (text) => {
                             size="sm"
                             variant="outline"
                             disabled={parseFloat(recap.amount || 0) === 0}
-                            className="h-8 text-xs text-blue-600 border-blue-200 hover:bg-blue-50 rounded-app-sm"
+                            className="h-9 w-full text-xs text-blue-600 border-blue-200 hover:bg-blue-50 rounded-app-sm"
                             onClick={() => {
                               setSelectedInvoiceData(recap);
                               setInvoiceModalOpen(true);
