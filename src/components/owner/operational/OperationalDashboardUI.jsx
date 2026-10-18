@@ -68,7 +68,7 @@ const OperationalDashboardUI = ({
           {periodKPIs.map(({ label, value, badge, icon: Icon, tone }) => {
             const t = TONES[tone];
             return (
-              <div key={label} className={cn('rounded-2xl border border-slate-100 p-3 md:p-4 min-w-0', t.tint)}>
+              <div key={label} className={cn('rounded-2xl border border-slate-100 px-2 py-3 sm:p-3 md:p-4 min-w-0', t.tint)}>
                 <div className="flex items-center justify-between gap-1 mb-2 md:mb-3">
                   <span className={cn('w-7 h-7 md:w-9 md:h-9 rounded-[10px] flex items-center justify-center', t.icon)}>
                     <Icon className="w-3.5 h-3.5 md:w-[18px] md:h-[18px]" />
@@ -78,7 +78,7 @@ const OperationalDashboardUI = ({
                 <p className="text-2xl md:text-4xl font-black tabular-nums leading-none text-slate-900">
                   <AnimatedNumber value={value} format={formatInt} />
                 </p>
-                <p className="text-xs md:text-sm font-medium text-slate-500 mt-1 break-words">{label}</p>
+                <p className="text-[11px] sm:text-xs md:text-sm font-medium tracking-tight text-slate-500 mt-1 whitespace-nowrap truncate">{label}</p>
               </div>
             );
           })}
