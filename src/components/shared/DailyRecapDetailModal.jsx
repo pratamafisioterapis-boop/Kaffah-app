@@ -22,6 +22,19 @@ const DetailItem = ({ icon: Icon, label, value, className = "", valueClassName =
     </div>
 );
 
+const isUuid = (v) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+
+const getDiagnosisIds = (diagnosis) => {
+    let list = [];
+    try {
+        if (typeof diagnosis === 'string') {
+            try { list = JSON.parse(diagnosis); } catch { list = [diagnosis]; }
+        } else if (Array.isArray(diagnosis)) list = diagnosis;
+    } catch (e) { list = []; }
+    if (!Array.isArray(list)) list = [list];
+    return list.flat().filter(Boolean);
+};
+
 const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => {
     const { toast } = useToast();
     const [isDeleting, setIsDeleting] = useState(false);
@@ -38,19 +51,31 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
             // Fetch options to map UUIDs to Labels
             fetchOptions();
         }
-    }, [isOpen]);
+    }, [isOpen, recap?.id]);
 
     const fetchOptions = async () => {
         setIsLoadingOptions(true);
         try {
             const { data, error } = await getAllRecapOptions();
+            const mapping = {};
             if (data && !error) {
-                const mapping = {};
                 data.forEach(opt => {
                     mapping[opt.id] = opt.label;
                 });
-                setOptionsMap(mapping);
             }
+
+            // Diagnosa yang sudah tersimpan bisa merujuk opsi nonaktif / di luar
+            // daftar aktif, jadi ambil langsung berdasarkan ID-nya.
+            const missingIds = getDiagnosisIds(recap?.diagnosis)
+                .filter(id => isUuid(id) && !mapping[id]);
+            if (missingIds.length > 0) {
+                const { data: extra } = await supabase
+                    .from('operational_options')
+                    .select('id, label')
+                    .in('id', missingIds);
+                (extra || []).forEach(opt => { mapping[opt.id] = opt.label; });
+            }
+            setOptionsMap(mapping);
         } catch (error) {
             console.error("Error fetching options in detail modal:", error);
         } finally {
@@ -74,25 +99,19 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
     const packageLabel = recap.package_type || '-';
 
     const renderDiagnoses = (diagnosis) => {
-    let diagnosesList = [];
-
-    try {
-        if (typeof diagnosis === 'string') diagnosesList = JSON.parse(diagnosis);
-        else if (Array.isArray(diagnosis)) diagnosesList = diagnosis;
-    } catch (e) { diagnosesList = []; }
-
-    const flat = diagnosesList.flat().filter(Boolean);
+    const flat = getDiagnosisIds(diagnosis);
 
     if (flat.length === 0) {
         return <span className="text-sm text-slate-500">-</span>;
     }
 
     return flat.map((d, i) => {
-        const label = optionsMap[d];
+        // Diagnosa ketikan bebas disimpan sebagai teks, bukan UUID
+        const label = optionsMap[d] || (isUuid(d) ? null : d);
 
         return (
             <Badge key={i} className="bg-slate-100 text-slate-700">
-                {label || '...'} {/* 🔥 fallback aman */}
+                {label || '...'}
             </Badge>
         );
     });
