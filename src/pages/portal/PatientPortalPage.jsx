@@ -336,10 +336,11 @@ const ProgressTab = ({ data, goals, complaint }) => {
   );
 };
 
-// Tautan putar bertanda tangan (berlaku 1 jam) untuk semua latihan yang punya video. Dipakai untuk sampul
-// (satu bingkai video) dan pemutar. null = gagal dimuat.
+// Tautan putar bertanda tangan (berlaku 1 jam) untuk semua latihan yang punya video, diambil dalam satu
+// panggilan beserta gambar sampulnya. urls: null = gagal dimuat. posters: tautan JPG sampul atau null.
 const useVideoUrls = (session, items) => {
   const [urls, setUrls] = useState({});
+  const [posters, setPosters] = useState({});
   const asked = useRef(new Set());
   const load = useCallback((id, force = false) => {
     if (!force && asked.current.has(id)) return;
@@ -348,20 +349,36 @@ const useVideoUrls = (session, items) => {
       .then((u) => setUrls((p) => ({ ...p, [id]: u })))
       .catch(() => setUrls((p) => ({ ...p, [id]: null })));
   }, [session]);
-  useEffect(() => { items.filter((i) => i.has_video).forEach((i) => load(i.exercise_id)); }, [items, load]);
-  return [urls, load];
+  useEffect(() => {
+    const ids = items.filter((i) => i.has_video && !asked.current.has(i.exercise_id)).map((i) => i.exercise_id);
+    if (ids.length === 0) return;
+    ids.forEach((id) => asked.current.add(id));
+    portalApi.videoUrls(session, ids)
+      .then((res) => {
+        setUrls((p) => ({ ...p, ...Object.fromEntries(ids.map((id) => [id, res[id]?.url ?? null])) }));
+        setPosters((p) => ({ ...p, ...Object.fromEntries(ids.map((id) => [id, res[id]?.poster ?? null])) }));
+      })
+      // Fungsi lama tanpa mode daftar: ambil satu per satu seperti sebelumnya.
+      .catch(() => ids.forEach((id) => load(id, true)));
+  }, [items, session, load]);
+  return [urls, load, posters];
 };
 
-const Thumb = ({ item, url }) => (
+const markReady = (e) => e.currentTarget.classList.add('ready');
+
+const Thumb = ({ item, url, poster }) => (
   <div className={`thumb${item.has_video ? '' : ' no-video'}`} aria-hidden="true">
-    {item.has_video && url && <video src={`${url}#t=0.5`} muted playsInline preload="metadata" tabIndex={-1} onLoadedData={(e) => e.currentTarget.classList.add('ready')} />}
+    {item.has_video && (poster
+      ? <img src={poster} alt="" decoding="async" onLoad={markReady} />
+      // Belum ada sampul: ambil satu bingkai dari videonya (lebih lambat).
+      : poster === null && url && <video src={`${url}#t=0.5`} muted playsInline preload="metadata" tabIndex={-1} onLoadedData={markReady} />)}
     {item.has_video ? <span className="play"><Play size={18} fill="currentColor" /></span> : <Activity size={30} strokeWidth={1.6} />}
   </div>
 );
 
 const ProgramTab = ({ session, items, therapist, onToggle }) => {
   const [openId, setOpenId] = useState(null);
-  const [urls, loadUrl] = useVideoUrls(session, items);
+  const [urls, loadUrl, posters] = useVideoUrls(session, items);
   const cur = items.find((i) => i.exercise_id === openId);
   const curUrl = cur ? urls[cur.exercise_id] : undefined;
   const doneCount = items.filter((i) => i.done_today).length;
@@ -375,7 +392,7 @@ const ProgramTab = ({ session, items, therapist, onToggle }) => {
         {items.map((e) => (
           <div className="card ex" key={e.exercise_id}>
             <button className="vid" onClick={() => setOpenId(e.exercise_id)} aria-label={`Buka ${e.title}`}>
-              <Thumb item={e} url={urls[e.exercise_id]} />
+              <Thumb item={e} url={urls[e.exercise_id]} poster={posters[e.exercise_id]} />
               <div className="sp"><b className="ex-title">{e.title}</b><span className="muted small">{e.dose}</span></div>
               <span className={`check ${e.done_today ? 'on' : ''}`} aria-label={e.done_today ? 'Selesai' : 'Belum selesai'}><Check size={18} strokeWidth={3} /></span>
             </button>
