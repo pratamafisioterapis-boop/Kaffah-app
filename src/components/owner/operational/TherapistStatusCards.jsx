@@ -276,8 +276,8 @@ const TherapistStatusCards = ({
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <h3 className="min-w-0 font-bold text-slate-900 text-sm break-words sm:truncate">{formatName(therapist.name)}</h3>
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="min-w-0 font-bold text-slate-900 text-sm leading-snug break-words">{formatName(therapist.name)}</h3>
                         <span className={`shrink-0 whitespace-nowrap text-xs font-bold px-2 py-0.5 rounded-full ${badge}`}>{label}</span>
                       </div>
                       <div className="flex items-center gap-3 mt-1.5">
