@@ -20,14 +20,14 @@ export const Pill = ({ tone, children, className }) => {
 };
 
 // Tinggi kartu tetap (kecuali saat kosong), tidak tergantung jumlah baris; isi di-scroll di dalam kartu.
-const BOX_H = 'h-[320px] sm:h-[400px]';
+export const LIST_H = 'h-[320px] sm:h-[400px]';
 
 const AMOUNT_COLOR = { in: 'text-emerald-600', out: 'text-rose-600', neutral: 'text-slate-700' };
 
 // Daftar transaksi gaya bento: baris di desktop, kartu ringkas di HP.
 // items: [{ id, date, cat, sub, badge, desc, bank, amt }]. onEdit/onDelete opsional.
 const TxList = ({ items, kind = 'neutral', onEdit, onDelete, loading, emptyText = 'Belum ada data' }) => {
-  if (loading) return <div className={BOX_H}><TileLoading /></div>;
+  if (loading) return <div className={LIST_H}><TileLoading /></div>;
   if (!items || items.length === 0) return <TileEmpty>{emptyText}</TileEmpty>;
   const hasActions = !!(onEdit || onDelete);
   const amountCls = cn('font-bold tabular-nums whitespace-nowrap', AMOUNT_COLOR[kind]);
@@ -48,7 +48,7 @@ const TxList = ({ items, kind = 'neutral', onEdit, onDelete, loading, emptyText 
   );
 
   return (
-    <div className={cn(BOX_H, 'divide-y divide-slate-100 overflow-y-auto overflow-x-hidden overscroll-contain pr-1')}>
+    <div className={cn(LIST_H, 'divide-y divide-slate-100 overflow-y-auto overflow-x-hidden overscroll-contain pr-1')}>
       {items.map((item, idx) => (
         <div key={item.id ?? idx}>
           {/* Desktop */}
