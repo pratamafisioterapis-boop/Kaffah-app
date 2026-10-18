@@ -24,6 +24,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import DatePicker from '@/components/DatePicker';
 import DailyRecapModal from '@/components/shared/DailyRecapModal';
 import DailyRecapDetailModal from '@/components/shared/DailyRecapDetailModal';
+import InvoiceStatusButton from '@/components/admin/InvoiceStatusButton';
 import InvoiceModal from '@/components/admin/InvoiceModal';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
@@ -509,40 +510,14 @@ const OwnerDailyRecap = () => {
                   </div>
 
                   <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={parseFloat(recap.amount || 0) === 0}
-                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                    <InvoiceStatusButton
+                      className="ml-auto max-w-[11rem]"
+                      recap={recap}
                       onClick={() => {
                         setSelectedInvoiceData(recap);
                         setInvoiceModalOpen(true);
                       }}
-                    >
-                      Invoice
-                    </Button>
-                    <span
-                      title={
-                        recap.invoice_wa_status === 'gagal'
-                          ? 'Gagal dikirim'
-                          : recap.invoice_wa_status
-                          ? 'Status berdasarkan respons API — bukan konfirmasi pasien menerima. Jika pasien 24 jam terakhir tidak WA klinik, pesan bisa gagal masuk walau status ini hijau.'
-                          : 'Invoice belum pernah dikirim ke WhatsApp pasien'
-                      }
-                      className={`text-xs font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
-                        recap.invoice_wa_status === 'gagal'
-                          ? 'bg-red-50 text-red-600'
-                          : recap.invoice_wa_status
-                          ? 'bg-emerald-50 text-emerald-600'
-                          : 'bg-amber-50 text-amber-600'
-                      }`}
-                    >
-                      {recap.invoice_wa_status === 'gagal'
-                        ? '✕ Gagal'
-                        : recap.invoice_wa_status
-                        ? '✓ Terkirim'
-                        : '● Belum Dikirim'}
-                    </span>
+                    />
                   </div>
                 </div>
               );
@@ -641,40 +616,13 @@ const OwnerDailyRecap = () => {
                         </td>
                         <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                           <div className="flex flex-col items-center gap-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={parseFloat(recap.amount || 0) === 0}
-                              className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            <InvoiceStatusButton
+                              recap={recap}
                               onClick={() => {
                                 setSelectedInvoiceData(recap);
                                 setInvoiceModalOpen(true);
                               }}
-                            >
-                              Invoice
-                            </Button>
-                            <span
-                              title={
-                                recap.invoice_wa_status === 'gagal'
-                                  ? 'Gagal dikirim'
-                                  : recap.invoice_wa_status
-                                  ? 'Status berdasarkan respons API — bukan konfirmasi pasien menerima. Jika pasien 24 jam terakhir tidak WA klinik, pesan bisa gagal masuk walau status ini hijau.'
-                                  : 'Invoice belum pernah dikirim ke WhatsApp pasien'
-                              }
-                              className={`text-xs font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
-                                recap.invoice_wa_status === 'gagal'
-                                  ? 'bg-red-50 text-red-600'
-                                  : recap.invoice_wa_status
-                                  ? 'bg-emerald-50 text-emerald-600'
-                                  : 'bg-amber-50 text-amber-600'
-                              }`}
-                            >
-                              {recap.invoice_wa_status === 'gagal'
-                                ? '✕ Gagal'
-                                : recap.invoice_wa_status
-                                ? '✓ Terkirim'
-                                : '● Belum Dikirim'}
-                            </span>
+                            />
                           </div>
                         </td>
                       </motion.tr>

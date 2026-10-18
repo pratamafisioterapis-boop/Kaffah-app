@@ -6,6 +6,7 @@ import {
   ChevronLeft, ChevronRight, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, BarChart3, CreditCard, Users, Link2
 } from 'lucide-react';
 import { getDailyRecaps, getDailyRecapsTotalAmount, getPhysiotherapists, getCachedClinicId } from '@/lib/api';
+import InvoiceStatusButton from '@/components/admin/InvoiceStatusButton';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { 
@@ -961,30 +962,6 @@ const getPremiumPastelBadge = (text) => {
                             <span className="text-slate-300">→</span>
                             <span>{formatTime(new Date(recap.end_time))}</span>
                           </div>
-                          {parseFloat(recap.amount || 0) > 0 && (
-                            <span
-                              title={
-                                recap.invoice_wa_status === 'gagal'
-                                  ? 'Gagal dikirim'
-                                  : recap.invoice_wa_status
-                                  ? 'Status berdasarkan respons API — bukan konfirmasi pasien menerima.'
-                                  : 'Invoice belum pernah dikirim ke WhatsApp pasien'
-                              }
-                              className={`text-xs font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0 ${
-                                recap.invoice_wa_status === 'gagal'
-                                  ? 'bg-red-50 text-red-600'
-                                  : recap.invoice_wa_status
-                                  ? 'bg-emerald-50 text-emerald-600'
-                                  : 'bg-amber-50 text-amber-600'
-                              }`}
-                            >
-                              {recap.invoice_wa_status === 'gagal'
-                                ? '✕ Gagal'
-                                : recap.invoice_wa_status
-                                ? '✓ Terkirim'
-                                : '● Belum Dikirim'}
-                            </span>
-                          )}
                         </div>
                         <div className="grid grid-cols-2 gap-2 [&>*:only-child]:col-span-2">
                           {getPortalPatient(recap) && (
@@ -997,18 +974,13 @@ const getPremiumPastelBadge = (text) => {
                               <Link2 className="w-3 h-3 mr-1.5" />Portal
                             </Button>
                           )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={parseFloat(recap.amount || 0) === 0}
-                            className="h-9 w-full text-xs text-blue-600 border-blue-200 hover:bg-blue-50 rounded-app-sm"
+                          <InvoiceStatusButton
+                            recap={recap}
                             onClick={() => {
                               setSelectedInvoiceData(recap);
                               setInvoiceModalOpen(true);
                             }}
-                          >
-                            <CreditCard className="w-3 h-3 mr-1.5" />Invoice
-                          </Button>
+                          />
                         </div>
                       </div>
                     )}
@@ -1139,18 +1111,13 @@ const getPremiumPastelBadge = (text) => {
                     </td>
                     <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center" onClick={(e) => e.stopPropagation()}>
   <div className="flex flex-col items-center gap-1">
-    <Button
-    size="sm"
-    variant="outline"
-    disabled={parseFloat(recap.amount || 0) === 0}
-    className="text-blue-600 border-blue-200 hover:bg-blue-50 h-7 px-2 text-xs xl:h-9 xl:px-3 xl:text-sm"
-    onClick={() => {
-      setSelectedInvoiceData(recap);
-      setInvoiceModalOpen(true);
-    }}
-  >
-    Invoice
-  </Button>
+    <InvoiceStatusButton
+      recap={recap}
+      onClick={() => {
+        setSelectedInvoiceData(recap);
+        setInvoiceModalOpen(true);
+      }}
+    />
     {getPortalPatient(recap) && (
       <Button
         size="sm"
@@ -1160,30 +1127,6 @@ const getPremiumPastelBadge = (text) => {
       >
         <Link2 className="w-3 h-3 mr-1" />Portal
       </Button>
-    )}
-    {parseFloat(recap.amount || 0) > 0 && (
-    <span
-      title={
-        recap.invoice_wa_status === 'gagal'
-          ? 'Gagal dikirim'
-          : recap.invoice_wa_status
-          ? 'Status berdasarkan respons API — bukan konfirmasi pasien menerima. Jika pasien 24 jam terakhir tidak WA klinik, pesan bisa gagal masuk walau status ini hijau.'
-          : 'Invoice belum pernah dikirim ke WhatsApp pasien'
-      }
-      className={`text-xs font-semibold px-1.5 py-0.5 rounded-full leading-tight text-center ${
-        recap.invoice_wa_status === 'gagal'
-          ? 'bg-red-50 text-red-600'
-          : recap.invoice_wa_status
-          ? 'bg-emerald-50 text-emerald-600'
-          : 'bg-amber-50 text-amber-600'
-      }`}
-    >
-      {recap.invoice_wa_status === 'gagal'
-        ? '✕ Gagal'
-        : recap.invoice_wa_status
-        ? '✓ Terkirim'
-        : '● Belum Dikirim'}
-    </span>
     )}
   </div>
 </td>
