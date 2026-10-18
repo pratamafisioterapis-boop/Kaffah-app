@@ -101,16 +101,19 @@ const TherapistStatusCards = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <h2 className="text-base font-bold text-slate-800">Status Terapis Hari Ini</h2>
           {dateRange?.startDate && dateRange?.endDate && (
-            <p className="text-xs text-slate-500 mt-0.5">
-              SOAP & data pasien mengikuti periode: {formatShortDate(dateRange.startDate)} – {formatShortDate(dateRange.endDate)}
+            <p
+              className="text-xs text-slate-500 mt-0.5 whitespace-nowrap"
+              title="SOAP & data pasien mengikuti periode ini"
+            >
+              Periode {formatShortDate(dateRange.startDate)} – {formatShortDate(dateRange.endDate)}
             </p>
           )}
         </div>
-        <span className="text-xs text-slate-500 font-medium">{therapists.length} terapis aktif</span>
+        <span className="shrink-0 whitespace-nowrap text-xs text-slate-500 font-medium">{therapists.length} terapis aktif</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
@@ -159,8 +162,8 @@ const TherapistStatusCards = ({
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-1">
-                        <h3 className="font-bold text-slate-900 text-sm leading-snug">{therapist.name}</h3>
-                        <span className={`shrink-0 text-xs font-bold px-2.5 py-1 rounded-full ${badge}`}>{label}</span>
+                        <h3 className="min-w-0 font-bold text-slate-900 text-sm leading-snug [overflow-wrap:anywhere]">{therapist.name}</h3>
+                        <span className={`shrink-0 whitespace-nowrap text-xs font-bold px-2.5 py-1 rounded-full ${badge}`}>{label}</span>
                       </div>
                       <p className="text-xs text-slate-500">{therapist.specialization || 'Physiotherapist'}</p>
                     </div>
@@ -270,8 +273,8 @@ const TherapistStatusCards = ({
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <h3 className="font-bold text-slate-900 text-sm break-words sm:truncate">{therapist.name}</h3>
-                        <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${badge}`}>{label}</span>
+                        <h3 className="min-w-0 font-bold text-slate-900 text-sm [overflow-wrap:anywhere] sm:truncate">{therapist.name}</h3>
+                        <span className={`shrink-0 whitespace-nowrap text-xs font-bold px-2 py-0.5 rounded-full ${badge}`}>{label}</span>
                       </div>
                       <div className="flex items-center gap-3 mt-1.5">
                         <span className="text-xs font-black text-slate-900">{sessions} <span className="font-medium text-slate-500">sesi</span></span>

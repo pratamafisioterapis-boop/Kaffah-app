@@ -184,7 +184,6 @@ const PromoUsageWidget = ({ dateRange }) => {
         <div className="flex items-start justify-between">
           <div>
             <h2 className="text-base font-bold text-slate-800">Sesi Promo</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Pemakaian jenis diskon/reward pada periode ini</p>
           </div>
           {!loading && (
             <div className="text-right">

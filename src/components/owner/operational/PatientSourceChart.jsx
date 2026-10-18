@@ -153,8 +153,8 @@ const PatientSourceChart = ({ dateRange }) => {
       <div className="px-5 md:px-6 pt-5 md:pt-6 pb-4">
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-base font-bold text-slate-800">Sumber Pasien</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Dari mana pasien tahu klinik, per sesi pada periode ini</p>
+            <h2 className="text-base font-bold text-slate-800">Informasi Pasien</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Dari mana pasien tahu klinik</p>
           </div>
           {!loading && (
             <div className="text-right">
