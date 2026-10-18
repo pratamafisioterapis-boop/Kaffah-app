@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Save, Copy, History, CalendarDays, Clock, Wand2, Stethoscope, Sparkles, RefreshCw, TrendingUp, ChevronDown } from 'lucide-react';
+import { Loader2, ArrowLeft, Save, Copy, History, CalendarDays, Clock, Wand2, Stethoscope, Sparkles, RefreshCw, TrendingUp, ChevronDown, Activity } from 'lucide-react';
+import { fetchRecapVitals, formatVitalsLine } from '@/lib/recapVitals';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
 import { getTherapistPatients, createMedicalRecord, getMedicalRecords, updateMedicalRecord, getPatients, getPatientById, getTherapistSoapLockStatus, getPatientOnsetInfo, getDiagnosisOptions, getDiagnosisSubjectiveTemplates, getSubjectiveVariables, getIcfTitles, getEducationForDiagnoses } from '@/lib/api';
@@ -174,6 +175,23 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
         setRecapInfo(data || null);
       });
   }, [linkedRecapId]);
+
+  // Tanda vital yang diinput admin di Daily Recap (tertaut lewat daily_recap_id).
+  const [recapVitals, setRecapVitals] = useState(null);
+  useEffect(() => {
+    if (!linkedRecapId || !isValidUUID(linkedRecapId)) { setRecapVitals(null); return undefined; }
+    let cancelled = false;
+    fetchRecapVitals(linkedRecapId).then((row) => { if (!cancelled) setRecapVitals(row); });
+    return () => { cancelled = true; };
+  }, [linkedRecapId]);
+  const vitalsLine = formatVitalsLine(recapVitals);
+  const insertVitalsToObjective = () => {
+    if (!vitalsLine) return;
+    const line = `**Vital Sign:** ${vitalsLine}`;
+    setFormData((prev) => (prev.objective.includes(line)
+      ? prev
+      : { ...prev, objective: prev.objective.trim() ? `${line}\n${prev.objective}` : line }));
+  };
 
   useEffect(() => {
     getSubjectiveVariables().then(({ data }) => {
@@ -821,6 +839,24 @@ if (isCreate) {
                   : 'Otomatis tertaut ke Daily Recap admin & owner.'}
               </p>
             </div>
+
+            {vitalsLine && (
+              <div className={`${isPWA ? 'px-4 py-3' : 'px-6 py-4'} border-b bg-cyan-50/50 flex items-start gap-3`}>
+                <Activity className="w-4 h-4 text-cyan-700 mt-0.5 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-cyan-800">Tanda Vital (dari admin)</p>
+                  <p className="text-sm text-slate-800 break-words">{vitalsLine}</p>
+                  {recapVitals?.notes && <p className="text-xs text-slate-500 mt-0.5">{recapVitals.notes}</p>}
+                </div>
+                <button
+                  type="button"
+                  onClick={insertVitalsToObjective}
+                  className="shrink-0 rounded-full border border-cyan-200 bg-white px-2.5 py-1 text-xs font-semibold text-cyan-700 hover:bg-cyan-50"
+                >
+                  Sisipkan ke Objective
+                </button>
+              </div>
+            )}
 
             {/* SOAP Fields */}
             <div className={isPWA ? 'divide-y divide-slate-100' : 'grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100'}>
