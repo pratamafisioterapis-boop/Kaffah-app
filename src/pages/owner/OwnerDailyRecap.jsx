@@ -511,7 +511,7 @@ const OwnerDailyRecap = () => {
 
                   <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
                     <InvoiceStatusButton
-                      className="ml-auto max-w-[11rem]"
+                      className="ml-auto max-w-[8rem]"
                       recap={recap}
                       onClick={() => {
                         setSelectedInvoiceData(recap);
