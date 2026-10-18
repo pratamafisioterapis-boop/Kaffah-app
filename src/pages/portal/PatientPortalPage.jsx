@@ -228,6 +228,12 @@ const HomeTab = ({ home, goals, go, onLogout }) => {
             <section className="quote"><h3>Catatan dari terapis</h3><p>{home.latest_note}</p></section>
           )}
         </div>
+        {home.latest_education && (
+          <section className="card edu">
+            <h3>Edukasi dari terapis</h3>
+            <p className="edu-text">{home.latest_education}</p>
+          </section>
+        )}
         <div className="powered">Didukung Clinara · {home.clinic?.name}</div>
         <button className="btn ghost logout" onClick={onLogout}>Keluar dari perangkat ini</button>
       </div>
