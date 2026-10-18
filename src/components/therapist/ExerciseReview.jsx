@@ -1,17 +1,27 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Loader2, Play, CheckCircle2, Search, Save, Film } from 'lucide-react';
+import { Loader2, Play, CheckCircle2, Search, Save, Film, Info } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { isReviewExempt } from '@/lib/exerciseReviewExempt';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 const LABEL = 'block text-sm font-medium text-slate-700 mb-1';
 const BUCKET = 'exercise-videos';
 
 // Urutan antrean tiap terapis digeser sesuai posisinya di klinik, jadi 4 terapis yang membuka halaman ini
 // bersamaan mulai dari bagian daftar yang berbeda dan tidak mengerjakan video yang sama.
+const GUIDE_STEPS = [
+  ['Lihat videonya sampai selesai', 'Putar video latihan dan perhatikan gerakannya dengan teliti.'],
+  ['Sesuaikan nama latihan dengan gerakan di video', 'Contoh: namanya "Stretching flexor", tetapi di video yang diperagakan stretching extensor. Maka namanya diubah menjadi "Stretching extensor".'],
+  ['Periksa cara melakukan', 'Pastikan langkah-langkahnya sesuai dengan yang diperagakan di video dan mudah dipahami pasien.'],
+  ['Periksa jenis latihan', 'Pastikan jenisnya tepat, misalnya Penguatan, Peregangan, atau Mobilitas.'],
+  ['Periksa dosis latihan', 'Pastikan jumlah pengulangan, set, atau durasinya wajar untuk gerakan itu.'],
+  ['Simpan', 'Tekan "Simpan & tandai direview". Latihan yang sudah direview tidak perlu direview terapis lain, dan owner akan diberi tahu.'],
+];
+
 const rotate = (list, index, count) => {
   if (!list.length || count < 2) return list;
   const start = Math.floor((index * list.length) / count);
@@ -31,6 +41,7 @@ const ExerciseReview = ({ therapist }) => {
   const [form, setForm] = useState({ name: '', grp: '', howTo: '', dose: '' });
   const [videoUrl, setVideoUrl] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(true);
 
   const load = useCallback(async () => {
     const [ex, vi, rv, th] = await Promise.all([
@@ -103,6 +114,7 @@ const ExerciseReview = ({ therapist }) => {
           dan latihan yang sudah direview terapis mana pun tidak perlu direview lagi. Kode latihan tidak bisa diubah.
         </p>
         <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="ghost" onClick={() => setGuideOpen(true)}><Info className="w-4 h-4 mr-1" /> Panduan</Button>
           <Button size="sm" variant={tab === 'todo' ? 'default' : 'outline'} onClick={() => setTab('todo')}>Belum direview ({todo.length})</Button>
           <Button size="sm" variant={tab === 'done' ? 'default' : 'outline'} onClick={() => setTab('done')}>Sudah direview ({done.length})</Button>
           <div className="relative flex-1 min-w-[12rem]">
@@ -138,6 +150,27 @@ const ExerciseReview = ({ therapist }) => {
           })}
         </ul>
       )}
+
+      <Dialog open={guideOpen} onOpenChange={setGuideOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Cara mereview video latihan</DialogTitle>
+            <DialogDescription>Ikuti langkah berikut untuk setiap latihan.</DialogDescription>
+          </DialogHeader>
+          <ol className="space-y-3">
+            {GUIDE_STEPS.map(([title, text], i) => (
+              <li key={title} className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-app-accent text-xs font-semibold text-white">{i + 1}</span>
+                <div>
+                  <p className="text-sm font-medium text-slate-900">{title}</p>
+                  <p className="text-sm text-slate-600">{text}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+          <DialogFooter><Button onClick={() => setGuideOpen(false)}>Mengerti, mulai review</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {active && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" role="dialog" aria-modal="true">
