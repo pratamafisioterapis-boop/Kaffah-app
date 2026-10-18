@@ -202,7 +202,7 @@ const isPWA =
      });
 
      if (role === 'admin') {
-        const order = ['Dashboard', 'Appointments', 'Daily Recaps', 'Package Recaps', 'Database Pasien', 'Medical Records', 'Physiotherapist Management', 'Follow Up Management', 'Clinical Documents', 'Accounting System', 'Ambil Barang Gudang', 'Absensi Karyawan'];
+        const order = ['Dashboard', 'Clinic Management', 'Teams & Staffs', 'Accounting System', 'Setup'];
         const getOrderIndex = (label) => {
             const index = order.findIndex(o => label.toLowerCase().includes(o.toLowerCase()) || (o === 'Appointments' && label.toLowerCase().includes('calendar')) || (o === 'Database Pasien' && label.toLowerCase().includes('database')));
             return index === -1 ? 999 : index;
@@ -237,7 +237,9 @@ const isPWA =
       .filter(clinicAllowed)
       .map((it) => (it.submenu ? { ...it, submenu: it.submenu.filter(clinicAllowed) } : it));
     if (role === 'admin' && isLightLoadModeEnabled()) {
-      processed = processed.filter((item) => LIGHT_LOAD_ALLOWED_PATHS.includes(item.path));
+      processed = processed
+        .map((item) => (item.submenu ? { ...item, submenu: item.submenu.filter((sub) => LIGHT_LOAD_ALLOWED_PATHS.includes(sub.path)) } : item))
+        .filter((item) => (item.submenu ? item.submenu.length > 0 : LIGHT_LOAD_ALLOWED_PATHS.includes(item.path)));
     }
     const disabledFeatures = clinicInfo?.disabled_features_by_role?.[role];
     if (!disabledFeatures || disabledFeatures.length === 0) return processed;
