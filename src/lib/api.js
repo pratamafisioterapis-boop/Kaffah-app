@@ -1954,6 +1954,7 @@ export const getDailyRecaps = async ({
   patients!patient_id(
     id,
     full_name,
+    nickname,
     medical_record_number,
     birth_date,
     address,
@@ -1962,6 +1963,7 @@ export const getDailyRecaps = async ({
   actual_patients:patients!actual_patient_id(
     id,
     full_name,
+    nickname,
     medical_record_number,
     birth_date,
     address,
