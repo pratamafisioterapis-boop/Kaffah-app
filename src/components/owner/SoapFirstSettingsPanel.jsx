@@ -154,8 +154,8 @@ const SoapFirstSettingsPanel = () => {
           <div className="grid gap-3 sm:grid-cols-2">
             {types.map((t) => (
               <div key={t.id} className="flex items-center gap-2">
-                <Label className="w-48 shrink-0 text-xs">{t.label}</Label>
-                <Input type="number" value={prices[t.id] ?? ''} onChange={(e) => setPrices((prev) => ({ ...prev, [t.id]: e.target.value }))} placeholder="Belum diatur" />
+                <Label className="flex-1 min-w-0 text-xs">{t.label}</Label>
+                <Input type="number" className="w-36 shrink-0 text-right" value={prices[t.id] ?? ''} onChange={(e) => setPrices((prev) => ({ ...prev, [t.id]: e.target.value }))} placeholder="Belum diatur" />
               </div>
             ))}
           </div>
@@ -174,8 +174,8 @@ const SoapFirstSettingsPanel = () => {
           <div className="grid gap-3 sm:grid-cols-2">
             {packages.map((p) => (
               <div key={p.id} className="flex items-center gap-2">
-                <Label className="w-48 shrink-0 text-xs">{p.label} ({p.session_count} sesi)</Label>
-                <Input type="number" value={pkgPrices[p.id] ?? ''} onChange={(e) => setPkgPrices((prev) => ({ ...prev, [p.id]: e.target.value }))} placeholder="Belum diatur" />
+                <Label className="flex-1 min-w-0 text-xs">{p.label} ({p.session_count} sesi)</Label>
+                <Input type="number" className="w-36 shrink-0 text-right" value={pkgPrices[p.id] ?? ''} onChange={(e) => setPkgPrices((prev) => ({ ...prev, [p.id]: e.target.value }))} placeholder="Belum diatur" />
               </div>
             ))}
           </div>
