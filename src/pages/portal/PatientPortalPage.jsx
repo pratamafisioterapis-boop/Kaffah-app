@@ -412,7 +412,7 @@ const ProgramTab = ({ session, items, therapist, onToggle }) => {
 
 const PAIN_LEVELS = [[0, 'Tidak nyeri'], [3, 'Nyeri ringan'], [6, 'Nyeri sedang'], [10, 'Nyeri berat']];
 const painLabel = (v) => PAIN_LEVELS.find(([max]) => v <= max)[1];
-const painFace = (v) => `/pain/${Math.round(v * 0.9)}.png`;
+const painFace = (v) => `/pain/${v}.png`;
 
 // Skala nyeri 0-10: wajah besar yang berubah mengikuti pilihan, geser atau ketuk angka.
 const PainScale = ({ value, onChange }) => {
@@ -430,7 +430,7 @@ const PainScale = ({ value, onChange }) => {
   return (
     <div className="pain" style={{ '--pv': value / 10 }}>
       <div className="pain-hero" aria-hidden="true">
-        <img key={Math.round(value * 0.9)} src={painFace(value)} alt="" width="96" height="96" draggable="false" />
+        <img key={value} src={painFace(value)} alt="" width="96" height="96" draggable="false" />
       </div>
       <div className="pain-read" aria-live="polite"><b className="num">{value}</b>/10 — {painLabel(value)}</div>
       <div ref={track} className="pain-track" role="slider" tabIndex={0} aria-labelledby="pp-vas-l"
