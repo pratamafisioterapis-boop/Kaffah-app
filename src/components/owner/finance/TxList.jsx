@@ -68,18 +68,19 @@ const TxList = ({ items, kind = 'neutral', onEdit, onDelete, loading, emptyText 
           </div>
 
           {/* Mobile / PWA */}
-          <div className="sm:hidden grid gap-1.5 px-1 py-3">
+          {/* Ringkas: 2 baris (judul + nominal, lalu kategori/tanggal/bank) */}
+          <div className="sm:hidden grid gap-1 px-1 py-2">
             <div className="flex items-start justify-between gap-3">
-              <span className="min-w-0 break-words text-sm font-semibold text-slate-800">{item.desc || '-'}</span>
-              <span className={cn('text-sm shrink-0', amountCls)}>{fmtRp(item.amt)}</span>
+              <span className="min-w-0 break-words text-[13px] leading-snug font-semibold text-slate-800">{item.desc || '-'}</span>
+              <span className={cn('text-[13px] leading-snug shrink-0', amountCls)}>{fmtRp(item.amt)}</span>
             </div>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {item.cat ? <Pill tone={toneFor(item.cat)}>{item.cat}</Pill> : null}
-              {item.sub ? <Pill>{item.sub}</Pill> : null}
-              {item.badge ? <Pill tone="sky">{item.badge}</Pill> : null}
-            </div>
-            <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
-              <span>{fmtDate(item.date)}{item.bank ? ` · ${item.bank}` : ''}</span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 min-w-0 text-[11px] text-slate-500">
+                {item.cat ? <Pill tone={toneFor(item.cat)} className="px-1.5 py-0 text-[10.5px]">{item.cat}</Pill> : null}
+                {item.sub ? <span className="break-words">{item.sub}</span> : null}
+                {item.badge ? <Pill tone="sky" className="px-1.5 py-0 text-[10.5px]">{item.badge}</Pill> : null}
+                <span className="whitespace-nowrap tabular-nums">{item.sub || item.cat || item.badge ? '· ' : ''}{fmtDate(item.date)}{item.bank ? ` · ${item.bank}` : ''}</span>
+              </div>
               {hasActions && <Actions item={item} />}
             </div>
           </div>
