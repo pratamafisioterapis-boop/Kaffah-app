@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { nextExerciseCode, summarizePrefixes, generatePrefix } from '@/lib/exerciseCodes';
 import { Panel, Pill, EmptyState } from '@/components/superadmin/ui';
 import { confirmAction } from '@/lib/confirmAction';
+import { captureVideoFrame, posterPath } from '@/lib/videoPoster';
 
 // Super Admin menambah jenis latihan baru (kode dibuat otomatis) dan mengunggah satu video per kode latihan
 // Plan SOAP (plan_exercises). Berkas masuk ke bucket
@@ -30,6 +31,14 @@ const readDuration = (file) =>
     v.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
     v.src = url;
   });
+
+// Simpan sampul JPG untuk satu video. Gagal membuat sampul tidak menggagalkan unggahan: portal
+// pasien kembali mengambil bingkai dari videonya.
+const uploadPoster = async (id, src) => {
+  const blob = await captureVideoFrame(src);
+  const { error } = await supabase.storage.from(BUCKET).upload(posterPath(id), blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '86400' });
+  if (error) throw error;
+};
 
 const EMPTY_FORM = { mode: 'existing', prefix: '', name: '', grp: '', howTo: '', dose: '', progression: '', caution: '' };
 const nz = (v) => (v && v.trim() ? v.trim() : null);
@@ -105,6 +114,23 @@ const ExerciseVideoManager = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  // Video lama yang belum punya sampul: buat di latar belakang, satu per satu, sekali per halaman dibuka.
+  const backfilled = useRef(false);
+  useEffect(() => {
+    const ids = Object.keys(assets);
+    if (backfilled.current || ids.length === 0) return;
+    backfilled.current = true;
+    (async () => {
+      const { data, error } = await supabase.storage.from(BUCKET).list('posters', { limit: 1000 });
+      if (error) return;
+      const have = new Set((data || []).map((f) => f.name));
+      for (const id of ids.filter((x) => !have.has(`${x}.jpg`))) {
+        const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrl(assets[id].storage_path, 600);
+        if (signed?.signedUrl) await uploadPoster(id, signed.signedUrl).catch(() => {});
+      }
+    })();
+  }, [assets]);
+
   const pick = (id) => { targetRef.current = id; fileRef.current?.click(); };
 
   const onFile = async (e) => {
@@ -122,6 +148,9 @@ const ExerciseVideoManager = () => {
       const duration = await readDuration(file);
       const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true, contentType: file.type });
       if (upErr) throw upErr;
+      const local = URL.createObjectURL(file);
+      await uploadPoster(id, local).catch(() => {});
+      URL.revokeObjectURL(local);
       const { error: dbErr } = await supabase.from('exercise_video_assets').upsert(
         { exercise_id: id, storage_path: path, duration_seconds: duration, size_bytes: file.size, uploaded_by: user?.id || null },
         { onConflict: 'exercise_id' },
@@ -146,7 +175,7 @@ const ExerciseVideoManager = () => {
       const path = assets[id]?.storage_path;
       const { error } = await supabase.from('exercise_video_assets').delete().eq('exercise_id', id);
       if (error) throw error;
-      if (path) await supabase.storage.from(BUCKET).remove([path]);
+      if (path) await supabase.storage.from(BUCKET).remove([path, posterPath(id)]);
       toast({ title: `Video ${id} dihapus` });
       await load();
     } catch (err) {
@@ -252,7 +281,7 @@ const ExerciseVideoManager = () => {
         if (uErr) cleanupFailed = true;
       }
     }
-    if (path) await supabase.storage.from(BUCKET).remove([path]);
+    if (path) await supabase.storage.from(BUCKET).remove([path, posterPath(id)]);
     setExercises((prev) => prev.filter((x) => x.id !== id));
     setAssets((prev) => { const next = { ...prev }; delete next[id]; return next; });
     toast(cleanupFailed

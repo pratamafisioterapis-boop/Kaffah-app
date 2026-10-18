@@ -167,6 +167,14 @@ export const portalApi = {
     if (error || !data?.url) throw new Error('Video belum bisa diputar. Coba lagi nanti.');
     return data.url;
   },
+  // Semua latihan sekaligus: { [kode]: { url, poster } }. poster null = sampul belum dibuat.
+  videoUrls: async (session, exerciseIds) => {
+    const { data, error } = await supabase.functions.invoke('portal-exercise-video', {
+      body: { session, exercise_ids: exerciseIds },
+    });
+    if (error || !data?.items) throw new Error('Video belum bisa diputar. Coba lagi nanti.');
+    return data.items;
+  },
   submitFeedback: (session, vas, tags, message) =>
     call('portal_submit_feedback', { p_session: session, p_vas: vas, p_tags: tags, p_message: message }),
   listFeedback: (session) => call('portal_list_feedback', { p_session: session }),
