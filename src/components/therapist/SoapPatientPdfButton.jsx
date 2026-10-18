@@ -134,6 +134,20 @@ const SoapPatientPdfButton = ({ record, patient = null, label = 'PDF Pasien', si
       'Mohon dibaca saran dan latihan di dalamnya. Semoga lekas pulih.'
     : '';
 
+  // Alamat blob: hanya berlaku di perangkat pembuatnya; jangan pernah dikirim ke pasien.
+  // Untuk tautan yang bisa dibuka siapa pun, PDF diunggah lalu dibagikan lewat alamat /r/<kode>.
+  const uploadForLink = async () => {
+    const shortId = Array.from(crypto.getRandomValues(new Uint8Array(10)), (b) => (b % 36).toString(36)).join('');
+    const path = `resume-medis/${shortId}.pdf`;
+    const { error } = await supabase.storage
+      .from('invoices')
+      .upload(path, pdf.blob, { contentType: 'application/pdf', upsert: true });
+    if (error) throw new Error(`Upload gagal: ${error.message}`);
+    const fileUrl = supabase.storage.from('invoices').getPublicUrl(path).data.publicUrl;
+    const { origin, hostname } = window.location;
+    return hostname === 'localhost' || hostname === '127.0.0.1' ? fileUrl : `${origin}/r/${shortId}`;
+  };
+
   const share = async () => {
     const file = new File([pdf.blob], pdf.fileName, { type: 'application/pdf' });
     try {
@@ -144,13 +158,15 @@ const SoapPatientPdfButton = ({ record, patient = null, label = 'PDF Pasien', si
     } catch (err) {
       if (err?.name === 'AbortError') return; // dibatalkan pengguna
     }
-    // Peramban tanpa berbagi file: unduh PDF lalu buka chat WhatsApp pasien untuk dilampirkan.
-    download();
-    if (pdf.phone) {
-      window.open(`https://wa.me/${pdf.phone}?text=${encodeURIComponent(message)}`, '_blank');
-      toast({ title: 'PDF diunduh', description: 'Lampirkan file PDF yang baru diunduh pada chat WhatsApp pasien.' });
-    } else {
-      toast({ title: 'PDF diunduh', description: 'Nomor WhatsApp pasien belum tersimpan. Kirim file secara manual.' });
+    // Peramban tanpa berbagi file: unggah PDF dan kirim tautan https lewat WhatsApp pasien.
+    try {
+      const shareUrl = await uploadForLink();
+      const text = `${message}\n\nUnduh laporan terapi:\n${shareUrl}`;
+      window.open(`https://wa.me/${pdf.phone || ''}?text=${encodeURIComponent(text)}`, '_blank');
+    } catch (err) {
+      console.error('[SoapPatientPdf] share', err);
+      download();
+      toast({ variant: 'destructive', title: 'Gagal membuat tautan', description: 'PDF diunduh. Kirim file secara manual lewat WhatsApp.' });
     }
   };
 
