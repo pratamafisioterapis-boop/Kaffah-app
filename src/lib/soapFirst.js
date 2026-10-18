@@ -10,6 +10,7 @@ export const OVERRIDE_KIND_LABELS = {
   xtratime: 'Tandai Xtratime',
   package_extend: 'Perpanjang masa aktif paket',
   amount_adjust: 'Ubah nominal',
+  manual_discount: 'Diskon manual (perlu persetujuan)',
 };
 
 export const OVERRIDE_STATUS_LABELS = {

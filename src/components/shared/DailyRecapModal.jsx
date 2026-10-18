@@ -279,6 +279,27 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
         if (isOpen && mode === 'edit') loadRecapMeta(); else setRecapMeta(null);
     }, [isOpen, mode, loadRecapMeta]);
 
+    // Diskon manual (mis. "Keluarga"): nilai diinput admin lalu wajib disetujui owner.
+    const [manualOverride, setManualOverride] = useState(null);
+    const [manualInput, setManualInput] = useState({ type: 'percentage', value: '' });
+    const selectedDiscountOpt = discountTypeOptions.find(o => o.label === formData.discount_label);
+    const sfManualDiscount = sfEdit && !!selectedDiscountOpt && (!selectedDiscountOpt.discount_value_type || !(Number(selectedDiscountOpt.discount_value) > 0));
+    const loadManualOverride = useCallback(async () => {
+        if (!initialData?.id) { setManualOverride(null); return; }
+        const { data } = await supabase
+            .from('soap_overrides')
+            .select('id, status, payload, decision_note')
+            .eq('recap_id', initialData.id)
+            .eq('kind', 'manual_discount')
+            .order('requested_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        setManualOverride(data || null);
+    }, [initialData?.id]);
+    useEffect(() => {
+        if (isOpen && sfEdit) loadManualOverride(); else setManualOverride(null);
+    }, [isOpen, sfEdit, loadManualOverride]);
+
     useEffect(() => {
         if (!recapMeta) return;
         setFormData(prev => ({ ...prev, special_type: recapMeta.special_type || '', free_reason: recapMeta.free_reason || '' }));
@@ -1147,9 +1168,19 @@ setFormData({
         if (quote?.invoice_locked) return Number(initialData?.amount ?? formData.amount ?? 0);
         if (formData.special_type === 'free') return 0;
         if (sfBaseAmount == null) return null;
-        const dv = parseFloat(formData.discount_value) || 0;
-        if (formData.discount_type === 'percentage' && dv > 0) return Math.max(Math.round((sfBaseAmount - sfBaseAmount * Math.min(dv, 100) / 100) / 1000) * 1000, 0);
-        if (formData.discount_type === 'nominal' && dv > 0) return Math.max(Math.round(sfBaseAmount - Math.min(dv, sfBaseAmount)), 0);
+        let dType = formData.discount_type;
+        let dv = parseFloat(formData.discount_value) || 0;
+        if (sfManualDiscount) {
+            if (manualOverride?.status === 'approved') {
+                dType = manualOverride.payload?.discount_type;
+                dv = Number(manualOverride.payload?.discount_value) || 0;
+            } else {
+                dType = 'none';
+                dv = 0;
+            }
+        }
+        if (dType === 'percentage' && dv > 0) return Math.max(Math.round((sfBaseAmount - sfBaseAmount * Math.min(dv, 100) / 100) / 1000) * 1000, 0);
+        if (dType === 'nominal' && dv > 0) return Math.max(Math.round(sfBaseAmount - Math.min(dv, sfBaseAmount)), 0);
         return sfBaseAmount;
     })();
     const effectiveAmount = sfFinalAmount != null ? sfFinalAmount : (parseFloat(formData.amount) || 0);
@@ -1179,6 +1210,10 @@ setFormData({
         }
         if (sfEdit && formData.special_type === 'free' && (formData.free_reason || '').trim().length < 3) {
             newErrors.free_reason = "Alasan pasien Free wajib diisi";
+        }
+        if (sfManualDiscount && sfIsPayment && !quote?.invoice_locked && manualOverride?.status !== 'approved') {
+            toast({ variant: "destructive", title: "Diskon belum disetujui", description: `Diskon "${formData.discount_label}" diinput manual dan wajib disetujui owner. Ajukan persetujuan lebih dulu.` });
+            return;
         }
         if (sfEdit && sfIsPayment && quote?.error && !quote?.invoice_locked) {
             toast({ variant: "destructive", title: "Pembayaran belum bisa disimpan", description: quote.error });
@@ -1639,7 +1674,37 @@ setFormData({
                                             }));
                                         }} onSearch={setDiscountTypeSearch} placeholder="Cari jenis diskon..." isLoading={loadingDiscountTypes} allowCreate={!sfActive}/>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    {sfManualDiscount && (
+                                        <div className="space-y-2 rounded-app-sm border border-amber-200 bg-amber-50 p-3">
+                                            <p className="text-xs text-amber-800">Diskon “{formData.discount_label}” diisi manual dan baru berlaku setelah disetujui owner.</p>
+                                            {manualOverride?.status === 'approved' ? (
+                                                <p className="text-xs font-semibold text-emerald-700">
+                                                    Disetujui: {manualOverride.payload?.discount_type === 'percentage' ? `${manualOverride.payload?.discount_value}%` : `Rp ${Number(manualOverride.payload?.discount_value || 0).toLocaleString('id-ID')}`}
+                                                </p>
+                                            ) : manualOverride?.status === 'pending' ? (
+                                                <p className="text-xs font-semibold text-amber-700">Menunggu persetujuan owner.</p>
+                                            ) : (
+                                                <>
+                                                    {manualOverride?.status === 'rejected' && <p className="text-xs font-semibold text-red-600">Pengajuan sebelumnya ditolak{manualOverride.decision_note ? `: ${manualOverride.decision_note}` : ''}.</p>}
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <Select value={manualInput.type} onValueChange={(v) => setManualInput(prev => ({ ...prev, type: v }))}>
+                                                            <SelectTrigger className="h-9 text-xs bg-white"><SelectValue/></SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="percentage">Persentase (%)</SelectItem>
+                                                                <SelectItem value="nominal">Nominal (Rp)</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <Input type="number" className="h-9 text-xs bg-white" value={manualInput.value} onChange={e => setManualInput(prev => ({ ...prev, value: e.target.value }))} placeholder={manualInput.type === 'percentage' ? 'Contoh: 10' : 'Contoh: 50000'} />
+                                                    </div>
+                                                    <Button type="button" size="sm" className="h-8 text-xs" disabled={!(Number(manualInput.value) > 0)}
+                                                        onClick={() => openOverride({ kind: 'manual_discount', payload: { discount_type: manualInput.type, discount_value: Number(manualInput.value), discount_label: formData.discount_label }, description: `Ajukan diskon "${formData.discount_label}" sebesar ${manualInput.type === 'percentage' ? `${manualInput.value}%` : `Rp ${Number(manualInput.value).toLocaleString('id-ID')}`}. Berlaku setelah disetujui owner.` })}>
+                                                        Ajukan persetujuan owner
+                                                    </Button>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+                                    <div className={`${sfManualDiscount ? 'hidden' : ''} grid grid-cols-2 gap-4`}>
                                         <div className="space-y-1">
                                             <Label className="text-xs">Tipe Potongan</Label>
                                             <Select disabled={!!formData.referral_reward_id || sfActive} value={formData.discount_type} onValueChange={v => {
@@ -1885,7 +1950,7 @@ setFormData({
                 payload={overrideDialog?.payload || {}}
                 description={overrideDialog?.description}
                 withAmount={!!overrideDialog?.withAmount}
-                onDone={() => { refreshQuote(); loadRecapMeta(); }}
+                onDone={() => { refreshQuote(); loadRecapMeta(); loadManualOverride(); }}
             />
 
             {/* Extend Package Modal */}
