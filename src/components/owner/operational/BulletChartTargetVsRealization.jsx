@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend 
-} from 'recharts';
-import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Target } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import FinanceTile, { TileLoading } from '@/components/owner/finance/FinanceTile';
 import { getAllTherapistTargets, getDailyRecaps, getCachedClinicId } from '@/lib/api';
 import { supabase } from '@/lib/customSupabaseClient';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isValid } from 'date-fns';
@@ -23,11 +20,13 @@ const getCurrentPeriod = () => {
   return { start, end };
 };
 
-const BulletChartTargetVsRealization = ({ dateRange }) => {
+const BulletChartTargetVsRealization = ({ dateRange, className }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
+  // Terapis yang barisnya dibuka untuk melihat sisa target.
+  const [picked, setPicked] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -209,132 +208,96 @@ const BulletChartTargetVsRealization = ({ dateRange }) => {
     fetchData();
   }, [fetchData]);
 
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      const dataPoint = payload[0].payload; // Access the full data object
-      return (
-        <div className="bg-white p-3 border border-slate-100 shadow-xl rounded-app-sm text-xs z-50">
-          <p className="font-bold text-slate-800 mb-1">{label}</p>
-          <p className="text-slate-500 mb-2 text-xs">{dataPoint.periodLabel}</p>
-          {payload.map((entry, index) => (
-            <div key={index} className="flex items-center gap-2 mb-1 last:mb-0">
-              <div 
-                className="w-2 h-2 rounded-full" 
-                style={{ backgroundColor: entry.fill }}
-              />
-              <span className="text-slate-500 capitalize">{entry.name}:</span>
-              <span className="font-semibold ml-auto">{entry.value}</span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
-
-  if (error) {
-    return (
-      <Card className="h-full flex flex-col rounded-app-lg border border-slate-100 shadow-sm overflow-hidden">
-         <CardHeader className="flex flex-row items-center justify-between py-4">
-            <CardTitle className="text-lg font-bold text-slate-800">Target vs Realisasi</CardTitle>
-            <Button aria-label="Muat ulang" variant="ghost" size="sm" onClick={fetchData}><RefreshCw className="w-4 h-4" /></Button>
-         </CardHeader>
-         <CardContent className="flex-1 flex flex-col items-center justify-center text-red-500 text-sm p-6 text-center">
-            <AlertCircle className="w-8 h-8 mb-2 opacity-50" />
-            <p>{error}</p>
-            <Button variant="outline" size="sm" onClick={fetchData} className="mt-4">Coba Lagi</Button>
-         </CardContent>
-      </Card>
-    );
-  }
+  const refreshBtn = (
+    <div className="flex items-center gap-2">
+      {lastUpdated && <span className="hidden sm:inline text-xs text-slate-400">{format(lastUpdated, 'HH:mm')}</span>}
+      <button
+        type="button"
+        onClick={fetchData}
+        disabled={loading}
+        aria-label="Muat ulang target dan realisasi"
+        className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-700 flex items-center justify-center active:scale-[0.95] transition-transform"
+      >
+        <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
+      </button>
+    </div>
+  );
 
   return (
-    <Card className="h-full flex flex-col rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden">
-      <div className="p-5 md:p-6 pb-0 flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-base font-bold text-slate-800">Target vs Realisasi</h2>
-          <p className="text-xs text-slate-500 mt-0.5">Perbandingan target kunjungan dengan realisasi aktual</p>
+    <FinanceTile tone="ind" icon={Target} title="Target vs Realisasi" action={refreshBtn} className={className}>
+      {error ? (
+        <div className="py-10 flex flex-col items-center justify-center text-rose-500 text-sm text-center gap-2">
+          <AlertCircle className="w-7 h-7 opacity-60" />
+          <p>{error}</p>
+          <button type="button" onClick={fetchData} className="px-3 h-8 rounded-[10px] border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50">Coba Lagi</button>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {lastUpdated && (
-            <span className="text-xs text-slate-300 hidden sm:inline">
-              {format(lastUpdated, 'HH:mm')}
-            </span>
+      ) : (
+        <>
+          <div className="flex flex-wrap items-center gap-4 mb-3 text-xs font-semibold text-slate-500">
+            <span className="inline-flex items-center gap-1.5"><i className="w-2.5 h-1.5 rounded-full bg-indigo-100" />Target</span>
+            <span className="inline-flex items-center gap-1.5"><i className="w-2.5 h-1.5 rounded-full bg-indigo-500" />Realisasi</span>
+            <span className="inline-flex items-center gap-1.5"><i className="w-2.5 h-1.5 rounded-full bg-emerald-500" />Tercapai</span>
+          </div>
+
+          {loading ? (
+            <TileLoading className="py-14" />
+          ) : data.length === 0 ? (
+            <div className="py-10 flex flex-col items-center justify-center text-slate-500 text-sm gap-2">
+              <p>Belum ada target yang diset.</p>
+              <button
+                type="button"
+                onClick={() => { window.location.href = '/owner/physiotherapist-management'; }}
+                className="text-xs text-indigo-500 font-semibold hover:underline"
+              >
+                + Tambah Target
+              </button>
+            </div>
+          ) : (
+            <div className="grid gap-1">
+              {data.map((item, i) => {
+                const pct = item.target > 0 ? Math.min(Math.round((item.realization / item.target) * 100), 100) : 0;
+                const barColor = pct >= 100 ? '#10b981' : pct >= 60 ? '#6366f1' : '#f59e0b';
+                const barBg = pct >= 100 ? '#d1fae5' : pct >= 60 ? '#e0e7ff' : '#fef3c7';
+                const open = picked === i;
+                return (
+                  <button
+                    key={`${item.name}-${i}`}
+                    type="button"
+                    onClick={() => setPicked(open ? null : i)}
+                    aria-pressed={open}
+                    className={cn('w-full text-left px-2 py-2.5 rounded-2xl transition-colors', open ? 'bg-slate-100' : 'hover:bg-slate-50')}
+                  >
+                    <span className="flex items-start justify-between gap-3 mb-1.5">
+                      <span className="min-w-0">
+                        <span className="block text-sm font-bold text-slate-800 break-words">{item.name}</span>
+                        <span className="block text-xs text-slate-500 mt-0.5">{item.periodLabel}</span>
+                      </span>
+                      <span className="text-right shrink-0">
+                        <span className="block text-xl font-black leading-none tabular-nums" style={{ color: barColor }}>{pct}%</span>
+                        <span className="block text-xs text-slate-500 mt-0.5">{item.realization} / {item.target} kunjungan</span>
+                      </span>
+                    </span>
+                    <span className="block h-4 w-full rounded-full overflow-hidden" style={{ backgroundColor: barBg }}>
+                      <span
+                        className="block h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+                        style={{ width: `${pct}%`, backgroundColor: barColor }}
+                      />
+                    </span>
+                    {open && (
+                      <span className="block text-xs text-slate-700 mt-2">
+                        {item.realization >= item.target
+                          ? `Target tercapai, lebih ${item.realization - item.target} kunjungan`
+                          : `Kurang ${item.target - item.realization} kunjungan lagi`}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           )}
-          <button
-            onClick={fetchData}
-            disabled={loading}
-            aria-label="Muat ulang target dan realisasi"
-            className="tap-target relative before:absolute before:-inset-2 before:content-[''] w-7 h-7 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-[0.97]"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="flex items-center gap-4 px-5 md:px-6 pt-2">
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-1.5 rounded-full bg-app-accent/15" />
-          <span className="text-xs text-slate-500 font-medium">Target</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-1.5 rounded-full bg-indigo-500" />
-          <span className="text-xs text-slate-500 font-medium">Realisasi</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-1.5 rounded-full bg-emerald-500" />
-          <span className="text-xs text-slate-500 font-medium">Tercapai</span>
-        </div>
-      </div>
-
-      <CardContent className="pt-4 pb-8 px-5 md:px-6">
-        {loading ? (
-          <div className="h-48 flex items-center justify-center">
-            <Loader2 className="h-7 w-7 animate-spin text-slate-200" />
-          </div>
-        ) : data.length === 0 ? (
-          <div className="h-48 flex flex-col items-center justify-center text-slate-500 text-sm gap-2">
-            <p>Belum ada target yang diset.</p>
-            <button
-              onClick={() => window.location.href='/owner/physiotherapist-management'}
-              className="text-xs text-indigo-500 font-semibold hover:underline"
-            >
-              + Tambah Target
-            </button>
-          </div>
-        ) : (
-       <div className="space-y-6">
-            {data.map((item, i) => {
-              const pct = item.target > 0 ? Math.min(Math.round((item.realization / item.target) * 100), 100) : 0;
-              const barColor = pct >= 100 ? '#10b981' : pct >= 60 ? '#6366f1' : '#f59e0b';
-              const barBg = pct >= 100 ? '#d1fae5' : pct >= 60 ? '#e0e7ff' : '#fef3c7';
-              return (
-                <div key={i} className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-slate-800 break-words sm:truncate">{item.name}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{item.periodLabel}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-lg font-black leading-none" style={{ color: barColor }}>{pct}%</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{item.realization} / {item.target} kunjungan</p>
-                    </div>
-                  </div>
-                  {/* Track */}
-                  <div className="relative h-5 w-full rounded-full overflow-hidden" style={{ backgroundColor: barBg }}>
-                    <div
-                      className="h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
-                      style={{ width: `${pct}%`, backgroundColor: barColor }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        </>
+      )}
+    </FinanceTile>
   );
 };
 

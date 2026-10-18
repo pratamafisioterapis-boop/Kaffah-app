@@ -1,50 +1,24 @@
-import React from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import React, { useState } from 'react';
 import {
   Users, Activity, Calendar, Clock,
   CheckCircle, XCircle, PlayCircle, UserCheck,
   UserPlus, UserCog, Package
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import FinanceTile from '@/components/owner/finance/FinanceTile';
+import AnimatedNumber from '@/components/owner/finance/AnimatedNumber';
+import { TONES } from '@/components/owner/finance/financeTheme';
 import SlotUtilizationChart from './SlotUtilizationChart';
 
-const isPWA = (() => {
-  try {
-    return window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone === true;
-  } catch { return false; }
-})();
+const formatInt = (v) => Math.round(v).toLocaleString('id-ID');
+const pct = (part, whole) => (whole > 0 ? Math.round((part / whole) * 100) : 0);
 
-// Kurva ease-out kuat: gerak langsung terasa responsif (bawaan 'easeOut' terlalu lemah)
-const EASE_OUT = [0.23, 1, 0.32, 1];
-
-// Stagger pendek (40ms) dan dibatasi, supaya kartu terakhir tidak menunggu lama.
-// Pakai string `transform` (bukan shorthand `y`) agar tetap mulus saat main thread sibuk.
-const cardEntrance = (index, offset, reduceMotion) => ({
-  initial: { opacity: 0, transform: `translateY(${reduceMotion ? 0 : offset}px)` },
-  animate: { opacity: 1, transform: 'translateY(0px)' },
-  transition: { duration: 0.25, delay: Math.min(index, 8) * 0.04, ease: EASE_OUT },
-});
-
-// Hover hanya di perangkat dengan mouse; di layar sentuh hover "menempel" setelah tap
-const HOVER_LIFT = '[@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg';
-const HOVER_LIFT_SM = '[@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md';
-
-// Skeleton
-const KPISkeleton = ({ large }) => (
-  <div className={`bg-white rounded-app-lg border border-slate-100 shadow-sm animate-pulse ${large ? 'p-6' : 'p-4'}`}>
-    <div className="flex items-center justify-between mb-4">
-      <div className="w-11 h-11 rounded-app bg-slate-100" />
-      <div className="w-14 h-5 rounded-full bg-slate-100" />
-    </div>
-    <div className={`${large ? 'h-10' : 'h-8'} w-20 bg-slate-200 rounded mb-2`} />
-    <div className="h-3 w-28 bg-slate-100 rounded" />
-  </div>
-);
-
-const OperationalDashboardUI = ({ 
-  totalSessions = 0, 
-  totalPatients = 0, 
-  totalPackages = 0, 
+// Komponen ini mengembalikan fragment: tiap kotak menjadi anak langsung dari grid
+// bento di OwnerDashboard (span kolomnya diatur lewat className masing-masing).
+const OperationalDashboardUI = ({
+  totalSessions = 0,
+  totalPatients = 0,
+  totalPackages = 0,
   todaySessions = 0,
   ongoingSessions = 0,
   completedSessions = 0,
@@ -55,109 +29,106 @@ const OperationalDashboardUI = ({
   returningPatientsToday = 0,
   isLoading = false
 }) => {
-  const reduceMotion = useReducedMotion();
+  // Kartu Hari Ini yang diketuk menampilkan persentasenya dari total.
+  const [selected, setSelected] = useState(null);
 
   const periodKPIs = [
-    { label: 'Total Sesi', value: totalSessions, change: 'Periode', icon: Activity, iconColor: 'text-app-accent', iconBg: 'bg-app-soft', accent: 'border-l-app-accent-bright' },
-    { label: 'Total Pasien', value: totalPatients, change: 'Unik', icon: Users, iconColor: 'text-indigo-600', iconBg: 'bg-indigo-50', accent: 'border-l-indigo-500' },
-    { label: 'Total Paket', value: totalPackages, change: 'Aktif', icon: Package, iconColor: 'text-violet-600', iconBg: 'bg-violet-50', accent: 'border-l-violet-500' },
+    { label: 'Total Sesi', value: totalSessions, badge: 'Periode', icon: Activity, tone: 'acc' },
+    { label: 'Total Pasien', value: totalPatients, badge: 'Unik', icon: Users, tone: 'ind' },
+    { label: 'Total Paket', value: totalPackages, badge: 'Aktif', icon: Package, tone: 'vio' },
   ];
 
+  const patientsToday = newPatientsToday + returningPatientsToday;
   const todayKPIs = [
-    { label: 'Sesi Hari Ini', value: todaySessions, icon: Calendar, iconColor: 'text-emerald-600', iconBg: 'bg-emerald-50', variant: 'normal' },
-    { label: 'Sedang Berjalan', value: ongoingSessions, icon: PlayCircle, iconColor: 'text-amber-600', iconBg: 'bg-amber-50', variant: 'normal' },
-    { label: 'Selesai', value: completedSessions, icon: CheckCircle, iconColor: 'text-green-600', iconBg: 'bg-green-50', variant: 'normal' },
-    { label: 'Dibatalkan', value: cancelledAppointments, icon: XCircle, iconColor: 'text-rose-600', iconBg: 'bg-rose-50', variant: 'danger' },
-    { label: 'Terapis Aktif', value: activeTherapists, icon: UserCheck, iconColor: 'text-cyan-600', iconBg: 'bg-cyan-50', variant: 'normal' },
-    { label: 'Slot Kosong', value: emptySlots, icon: Clock, iconColor: 'text-orange-600', iconBg: 'bg-orange-50', variant: 'warning' },
-    { label: 'Pasien Baru', value: newPatientsToday, icon: UserPlus, iconColor: 'text-sky-600', iconBg: 'bg-sky-50', variant: 'normal' },
-    { label: 'Pasien Lama', value: returningPatientsToday, icon: UserCog, iconColor: 'text-indigo-600', iconBg: 'bg-indigo-50', variant: 'normal' },
+    { key: 'sess', label: 'Sesi Hari Ini', value: todaySessions, icon: Calendar, tone: 'pos', detail: `Selesai ${completedSessions}, berjalan ${ongoingSessions}` },
+    { key: 'ongoing', label: 'Sedang Berjalan', value: ongoingSessions, icon: PlayCircle, tone: 'warn', detail: `${pct(ongoingSessions, todaySessions)}% dari sesi hari ini` },
+    { key: 'done', label: 'Selesai', value: completedSessions, icon: CheckCircle, tone: 'pos', detail: `${pct(completedSessions, todaySessions)}% dari sesi hari ini` },
+    { key: 'cancel', label: 'Dibatalkan', value: cancelledAppointments, icon: XCircle, tone: 'neg', valueCls: 'text-rose-600', detail: `${pct(cancelledAppointments, todaySessions)}% dari sesi hari ini` },
+    { key: 'therapists', label: 'Terapis Aktif', value: activeTherapists, icon: UserCheck, tone: 'acc', detail: 'Bertugas hari ini' },
+    { key: 'empty', label: 'Slot Kosong', value: emptySlots, icon: Clock, tone: 'warn', valueCls: 'text-orange-600', detail: 'Masih bisa diisi hari ini' },
+    { key: 'new', label: 'Pasien Baru', value: newPatientsToday, icon: UserPlus, tone: 'sky', detail: `${pct(newPatientsToday, patientsToday)}% pasien hari ini` },
+    { key: 'old', label: 'Pasien Lama', value: returningPatientsToday, icon: UserCog, tone: 'ind', detail: `${pct(returningPatientsToday, patientsToday)}% pasien hari ini` },
   ];
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-3 gap-3 md:gap-4">
-          {[...Array(3)].map((_, i) => <KPISkeleton key={i} large />)}
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-          {[...Array(8)].map((_, i) => <KPISkeleton key={i} />)}
-        </div>
-      </div>
+      <>
+        <div className="col-span-2 md:col-span-4 lg:col-span-6 h-40 rounded-[22px] bg-slate-100 animate-pulse" />
+        <div className="col-span-2 md:col-span-4 lg:col-span-4 h-56 rounded-[22px] bg-slate-100 animate-pulse" />
+        <div className="col-span-2 md:col-span-4 lg:col-span-2 h-56 rounded-[22px] bg-slate-100 animate-pulse" />
+      </>
     );
   }
 
   return (
-    <div className="space-y-4">
-
-      {/* ── Row 1: 3 Period KPIs — lebih besar & premium ── */}
-      <div className="grid grid-cols-3 gap-3 md:gap-4">
-        {periodKPIs.map((kpi, i) => (
-          <motion.div
-            key={i}
-            {...cardEntrance(i, 12, reduceMotion)}
-            className={`bg-white rounded-app-lg border border-slate-100 shadow-sm ${HOVER_LIFT} transition-shadow duration-200 p-3 md:p-6 flex flex-col gap-2 md:gap-4`}
-          >
-            <div className="flex items-start justify-between gap-1">
-              <div className={`w-8 h-8 md:w-12 md:h-12 rounded-app ${kpi.iconBg} flex items-center justify-center shrink-0`}>
-                <kpi.icon className={`w-4 h-4 md:w-6 md:h-6 ${kpi.iconColor}`} />
+    <>
+      {/* Ringkasan periode */}
+      <FinanceTile tone="acc" icon={Activity} title="Ringkasan Periode" className="col-span-2 md:col-span-4 lg:col-span-6">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4">
+          {periodKPIs.map(({ label, value, badge, icon: Icon, tone }) => {
+            const t = TONES[tone];
+            return (
+              <div key={label} className={cn('rounded-2xl border border-slate-100 p-3 md:p-4 min-w-0', t.tint)}>
+                <div className="flex items-center justify-between gap-1 mb-2 md:mb-3">
+                  <span className={cn('w-7 h-7 md:w-9 md:h-9 rounded-[10px] flex items-center justify-center', t.icon)}>
+                    <Icon className="w-3.5 h-3.5 md:w-[18px] md:h-[18px]" />
+                  </span>
+                  <span className={cn('hidden sm:inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold', t.soft, t.text)}>{badge}</span>
+                </div>
+                <p className="text-2xl md:text-4xl font-black tabular-nums leading-none text-slate-900">
+                  <AnimatedNumber value={value} format={formatInt} />
+                </p>
+                <p className="text-xs md:text-sm font-medium text-slate-500 mt-1 break-words">{label}</p>
               </div>
-              {/* Badge — hidden di PWA mobile, tampil di desktop */}
-              <span className={`hidden md:inline-flex text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-full ${kpi.iconBg} ${kpi.iconColor}`}>
-                {kpi.change}
-              </span>
-            </div>
-            <div>
-              <p className="text-xl md:text-4xl font-black text-slate-900 tracking-tight leading-none tabular-nums">
-                {kpi.value.toLocaleString('id-ID')}
-              </p>
-              <p className="text-xs md:text-sm font-medium text-slate-500 mt-1 leading-tight break-words md:truncate">{kpi.label}</p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+            );
+          })}
+        </div>
+      </FinanceTile>
 
-      {/* ── Row 2: 6 Today KPIs ── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-        {todayKPIs.map((kpi, i) => (
-          <motion.div
-            key={i}
-            {...cardEntrance(i + 3, 10, reduceMotion)}
-            className={`rounded-app-lg border shadow-sm ${HOVER_LIFT_SM} transition-shadow duration-200 p-3 md:p-5 flex items-center gap-2.5 md:gap-4 ${
-              kpi.variant === 'danger'  ? 'bg-rose-50 border-rose-100' :
-              kpi.variant === 'warning' ? 'bg-orange-50 border-orange-100' :
-              'bg-white border-slate-100'
-            }`}
-          >
-            <div className={`w-9 h-9 md:w-12 md:h-12 rounded-app ${kpi.iconBg} flex items-center justify-center shrink-0`}>
-              <kpi.icon className={`w-5 h-5 md:w-6 md:h-6 ${kpi.iconColor}`} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className={`text-xl md:text-3xl font-black leading-none tracking-tight tabular-nums ${
-                kpi.variant === 'danger'  ? 'text-rose-700' :
-                kpi.variant === 'warning' ? 'text-orange-700' :
-                'text-slate-900'
-              }`}>
-                {kpi.value.toLocaleString('id-ID')}
-              </p>
-              <p className={`text-xs md:text-sm font-medium mt-1 leading-tight break-words md:truncate ${
-                kpi.variant === 'danger'  ? 'text-rose-400' :
-                kpi.variant === 'warning' ? 'text-orange-400' :
-                'text-slate-500'
-              }`}>
-                {kpi.label}
-              </p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+      {/* Hari ini */}
+      <FinanceTile
+        tone="pos"
+        icon={Calendar}
+        title="Hari Ini"
+        className="col-span-2 md:col-span-4 lg:col-span-4"
+        action={
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-emerald-600">
+            <span className="w-[7px] h-[7px] rounded-full bg-emerald-500 animate-pulse motion-reduce:animate-none" /> LIVE
+          </span>
+        }
+      >
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+          {todayKPIs.map(({ key, label, value, icon: Icon, tone, valueCls, detail }) => {
+            const t = TONES[tone];
+            const active = selected === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setSelected(active ? null : key)}
+                aria-pressed={active}
+                className={cn(
+                  'flex items-center gap-2.5 p-3 rounded-2xl text-left min-w-0 border transition-[transform,border-color] active:scale-[0.97]',
+                  t.soft, t.text, active ? 'border-current' : 'border-transparent'
+                )}
+              >
+                <span className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0">
+                  <Icon className="w-[18px] h-[18px]" />
+                </span>
+                <span className="min-w-0">
+                  <b className={cn('block text-2xl font-black leading-none tabular-nums', valueCls || 'text-slate-900')}>{formatInt(value)}</b>
+                  <span className="block text-xs font-medium mt-1 break-words">{label}</span>
+                  {active && <span className="block text-[10.5px] opacity-80 mt-0.5 break-words">{detail}</span>}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </FinanceTile>
 
-      {/* ── Utilisasi Slot Hari Ini — dipindah ke sini, ukurannya dijaga
-          maksimal seluas gabungan 4 kartu di atas (Terapis Aktif, Slot
-          Kosong, Pasien Baru, Pasien Lama) ── */}
-      <SlotUtilizationChart />
-
-    </div>
+      {/* Utilisasi slot hari ini */}
+      <SlotUtilizationChart className="col-span-2 md:col-span-4 lg:col-span-2" />
+    </>
   );
 };
 

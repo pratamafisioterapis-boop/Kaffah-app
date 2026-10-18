@@ -6,6 +6,7 @@ export const TONES = {
   warn: { hex: '#d97706', icon: 'bg-amber-50 text-amber-600', tint: 'bg-gradient-to-b from-amber-50 to-white', soft: 'bg-amber-50', text: 'text-amber-600' },
   acc: { hex: '#0d9488', icon: 'bg-teal-50 text-teal-600', tint: 'bg-gradient-to-b from-teal-50 to-white', soft: 'bg-teal-50', text: 'text-teal-600' },
   vio: { hex: '#7c3aed', icon: 'bg-violet-50 text-violet-600', tint: 'bg-gradient-to-b from-violet-50 to-white', soft: 'bg-violet-50', text: 'text-violet-600' },
+  ind: { hex: '#4f46e5', icon: 'bg-indigo-50 text-indigo-600', tint: 'bg-gradient-to-b from-indigo-50 to-white', soft: 'bg-indigo-50', text: 'text-indigo-600' },
   sky: { hex: '#2563eb', icon: 'bg-blue-50 text-blue-600', tint: 'bg-gradient-to-b from-blue-50 to-white', soft: 'bg-blue-50', text: 'text-blue-600' },
 };
 

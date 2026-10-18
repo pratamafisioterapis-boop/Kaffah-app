@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Loader2, ChevronRight, UserX } from 'lucide-react';
+import { ChevronRight, UserX, Info } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { getCachedClinicId } from '@/lib/api';
+import FinanceTile, { TileEmpty, TileLoading } from '@/components/owner/finance/FinanceTile';
 
 const COLOR_PALETTE = [
   { color: '#6366f1', bg: 'bg-indigo-50',  text: 'text-indigo-600'  },
@@ -25,7 +25,7 @@ const OLD_PATIENT_STYLE = { color: '#334155', bg: 'bg-slate-100', text: 'text-sl
 const GUEST_LABEL = 'Tamu';
 const GUEST_STYLE = { color: '#f59e0b', bg: 'bg-amber-50', text: 'text-amber-600' };
 
-const PatientSourceChart = ({ dateRange }) => {
+const PatientSourceChart = ({ dateRange, className }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -148,74 +148,47 @@ const PatientSourceChart = ({ dateRange }) => {
   }, [dateRange]);
 
   return (
-    <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden h-full">
-      {/* Header */}
-      <div className="px-5 md:px-6 pt-5 md:pt-6 pb-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-base font-bold text-slate-800">Informasi Pasien</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Dari mana pasien tahu klinik</p>
+    <FinanceTile tone="sky" icon={Info} title="Informasi Pasien" className={className}>
+      {loading ? (
+        <TileLoading className="py-14" />
+      ) : data.length === 0 ? (
+        <TileEmpty>Belum ada data sesi pada periode ini.</TileEmpty>
+      ) : (
+        <>
+          <div className="flex items-baseline gap-2 mb-3">
+            <b className="text-3xl font-black tabular-nums leading-none text-slate-900">{total.toLocaleString('id-ID')}</b>
+            <span className="text-xs text-slate-500">Total Sesi · dari mana pasien tahu klinik</span>
           </div>
-          {!loading && (
-            <div className="text-right">
-              <p className="text-xl font-black text-slate-900 leading-none">{total.toLocaleString('id-ID')}</p>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">Total Sesi</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="h-px bg-slate-50 mx-5" />
-
-      <CardContent className="px-5 md:px-6 py-4">
-        {loading ? (
-          <div className="h-48 flex items-center justify-center">
-            <Loader2 className="h-7 w-7 animate-spin text-slate-200" />
-          </div>
-        ) : data.length === 0 ? (
-          <div className="h-48 flex items-center justify-center text-slate-500 text-sm">
-            Belum ada data sesi pada periode ini.
-          </div>
-        ) : (
-          <div className="space-y-3">
+          <div className="grid gap-0.5">
             {data.map((s) => {
               const isClickable = (patientsByLabel[s.key]?.length || 0) > 0;
               return (
-                <div
+                <button
                   key={s.key}
-                  className={`space-y-1 ${isClickable ? 'cursor-pointer group -mx-2 px-2 py-1 rounded-app-sm hover:bg-slate-50 transition-colors' : ''}`}
-                  onClick={isClickable ? () => setSelectedLabel(s.key) : undefined}
-                  role={isClickable ? 'button' : undefined}
-                  tabIndex={isClickable ? 0 : undefined}
-                  onKeyDown={isClickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedLabel(s.key); } : undefined}
+                  type="button"
+                  disabled={!isClickable}
+                  onClick={() => setSelectedLabel(s.key)}
+                  className="w-full grid gap-1.5 px-2 py-2 rounded-xl text-left transition-colors hover:bg-slate-50 disabled:hover:bg-transparent disabled:cursor-default"
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
-                      <span className="text-xs font-semibold text-slate-700 break-words sm:truncate">{s.key}</span>
-                      {isClickable && (
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${s.bg} ${s.text}`}>
-                        {s.count.toLocaleString('id-ID')}
-                      </span>
-                      <span className="text-xs text-slate-500 w-8 text-right">{s.pct}%</span>
-                    </div>
-                  </div>
-                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                    <span className="flex-1 min-w-0 text-xs font-semibold text-slate-700 break-words">{s.key}</span>
+                    {isClickable && <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${s.bg} ${s.text}`}>{s.count.toLocaleString('id-ID')}</span>
+                    <span className="text-xs text-slate-500 w-8 text-right shrink-0">{s.pct}%</span>
+                  </span>
+                  <span className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <span
+                      className="block h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
                       style={{ width: `${s.pct}%`, backgroundColor: s.color }}
                     />
-                  </div>
-                </div>
+                  </span>
+                </button>
               );
             })}
           </div>
-        )}
-      </CardContent>
+        </>
+      )}
 
       <Dialog open={!!selectedLabel} onOpenChange={(open) => !open && setSelectedLabel(null)}>
         <DialogContent className="max-w-lg max-h-[80vh] flex flex-col p-0 overflow-hidden sm:rounded-app">
@@ -267,7 +240,7 @@ const PatientSourceChart = ({ dateRange }) => {
           </ScrollArea>
         </DialogContent>
       </Dialog>
-    </div>
+    </FinanceTile>
   );
 };
 

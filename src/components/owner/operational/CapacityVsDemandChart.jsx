@@ -1,17 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  BarChart,
-  Bar,
-  Line,
-  ComposedChart,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend
-} from 'recharts';
 import { supabase } from '@/lib/customSupabaseClient';
 import {
   startOfWeek,
@@ -27,30 +14,34 @@ import {
   getISOWeek,
 } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from "@/components/ui/button";
+import { RefreshCw, AlertCircle, ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import FinanceTile, { TileLoading } from '@/components/owner/finance/FinanceTile';
+import SegControl from '@/components/owner/finance/SegControl';
 import { getCachedClinicId } from '@/lib/api';
-import { CHART_MOTION } from '@/lib/chartMotion';
 
-const CapacityVsDemandChart = () => {
+const CapacityVsDemandChart = ({ className }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [view, setView] = useState('weekly'); // 'weekly' | 'monthly'
   const [anchorDate, setAnchorDate] = useState(new Date()); // periode (minggu/bulan) yang sedang dilihat
+  const [picked, setPicked] = useState(null); // batang yang dipilih untuk detail
 
   const isCurrentPeriod = view === 'monthly'
     ? isSameMonth(anchorDate, new Date())
     : isSameWeek(anchorDate, new Date(), { weekStartsOn: 1 });
 
   const goToPrevious = () => {
+    setPicked(null);
     setAnchorDate((prev) => (view === 'monthly' ? addMonths(prev, -1) : addWeeks(prev, -1)));
   };
   const goToNext = () => {
     if (isCurrentPeriod) return; // jangan izinkan lihat periode masa depan
+    setPicked(null);
     setAnchorDate((prev) => (view === 'monthly' ? addMonths(prev, 1) : addWeeks(prev, 1)));
   };
-  const goToToday = () => setAnchorDate(new Date());
+  const goToToday = () => { setPicked(null); setAnchorDate(new Date()); };
 
   const fetchData = async () => {
     setLoading(true);
@@ -162,198 +153,111 @@ const CapacityVsDemandChart = () => {
     ? Math.round(activeDays.reduce((s, d) => s + d.utilization, 0) / activeDays.length)
     : 0;
 
+  const W = 320, H = 160, L = 10, R = 26, T = 14, B = 22;
+  const count = data.length;
+  const maxCap = Math.max(...data.map(d => d.capacity), 1) + 4;
+  const slotW = (W - L - R) / Math.max(count, 1);
+  const X = (i) => L + (i + 0.5) * slotW;
+  const Y = (v) => T + (1 - v / maxCap) * (H - T - B);
+  const Y2 = (v) => T + (1 - v / 100) * (H - T - B);
+  const barW = Math.min(16, slotW / 2.4);
+  const sel = picked != null && picked < count ? picked : null;
+  const point = sel != null ? data[sel] : null;
+  const utilLine = data.map((p, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)} ${Y2(p.utilization).toFixed(1)}`).join('');
+
+  const periodLabel = view === 'monthly'
+    ? `Overview per minggu · ${format(anchorDate, 'MMMM yyyy', { locale: id })}`
+    : `Overview mingguan · ${format(startOfWeek(anchorDate, { weekStartsOn: 1 }), 'dd MMM', { locale: id })} - ${format(endOfWeek(anchorDate, { weekStartsOn: 1 }), 'dd MMM yyyy', { locale: id })}`;
+
+  const iconBtn = 'w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-700 flex items-center justify-center active:scale-[0.95] transition-transform';
+
   return (
-    <Card className="rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden flex flex-col">
-      {/* Header */}
-      <div className="p-5 md:p-6 pb-0">
-        <div className="flex items-start justify-between gap-3">
-          <h2 className="min-w-0 text-base font-bold text-slate-800">Kapasitas vs Permintaan</h2>
-          <div className="shrink-0 text-right whitespace-nowrap">
-            <p className={`text-xl font-black leading-none ${avgUtilization >= 75 ? 'text-amber-600' : 'text-emerald-600'}`}>
-              {avgUtilization}%
-            </p>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">Avg Utilisasi</p>
-          </div>
-        </div>
-        <p className="text-xs text-slate-500 mt-0.5 whitespace-nowrap">
-          {view === 'monthly'
-            ? `Overview per minggu · ${format(anchorDate, 'MMMM yyyy', { locale: id })}`
-            : `Overview mingguan · ${format(startOfWeek(anchorDate, { weekStartsOn: 1 }), 'dd MMM', { locale: id })} - ${format(endOfWeek(anchorDate, { weekStartsOn: 1 }), 'dd MMM yyyy', { locale: id })}`}
-        </p>
-
-        {/* Weekly / Monthly toggle + period navigation */}
-        <div className="flex items-center justify-between gap-2 mt-3 flex-wrap">
-          <div className="flex items-center gap-1 bg-slate-50 rounded-full p-1 w-fit border border-slate-100">
-            <button
-              onClick={() => { setView('weekly'); setAnchorDate(new Date()); }}
-              className={`text-xs font-semibold px-3 py-1 rounded-full transition-colors ${
-                view === 'weekly' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-600'
-              }`}
-            >
-              Mingguan
-            </button>
-            <button
-              onClick={() => { setView('monthly'); setAnchorDate(new Date()); }}
-              className={`text-xs font-semibold px-3 py-1 rounded-full transition-colors ${
-                view === 'monthly' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-600'
-              }`}
-            >
-              Bulanan
-            </button>
-          </div>
-
-          <div className="flex items-center gap-1">
-            {loading
-              ? <Loader2 className="h-4 w-4 animate-spin text-slate-300 shrink-0 mr-1" />
-              : <button onClick={fetchData} aria-label="Muat ulang kapasitas dan permintaan" className="tap-target relative before:absolute before:-inset-2 before:content-[''] w-6 h-6 mr-1 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-[0.97]">
-                  <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
-                </button>
-            }
-            <button
-              onClick={goToPrevious}
-              className="tap-target relative before:absolute before:-inset-2.5 before:content-[''] w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-[0.97]"
-              aria-label={view === 'monthly' ? 'Bulan sebelumnya' : 'Minggu sebelumnya'}
-            >
-              <ChevronLeft className="h-3.5 w-3.5 text-slate-500" />
-            </button>
-            {!isCurrentPeriod && (
-              <button
-                onClick={goToToday}
-                className="text-xs font-semibold text-indigo-600 px-2 hover:underline"
-              >
-                {view === 'monthly' ? 'Bulan ini' : 'Minggu ini'}
-              </button>
-            )}
-            <button
-              onClick={goToNext}
-              disabled={isCurrentPeriod}
-              className="tap-target relative before:absolute before:-inset-2.5 before:content-[''] w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-[background-color,transform] duration-150 active:scale-[0.97] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-slate-50"
-              aria-label={view === 'monthly' ? 'Bulan berikutnya' : 'Minggu berikutnya'}
-            >
-              <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
-            </button>
-          </div>
-        </div>
-
-        {/* Legend */}
-        <div className="flex items-center gap-4 mt-3">
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-sm bg-slate-300" />
-            <span className="text-xs text-slate-500 font-medium">Kapasitas</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-sm bg-indigo-400" />
-            <span className="text-xs text-slate-500 font-medium">Terisi</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-1.5 rounded-full bg-emerald-500" />
-            <span className="text-xs text-slate-500 font-medium">Utilisasi %</span>
-          </div>
+    <FinanceTile tone="acc" icon={BarChart3} title="Kapasitas vs Permintaan" className={className}>
+      <div className="flex items-start justify-between gap-3">
+        <small className="text-xs text-slate-500 min-w-0 break-words">{periodLabel}</small>
+        <div className="text-right whitespace-nowrap shrink-0">
+          <p className={`text-2xl font-black leading-none tabular-nums ${avgUtilization >= 75 ? 'text-amber-600' : 'text-emerald-600'}`}>{avgUtilization}%</p>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">Avg Utilisasi</p>
         </div>
       </div>
 
-      <CardContent className="flex-1 p-0 pt-4 min-h-[200px] md:min-h-[280px]">
-        {error ? (
-          <div className="h-full flex flex-col items-center justify-center text-rose-500 text-sm gap-2 p-6">
-            <AlertCircle className="h-6 w-6" />
-            <p>{error}</p>
-            <button onClick={fetchData} className="text-xs text-slate-500 underline">Coba Lagi</button>
-          </div>
-        ) : loading && data.length === 0 ? (
-          <div className="h-full flex items-center justify-center py-10">
-            <Loader2 className="h-7 w-7 animate-spin text-slate-200" />
-          </div>
-        ) : (
-          <div className="h-[200px] md:h-[270px] w-full px-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={data} margin={{ top: 10, right: 28, left: -20, bottom: 0 }} barGap={2}>
-                <defs>
-                  <linearGradient id="capGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#cbd5e1" stopOpacity={0.9}/>
-                    <stop offset="100%" stopColor="#cbd5e1" stopOpacity={0.5}/>
-                  </linearGradient>
-                  <linearGradient id="demGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.9}/>
-                    <stop offset="100%" stopColor="#6366f1" stopOpacity={0.6}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis
-                  dataKey="shortDay"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }}
-                  dy={8}
-                  interval={0}
-                />
-                <YAxis
-                  yAxisId="left"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 11, fill: '#94a3b8' }}
-                  allowDecimals={false}
-                  width={24}
-                  domain={[0, 'dataMax + 2']}
-                  tickCount={6}
-                />
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  domain={[0, 100]}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 11, fill: '#10b981' }}
-                  tickFormatter={(v) => `${v}%`}
-                  width={32}
-                  tickCount={6}
-                />
-                <Tooltip
-                  cursor={{ fill: '#f8fafc', radius: 8 }}
-                  contentStyle={{
-                    borderRadius: '12px',
-                    border: 'none',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                    padding: '10px 14px',
-                    fontSize: '13px'
-                  }}
-                  labelStyle={{ color: '#1e293b', fontWeight: 700, marginBottom: '4px' }}
-                  labelFormatter={(_, payload) => payload?.[0]?.payload?.fullDate || ''}
-                  formatter={(value, name) => {
-                    if (name === 'capacity') return [value, 'Kapasitas'];
-                    if (name === 'demand') return [value, 'Terisi'];
-                    if (name === 'utilization') return [`${value}%`, 'Utilisasi'];
-                    return [value, name];
-                  }}
-                />
-                <Bar yAxisId="left" dataKey="capacity" name="capacity" fill="url(#capGrad)" radius={[6, 6, 0, 0]} barSize={20} {...CHART_MOTION} />
-                <Bar yAxisId="left" dataKey="demand" name="demand" fill="url(#demGrad)" radius={[6, 6, 0, 0]} barSize={20} {...CHART_MOTION} />
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="utilization"
-                  name="utilization"
-                  stroke="#10b981"
-                  strokeWidth={2.5}
-                  {...CHART_MOTION}
-                  dot={(props) => {
-                    const { cx, cy, payload } = props;
-                    return (
-                      <circle
-                        key={`dot-${cx}-${cy}`}
-                        cx={cx} cy={cy} r={4}
-                        fill={payload.utilization < 50 ? '#ef4444' : '#10b981'}
-                        stroke="white" strokeWidth={2}
-                      />
-                    );
-                  }}
-                  activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2 }}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      <div className="flex items-center gap-2 flex-wrap mt-3">
+        <SegControl
+          items={[{ value: 'weekly', label: 'Mingguan' }, { value: 'monthly', label: 'Bulanan' }]}
+          value={view}
+          onChange={(v) => { setView(v); setAnchorDate(new Date()); setPicked(null); }}
+        />
+        <div className="flex items-center gap-1.5 ml-auto">
+          <button type="button" onClick={fetchData} aria-label="Muat ulang kapasitas dan permintaan" className={iconBtn}>
+            <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
+          </button>
+          <button type="button" onClick={goToPrevious} aria-label={view === 'monthly' ? 'Bulan sebelumnya' : 'Minggu sebelumnya'} className={iconBtn}>
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          {!isCurrentPeriod && (
+            <button type="button" onClick={goToToday} className="text-xs font-semibold text-indigo-600 px-1.5 hover:underline">
+              {view === 'monthly' ? 'Bulan ini' : 'Minggu ini'}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={goToNext}
+            disabled={isCurrentPeriod}
+            aria-label={view === 'monthly' ? 'Bulan berikutnya' : 'Minggu berikutnya'}
+            className={cn(iconBtn, 'disabled:opacity-35 disabled:cursor-not-allowed')}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4 flex-wrap mt-3 text-xs font-semibold text-slate-500">
+        <span className="inline-flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-[3px] bg-slate-300" />Kapasitas</span>
+        <span className="inline-flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-[3px] bg-indigo-500" />Terisi</span>
+        <span className="inline-flex items-center gap-1.5"><i className="w-2.5 h-1.5 rounded-full bg-emerald-500" />Utilisasi %</span>
+      </div>
+
+      <div className="min-h-[26px] flex flex-wrap items-baseline gap-x-2 mt-2 text-xs text-slate-500">
+        {point
+          ? <><b className="text-xl font-black text-slate-900 tabular-nums">{point.utilization}%</b><span>{point.fullDate} · terisi {point.demand} dari {point.capacity}</span></>
+          : <span>Ketuk batang untuk detail</span>}
+      </div>
+
+      {error ? (
+        <div className="h-[200px] flex flex-col items-center justify-center text-rose-500 text-sm gap-2 p-6">
+          <AlertCircle className="h-6 w-6" />
+          <p>{error}</p>
+          <button onClick={fetchData} className="text-xs text-slate-500 underline">Coba Lagi</button>
+        </div>
+      ) : loading && data.length === 0 ? (
+        <TileLoading className="py-16" />
+      ) : (
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto block overflow-visible" role="img" aria-label="Kapasitas vs permintaan">
+          {[0, 1, 2, 3].map(g => {
+            const y = T + (g * (H - T - B)) / 3;
+            return <line key={g} x1={L} x2={W - R} y1={y} y2={y} stroke="#e2e8f0" strokeDasharray="3 4" />;
+          })}
+          {data.map((p, i) => (
+            <g key={`b${i}`} opacity={sel != null && sel !== i ? 0.4 : 1}>
+              <rect x={X(i) - barW - 1} y={Y(p.capacity)} width={barW} height={Math.max(H - B - Y(p.capacity), 0)} rx="4" fill="#cbd5e1" />
+              <rect x={X(i) + 1} y={Y(p.demand)} width={barW} height={Math.max(H - B - Y(p.demand), 0)} rx="4" fill="#6366f1" />
+            </g>
+          ))}
+          <path d={utilLine} fill="none" stroke="#10b981" strokeWidth="2.4" strokeLinejoin="round" />
+          {data.map((p, i) => (
+            <g key={`d${i}`}>
+              <circle cx={X(i)} cy={Y2(p.utilization)} r={sel === i ? 5.5 : 3.6} fill={p.utilization < 50 ? '#ef4444' : '#10b981'} stroke="#fff" strokeWidth="2" />
+              <text x={X(i)} y={H - 5} textAnchor="middle" fontSize="9.5" fontWeight="600" fill="#64748b">{p.shortDay}</text>
+            </g>
+          ))}
+          <text x={W - R + 4} y={T + 3} fontSize="9" fontWeight="600" fill="#10b981">100%</text>
+          <text x={W - R + 4} y={H - B + 3} fontSize="9" fontWeight="600" fill="#10b981">0%</text>
+          {data.map((p, i) => (
+            <rect key={`h${i}`} x={X(i) - slotW / 2} y="0" width={slotW} height={H} fill="transparent" className="cursor-pointer" onClick={() => setPicked(picked === i ? null : i)} />
+          ))}
+        </svg>
+      )}
+    </FinanceTile>
   );
 };
 

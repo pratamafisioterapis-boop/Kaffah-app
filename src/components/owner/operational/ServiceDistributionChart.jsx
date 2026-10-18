@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Loader2, ChevronRight, HelpCircle, X } from 'lucide-react';
+import { ChevronRight, HelpCircle, X, PieChart } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { getCachedClinicId } from '@/lib/api';
+import { cn } from '@/lib/utils';
+import FinanceTile, { TileEmpty, TileLoading } from '@/components/owner/finance/FinanceTile';
+import { Donut } from '@/components/owner/finance/charts';
 
 const SERVICE_CONFIG = [
   { key: 'Musculoskeletal Treatment',         short: 'Musculo',   color: '#6366f1', bg: 'bg-indigo-50',  text: 'text-indigo-600'  },
@@ -16,12 +18,14 @@ const SERVICE_CONFIG = [
   { key: 'Cardiorespiratory Physiotherapy',   short: 'Cardio',    color: '#f43f5e', bg: 'bg-rose-50',    text: 'text-rose-600'    },
 ];
 
-const ServiceDistributionChart = ({ dateRange }) => {
+const ServiceDistributionChart = ({ dateRange, className }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [unclassifiedRecaps, setUnclassifiedRecaps] = useState([]);
   const [showUnclassifiedModal, setShowUnclassifiedModal] = useState(false);
+  // Layanan yang disorot di donut dan daftar.
+  const [selected, setSelected] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -106,76 +110,64 @@ const ServiceDistributionChart = ({ dateRange }) => {
     fetchData();
   }, [dateRange]);
 
+  const donutItems = data.map(s => ({ key: s.key, value: s.count, color: s.color }));
+  const current = data.find(s => s.key === selected);
+
+  const handleSelect = (key) => {
+    if (key === 'Tidak Terklasifikasi' && unclassifiedRecaps.length > 0) {
+      setShowUnclassifiedModal(true);
+      return;
+    }
+    setSelected(selected === key ? null : key);
+  };
+
   return (
-    <div className="bg-white rounded-app-lg border border-slate-100 shadow-sm [@media(hover:hover)_and_(pointer:fine)]:[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg transition-shadow duration-200 overflow-hidden h-full">
-      {/* Header */}
-      <div className="px-5 md:px-6 pt-5 md:pt-6 pb-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-base font-bold text-slate-800">Distribusi Layanan</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Breakdown tipe layanan keseluruhan</p>
+    <FinanceTile tone="vio" icon={PieChart} title="Distribusi Layanan" className={className}>
+      {loading ? (
+        <TileLoading className="py-14" />
+      ) : data.length === 0 ? (
+        <TileEmpty>Belum ada data layanan.</TileEmpty>
+      ) : (
+        <>
+          <div className="flex items-baseline gap-2 mb-3">
+            <b className="text-3xl font-black tabular-nums leading-none text-slate-900">{total.toLocaleString('id-ID')}</b>
+            <span className="text-xs text-slate-500">Total Sesi</span>
           </div>
-          {!loading && (
-            <div className="text-right">
-              <p className="text-xl font-black text-slate-900 leading-none">{total.toLocaleString('id-ID')}</p>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">Total Sesi</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="h-px bg-slate-50 mx-5" />
-
-      <CardContent className="px-5 md:px-6 py-4">
-        {loading ? (
-          <div className="h-48 flex items-center justify-center">
-            <Loader2 className="h-7 w-7 animate-spin text-slate-200" />
-          </div>
-        ) : data.length === 0 ? (
-          <div className="h-48 flex items-center justify-center text-slate-500 text-sm">
-            Belum ada data layanan.
-          </div>
-        ) : (
-          <div className="space-y-3">
+          <Donut items={donutItems} selected={selected} onSelect={(key) => (key ? handleSelect(key) : setSelected(null))} className="w-[128px] mx-auto mb-3">
+            <b className="text-xl font-black tabular-nums leading-tight text-slate-900">{(current ? current.count : total).toLocaleString('id-ID')}</b>
+            <small className="text-xs text-slate-500 max-w-[78px] truncate">{current ? current.short : 'Total'}</small>
+          </Donut>
+          <div className="grid gap-0.5">
             {data.map((s) => {
               const isUnclassified = s.key === 'Tidak Terklasifikasi';
               const isClickable = isUnclassified && unclassifiedRecaps.length > 0;
               return (
-                <div
+                <button
                   key={s.key}
-                  className={`space-y-1 ${isClickable ? 'cursor-pointer group -mx-2 px-2 py-1 rounded-app-sm hover:bg-slate-50 transition-colors' : ''}`}
-                  onClick={isClickable ? () => setShowUnclassifiedModal(true) : undefined}
-                  role={isClickable ? 'button' : undefined}
-                  tabIndex={isClickable ? 0 : undefined}
-                  onKeyDown={isClickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') setShowUnclassifiedModal(true); } : undefined}
+                  type="button"
+                  onClick={() => handleSelect(s.key)}
+                  aria-pressed={selected === s.key}
+                  className={cn('w-full grid gap-1.5 px-2 py-2 rounded-xl text-left transition-colors', selected === s.key ? 'bg-slate-100' : 'hover:bg-slate-50')}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
-                      <span className="text-xs font-semibold text-slate-700 break-words sm:truncate">{s.key}</span>
-                      {isClickable && (
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${s.bg} ${s.text}`}>
-                        {s.count.toLocaleString('id-ID')}
-                      </span>
-                      <span className="text-xs text-slate-500 w-8 text-right">{s.pct}%</span>
-                    </div>
-                  </div>
-                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                    <span className="flex-1 min-w-0 text-xs font-semibold text-slate-700 break-words">{s.key}</span>
+                    {isClickable && <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${s.bg} ${s.text}`}>{s.count.toLocaleString('id-ID')}</span>
+                    <span className="text-xs text-slate-500 w-8 text-right shrink-0">{s.pct}%</span>
+                  </span>
+                  <span className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <span
+                      className="block h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
                       style={{ width: `${s.pct}%`, backgroundColor: s.color }}
                     />
-                  </div>
-                </div>
+                  </span>
+                </button>
               );
             })}
           </div>
-        )}
-      </CardContent>
+        </>
+      )}
 
       {/*
         DialogContent is deliberately turned into a full-viewport, transparent,
@@ -228,7 +220,7 @@ const ServiceDistributionChart = ({ dateRange }) => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </FinanceTile>
   );
 };
 
