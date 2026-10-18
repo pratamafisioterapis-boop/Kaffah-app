@@ -18,6 +18,7 @@ import TherapistDashboardWidget from '@/components/therapist/TherapistDashboardW
 const TherapistRemuneration = React.lazy(lazyRetry(() => import('@/components/therapist/TherapistRemuneration'), 'TherapistRemuneration'));
 import PortalInboxCard from '@/components/therapist/PortalInboxCard';
 const PatientPortalInbox = React.lazy(lazyRetry(() => import('@/components/shared/PatientPortalInbox'), 'PatientPortalInbox'));
+const ExerciseReview = React.lazy(lazyRetry(() => import('@/components/therapist/ExerciseReview'), 'ExerciseReview'));
 const TherapistDocuments = React.lazy(lazyRetry(() => import('@/components/therapist/TherapistDocuments'), 'TherapistDocuments'));
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -120,6 +121,7 @@ const TherapistDashboard = () => {
     ...(canRequestLeave ? [{ label: 'Izin', path: '/therapist/leave', icon: 'Calendar' }] : []),
     { label: 'Remunerasi', path: '/therapist/remuneration', icon: 'Award' },
     { label: 'Dokumen', path: '/therapist/drive-upload', icon: 'UploadCloud' },
+    { label: 'Review Video Latihan', path: '/therapist/review-latihan', icon: 'MonitorPlay', clinicOnly: KAFFAH_CLINIC_ID },
     { label: 'Chat Pasien', path: '/therapist/clinara-pasien', icon: 'MessageSquare', requiresPortal: true },
     { label: 'SK Pimpinan', path: '/therapist/decrees', icon: 'FileText', clinicOnly: KAFFAH_CLINIC_ID },
     { label: 'Settings', path: '#settings', icon: 'Settings', onClick: () => setSettingsOpen(true) },
@@ -173,6 +175,7 @@ const TherapistDashboard = () => {
           <Route path="/patients" element={<TherapistPatients therapist={therapistProfile} />} />
           <Route path="/remuneration" element={<TherapistRemuneration therapist={therapistProfile} />} />
           <Route path="/drive-upload" element={<TherapistDocuments therapist={therapistProfile} />} />
+          {therapistProfile.clinic_id === KAFFAH_CLINIC_ID && <Route path="/review-latihan" element={<ExerciseReview therapist={therapistProfile} />} />}
           <Route path="/clinara-pasien" element={<PatientPortalInbox therapistId={therapistProfile.id} />} />
           <Route path="/decrees" element={<ClinicDecreesViewer />} />
         </Routes>
