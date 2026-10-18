@@ -6,7 +6,6 @@ import DashboardLayout from '@/components/DashboardLayout';
 import TherapistMedicalRecords from '@/components/therapist/TherapistMedicalRecords';
 import MedicalRecordForm from '@/components/therapist/MedicalRecordForm';
 import { supabase } from '@/lib/customSupabaseClient';
-import SoapDeadlineNotice from '@/components/therapist/SoapDeadlineNotice';
 
 const TherapistSession = () => {
   const { therapistId } = useParams();
@@ -29,7 +28,6 @@ const TherapistSession = () => {
         <span>Mode admin: bertindak sebagai <strong>{therapist.name}</strong>. Pengisian SOAP ditandai "Diisi via Admin".</span>
         <Link to="/admin" className="underline font-medium">Kembali ke Admin</Link>
       </div>
-      <SoapDeadlineNotice therapist={therapist} />
       <Routes>
         <Route path="" element={<Navigate to="records" replace />} />
         <Route path="records" element={<TherapistMedicalRecords therapist={therapist} basePath={basePath} />} />

@@ -28,7 +28,6 @@ import { Settings } from 'lucide-react';
 import TherapistSettingsDrawer from '@/components/therapist/TherapistSettingsDrawer';
 import { lazyRetry } from '@/lib/lazyRetry';
 import PageSkeleton from '@/components/shared/PageSkeleton';
-import SoapDeadlineNotice from '@/components/therapist/SoapDeadlineNotice';
 import NewDecreeBanner from '@/components/shared/NewDecreeBanner';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 const ClinicDecreesViewer = React.lazy(lazyRetry(() => import('@/pages/shared/ClinicDecreesViewer'), 'ClinicDecreesViewer'));
@@ -156,7 +155,6 @@ const TherapistDashboard = () => {
         <meta name="description" content="Therapist dashboard" />
       </Helmet>
       <DashboardLayout navItems={navItems} role="therapist" userName={therapistProfile.name}>
-        <SoapDeadlineNotice therapist={therapistProfile} />
         <NewDecreeBanner to="/therapist/decrees" />
         <React.Suspense fallback={<PageSkeleton />}>
         <Routes>
