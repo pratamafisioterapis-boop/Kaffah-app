@@ -21,6 +21,7 @@ const OwnerFollowUpManagementPage = React.lazy(lazyRetry(() => import('@/compone
 
 // Components
 const SettingsPage = React.lazy(lazyRetry(() => import('@/components/owner/SettingsPage'), 'SettingsPage'));
+const SoapFirstOverrides = React.lazy(lazyRetry(() => import('@/components/owner/SoapFirstOverrides'), 'SoapFirstOverrides'));
 const OwnerDailyRecap = React.lazy(lazyRetry(() => import('@/components/owner/OwnerDailyRecap'), 'OwnerDailyRecap'));
 const OwnerFinanceDashboardComponent = React.lazy(lazyRetry(() => import('@/components/owner/OwnerFinanceDashboard'), 'OwnerFinanceDashboardComponent'));
 import RevenueOverview from '@/components/owner/RevenueOverview';
@@ -554,6 +555,7 @@ const OwnerDashboard = () => {
         <Route path="/accounting" element={<OwnerFinanceDashboardComponent />} />
         <Route path="/modal-awal" element={<ModalAwalManagement />} />
         <Route path="/daily-recap" element={<OwnerDailyRecap />} />
+        <Route path="/overrides" element={<SoapFirstOverrides />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/admin-management" element={<AdminManagementPage />} />
         <Route path="/owner-management" element={<OwnerManagementPage />} />

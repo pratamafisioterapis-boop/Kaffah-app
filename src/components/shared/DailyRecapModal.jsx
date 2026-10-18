@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar as CalendarIcon, Loader2, Save, Plus, Trash2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, Save, Plus, Trash2, Lock, CheckCircle2, AlertTriangle } from 'lucide-react';
 import SearchableSelect from '@/components/ui/searchable-select';
 import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
 import DatePicker from '@/components/DatePicker';
@@ -33,6 +33,9 @@ import {
     extendPackage
 } from '@/lib/api';
 import { createOperationalOption } from '@/lib/api';
+import { useSoapFirstSettings, useRecapQuote } from '@/hooks/useSoapFirst';
+import { isSoapFirstActiveOn } from '@/lib/soapFirst';
+import SoapOverrideDialog from './SoapOverrideDialog';
 
 import { 
     parseDateFromDisplay,
@@ -248,6 +251,38 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
         })();
         return () => { cancelled = true; };
     }, [isOpen, mode, initialData?.id]);
+
+    // ── SOAP-first (khusus klinik yang mengaktifkannya, mis. Kaffah) ──
+    // Server (trigger database) yang menentukan tipe pasien, nominal, dan kunci pembayaran.
+    // Form ini hanya menampilkan hasilnya dan menyediakan jalur pengajuan pengecualian.
+    const { settings: sfSettings } = useSoapFirstSettings();
+    const [recapMeta, setRecapMeta] = useState(null);
+    const [overrideDialog, setOverrideDialog] = useState(null);
+    const recapIso = (() => {
+        try { return formData.recap_date ? parseDateFromDisplay(formData.recap_date) : null; } catch { return null; }
+    })();
+    const sfActive = isSoapFirstActiveOn(sfSettings, recapIso);
+    const sfEdit = sfActive && mode === 'edit' && !!initialData?.id;
+    const { quote, refresh: refreshQuote } = useRecapQuote(initialData?.id, formData.package_type, isOpen && sfEdit);
+
+    const loadRecapMeta = useCallback(async () => {
+        if (!initialData?.id) { setRecapMeta(null); return; }
+        const { data } = await supabase
+            .from('daily_recaps')
+            .select('appointment_id, special_type, free_reason, xtratime, soap_completed_at, invoice_created_at, diagnosis')
+            .eq('id', initialData.id)
+            .maybeSingle();
+        setRecapMeta(data || null);
+    }, [initialData?.id]);
+
+    useEffect(() => {
+        if (isOpen && mode === 'edit') loadRecapMeta(); else setRecapMeta(null);
+    }, [isOpen, mode, loadRecapMeta]);
+
+    useEffect(() => {
+        if (!recapMeta) return;
+        setFormData(prev => ({ ...prev, special_type: recapMeta.special_type || '', free_reason: recapMeta.free_reason || '' }));
+    }, [recapMeta]);
 
     const initializeForm = () => {
         try {
@@ -1041,6 +1076,17 @@ setFormData({
 
     const handleExtendPackage = async (newEndDate) => {
         if (!selectedPackage) return;
+        if (sfActive) {
+            // Perpanjangan masa aktif paket wajib disetujui owner.
+            setShowExtendModal(false);
+            setOverrideDialog({
+                kind: 'package_extend',
+                packageId: selectedPackage.id,
+                payload: { new_end_date: String(newEndDate).slice(0, 10) },
+                description: `Perpanjang masa aktif paket sampai ${String(newEndDate).slice(0, 10)}. Berlaku setelah disetujui owner.`,
+            });
+            return;
+        }
         setExtendLoading(true);
         try {
             // extendPackage(id, days) mengharapkan JUMLAH HARI, bukan tanggal ISO -
@@ -1093,8 +1139,24 @@ setFormData({
         setPaymentSplits(prev => prev.length <= 1 ? prev : prev.filter((_, i) => i !== index));
     };
 
+    // SOAP-first: nominal berasal dari server (daftar harga), dikurangi diskon bila ada.
+    const sfIsPayment = !!formData.payment_method && formData.payment_method !== 'Package';
+    const sfBaseAmount = quote?.active && quote.total != null ? Number(quote.total) : null;
+    const sfFinalAmount = (() => {
+        if (!sfEdit) return null;
+        if (quote?.invoice_locked) return Number(initialData?.amount ?? formData.amount ?? 0);
+        if (formData.special_type === 'free') return 0;
+        if (sfBaseAmount == null) return null;
+        const dv = parseFloat(formData.discount_value) || 0;
+        if (formData.discount_type === 'percentage' && dv > 0) return Math.max(Math.round((sfBaseAmount - sfBaseAmount * Math.min(dv, 100) / 100) / 1000) * 1000, 0);
+        if (formData.discount_type === 'nominal' && dv > 0) return Math.max(Math.round(sfBaseAmount - Math.min(dv, sfBaseAmount)), 0);
+        return sfBaseAmount;
+    })();
+    const effectiveAmount = sfFinalAmount != null ? sfFinalAmount : (parseFloat(formData.amount) || 0);
+    const sfBlocked = sfEdit && sfIsPayment && !!quote?.error && !quote?.invoice_locked;
+
     const splitTotal = paymentSplits.reduce((sum, row) => sum + (parseFloat(row.amount) || 0), 0);
-    const splitRemaining = (parseFloat(formData.amount) || 0) - splitTotal;
+    const splitRemaining = effectiveAmount - splitTotal;
 
     const handleSubmit = async () => {
         const newErrors = {};
@@ -1111,13 +1173,24 @@ setFormData({
         if (!formData.package_type_id) {
             newErrors.package_type = "Jenis paket wajib diisi";
         }
+        if (sfActive && mode === 'add') {
+            toast({ variant: "destructive", title: "Recap manual dinonaktifkan", description: "Di klinik ini recap dibuat otomatis dari appointment. Buat appointment terlebih dahulu." });
+            return;
+        }
+        if (sfEdit && formData.special_type === 'free' && (formData.free_reason || '').trim().length < 3) {
+            newErrors.free_reason = "Alasan pasien Free wajib diisi";
+        }
+        if (sfEdit && sfIsPayment && quote?.error && !quote?.invoice_locked) {
+            toast({ variant: "destructive", title: "Pembayaran belum bisa disimpan", description: quote.error });
+            return;
+        }
 
         if (useSplitPayment) {
             const incompleteRow = paymentSplits.some(row => !row.payment_method || !(parseFloat(row.amount) > 0));
             if (incompleteRow) {
                 newErrors.payment_splits = "Lengkapi metode & nominal setiap baris split pembayaran";
             } else if (Math.abs(splitRemaining) > 1) {
-                newErrors.payment_splits = `Total split pembayaran (Rp ${splitTotal.toLocaleString('id-ID')}) belum sama dengan nominal (Rp ${(parseFloat(formData.amount) || 0).toLocaleString('id-ID')})`;
+                newErrors.payment_splits = `Total split pembayaran (Rp ${splitTotal.toLocaleString('id-ID')}) belum sama dengan nominal (Rp ${effectiveAmount.toLocaleString('id-ID')})`;
             }
         }
 
@@ -1194,6 +1267,16 @@ setFormData({
                     ? (initialData?.package_tracking_id ?? null)
                     : (selectedPackage?.id ?? null)
             };
+            if (sfEdit) {
+                // Server yang menentukan diagnosa, tipe pasien, nominal & nilai diskon.
+                delete payload.diagnosis;
+                delete payload.patient_type;
+                delete payload.amount;
+                delete payload.discount_type;
+                delete payload.discount_value;
+                payload.special_type = formData.special_type || null;
+                payload.free_reason = formData.special_type === 'free' ? ((formData.free_reason || '').trim() || null) : null;
+            }
             // Diskon recap tidak dipakai di kwitansi (diskon per item); invoice_items
             // disimpan terpisah setelah recap tersimpan.
             if (isKwitansi) {
@@ -1226,6 +1309,7 @@ setFormData({
                 }
             }
             toast({ title: "Berhasil", description: `Data berhasil ${mode === 'add' ? 'disimpan' : 'diperbarui'}.` });
+            if (sfEdit) { loadRecapMeta(); refreshQuote(); }
             if (onSuccess) onSuccess();
             onClose();
         } catch (error) {
@@ -1308,7 +1392,7 @@ setFormData({
         </>
     );
 
-    const fDiagnosis = (
+    const fDiagnosisEditable = (
         <>
                                 {/* 🔥 DIAGNOSA DULU */}
                                 <div className="space-y-1">
@@ -1328,6 +1412,20 @@ setFormData({
         </>
     );
 
+    const fDiagnosis = sfActive ? (
+        <div className="space-y-1">
+            <Label>Diagnosa (diisi terapis di SOAP)</Label>
+            <div className="flex flex-wrap gap-1.5 rounded-app-sm border bg-slate-50 p-2 min-h-[2.5rem]">
+                {(formData.diagnosis || []).length === 0 && <span className="text-xs text-slate-500">Belum diisi terapis</span>}
+                {(formData.diagnosis || []).map((id) => (
+                    <span key={id} className="rounded-full bg-white border px-2 py-0.5 text-xs text-slate-700">
+                        {diagnosisOptions.find(d => d.value === id)?.label || 'Memuat...'}
+                    </span>
+                ))}
+            </div>
+        </div>
+    ) : fDiagnosisEditable;
+
     const fService = (
         <>
                                 {/* 🔥 LAYANAN KEDUA */}
@@ -1345,7 +1443,7 @@ setFormData({
         </>
     );
 
-    const fPatientType = (
+    const fPatientTypeEditable = (
         <>
                                 <div className="space-y-1">
                                     <Label>Tipe Pasien</Label>
@@ -1353,6 +1451,15 @@ setFormData({
                                 </div>
         </>
     );
+
+    const fPatientType = sfActive ? (
+        <div className="space-y-1">
+            <Label>Tipe Pasien (otomatis dari SOAP)</Label>
+            <div className="rounded-app-sm border bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800">
+                {quote?.type_label || formData.patient_type || 'Menunggu SOAP'}
+            </div>
+        </div>
+    ) : fPatientTypeEditable;
 
     const fPackageType = (
         <>
@@ -1397,7 +1504,7 @@ setFormData({
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <Label>Nominal (Rp)</Label>
-                                        <Input type="number" value={formData.amount ?? ''} onChange={e => handleChange('amount', e.target.value)} placeholder="0" disabled={isPackageSessionLocked || (isKwitansi && invoiceItems.length > 0)}/>
+                                        <Input type="number" value={sfEdit && sfFinalAmount != null ? sfFinalAmount : (formData.amount ?? '')} onChange={e => handleChange('amount', e.target.value)} placeholder="0" disabled={sfActive || isPackageSessionLocked || (isKwitansi && invoiceItems.length > 0)}/>
                                     </div>
                                     <div className="space-y-1">
                                         <Label>Metode Pembayaran</Label>
@@ -1530,12 +1637,12 @@ setFormData({
                                                 discount_type: selected?.discount_value_type || prev.discount_type,
                                                 discount_value: selected?.discount_value != null ? String(selected.discount_value) : prev.discount_value
                                             }));
-                                        }} onSearch={setDiscountTypeSearch} placeholder="Cari jenis diskon..." isLoading={loadingDiscountTypes} allowCreate={true}/>
+                                        }} onSearch={setDiscountTypeSearch} placeholder="Cari jenis diskon..." isLoading={loadingDiscountTypes} allowCreate={!sfActive}/>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1">
                                             <Label className="text-xs">Tipe Potongan</Label>
-                                            <Select disabled={!!formData.referral_reward_id} value={formData.discount_type} onValueChange={v => {
+                                            <Select disabled={!!formData.referral_reward_id || sfActive} value={formData.discount_type} onValueChange={v => {
                                                 if (v === 'none') setFormData(prev => ({ ...prev, discount_type: 'none', discount_value: 0, discount_label: '' }));
                                                 else handleChange('discount_type', v);
                                             }}>
@@ -1549,12 +1656,138 @@ setFormData({
                                         </div>
                                         <div className="space-y-1">
                                             <Label className="text-xs">Nilai</Label>
-                                            <Input type="number" value={formData.discount_value || ''} onChange={e => handleChange('discount_value', e.target.value)} disabled={!!formData.referral_reward_id || formData.discount_type === 'none' || !formData.discount_label}/>
+                                            <Input type="number" value={formData.discount_value || ''} onChange={e => handleChange('discount_value', e.target.value)} disabled={!!formData.referral_reward_id || sfActive || formData.discount_type === 'none' || !formData.discount_label}/>
                                         </div>
                                     </div>
                                 </div>
         </>
     );
+
+    // ── Panel SOAP-first ──
+    const rupiah = (n) => `Rp ${Number(n || 0).toLocaleString('id-ID')}`;
+    const sfSoapDone = !!(quote?.soap_done ?? recapMeta?.soap_completed_at);
+    const sfInvoiceLocked = !!quote?.invoice_locked;
+    const sfTherapistName = therapists.find(t => t.value === formData.therapist_id)?.label || 'terapis';
+    const sfNeedHomecareTime = !!quote?.error && quote.error.includes('Pilih homecare');
+
+    const setHomecareTime = async (value) => {
+        const apptId = recapMeta?.appointment_id;
+        if (!apptId || !initialData?.id) return;
+        const { error } = await supabase.from('appointments').update({ homecare_time_type: value }).eq('id', apptId);
+        if (error) {
+            toast({ variant: "destructive", title: "Gagal menyimpan", description: error.message });
+            return;
+        }
+        await supabase.from('daily_recaps').update({ updated_at: new Date().toISOString() }).eq('id', initialData.id);
+        refreshQuote();
+    };
+
+    const openOverride = (cfg) => setOverrideDialog({ recapId: initialData?.id, ...cfg });
+
+    const fSoapPanel = sfEdit ? (
+        <div className="mx-6 mt-6 rounded-app border border-indigo-200 bg-indigo-50/40 p-4 space-y-3">
+            <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-indigo-900">
+                <Lock className="h-4 w-4" /> SOAP diisi terapis sebelum pembayaran
+                {sfInvoiceLocked && <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-700">Invoice terkunci</span>}
+                {quote?.xtratime && <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-medium text-violet-700">Xtratime</span>}
+                {quote?.homecare && <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-medium text-sky-700">Homecare</span>}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                <div>
+                    <div className="text-xs text-slate-500">Status SOAP</div>
+                    {sfSoapDone ? (
+                        <div className="flex items-center gap-1 font-medium text-emerald-700"><CheckCircle2 className="h-4 w-4" /> Selesai</div>
+                    ) : quote?.needs_soap === false ? (
+                        <div className="font-medium text-slate-700">Boleh menyusul (batas 23.59 WITA)</div>
+                    ) : (
+                        <div className="flex items-center gap-1 font-medium text-amber-700"><AlertTriangle className="h-4 w-4" /> Menunggu SOAP dari {sfTherapistName}</div>
+                    )}
+                </div>
+                <div>
+                    <div className="text-xs text-slate-500">Tipe pasien</div>
+                    <div className="font-medium text-slate-800">{quote?.type_label || formData.patient_type || '-'}</div>
+                </div>
+                <div>
+                    <div className="text-xs text-slate-500">Tagihan</div>
+                    <div className="font-semibold text-slate-900">{sfFinalAmount != null ? rupiah(sfFinalAmount) : '-'}</div>
+                    {!sfInvoiceLocked && quote?.surcharge > 0 && (
+                        <div className="text-[11px] text-slate-500">Paket {rupiah(quote.base)} + tambahan 2 keluhan {rupiah(quote.surcharge)}</div>
+                    )}
+                </div>
+            </div>
+
+            {quote?.error && !sfInvoiceLocked && sfIsPayment && (
+                <div className="rounded-app-sm border border-red-200 bg-red-50 p-3 text-xs text-red-700">{quote.error}</div>
+            )}
+            {quote?.error && !sfInvoiceLocked && !sfIsPayment && !sfSoapDone && quote?.needs_soap && (
+                <div className="rounded-app-sm border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                    Pembayaran baru bisa disimpan setelah terapis menyelesaikan SOAP. Minta {sfTherapistName} mengisi SOAP lebih dulu.
+                </div>
+            )}
+
+            {sfNeedHomecareTime && (
+                <div className="space-y-1 max-w-xs">
+                    <Label className="text-xs">Waktu homecare</Label>
+                    <Select onValueChange={setHomecareTime}>
+                        <SelectTrigger className="h-9 text-xs bg-white"><SelectValue placeholder="Dalam atau luar jam kerja" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="dalam">Dalam jam kerja</SelectItem>
+                            <SelectItem value="luar">Luar jam kerja</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                    <Label className="text-xs">Jenis khusus</Label>
+                    <Select value={formData.special_type || 'none'} disabled={sfInvoiceLocked} onValueChange={(v) => handleChange('special_type', v === 'none' ? '' : v)}>
+                        <SelectTrigger className="h-9 text-xs bg-white"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">Biasa (otomatis dari SOAP)</SelectItem>
+                            <SelectItem value="konsultasi">Konsultasi</SelectItem>
+                            <SelectItem value="free">Free (nominal Rp 0)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                {formData.special_type === 'free' && (
+                    <div className="space-y-1">
+                        <Label className="text-xs">Alasan Free <span className="text-red-500">*</span></Label>
+                        <Input className="h-9 text-xs bg-white" value={formData.free_reason || ''} disabled={sfInvoiceLocked} onChange={e => handleChange('free_reason', e.target.value)} placeholder="Wajib diisi, owner akan diberi tahu" />
+                        {errors.free_reason && <p className="text-xs text-red-500">{errors.free_reason}</p>}
+                    </div>
+                )}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+                {!sfSoapDone && quote?.needs_soap && !sfInvoiceLocked && (
+                    <Button type="button" size="sm" variant="outline" className="h-8 text-xs" onClick={() => openOverride({ kind: 'payment_unlock', description: 'Buka kunci pembayaran tanpa menunggu SOAP (mis. terapis berhalangan). Berlaku setelah disetujui owner.' })}>
+                        Ajukan buka kunci pembayaran
+                    </Button>
+                )}
+                {!quote?.homecare && !quote?.xtratime && !sfInvoiceLocked && (
+                    <Button type="button" size="sm" variant="outline" className="h-8 text-xs" onClick={() => openOverride({ kind: 'xtratime', description: 'Tandai sesi ini sebagai Xtratime (pasien di luar jam kerja, bukan homecare). Berlaku setelah disetujui owner.' })}>
+                        Ajukan Xtratime
+                    </Button>
+                )}
+                {quote?.homecare && !sfInvoiceLocked && (
+                    <Button type="button" size="sm" variant="outline" className="h-8 text-xs" onClick={() => openOverride({ kind: 'homecare_discount', description: 'Izinkan diskon untuk sesi homecare ini. Berlaku setelah disetujui owner.' })}>
+                        Ajukan diskon homecare
+                    </Button>
+                )}
+                <Button type="button" size="sm" variant="outline" className="h-8 text-xs" onClick={() => openOverride({ kind: 'amount_adjust', withAmount: true, description: 'Ubah nominal tagihan di luar daftar harga. Berlaku setelah disetujui owner.' })}>
+                    Ajukan ubah nominal
+                </Button>
+                <Button type="button" size="sm" variant="outline" className="h-8 text-xs" onClick={() => openOverride({ kind: 'incentive_restore', description: 'Pulihkan jasa insentif terapis untuk sesi ini (mis. sesi molor atau pasien terlambat). Berlaku setelah disetujui owner.' })}>
+                    Ajukan pemulihan insentif
+                </Button>
+            </div>
+        </div>
+    ) : (sfActive && mode === 'add' ? (
+        <div className="mx-6 mt-6 rounded-app border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+            Di klinik ini recap dibuat otomatis dari appointment dan pembayaran hanya bisa disimpan setelah terapis menyelesaikan SOAP. Buat appointment terlebih dahulu, lalu buka recap-nya di sini.
+        </div>
+    ) : null);
 
     if(!isOpen) return null;
 
@@ -1568,6 +1801,7 @@ setFormData({
                             <DialogDescription className="text-slate-500">Lengkapi data kunjungan pasien berikut.</DialogDescription>
                         </DialogHeader>
                     </div>
+                    {fSoapPanel}
                     {isKwitansi ? (
                     <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Layout kwitansi: urutan mengikuti kwitansi - data pasien, diagnosa, item, pembayaran */}
@@ -1634,13 +1868,25 @@ setFormData({
 
                     <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
                         <Button variant="outline" onClick={onClose} disabled={isSubmitting}>Batal</Button>
-                        <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-app-accent hover:bg-app-accent-hover text-white">
+                        <Button onClick={handleSubmit} disabled={isSubmitting || sfBlocked || (sfActive && mode === 'add')} className="bg-app-accent hover:bg-app-accent-hover text-white">
                             {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                             {mode === 'add' ? 'Simpan' : 'Simpan Perubahan'}
                         </Button>
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <SoapOverrideDialog
+                open={!!overrideDialog}
+                onOpenChange={(v) => { if (!v) setOverrideDialog(null); }}
+                kind={overrideDialog?.kind}
+                recapId={overrideDialog?.recapId ?? null}
+                packageId={overrideDialog?.packageId ?? null}
+                payload={overrideDialog?.payload || {}}
+                description={overrideDialog?.description}
+                withAmount={!!overrideDialog?.withAmount}
+                onDone={() => { refreshQuote(); loadRecapMeta(); }}
+            />
 
             {/* Extend Package Modal */}
             <ExtendPackageModal 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { getPhysiotherapistByUserId, getDailyRecaps } from '@/lib/api';
 import TherapistGreetingMotivation from './TherapistGreetingMotivation';
+import SoapPendingBanner from '@/components/shared/SoapPendingBanner';
 import AvailableSlotsWidget from './AvailableSlotsWidget';
 import TherapistMetrics from './TherapistMetrics';
 import TherapistPerformanceWidget from './TherapistPerformanceWidget';
@@ -96,6 +97,7 @@ const TherapistDashboardWidget = ({ initialProfile = null }) => {
   return (
     <div className="space-y-6 animate-in fade-in duration-200 ease-out">
       <TherapistGreetingMotivation therapistName={therapistProfile.name} />
+      <SoapPendingBanner therapistId={therapistProfile.id} role="therapist" />
       <MonthlyReportWidget therapistId={therapistProfile.id} therapistUserId={therapistProfile.user_id} />
       <TherapistMetrics therapist={therapistProfile} userId={user.id} />
       <TherapistTodayPatientHistory therapist={therapistProfile} />

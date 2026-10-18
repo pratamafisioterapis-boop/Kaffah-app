@@ -25,6 +25,8 @@ import { isValidUUID } from '@/lib/utils';
 import { validatePatientId, handleUndefinedPatientId } from '@/lib/validationHelpers';
 import { format } from 'date-fns';
 import { supabase } from '@/lib/customSupabaseClient';
+import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
+import { isSoapFirstActiveOn, reviseLockedSoap } from '@/lib/soapFirst';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useAssessmentMode } from '@/hooks/useAssessmentMode';
 import { suggestGoals } from '@/lib/goalSuggestions';
@@ -63,6 +65,12 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
   const [diagnosisOptions, setDiagnosisOptions] = useState([]);
   const [diagnosis, setDiagnosis] = useState([]);
   const [progressDialog, setProgressDialog] = useState(false);
+  // SOAP-first: SOAP wajib lengkap & diagnosa maks. 2 sebelum pasien membayar; setelah invoice terbit SOAP terkunci (revisi lewat alasan).
+  const { settings: sfSettings } = useSoapFirstSettings();
+  const [recapInfo, setRecapInfo] = useState(null);
+  const [reviseOpen, setReviseOpen] = useState(false);
+  const [reviseReason, setReviseReason] = useState('');
+  const [revising, setRevising] = useState(false);
   const [templateDialog, setTemplateDialog] = useState(null); // 'subjective' | 'objective' | null
   const [templateCache, setTemplateCache] = useState({});
   // Varian template per diagnosa (mis. HNP menjalar / tidak menjalar): dipilih di Subjective, Objective ikut.
@@ -158,11 +166,12 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     if (!linkedRecapId || !isValidUUID(linkedRecapId)) return;
     supabase
       .from('daily_recaps')
-      .select('diagnosis')
+      .select('diagnosis, recap_date, invoice_created_at, soap_completed_at')
       .eq('id', linkedRecapId)
       .maybeSingle()
       .then(({ data }) => {
         setDiagnosis(normalizeDiagnosis(data?.diagnosis));
+        setRecapInfo(data || null);
       });
   }, [linkedRecapId]);
 
@@ -202,6 +211,8 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
   const portalEnabled = usePortalEnabled();
   const latestGoals = latestRecord?.plan_data?.goals || null;
   const isKaffahClinic = (userDetails?.clinic_id || therapist?.clinic_id) === KAFFAH_CLINIC_ID;
+  const sfActive = isSoapFirstActiveOn(sfSettings, recapInfo?.recap_date);
+  const sfLocked = sfActive && !!recapInfo?.invoice_created_at;
   const templatesOf = (key) => (key === 'subjective' ? subjectiveTemplates : key === 'objective' ? objectiveTemplates : []);
   // Kaffah: S & O diisi lewat template (pilih variabel); ketikan bebas baru terbuka setelah terisi.
   const isTemplateLocked = (key) => isKaffahClinic && templatesOf(key).length > 0 && !formData[key].trim();
@@ -398,6 +409,31 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     }
   };
 
+  const submitRevision = async () => {
+    if (reviseReason.trim().length < 5) {
+      toast({ variant: "destructive", title: "Alasan wajib diisi", description: "Tulis alasan revisi minimal 5 karakter." });
+      return;
+    }
+    setRevising(true);
+    try {
+      await reviseLockedSoap({
+        recordId,
+        subjective: formData.subjective,
+        objective: formData.objective,
+        assessment: formData.assessment,
+        plan: formData.plan,
+        reason: reviseReason.trim(),
+      });
+      toast({ title: "Revisi tersimpan", description: "Perubahan SOAP dicatat beserta alasannya dan owner diberi tahu." });
+      setReviseOpen(false);
+      navigate(-1);
+    } catch (err) {
+      toast({ variant: "destructive", title: "Gagal merevisi", description: err.message });
+    } finally {
+      setRevising(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -414,6 +450,33 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     if (!formData.plan.trim()) {
       toast({ variant: "destructive", title: "Plan belum diisi", description: "Centang minimal satu tindakan atau tulis catatan Plan." });
       return;
+    }
+
+    if (sfActive) {
+      if (filledByAdmin) {
+        toast({ variant: "destructive", title: "SOAP harus diisi terapis", description: "Di klinik ini SOAP hanya dapat diisi oleh terapis." });
+        return;
+      }
+      if (diagnosis.length > 2) {
+        toast({ variant: "destructive", title: "Diagnosa maksimal 2", description: "Pilih paling banyak dua diagnosa." });
+        return;
+      }
+      const missing = [
+        ['Subjective', formData.subjective],
+        ['Objective', formData.objective],
+        ['Assessment', formData.assessment],
+        ['Plan', formData.plan],
+      ].filter(([, v]) => !String(v || '').trim()).map(([k]) => k);
+      if (missing.length > 0) {
+        toast({ variant: "destructive", title: "SOAP belum lengkap", description: `Lengkapi dulu: ${missing.join(', ')}. SOAP dianggap selesai bila semua bagian terisi.` });
+        return;
+      }
+      // Invoice sudah terbit: SOAP terkunci, perubahan harus lewat revisi beralasan.
+      if (sfLocked && recordId && isValidUUID(recordId)) {
+        setReviseReason('');
+        setReviseOpen(true);
+        return;
+      }
     }
 
     setLoading(true);
@@ -669,6 +732,19 @@ if (isCreate) {
       <Card className={`border-slate-200 shadow-sm ${isPWA ? 'rounded-none border-x-0' : 'rounded-app-lg'}`}>
         <CardContent className="p-0">
           <form onSubmit={handleSubmit}>
+            {sfActive && (
+              <div className={`${isPWA ? 'px-4 py-3' : 'px-6 py-4'} border-b bg-indigo-50 text-indigo-900 text-xs leading-relaxed space-y-1`}>
+                <p className="font-semibold">SOAP diisi sebelum pasien membayar</p>
+                <p>Isi SOAP dengan lengkap (S, O, A, P) dan pilih diagnosa. Admin baru dapat menagih pasien setelah SOAP selesai. SOAP yang diisi asal-asalan akan dianggap tidak diisi dan jasa insentif sesi tersebut tidak dihitung.</p>
+                {recapInfo?.soap_completed_at && !sfLocked && (
+                  <p className="text-emerald-700 font-medium">SOAP sudah tercatat selesai ({format(new Date(recapInfo.soap_completed_at), 'HH:mm')}).</p>
+                )}
+                {sfLocked && (
+                  <p className="text-amber-700 font-medium">Invoice sudah terbit: SOAP terkunci. Perubahan dicatat sebagai revisi beserta alasannya.</p>
+                )}
+              </div>
+            )}
+
             {/* Nama Pasien */}
             <div className={`${isPWA ? 'px-4 py-4' : 'px-6 py-5'} border-b bg-white`}>
               <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Nama Pasien</label>
@@ -726,14 +802,24 @@ if (isCreate) {
               <SearchableSelect
                 options={diagnosisOptions}
                 value={diagnosis}
-                onChange={setDiagnosis}
+                onChange={(v) => {
+                  if (sfActive && Array.isArray(v) && v.length > 2) {
+                    toast({ variant: "destructive", title: "Diagnosa maksimal 2", description: "Pilih paling banyak dua diagnosa." });
+                    return;
+                  }
+                  setDiagnosis(v);
+                }}
                 rankOptions={rankDiagnosisOptions}
                 multiple={true}
                 allowCreate={false}
                 notFoundText="Diagnosa tidak ditemukan. Hubungi owner untuk menambahkan."
                 placeholder="Pilih diagnosa..."
               />
-              <p className="text-xs text-slate-500 mt-1">Otomatis tertaut ke Daily Recap admin & owner.</p>
+              <p className="text-xs text-slate-500 mt-1">
+                {sfActive
+                  ? 'Maksimal 2 diagnosa. Tipe pasien & tagihan ditentukan otomatis dari diagnosa ini.'
+                  : 'Otomatis tertaut ke Daily Recap admin & owner.'}
+              </p>
             </div>
 
             {/* SOAP Fields */}
@@ -962,6 +1048,23 @@ if (isCreate) {
               toast({ title: 'Kondisi diperbarui', description: 'Baris "Update Kondisi" ditambahkan ke Objective.', className: 'bg-blue-50 border-blue-200 text-blue-800' });
             }}
           />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={reviseOpen} onOpenChange={(v) => !revising && setReviseOpen(v)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Revisi SOAP terkunci</DialogTitle>
+            <DialogDescription>Invoice sesi ini sudah terbit. Perubahan dicatat beserta alasannya dan owner diberi tahu.</DialogDescription>
+          </DialogHeader>
+          <Textarea value={reviseReason} onChange={(e) => setReviseReason(e.target.value)} rows={3} placeholder="Alasan revisi (wajib)" />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => setReviseOpen(false)} disabled={revising}>Batal</Button>
+            <Button type="button" onClick={submitRevision} disabled={revising}>
+              {revising && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Simpan Revisi
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

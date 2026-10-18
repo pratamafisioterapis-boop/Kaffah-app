@@ -23,6 +23,8 @@ const AdminAccountingDashboard = React.lazy(lazyRetry(() => import('@/components
 import AdminDashboardMetrics from '@/components/admin/AdminDashboardMetrics'; 
 import TodaysOverviewWidget from '@/components/admin/TodaysOverviewWidget';
 import AdminDailyChecklistWidget from '@/components/admin/AdminDailyChecklistWidget';
+import SoapPendingBanner from '@/components/shared/SoapPendingBanner';
+import UnpaidSessionsCard from '@/components/shared/UnpaidSessionsCard';
 import PatientSourceChart from '@/components/owner/operational/PatientSourceChart';
 import PromoUsageWidget from '@/components/owner/operational/PromoUsageWidget';
 // Consolidated Pages
@@ -348,6 +350,9 @@ await Promise.all([loadSlots(), loadStats()]);
                <h3 className="text-lg font-semibold text-slate-800 tracking-tight">Today's Overview</h3>
                <TodaysOverviewWidget />
              </div>
+
+             <SoapPendingBanner role="admin" />
+             <UnpaidSessionsCard />
 
              {/* Daily Admin Checklist */}
              <AdminDailyChecklistWidget />

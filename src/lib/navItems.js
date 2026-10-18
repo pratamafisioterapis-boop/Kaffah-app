@@ -20,6 +20,7 @@ export const OWNER_NAV_ITEMS = [
       { label: 'Medical Records', path: '/owner/medical-records', icon: 'Activity' },
       { label: 'Clinical Documents', path: '/owner/clinical-documents', icon: 'UploadCloud' },
       { label: 'Follow Up Management', path: '/owner/follow-up-management', icon: 'MessageSquare' },
+      { label: 'Pengajuan & Audit SOAP', path: '/owner/overrides', icon: 'ShieldCheck', clinicOnly: KAFFAH_CLINIC_ID },
       { label: 'Patients Feedback', path: '/owner/feedback', icon: 'Star' },
       { label: 'Stok Barang', path: '/owner/inventory', icon: 'Boxes' },
     ],
