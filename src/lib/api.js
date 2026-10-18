@@ -21,6 +21,7 @@ import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval,
 import { id as idLocale } from 'date-fns/locale';
 import { safeQuery } from '@/lib/supabaseErrorHandler';
 import { markIncentiveFlags } from '@/lib/soapFirst';
+import { formatPatientNameForClinic } from '@/utils/patientName';
 
 // Supabase/PostgREST caps unbounded selects at a server-side max row count
 // (commonly 1000). Queries that can plausibly return more rows than that
@@ -4859,11 +4860,19 @@ export const getPatientByPhone = async (phone) => {
 };
 export const importPatientsFromCSV = async () => ({ data: { success: true, count: 0 } });
 export const parseCSVForPreview = async () => ({ data: [] });
+const withFormattedPatientName = async (payload) => {
+  if (!payload?.full_name) return payload;
+  const { data: sessionData } = await supabase.auth.getSession();
+  const clinicId = payload.clinic_id || await getCachedClinicId(sessionData?.session?.user?.id);
+  return { ...payload, full_name: formatPatientNameForClinic(payload.full_name, clinicId) };
+};
+
 export const createPatient = async (payload) => {
   return safeQuery(async () => {
+    const formatted = await withFormattedPatientName(payload);
     const { data, error } = await supabase
       .from('patients')
-      .insert([payload])
+      .insert([formatted])
       .select()
       .single();
     if (error) return { error };
@@ -4877,9 +4886,10 @@ export const createPatient = async (payload) => {
 export const bulkCreatePatients = async (rows) => {
   return safeQuery(async () => {
     if (!rows || rows.length === 0) return { data: [], success: true, error: null };
+    const formattedRows = await Promise.all(rows.map(withFormattedPatientName));
     const { data, error } = await supabase
       .from('patients')
-      .insert(rows)
+      .insert(formattedRows)
       .select('id, full_name, medical_record_number');
     if (error) return { error };
     return { data, success: true, error: null };
@@ -4888,9 +4898,10 @@ export const bulkCreatePatients = async (rows) => {
 
 export const updatePatient = async (id, payload) => {
   return safeQuery(async () => {
+    const formatted = await withFormattedPatientName(payload);
     const { data, error } = await supabase
       .from('patients')
-      .update(payload)
+      .update(formatted)
       .eq('id', id)
       .select()
       .single();

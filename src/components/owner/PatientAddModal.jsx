@@ -22,6 +22,7 @@ import {
     isValidDateFormat
 } from '@/lib/patientFormHelpers';
 import { getCachedClinicId } from '@/lib/api';
+import { formatPatientNameForClinic } from '@/utils/patientName';
 
 const RELIGION_OPTIONS = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Lainnya'];
 const MAX_KTP_SIZE = 5 * 1024 * 1024;
@@ -224,7 +225,7 @@ const PatientAddModal = ({ isOpen, onClose, onSuccess }) => {
             // 2. Prepare Payload
             const payload = {
                 medical_record_number: formData.medical_record_number,
-                full_name: formData.full_name,
+                full_name: formatPatientNameForClinic(formData.full_name, await getCachedClinicId((await supabase.auth.getSession()).data?.session?.user?.id)),
                 nickname: formData.nickname,
                 nickname_custom: nicknameManuallyEdited, 
                 birth_date: parseDateFromDisplay(formData.birth_date), // Convert DD/MM/YYYY -> YYYY-MM-DD
