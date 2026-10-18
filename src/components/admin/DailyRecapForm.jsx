@@ -825,9 +825,9 @@ allowCreate={true}
 </div>
 </div>
 
-<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-<div className="space-y-2">
-<Label>Nominal (Rp)</Label>
+<div className="grid grid-cols-2 items-end gap-3 md:gap-4">
+<div className="space-y-2 min-w-0">
+<Label className="block whitespace-nowrap">Nominal (Rp)</Label>
 <Input
   type="number"
   value={formData.amount}
@@ -843,8 +843,8 @@ allowCreate={true}
   placeholder="0"
 />
 </div>
-<div className="space-y-2">
-<Label>Metode Pembayaran</Label>
+<div className="space-y-2 min-w-0">
+<Label className="block whitespace-nowrap">Metode Pembayaran</Label>
 <SearchableSelect
 options={paymentMethods}
 value={formData.payment_method}
@@ -854,7 +854,7 @@ disabled={isPackageSessionLocked}
 />
 </div>
 {isPackageSessionLocked && (
-  <p className="text-xs text-slate-500 md:col-span-2 -mt-2">
+  <p className="text-xs text-slate-500 col-span-2 -mt-2">
     Sesi ini memakai kuota paket (Rp 0) sehingga nominal &amp; metode pembayaran dikunci. Kalau ini bukan sesi paket, hubungi admin sistem.
   </p>
 )}
