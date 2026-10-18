@@ -109,6 +109,7 @@
 .pp .stat3 b{display:block;font-family:var(--display);font-size:var(--fs-num);line-height:1.1}
 .pp .stat3 span{font-size:var(--fs-sm);color:var(--muted);display:block;margin-top:4px;line-height:1.3}
 .pp .quote{background:var(--warm-soft);border-radius:var(--r);padding:clamp(18px,2vw,24px)}
+.pp .edu-text{margin:8px 0 0;font-size:var(--fs-md);color:var(--ink);white-space:pre-wrap;line-height:1.55}
 .pp .quote h3{color:var(--warm)}.pp .quote p{margin:8px 0 0;font-size:var(--fs-md);color:var(--ink)}
 .pp .logout{align-self:center;width:min(380px,100%)}
 .pp .goal{margin-top:18px}
