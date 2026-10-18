@@ -1548,13 +1548,13 @@ setFormData({
 
     const fPayment = (
         <>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <Label>Nominal (Rp)</Label>
+                                <div className="grid grid-cols-2 items-end gap-3 sm:gap-4">
+                                    <div className="space-y-1 min-w-0">
+                                        <Label className="block whitespace-nowrap">Nominal (Rp)</Label>
                                         <Input type="number" value={sfEdit && sfFinalAmount != null ? sfFinalAmount : (formData.amount ?? '')} onChange={e => handleChange('amount', e.target.value)} placeholder="0" disabled={sfActive || isPackageSessionLocked || (isKwitansi && invoiceItems.length > 0)}/>
                                     </div>
-                                    <div className="space-y-1">
-                                        <Label>Metode Pembayaran</Label>
+                                    <div className="space-y-1 min-w-0">
+                                        <Label className="block whitespace-nowrap">Metode Pembayaran</Label>
                                         <SearchableSelect options={paymentMethodOptions} value={formData.payment_method} onChange={v => handleChange('payment_method', v)} onSearch={setPaymentMethodSearch} placeholder="Cari metode..." isLoading={loadingPaymentMethods} disabled={isPackageSessionLocked || useSplitPayment} />
                                     </div>
                                 </div>
