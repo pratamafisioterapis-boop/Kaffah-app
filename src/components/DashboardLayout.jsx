@@ -66,6 +66,19 @@ const safeFormatTime = (dateString) => {
   return isNaN(d.getTime()) ? '-' : d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 };
 
+const CLINIC_INFO_CACHE_KEY = 'dashboard_clinic_info';
+
+const readClinicInfoCache = () => {
+  try {
+    const raw = window.localStorage.getItem(CLINIC_INFO_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+};
+
+const writeClinicInfoCache = (clinicId, data) => {
+  try { window.localStorage.setItem(CLINIC_INFO_CACHE_KEY, JSON.stringify({ clinicId, data })); } catch { /* mode privat: abaikan */ }
+};
+
 const DashboardLayout = ({ children, navItems = [], role, userName }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -82,23 +95,49 @@ useEffect(() => {
   const { themeKey } = useDesignTheme();
   const activeTheme = DESIGN_THEMES[themeKey] || DESIGN_THEMES[DEFAULT_THEME_KEY];
   const navActive = activeTheme.navActive;
-  const [clinicInfo, setClinicInfo] = useState(null);
+  // Data klinik terakhir disimpan di perangkat agar menu langsung tampil saat
+  // refresh, tanpa menunggu dua fetch berurutan (user lalu klinik).
+  const [cachedClinic] = useState(readClinicInfoCache);
+  const [clinicInfo, setClinicInfo] = useState(cachedClinic?.data ?? null);
   // Nav items must stay hidden until we know this clinic's disabled-feature
   // list, otherwise a menu item hidden for this clinic (e.g. Presentasi
   // Direksi, Modal Awal) briefly flashes on every refresh before the async
   // fetch below resolves and filters it out. Roles without a clinic_id
   // (super_admin) never fetch, so they start "loaded".
-  const [clinicFeaturesLoaded, setClinicFeaturesLoaded] = useState(role === 'super_admin');
+  const [clinicFeaturesLoaded, setClinicFeaturesLoaded] = useState(role === 'super_admin' || !!cachedClinic);
 
   useEffect(() => {
+    let active = true;
+    const clinicId = userDetails?.clinic_id;
+    if (!clinicId) {
+      // userDetails belum siap (atau akun tanpa klinik): jangan biarkan menu
+      // kosong selamanya, tampilkan setelah jeda singkat.
+      const timer = setTimeout(() => { if (active) setClinicFeaturesLoaded(true); }, 4000);
+      return () => { active = false; clearTimeout(timer); };
+    }
+    const cached = readClinicInfoCache();
+    if (cached && cached.clinicId !== clinicId) {
+      // Cache milik klinik lain (ganti akun di perangkat yang sama).
+      setClinicInfo(null);
+      setClinicFeaturesLoaded(false);
+    }
     const fetchClinicInfo = async () => {
-      if (!userDetails?.clinic_id) return;
-      const { data } = await supabase.from('clinics').select('name, logo_url, disabled_features_by_role, patient_portal_enabled').eq('id', userDetails.clinic_id).single();
-      if (data) setClinicInfo(data);
-      setClinicFeaturesLoaded(true);
+      try {
+        const { data } = await supabase.from('clinics').select('name, logo_url, disabled_features_by_role, patient_portal_enabled').eq('id', clinicId).single();
+        if (active && data) {
+          setClinicInfo(data);
+          writeClinicInfoCache(clinicId, data);
+        }
+      } catch (error) {
+        console.warn('[DashboardLayout] Gagal memuat data klinik:', error);
+      } finally {
+        // Apa pun hasilnya, menu tidak boleh tertahan.
+        if (active) setClinicFeaturesLoaded(true);
+      }
     };
     fetchClinicInfo();
-  }, [userDetails]);
+    return () => { active = false; };
+  }, [userDetails?.clinic_id]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [fabExpandedParent, setFabExpandedParent] = useState(null);
