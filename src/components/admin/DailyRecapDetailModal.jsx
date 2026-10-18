@@ -9,11 +9,20 @@ import DailyRecapForm from './DailyRecapForm';
 import { formatDateIndonesian } from '@/lib/dateFormatHelpers';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
+import { fetchRecapVitals, formatVitalsLine } from '@/lib/recapVitals';
 
 const DailyRecapDetailModal = ({ isOpen, recap, onClose, onSave, mode = 'view' }) => {
     const [currentMode, setCurrentMode] = useState(mode);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const { toast } = useToast();
+    const [vitalsRow, setVitalsRow] = useState(null);
+
+    useEffect(() => {
+        if (!isOpen || !recap?.id || currentMode !== 'view') return;
+        let cancelled = false;
+        fetchRecapVitals(recap.id).then((row) => { if (!cancelled) setVitalsRow(row); });
+        return () => { cancelled = true; };
+    }, [isOpen, recap?.id, currentMode]);
 
     useEffect(() => {
         if (isOpen) {
@@ -92,6 +101,12 @@ const DailyRecapDetailModal = ({ isOpen, recap, onClose, onSave, mode = 'view' }
                 </div>
             </div>
             
+            <div className="bg-cyan-50 p-3 rounded-md">
+                <p className="text-xs text-slate-500 uppercase font-semibold mb-1">Tanda-Tanda Vital</p>
+                <p>{formatVitalsLine(vitalsRow) || '-'}</p>
+                {vitalsRow?.notes && <p className="text-xs text-slate-500 mt-1">{vitalsRow.notes}</p>}
+            </div>
+
             <div className="flex justify-end pt-4">
                 <Button variant="outline" onClick={onClose}>Tutup</Button>
             </div>

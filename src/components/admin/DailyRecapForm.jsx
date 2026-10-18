@@ -23,6 +23,9 @@ import ExtendPackageModal from './ExtendPackageModal';
 import { cn, splitPatientTypeCombo } from '@/lib/utils';
 import { createDailyRecap, updateDailyRecap } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import VitalSignsFields from './VitalSignsFields';
+import { EMPTY_VITALS, fetchRecapVitals, hasAnyVital, saveRecapVitals, vitalsFromRow } from '@/lib/recapVitals';
 
 // Helper functions for Package Type resolution
 const isUUID = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
@@ -58,6 +61,9 @@ return null;
 };
 const DailyRecapForm = ({ initialData, mode, onSuccess, onCancel, onDelete }) => {
 const { toast } = useToast();
+const { user } = useAuth();
+const [vitals, setVitals] = useState({ ...EMPTY_VITALS });
+const [hadVitals, setHadVitals] = useState(false);
 const [patients, setPatients] = useState([]);
 const [therapists, setTherapists] = useState([]);
 const [diagnoses, setDiagnoses] = useState([]);
@@ -127,6 +133,13 @@ let cancelled = false;
   const currentAmount = Number(data.amount_original ?? data.amount ?? 0);
   setIsPackageSessionLocked(!!data.package_tracking_id && currentAmount === 0);
 })();
+return () => { cancelled = true; };
+}, [mode, initialData?.id]);
+
+useEffect(() => {
+if (mode !== 'edit' || !initialData?.id) return;
+let cancelled = false;
+fetchRecapVitals(initialData.id).then((row) => { if (!cancelled) { setVitals(vitalsFromRow(row)); setHadVitals(!!row); } });
 return () => { cancelled = true; };
 }, [mode, initialData?.id]);
 
@@ -636,6 +649,14 @@ onCancel();
 throw result.error;
 }
 } else {
+const recapId = mode === 'add' ? result.data?.recap_id : initialData.id;
+// Kosong & memang tidak pernah ada isinya = tidak ada yang perlu disimpan/dihapus.
+const { error: vitalsError } = (!hasAnyVital(vitals) && !hadVitals)
+  ? { error: null }
+  : await saveRecapVitals(recapId, formData.patient_id, vitals, user);
+if (vitalsError) {
+toast({ variant: "destructive", title: "Recap tersimpan, tanda vital gagal", description: vitalsError.message });
+}
 onSuccess();
 }
 } catch (error) {
@@ -924,6 +945,7 @@ className={errors.discount_value ? "border-red-500 bg-white" : "bg-white"}
 </div>
 )}
 </div>
+<VitalSignsFields value={vitals} onChange={setVitals} />
 <div className="flex justify-between pt-4 border-t">
 {mode === 'edit' && onDelete ? (
 <Button type="button" variant="destructive" onClick={onDelete} disabled={isSubmitting}>
