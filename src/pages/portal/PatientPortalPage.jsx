@@ -24,7 +24,7 @@ const fmtDate = (d, opts = { day: 'numeric', month: 'short' }) =>
 const fmtTime = (d) => new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace(':', '.');
 const greeting = () => {
   const h = new Date().getHours();
-  return h < 11 ? 'Selamat pagi' : h < 15 ? 'Selamat siang' : h < 18 ? 'Selamat sore' : 'Selamat malam';
+  return h < 11 ? 'Selamat Pagi' : h < 15 ? 'Selamat Siang' : h < 18 ? 'Selamat Sore' : 'Selamat Malam';
 };
 const TOP_PAD = 'calc(env(safe-area-inset-top, 0px) + 28px)';
 const WEEKDAYS = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
