@@ -318,10 +318,12 @@
 }
 /* layar lebar: menu pindah ke samping, layar masuk dipusatkan */
 @media (min-width:1000px){
-  .pp .gate{align-items:center;padding-top:40px;padding-bottom:40px}
-  .pp .gate>*{width:min(560px,100%)}
-  .pp .gate .logo{margin-top:auto}
-  .pp .gate .panel{margin-top:8px;margin-bottom:auto}
+  /* layar masuk: teks di kiri, panel tanggal lahir di kanan */
+  .pp .gate{display:grid;grid-template-columns:minmax(0,1fr) minmax(380px,460px);column-gap:clamp(48px,6vw,96px);row-gap:22px;
+    align-content:safe center;padding:48px max(56px,calc((100% - 1160px)/2))}
+  .pp .gate>*{grid-column:1}
+  .pp .gate h1{font-size:clamp(48px,3.4vw + 12px,68px);margin-top:8px}
+  .pp .gate .panel{grid-column:2;grid-row:1 / span 6;align-self:center;margin:0;padding:34px}
   .pp-col{flex-direction:row}
   .pp .nav{order:-1;width:252px;display:flex;flex-direction:column;gap:6px;padding:28px 14px;border-top:0;border-right:1px solid var(--line)}
   .pp .nav button{flex-direction:row;gap:12px;font-size:var(--fs-md);padding:8px 12px;justify-content:flex-start;min-height:52px}
