@@ -1311,6 +1311,10 @@ setFormData({
                 referral_reward_id: formData.referral_reward_id || null,
                 package_type_id: formData.package_type_id || null,
                 package_type: formData.package_type || null,
+                // Kosong harus NULL: constraint daily_recaps_special_type_check hanya
+                // menerima NULL / 'free' / 'konsultasi', bukan ''.
+                special_type: formData.special_type || null,
+                free_reason: formData.special_type === 'free' ? ((formData.free_reason || '').trim() || null) : null,
                 // FIX: saat edit, pertahankan package_tracking_id ASLI recap ini
                 // (initialData) - jangan pakai selectedPackage, karena itu adalah
                 // paket AKTIF pasien SAAT INI dan bisa berbeda dari paket yang
