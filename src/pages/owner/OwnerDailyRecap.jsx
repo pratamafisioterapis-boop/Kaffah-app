@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { sortRecapsByStatus } from '@/lib/dailyRecapHelpers';
 import { motion } from 'framer-motion';
 import { 
   Calendar, Search, Loader2, Plus, RefreshCcw, X, Play, Square, AlertTriangle, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, BarChart3, CreditCard, ChevronDown
@@ -239,7 +240,7 @@ const OwnerDailyRecap = () => {
           package_type: r.package_type
 }));
           
-          setRecaps(formatted || []);
+          setRecaps(sortConfig.key ? (formatted || []) : sortRecapsByStatus(formatted || []));
           setTotalRecords(count || 0);
           setTotalPages(Math.ceil((count || 0) / limit) || 1);
       }

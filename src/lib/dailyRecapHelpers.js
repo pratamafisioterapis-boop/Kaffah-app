@@ -141,3 +141,28 @@ export const validateDailyRecapForm = (data) => {
         errors
     };
 };
+
+// Urutan tampil rekap harian: selesai tapi invoice belum terkirim (perlu tindakan)
+// -> sedang berlangsung -> belum mulai (akan datang) -> selesai & invoice beres.
+const recapPriority = (r) => {
+    if (r.end_time) {
+        const invoiceNotNeeded = parseFloat(r.amount || 0) === 0;
+        const invoiceDone = r.invoice_wa_status && r.invoice_wa_status !== 'gagal';
+        return invoiceNotNeeded || invoiceDone ? 3 : 0;
+    }
+    return r.start_time ? 1 : 2;
+};
+
+export const sortRecapsByStatus = (recaps) => {
+    const startOf = (r) => (r.start_time ? new Date(r.start_time).getTime() : Infinity);
+    return recaps
+        .map((r, i) => ({ r, i }))
+        .sort((a, b) => {
+            const pa = recapPriority(a.r);
+            const pb = recapPriority(b.r);
+            if (pa !== pb) return pa - pb;
+            if (pa === 1) return startOf(a.r) - startOf(b.r) || a.i - b.i;
+            return a.i - b.i;
+        })
+        .map(({ r }) => r);
+};
