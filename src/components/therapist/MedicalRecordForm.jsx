@@ -74,7 +74,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
   const [revising, setRevising] = useState(false);
   // Kaffah: Recovery (DOMS) di luar paket - tidak memotong kuota sesi paket.
   const [outsideOpen, setOutsideOpen] = useState(false);
-  const [outsideChoiceState, setOutsideChoiceState] = useState(undefined); // 'outside' | 'package' | undefined
+  const [outsideChoiceState, setOutsideChoiceState] = useState(undefined); // 'outside' | undefined
   const [undoOpen, setUndoOpen] = useState(false);
   const [undoReason, setUndoReason] = useState('');
   const [undoBusy, setUndoBusy] = useState(false);
@@ -464,6 +464,15 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     } finally {
       setRevising(false);
     }
+  };
+
+  // Batal = tidak jadi di luar paket: DOMS dibatalkan dari diagnosa, sesi tetap memakai paket.
+  const cancelOutside = () => {
+    setOutsideOpen(false);
+    setOutsideChoiceState(undefined);
+    setDiagnosis((prev) => prev.filter((d) => !String(
+      diagnosisOptions.find((o) => o.id === d || o.value === d)?.label || ''
+    ).toLowerCase().startsWith('doms')));
   };
 
   const submitUndoOutside = async () => {
@@ -907,13 +916,11 @@ if (isCreate) {
                 <p className="text-sm text-amber-900">
                   {outsideChoiceState === 'outside'
                     ? <><strong>Recovery di luar paket.</strong> Kuota paket tidak terpotong; dipisahkan dari paket saat SOAP disimpan.</>
-                    : outsideChoiceState === 'package'
-                      ? <><strong>Tetap memotong kuota paket.</strong></>
-                      : <><strong>Diagnosa DOMS dipilih.</strong> Tentukan apakah sesi ini diambil di luar paket.</>}
+                    : <><strong>Diagnosa DOMS dipilih.</strong> Konfirmasi sesi ini diambil di luar paket, atau hapus DOMS.</>}
                 </p>
-                <Button type="button" size="sm" variant="outline" onClick={() => setOutsideOpen(true)}>
-                  {outsideChoiceState === undefined ? 'Pilih' : 'Ubah'}
-                </Button>
+                {outsideChoiceState !== 'outside' && (
+                  <Button type="button" size="sm" variant="outline" onClick={() => setOutsideOpen(true)}>Konfirmasi</Button>
+                )}
               </div>
             )}
 
@@ -1193,22 +1200,19 @@ if (isCreate) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={outsideOpen} onOpenChange={setOutsideOpen}>
+      <Dialog open={outsideOpen} onOpenChange={(v) => { if (!v) cancelOutside(); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Ambil sebagai Recovery di luar paket?</DialogTitle>
             <DialogDescription>
-              Pasien masih memakai sesi paket dan Anda memilih diagnosa DOMS. Jika di luar paket, kuota paket tidak terpotong dan sesi ini dibayar sebagai Recovery (SOAP dulu, baru bayar).
+              Pasien masih memakai sesi paket dan Anda memilih diagnosa DOMS. Kuota paket tidak terpotong dan sesi ini dibayar sebagai Recovery (SOAP dulu, baru bayar). Pilih Batal untuk membatalkan DOMS dan tetap memakai paket.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
             <Button type="button" onClick={() => { setOutsideChoiceState('outside'); setOutsideOpen(false); }}>
-              Ya, di luar paket (kuota tidak terpotong)
+              Ya, di luar paket
             </Button>
-            <Button type="button" variant="outline" onClick={() => { setOutsideChoiceState('package'); setOutsideOpen(false); }}>
-              Tidak, tetap potong kuota paket
-            </Button>
-            <Button type="button" variant="ghost" onClick={() => setOutsideOpen(false)}>Batal</Button>
+            <Button type="button" variant="ghost" onClick={cancelOutside}>Batal</Button>
           </div>
         </DialogContent>
       </Dialog>
