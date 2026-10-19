@@ -47,6 +47,11 @@ export const AuthProvider = ({ children }) => {
   // new session by the previous account's role.
   const [isSwitching, setIsSwitching] = useState(false);
   const switchFromIdRef = useRef(null);
+  // Akun yang dituju saat pindah akun. Pindah dari akun hasil impersonasi
+  // memulihkan sesi owner sesaat sebelum masuk ke akun tujuan; tanpa target,
+  // owner transien itu dianggap "sudah pindah" dan halaman admin/terapis
+  // dinilai dengan role owner (Access Denied).
+  const switchTargetIdRef = useRef(null);
   const userIdRef = useRef(null);
   const [clinicName, setClinicName] = useState(null);
   const isPWA = useMemo(() => {
@@ -385,6 +390,7 @@ export const AuthProvider = ({ children }) => {
         return { data: null, error: { message: "Tidak ada koneksi internet." } };
     }
     switchFromIdRef.current = userIdRef.current;
+    switchTargetIdRef.current = null;
     setIsSwitching(true);
     try {
       const { data: currentSessionData } = await supabase.auth.getSession();
@@ -428,6 +434,7 @@ export const AuthProvider = ({ children }) => {
       return { error: { message: "Tidak ada koneksi internet. Mohon periksa jaringan Anda." } };
     }
     switchFromIdRef.current = userIdRef.current;
+    switchTargetIdRef.current = targetUserId;
     setIsSwitching(true);
     try {
       // Already impersonating as an owner: restore the owner's own session
@@ -485,6 +492,7 @@ export const AuthProvider = ({ children }) => {
 
   const stopImpersonation = useCallback(async () => {
     switchFromIdRef.current = userIdRef.current;
+    switchTargetIdRef.current = null;
     setIsSwitching(true);
     try {
       const origin = readImpersonationOrigin();
@@ -513,7 +521,8 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (!isSwitching) return;
-    if (user?.id && user.id !== switchFromIdRef.current && userDetails?.id === user.id) {
+    const target = switchTargetIdRef.current;
+    if (user?.id && user.id !== switchFromIdRef.current && (!target || user.id === target) && userDetails?.id === user.id) {
       setIsSwitching(false);
       return;
     }
