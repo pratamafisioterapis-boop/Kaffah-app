@@ -1574,6 +1574,7 @@ setFormData({
                                     <div className="space-y-1 min-w-0">
                                         <Label className="block whitespace-nowrap">Nominal (Rp)</Label>
                                         <Input type="number" value={sfEdit && sfFinalAmount != null ? sfFinalAmount : (formData.amount ?? '')} onChange={e => handleChange('amount', e.target.value)} placeholder="0" disabled={sfActive || isPackageSessionLocked || (isKwitansi && invoiceItems.length > 0)}/>
+                                        {sfEdit && sfFinalAmount == null && quote?.error && <p className="text-[11px] text-red-600">{quote.error}</p>}
                                     </div>
                                     <div className="space-y-1 min-w-0">
                                         <Label className="block whitespace-nowrap">Metode Pembayaran</Label>
@@ -1770,6 +1771,12 @@ setFormData({
     const sfNeedHomecareTime = !!quote?.error && quote.error.includes('Pilih homecare');
 
     const [homecareTimeLocal, setHomecareTimeLocal] = useState('');
+    useEffect(() => {
+        const apptId = recapMeta?.appointment_id;
+        if (!apptId || !quote?.homecare) return;
+        supabase.from('appointments').select('homecare_time_type').eq('id', apptId).maybeSingle()
+            .then(({ data }) => setHomecareTimeLocal(data?.homecare_time_type || ''));
+    }, [recapMeta?.appointment_id, quote?.homecare]);
     const setHomecareTime = async (value) => {
         const apptId = recapMeta?.appointment_id;
         if (!apptId || !initialData?.id) return;
@@ -1826,9 +1833,9 @@ setFormData({
                 </div>
             )}
 
-            {sfNeedHomecareTime && (
+            {quote?.homecare && !sfInvoiceLocked && (
                 <div className="space-y-1 max-w-xs">
-                    <Label className="text-xs">Waktu homecare</Label>
+                    <Label className="text-xs">Waktu homecare{sfNeedHomecareTime && <span className="text-red-500"> * wajib dipilih agar nominal terhitung</span>}</Label>
                     <Select value={homecareTimeLocal} onValueChange={setHomecareTime}>
                         <SelectTrigger className="h-9 text-xs bg-white"><SelectValue placeholder="Dalam atau luar jam kerja" /></SelectTrigger>
                         <SelectContent>
