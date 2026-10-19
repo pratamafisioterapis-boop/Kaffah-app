@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input';
 import { useAppointmentState } from '@/contexts/AppointmentStateContext'; 
 import { supabase } from '@/lib/customSupabaseClient';
 import InvoiceModal from '@/components/admin/InvoiceModal';
+import { sortRecapsByStatus } from '@/lib/dailyRecapHelpers';
 import DatePicker from '@/components/DatePicker';
 import DailyRecapModal from '@/components/shared/DailyRecapModal';
 import DailyRecapDetailModal from '@/components/shared/DailyRecapDetailModal';
@@ -371,7 +372,7 @@ end_time: r.end_time,
       : r.amount
   )
 }));
-        setRecaps(formatted);
+        setRecaps(sortConfig.key ? formatted : sortRecapsByStatus(formatted));
         setTotalRecords(count || 0);
         setTotalPages(Math.ceil((count || 0) / limit) || 1);
       }
