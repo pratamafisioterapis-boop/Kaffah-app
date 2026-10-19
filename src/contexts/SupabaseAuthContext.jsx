@@ -376,6 +376,9 @@ export const AuthProvider = ({ children }) => {
       setImpersonationOrigin(null);
       const { error } = await supabase.auth.signOut();
       clearLocalState();
+      // Lets the PWA splash tell a deliberate logout (greet again on the next
+      // login) from the session blipping out while the app sat idle.
+      try { window.dispatchEvent(new Event('kaffah:signed-out')); } catch { /* ignore */ }
       if (error) console.error("[AuthContext] Server sign out error:", error);
       return { error: null };
     } catch (error) {

@@ -67,8 +67,23 @@ export const reloadForStaleChunk = (reason = 'stale-chunk') => {
     if (window.__staleChunkReloaded) return false;
     window.__staleChunkReloaded = true;
   }
+  // Reload ini bukan peluncuran aplikasi: beri tahu splash PWA agar tidak tampil.
+  try { sessionStorage.setItem(SKIP_SPLASH_KEY, '1'); } catch { /* ignore */ }
   window.location.reload();
   return true;
+};
+
+export const SKIP_SPLASH_KEY = 'skip-splash-once';
+
+// Dibaca sekali saat aplikasi dimuat; true bila halaman ini hasil reload otomatis.
+export const consumeSkipSplash = () => {
+  try {
+    const skip = sessionStorage.getItem(SKIP_SPLASH_KEY) === '1';
+    if (skip) sessionStorage.removeItem(SKIP_SPLASH_KEY);
+    return skip;
+  } catch {
+    return false;
+  }
 };
 
 // Bersihkan semua cache & service worker lalu muat ulang dengan URL segar.
@@ -87,5 +102,6 @@ export const hardRefresh = async () => {
   }
   const url = new URL(window.location.href);
   url.searchParams.set('_r', Date.now().toString(36));
+  try { sessionStorage.setItem(SKIP_SPLASH_KEY, '1'); } catch { /* ignore */ }
   window.location.replace(url.toString());
 };
