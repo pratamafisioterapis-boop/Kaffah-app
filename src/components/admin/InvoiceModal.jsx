@@ -571,10 +571,16 @@ const handleSendManualWA = async () => {
   // raw DOM tends to paginate/reflow the fixed-size invoice unpredictably.
   const [isPrinting, setIsPrinting] = useState(false);
   const handlePrint = async () => {
+    // Buka tab SEKARANG (sinkron dengan klik) agar tidak diblokir popup blocker;
+    // isinya diisi setelah invoice selesai dirasterisasi.
+    const printWin = window.open('', '_blank');
+    if (printWin) {
+      printWin.document.write('<p style="font-family:sans-serif;padding:24px">Menyiapkan invoice...</p>');
+    }
     setIsPrinting(true);
     try {
       const element = componentRef.current;
-      if (!element) return;
+      if (!element) throw new Error('Invoice belum siap dicetak');
 
       await new Promise(resolve => setTimeout(resolve, 300));
       const canvas = await html2canvas(element, {
@@ -587,39 +593,60 @@ const handleSendManualWA = async () => {
         windowWidth: 794,
       });
       const imgData = canvas.toDataURL('image/png');
-
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      document.body.appendChild(iframe);
-
-      const doc = iframe.contentWindow.document;
-      doc.open();
-      doc.write(`
+      const title = `Invoice - ${data?.patient_name || 'Patient'}`;
+      const html = `<!doctype html>
         <html>
           <head>
-            <title>Invoice - ${data?.patient_name || 'Patient'}</title>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <title>${title}</title>
             <style>
-              @media print {
-                body { -webkit-print-color-adjust: exact; margin: 0; padding: 0; }
-                @page { size: A4; margin: 0; }
-              }
-              body { margin: 0; padding: 0; }
-              img { width: 210mm; height: 297mm; display: block; }
+              @page { size: A4; margin: 0; }
+              html, body { margin: 0; padding: 0; background: #fff; }
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              img { display: block; width: 100%; max-width: 210mm; height: auto; margin: 0 auto; }
+              @media print { img { width: 210mm; max-width: none; height: 297mm; } }
             </style>
           </head>
           <body>
-            <img src="${imgData}" loading="lazy" decoding="async" />
+            <img id="inv" src="${imgData}" />
+            <script>
+              (function () {
+                var img = document.getElementById('inv');
+                function go() { setTimeout(function () { window.focus(); window.print(); }, 200); }
+                if (img.complete) go(); else img.onload = go;
+              })();
+            <\/script>
           </body>
-        </html>
-      `);
-      doc.close();
+        </html>`;
 
-      await new Promise(resolve => setTimeout(resolve, 300));
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-      setTimeout(() => document.body.removeChild(iframe), 1000);
+      if (printWin && !printWin.closed) {
+        // Tab pratinjau: dialog cetak + preview browser tampil dari sini.
+        printWin.document.open();
+        printWin.document.write(html);
+        printWin.document.close();
+      } else {
+        // Popup diblokir → fallback iframe (di luar layar, bukan display:none
+        // karena iframe tersembunyi menghasilkan preview kosong).
+        const iframe = document.createElement('iframe');
+        iframe.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;height:1123px;border:0;';
+        document.body.appendChild(iframe);
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(html.replace(/<script>[\s\S]*?<\/script>/, ''));
+        doc.close();
+        const img = doc.getElementById('inv');
+        if (img && !img.complete) {
+          await new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+        }
+        await new Promise(resolve => setTimeout(resolve, 300));
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        setTimeout(() => iframe.remove(), 60000);
+      }
     } catch (err) {
       console.error('Print Error:', err);
+      if (printWin && !printWin.closed) printWin.close();
       toast({ variant: "destructive", title: "Gagal Mencetak", description: err.message });
     } finally {
       setIsPrinting(false);
