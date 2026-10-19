@@ -1276,7 +1276,10 @@ setFormData({
                 recap_date: isoDate,
                 therapist_name: therapistName,
                 patient_type: resolvedPatientType,
-                payment_method: resolvedPaymentMethod,
+                // Kosong harus NULL, bukan '': trigger SOAP-first menganggap payment_method
+                // non-NULL (selain 'Package') sebagai pembayaran dan menolak simpan
+                // ("SOAP belum diisi... Pembayaran terkunci") padahal admin belum bayar.
+                payment_method: resolvedPaymentMethod || null,
                 payment_splits: resolvedPaymentSplits,
                 diagnosis: Array.isArray(formData.diagnosis) && formData.diagnosis.length > 0
   ? formData.diagnosis.map(d => {
