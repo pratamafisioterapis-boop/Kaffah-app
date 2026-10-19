@@ -75,7 +75,7 @@ const SearchableSelect = ({
         left: rect.left - anchorRect.left + anchorScrollLeft,
         width: rect.width,
         top: openUpward ? undefined : contentRelativeBottom + 6,
-        bottom: openUpward ? transformedAncestor.scrollHeight - contentRelativeTop + 6 : undefined,
+        bottom: openUpward ? transformedAncestor.clientHeight - contentRelativeTop + 6 : undefined,
       });
       return;
     }
