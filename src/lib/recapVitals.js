@@ -30,18 +30,40 @@ export async function fetchRecapVitals(recapId) {
   return data || null;
 }
 
-// Simpan (upsert) tanda vital recap. Semua kolom kosong = hapus barisnya.
-export async function saveRecapVitals(recapId, patientId, vitals, user) {
-  if (!recapId) return { error: null };
-  if (!hasAnyVital(vitals)) {
-    const { error } = await supabase.from('recap_vital_signs').delete().eq('recap_id', recapId);
-    return { error };
-  }
-  const row = { recap_id: recapId, patient_id: patientId || null, notes: (vitals.notes || '').trim() || null, updated_at: new Date().toISOString() };
-  NUMERIC_KEYS.forEach((k) => { row[k] = toNum(vitals[k]); });
+export const vitalsToRow = (v) => {
+  const row = {};
+  NUMERIC_KEYS.forEach((k) => { row[k] = toNum(v[k]); });
+  row.notes = (v.notes || '').trim() || null;
+  return row;
+};
+
+// Mengembalikan pesan kesalahan, atau null bila isian valid.
+export function validateVitals(v) {
+  if (!hasAnyVital(v)) return 'Isi minimal satu tanda vital.';
+  const hasSys = toNum(v.systolic) !== null;
+  const hasDia = toNum(v.diastolic) !== null;
+  if (hasSys !== hasDia) return 'Tekanan darah harus diisi lengkap (sistolik dan diastolik).';
+  if (hasSys && toNum(v.systolic) <= toNum(v.diastolic)) return 'Sistolik harus lebih besar dari diastolik.';
+  return null;
+}
+
+// TTV sekali diisi terkunci: hanya INSERT (RLS menolak UPDATE/DELETE langsung).
+// Perubahan lewat pengajuan override 'vitals_edit' yang disetujui owner.
+export async function insertRecapVitals(recapId, patientId, vitals, user) {
+  const row = { recap_id: recapId, patient_id: patientId || null, ...vitalsToRow(vitals) };
   if (user?.id) { row.recorded_by = user.id; row.recorded_by_name = user.name || user.email || null; }
-  const { error } = await supabase.from('recap_vital_signs').upsert(row, { onConflict: 'recap_id' });
+  const { error } = await supabase.from('recap_vital_signs').insert(row);
   return { error };
+}
+
+export async function fetchPendingVitalsEdit(recapId) {
+  if (!recapId) return null;
+  const { data } = await supabase
+    .from('soap_overrides')
+    .select('id, reason, requested_by_name, requested_at')
+    .eq('recap_id', recapId).eq('kind', 'vitals_edit').eq('status', 'pending')
+    .maybeSingle();
+  return data || null;
 }
 
 // Ringkasan satu baris, mis. "TD 120/80 mmHg | Nadi 80 x/mnt | SpO2 98%"
