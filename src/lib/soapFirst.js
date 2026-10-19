@@ -13,6 +13,7 @@ export const OVERRIDE_KIND_LABELS = {
   manual_discount: 'Diskon manual (perlu persetujuan)',
   vitals_edit: 'Ubah tanda vital (TTV)',
   recovery_outside_package: 'Recovery di luar paket',
+  discount_adjust: 'Ubah diskon (invoice terbit)',
 };
 
 export const OVERRIDE_STATUS_LABELS = {

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { OVERRIDE_KIND_LABELS, requestOverride } from '@/lib/soapFirst';
@@ -13,15 +14,29 @@ import { OVERRIDE_KIND_LABELS, requestOverride } from '@/lib/soapFirst';
  * Dialog pengajuan pengecualian (override) dengan alasan wajib.
  * Admin mengajukan -> owner menyetujui. Bila pemohon adalah owner, langsung disetujui.
  */
-const SoapOverrideDialog = ({ open, onOpenChange, kind, recapId = null, packageId = null, payload = {}, description, withAmount = false, onDone }) => {
+const SoapOverrideDialog = ({ open, onOpenChange, kind, recapId = null, packageId = null, payload = {}, description, withAmount = false, withDiscount = false, discountOptions = [], onDone }) => {
   const { toast } = useToast();
   const { userDetails } = useAuth();
   const [reason, setReason] = useState('');
   const [amount, setAmount] = useState('');
+  const [discLabel, setDiscLabel] = useState('');
+  const [discType, setDiscType] = useState('nominal');
+  const [discValue, setDiscValue] = useState('');
   const [saving, setSaving] = useState(false);
   const isOwner = ['owner', 'super_admin'].includes(userDetails?.role);
 
-  useEffect(() => { if (open) { setReason(''); setAmount(''); } }, [open]);
+  useEffect(() => { if (open) { setReason(''); setAmount(''); setDiscLabel(''); setDiscType('nominal'); setDiscValue(''); } }, [open]);
+
+  const pickDiscount = (label) => {
+    setDiscLabel(label);
+    const opt = discountOptions.find((o) => o.label === label);
+    if (opt?.discount_value_type && Number(opt.discount_value) > 0) {
+      setDiscType(opt.discount_value_type);
+      setDiscValue(String(opt.discount_value));
+    } else {
+      setDiscValue('');
+    }
+  };
 
   const submit = async () => {
     if (reason.trim().length < 5) {
@@ -32,9 +47,21 @@ const SoapOverrideDialog = ({ open, onOpenChange, kind, recapId = null, packageI
       toast({ variant: 'destructive', title: 'Nominal wajib diisi', description: 'Isi nominal baru yang benar.' });
       return;
     }
+    if (withDiscount) {
+      const v = Number(discValue);
+      if (!discLabel || !(v > 0) || (discType === 'percentage' && v > 100)) {
+        toast({ variant: 'destructive', title: 'Diskon belum lengkap', description: 'Pilih jenis diskon dan isi nilainya dengan benar.' });
+        return;
+      }
+    }
     setSaving(true);
     try {
-      await requestOverride({ kind, recapId, packageId, reason: reason.trim(), payload: withAmount ? { ...payload, amount: Number(amount) } : payload });
+      const extra = withAmount
+        ? { ...payload, amount: Number(amount) }
+        : withDiscount
+          ? { ...payload, discount_label: discLabel, discount_type: discType, discount_value: Number(discValue) }
+          : payload;
+      await requestOverride({ kind, recapId, packageId, reason: reason.trim(), payload: extra });
       toast({
         title: isOwner ? 'Pengecualian diterapkan' : 'Pengajuan terkirim',
         description: isOwner ? 'Pengajuan disetujui otomatis karena diajukan oleh owner.' : 'Menunggu persetujuan owner. Owner mendapat notifikasi.',
@@ -59,6 +86,35 @@ const SoapOverrideDialog = ({ open, onOpenChange, kind, recapId = null, packageI
           <div className="space-y-2">
             <Label>Nominal baru (Rp) <span className="text-red-500">*</span></Label>
             <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" />
+          </div>
+        )}
+        {withDiscount && (
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label>Jenis diskon <span className="text-red-500">*</span></Label>
+              <Select value={discLabel} onValueChange={pickDiscount}>
+                <SelectTrigger><SelectValue placeholder="Pilih jenis diskon" /></SelectTrigger>
+                <SelectContent>
+                  {discountOptions.map((o) => <SelectItem key={o.value || o.label} value={o.label}>{o.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Tipe potongan</Label>
+                <Select value={discType} onValueChange={setDiscType}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nominal">Nominal (Rp)</SelectItem>
+                    <SelectItem value="percentage">Persentase (%)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Nilai <span className="text-red-500">*</span></Label>
+                <Input type="number" value={discValue} onChange={(e) => setDiscValue(e.target.value)} placeholder="0" />
+              </div>
+            </div>
           </div>
         )}
         <div className="space-y-2">

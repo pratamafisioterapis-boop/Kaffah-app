@@ -1883,6 +1883,11 @@ setFormData({
                         Ajukan diskon homecare
                     </Button>
                 )}
+                {sfInvoiceLocked && (
+                    <Button type="button" size="sm" variant="outline" className="h-8 text-xs" onClick={() => openOverride({ kind: 'discount_adjust', withDiscount: true, description: 'Invoice sudah terbit sehingga diskon terkunci. Pilih diskon yang seharusnya berlaku; nominal dihitung ulang setelah disetujui owner.' })}>
+                        Ajukan perubahan diskon ke owner
+                    </Button>
+                )}
                 <Button type="button" size="sm" variant="outline" className="h-8 text-xs" onClick={() => openOverride({ kind: 'amount_adjust', withAmount: true, description: 'Ubah nominal tagihan di luar daftar harga. Berlaku setelah disetujui owner.' })}>
                     Ajukan ubah nominal
                 </Button>
@@ -2000,6 +2005,8 @@ setFormData({
                 payload={overrideDialog?.payload || {}}
                 description={overrideDialog?.description}
                 withAmount={!!overrideDialog?.withAmount}
+                withDiscount={!!overrideDialog?.withDiscount}
+                discountOptions={discountTypeOptions.filter(o => !o.is_referral_reward)}
                 onDone={() => { refreshQuote(); loadRecapMeta(); loadManualOverride(); }}
             />
 
