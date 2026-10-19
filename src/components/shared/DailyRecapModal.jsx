@@ -34,7 +34,7 @@ import {
 } from '@/lib/api';
 import { createOperationalOption } from '@/lib/api';
 import { useSoapFirstSettings, useRecapQuote } from '@/hooks/useSoapFirst';
-import { isSoapFirstActiveOn } from '@/lib/soapFirst';
+import { isSoapFirstActiveOn, markIncentiveFlags } from '@/lib/soapFirst';
 import SoapOverrideDialog from './SoapOverrideDialog';
 
 import { 
@@ -280,6 +280,18 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
     useEffect(() => {
         if (isOpen && mode === 'edit') loadRecapMeta(); else setRecapMeta(null);
     }, [isOpen, mode, loadRecapMeta]);
+
+    // Pemulihan insentif hanya relevan bila insentif recap ini benar-benar nol
+    // (SOAP terlambat / tidak diisi / ditandai owner). Selain itu tombolnya disembunyikan.
+    const [incentiveZeroed, setIncentiveZeroed] = useState(false);
+    useEffect(() => {
+        if (!isOpen || !sfEdit || !initialData?.id) { setIncentiveZeroed(false); return; }
+        let cancelled = false;
+        markIncentiveFlags([{ id: initialData.id }], { strict: false })
+            .then(rows => { if (!cancelled) setIncentiveZeroed(!!rows?.[0]?._incentiveZeroed); })
+            .catch(() => { if (!cancelled) setIncentiveZeroed(false); });
+        return () => { cancelled = true; };
+    }, [isOpen, sfEdit, initialData?.id, recapMeta?.soap_completed_at]);
 
     // Diskon manual (mis. "Keluarga"): nilai diinput admin lalu wajib disetujui owner.
     const [manualOverride, setManualOverride] = useState(null);
@@ -1861,9 +1873,11 @@ setFormData({
                 <Button type="button" size="sm" variant="outline" className="h-8 text-xs" onClick={() => openOverride({ kind: 'amount_adjust', withAmount: true, description: 'Ubah nominal tagihan di luar daftar harga. Berlaku setelah disetujui owner.' })}>
                     Ajukan ubah nominal
                 </Button>
-                <Button type="button" size="sm" variant="outline" className="h-8 text-xs" onClick={() => openOverride({ kind: 'incentive_restore', description: 'Pulihkan jasa insentif terapis untuk sesi ini (mis. sesi molor atau pasien terlambat). Berlaku setelah disetujui owner.' })}>
-                    Ajukan pemulihan insentif
-                </Button>
+                {incentiveZeroed && (
+                    <Button type="button" size="sm" variant="outline" className="h-8 text-xs" onClick={() => openOverride({ kind: 'incentive_restore', description: 'Pulihkan jasa insentif terapis untuk sesi ini (mis. sesi molor atau pasien terlambat). Berlaku setelah disetujui owner.' })}>
+                        Ajukan pemulihan insentif
+                    </Button>
+                )}
             </div>
         </div>
     ) : (sfActive && mode === 'add' ? (
