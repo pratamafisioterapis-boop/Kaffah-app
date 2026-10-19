@@ -35,6 +35,7 @@ import DatePicker from '@/components/DatePicker';
 import DailyRecapModal from '@/components/shared/DailyRecapModal';
 import DailyRecapDetailModal from '@/components/shared/DailyRecapDetailModal';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import PageHero from '@/components/shared/PageHero';
 import SendClinaraDialog from '@/components/admin/patients/SendClinaraDialog';
 import { PortalStatusButton, SoapMark } from '@/components/admin/RecapRowMarks';
@@ -108,6 +109,8 @@ const DailyRecap = ({ hideControls = false, showPaymentFilter = false }) => {
   const location = useLocation();
   const { toast } = useToast();
   const { clinicName, userDetails } = useAuth();
+  // Tombol portal Clinara di rekap harian hanya untuk klinik Kaffah.
+  const portalButtonEnabled = userDetails?.clinic_id === KAFFAH_CLINIC_ID;
   const [alkesOpen, setAlkesOpen] = useState(false);
   const [alkesEnabled, setAlkesEnabled] = useState(false);
   const isMounted = useRef(true);
@@ -1014,7 +1017,7 @@ const getPremiumPastelBadge = (text) => {
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 [&>*:only-child]:col-span-2">
-                          {getPortalPatient(recap) && (
+                          {portalButtonEnabled && getPortalPatient(recap) && (
                             <PortalStatusButton
                               className="h-9 text-xs"
                               sentAt={getPortalSentAt(recap)}
@@ -1174,7 +1177,7 @@ const getPremiumPastelBadge = (text) => {
         setInvoiceModalOpen(true);
       }}
     />
-    {getPortalPatient(recap) && (
+    {portalButtonEnabled && getPortalPatient(recap) && (
       <PortalStatusButton
         sentAt={getPortalSentAt(recap)}
         onClick={() => setPortalPatient(getPortalPatient(recap))}
