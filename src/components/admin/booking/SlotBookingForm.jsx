@@ -218,11 +218,6 @@ setPackageInfo(pkg);
           }
       }
 
-      if (soapFirstSettings && formData.is_homecare && !formData.homecare_time_type) {
-        toast({ variant: "destructive", title: "Pilih jenis homecare", description: "Tentukan homecare di dalam atau di luar jam kerja." });
-        setLoading(false);
-        return;
-      }
 
      const result = await bookAppointmentSafe({
   homecareTimeType: formData.is_homecare ? (formData.homecare_time_type || null) : null,
@@ -456,9 +451,9 @@ action_by: user?.id,
       </div>
       {soapFirstSettings && formData.is_homecare && (
         <div className="space-y-1">
-          <Label className="text-xs">Waktu Homecare <span className="text-red-500">*</span></Label>
+          <Label className="text-xs">Waktu Homecare <span className="text-slate-400">(opsional, otomatis dari jam appointment)</span></Label>
           <Select value={formData.homecare_time_type} onValueChange={(v) => setFormData(p => ({ ...p, homecare_time_type: v }))}>
-            <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Dalam atau luar jam kerja" /></SelectTrigger>
+            <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Otomatis" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="dalam">Dalam jam kerja</SelectItem>
               <SelectItem value="luar">Luar jam kerja</SelectItem>

@@ -269,9 +269,6 @@ console.log({
   action_by_name: userDetails?.full_name,
   action_by_role: userDetails?.role
 });
-      if (soapFirstSettings && isHomecare && !homecareTimeType) {
-        throw new Error("Tentukan homecare di dalam atau di luar jam kerja.");
-      }
       const result = await bookAppointmentSafe({
         homecareTimeType: isHomecare ? (homecareTimeType || null) : null,
         therapistId: therapist.id,
@@ -652,9 +649,9 @@ const handleConfirmRecurring = async () => {
       </div>
       {soapFirstSettings && isHomecare && (
         <div className="space-y-1">
-          <Label className="text-xs">Waktu Homecare <span className="text-red-500">*</span></Label>
+          <Label className="text-xs">Waktu Homecare <span className="text-slate-400">(opsional, otomatis dari jam appointment)</span></Label>
           <Select value={homecareTimeType} onValueChange={setHomecareTimeType}>
-            <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Dalam atau luar jam kerja" /></SelectTrigger>
+            <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Otomatis" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="dalam">Dalam jam kerja</SelectItem>
               <SelectItem value="luar">Luar jam kerja</SelectItem>
