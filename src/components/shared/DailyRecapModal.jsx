@@ -1833,7 +1833,7 @@ setFormData({
                 </div>
             )}
 
-            {quote?.homecare && !sfInvoiceLocked && (
+            {sfNeedHomecareTime && !sfInvoiceLocked && (
                 <div className="space-y-1 max-w-xs">
                     <Label className="text-xs">Waktu homecare{sfNeedHomecareTime && <span className="text-red-500"> * wajib dipilih agar nominal terhitung</span>}</Label>
                     <Select value={homecareTimeLocal} onValueChange={setHomecareTime}>
