@@ -12,6 +12,7 @@ export const OVERRIDE_KIND_LABELS = {
   amount_adjust: 'Ubah nominal',
   manual_discount: 'Diskon manual (perlu persetujuan)',
   vitals_edit: 'Ubah tanda vital (TTV)',
+  recovery_outside_package: 'Recovery di luar paket',
 };
 
 export const OVERRIDE_STATUS_LABELS = {
@@ -60,6 +61,17 @@ export const requestOverride = async ({ kind, recapId = null, packageId = null, 
   });
   if (error) throw error;
   return data;
+};
+
+// Khusus Kaffah: sesi lanjutan paket diambil sebagai Recovery (DOMS) tanpa memotong kuota paket,
+// atau dikembalikan ke paket. Aturan ditegakkan RPC; setelah invoice terbit harus lewat override owner.
+export const setRecoveryOutsidePackage = async ({ recapId, outside, reason = null }) => {
+  const { error } = await supabase.rpc('set_recovery_outside_package', {
+    p_recap_id: recapId,
+    p_outside: outside,
+    p_reason: reason,
+  });
+  if (error) throw error;
 };
 
 export const decideOverride = async (id, approve, note = null) => {

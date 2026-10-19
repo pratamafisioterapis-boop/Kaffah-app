@@ -27,7 +27,7 @@ import { validatePatientId, handleUndefinedPatientId } from '@/lib/validationHel
 import { format } from 'date-fns';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
-import { isSoapFirstActiveOn, reviseLockedSoap } from '@/lib/soapFirst';
+import { isSoapFirstActiveOn, reviseLockedSoap, setRecoveryOutsidePackage, requestOverride } from '@/lib/soapFirst';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useAssessmentMode } from '@/hooks/useAssessmentMode';
 import { suggestGoals } from '@/lib/goalSuggestions';
@@ -72,6 +72,12 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
   const [reviseOpen, setReviseOpen] = useState(false);
   const [reviseReason, setReviseReason] = useState('');
   const [revising, setRevising] = useState(false);
+  // Kaffah: Recovery (DOMS) di luar paket - tidak memotong kuota sesi paket.
+  const [outsideOpen, setOutsideOpen] = useState(false);
+  const [undoOpen, setUndoOpen] = useState(false);
+  const [undoReason, setUndoReason] = useState('');
+  const [undoBusy, setUndoBusy] = useState(false);
+  const [recapTick, setRecapTick] = useState(0);
   const [templateDialog, setTemplateDialog] = useState(null); // 'subjective' | 'objective' | null
   const [templateCache, setTemplateCache] = useState({});
   // Varian template per diagnosa (mis. HNP menjalar / tidak menjalar): dipilih di Subjective, Objective ikut.
@@ -167,14 +173,14 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     if (!linkedRecapId || !isValidUUID(linkedRecapId)) return;
     supabase
       .from('daily_recaps')
-      .select('diagnosis, recap_date, invoice_created_at, soap_completed_at')
+      .select('diagnosis, recap_date, invoice_created_at, soap_completed_at, package_tracking_id, bypass_package_id, amount, amount_original')
       .eq('id', linkedRecapId)
       .maybeSingle()
       .then(({ data }) => {
         setDiagnosis(normalizeDiagnosis(data?.diagnosis));
         setRecapInfo(data || null);
       });
-  }, [linkedRecapId]);
+  }, [linkedRecapId, recapTick]);
 
   // Tanda vital yang diinput admin di Daily Recap (tertaut lewat daily_recap_id).
   const [recapVitals, setRecapVitals] = useState(null);
@@ -231,6 +237,13 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
   const isKaffahClinic = (userDetails?.clinic_id || therapist?.clinic_id) === KAFFAH_CLINIC_ID;
   const sfActive = isSoapFirstActiveOn(sfSettings, recapInfo?.recap_date);
   const sfLocked = sfActive && !!recapInfo?.invoice_created_at;
+  // Pilih DOMS pada sesi lanjutan paket -> tawarkan Recovery di luar paket (kuota tidak terpotong).
+  const domsSelected = isKaffahClinic && diagnosis.some((d) => (
+    String(diagnosisOptions.find((o) => o.id === d || o.value === d)?.label || '').toLowerCase().startsWith('doms')
+  ));
+  const packageFollowup = !!recapInfo?.package_tracking_id && !(Number(recapInfo?.amount_original ?? recapInfo?.amount ?? 0) > 0);
+  const isOutsidePackage = isKaffahClinic && !!recapInfo?.bypass_package_id;
+  const askOutside = sfActive && domsSelected && packageFollowup && !sfLocked;
   const templatesOf = (key) => (key === 'subjective' ? subjectiveTemplates : key === 'objective' ? objectiveTemplates : []);
   // Kaffah: S & O diisi lewat template (pilih variabel); ketikan bebas baru terbuka setelah terisi.
   const isTemplateLocked = (key) => isKaffahClinic && templatesOf(key).length > 0 && !formData[key].trim();
@@ -452,8 +465,33 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const submitUndoOutside = async () => {
+    const reason = undoReason.trim();
+    if (reason.length < 5) {
+      toast({ variant: "destructive", title: "Alasan wajib diisi", description: "Tulis alasan minimal 5 karakter." });
+      return;
+    }
+    setUndoBusy(true);
+    try {
+      if (recapInfo?.invoice_created_at) {
+        await requestOverride({ kind: 'recovery_outside_package', recapId: linkedRecapId, reason, payload: { outside: false } });
+        toast({ title: "Pengajuan terkirim", description: "Invoice sudah terbit, menunggu persetujuan owner." });
+      } else {
+        await setRecoveryOutsidePackage({ recapId: linkedRecapId, outside: false, reason });
+        toast({ title: "Dikembalikan ke paket", description: "Sesi ini kembali memotong kuota paket." });
+        setRecapTick((t) => t + 1);
+      }
+      setUndoOpen(false);
+      setUndoReason('');
+    } catch (err) {
+      toast({ variant: "destructive", title: "Gagal", description: err.message });
+    } finally {
+      setUndoBusy(false);
+    }
+  };
+
+  const handleSubmit = async (e, outsideChoice) => {
+    e?.preventDefault?.();
     
     // Strict Validation before submit
     if (handleUndefinedPatientId(formData.patient_id, 'FormSubmit')) {
@@ -495,6 +533,12 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
         setReviseOpen(true);
         return;
       }
+    }
+
+    // Sesi lanjutan paket + DOMS: terapis wajib memilih, tidak boleh memutus paket diam-diam.
+    if (askOutside && outsideChoice === undefined) {
+      setOutsideOpen(true);
+      return;
     }
 
     setLoading(true);
@@ -551,6 +595,13 @@ if (isCreate) {
            .eq('id', linkedRecapId);
          if (diagError) {
            toast({ variant: "destructive", title: "SOAP tersimpan, diagnosa gagal", description: diagError.message });
+         } else if (askOutside && outsideChoice === 'outside') {
+           try {
+             await setRecoveryOutsidePackage({ recapId: linkedRecapId, outside: true });
+             toast({ title: "Recovery di luar paket", description: "Kuota paket pasien tidak terpotong. Sesi ini dibayar sebagai Recovery." });
+           } catch (err) {
+             toast({ variant: "destructive", title: "SOAP tersimpan, gagal memisahkan dari paket", description: err.message });
+           }
          }
        }
 
@@ -840,6 +891,17 @@ if (isCreate) {
               </p>
             </div>
 
+            {isOutsidePackage && (
+              <div className={`${isPWA ? 'px-4 py-3' : 'px-6 py-4'} border-b bg-amber-50 flex items-start justify-between gap-3`}>
+                <p className="text-sm text-amber-900">
+                  <strong>Recovery di luar paket.</strong> Sesi ini tidak memotong kuota paket pasien dan dibayar sebagai Recovery setelah SOAP lengkap.
+                </p>
+                <Button type="button" size="sm" variant="outline" onClick={() => setUndoOpen(true)}>
+                  {recapInfo?.invoice_created_at ? 'Ajukan kembali ke paket' : 'Kembalikan ke paket'}
+                </Button>
+              </div>
+            )}
+
             {vitalsLine && (
               <div className={`${isPWA ? 'px-4 py-3' : 'px-6 py-4'} border-b bg-cyan-50/50 flex items-start gap-3`}>
                 <Activity className="w-4 h-4 text-cyan-700 mt-0.5 shrink-0" />
@@ -1099,6 +1161,47 @@ if (isCreate) {
             <Button type="button" onClick={submitRevision} disabled={revising}>
               {revising && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Simpan Revisi
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={outsideOpen} onOpenChange={setOutsideOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ambil sebagai Recovery di luar paket?</DialogTitle>
+            <DialogDescription>
+              Pasien masih memakai sesi paket dan Anda memilih diagnosa DOMS. Jika di luar paket, kuota paket tidak terpotong dan sesi ini dibayar sebagai Recovery (SOAP dulu, baru bayar).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            <Button type="button" onClick={() => { setOutsideOpen(false); handleSubmit(null, 'outside'); }}>
+              Ya, di luar paket (kuota tidak terpotong)
+            </Button>
+            <Button type="button" variant="outline" onClick={() => { setOutsideOpen(false); handleSubmit(null, 'package'); }}>
+              Tidak, tetap potong kuota paket
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => setOutsideOpen(false)}>Batal</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={undoOpen} onOpenChange={(v) => !undoBusy && setUndoOpen(v)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Kembalikan sesi ke paket</DialogTitle>
+            <DialogDescription>
+              {recapInfo?.invoice_created_at
+                ? 'Invoice sudah terbit, jadi perubahan ini diajukan ke owner dan baru berlaku setelah disetujui.'
+                : 'Sesi ini akan kembali memotong kuota paket pasien.'}
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea value={undoReason} onChange={(e) => setUndoReason(e.target.value)} rows={3} placeholder="Alasan (wajib)" />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => setUndoOpen(false)} disabled={undoBusy}>Batal</Button>
+            <Button type="button" onClick={submitUndoOutside} disabled={undoBusy}>
+              {undoBusy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {recapInfo?.invoice_created_at ? 'Kirim Pengajuan' : 'Kembalikan'}
             </Button>
           </div>
         </DialogContent>

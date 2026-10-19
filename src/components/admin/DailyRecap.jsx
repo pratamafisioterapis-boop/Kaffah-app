@@ -939,6 +939,7 @@ const getPremiumPastelBadge = (text) => {
                     <Badge className={cn("text-xs font-normal py-0 px-1.5", getPremiumPastelBadge(patientTypeLabel))}>{patientTypeLabel}</Badge>
                     <Badge variant="outline" className="text-xs font-normal py-0 px-1.5">{serviceLabel}</Badge>
                     {packageLabel !== '-' && <Badge className="text-xs py-0 px-1.5 bg-blue-50 text-blue-600 border-blue-100">{packageLabel}</Badge>}
+                    {recap.bypass_package_id && <Badge title={recap.bypass_reason || ''} className="text-xs py-0 px-1.5 bg-amber-50 text-amber-700 border-amber-200">Di luar paket</Badge>}
                   </div>
 
                   {/* Baris 4: Tombol Sesi */}
@@ -1072,7 +1073,12 @@ const getPremiumPastelBadge = (text) => {
                           </Badge>
                         </div>
                      </td>
-                     <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center text-app-accent font-semibold">{packageLabel}</td>
+                     <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center text-app-accent font-semibold">
+                       {packageLabel}
+                       {recap.bypass_package_id && (
+                         <Badge title={recap.bypass_reason || ''} className="block mt-1 text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 whitespace-normal leading-tight">Di luar paket</Badge>
+                       )}
+                     </td>
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center text-slate-600">{recap.display_therapist_name}</td>
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center">
                        <div className="font-semibold text-slate-800">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</div>
