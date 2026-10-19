@@ -1963,7 +1963,8 @@ export const getDailyRecaps = async ({
   invoice_wa_status,
   invoice_wa_sent_at,
   invoice_url,
- 
+  soap_completed_at,
+
   patients!patient_id(
     id,
     full_name,
