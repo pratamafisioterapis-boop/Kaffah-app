@@ -22,7 +22,7 @@ const fmt = (iso) =>
 // Kirim tautan aplikasi pasien (Clinara) lewat WhatsApp milik admin.
 // Tautan yang masih aktif tetap bisa dikirim ulang. Tautan lama (dibuat sebelum token
 // disimpan) tidak punya token; untuk itu admin membuat tautan baru sekali.
-const SendClinaraDialog = ({ patient, onClose }) => {
+const SendClinaraDialog = ({ patient, onClose, onSent }) => {
   const { toast } = useToast();
   const { clinicName, userDetails } = useAuth();
   const [clinicDomain, setClinicDomain] = useState(null);
@@ -88,7 +88,7 @@ const SendClinaraDialog = ({ patient, onClose }) => {
 
   const handleSent = () => {
     // Tandai terkirim saat admin membuka WhatsApp; aplikasi tidak bisa tahu pesan benar-benar dikirim.
-    markLinkSent(fresh.linkId, 'whatsapp').then(load).catch(() => {});
+    markLinkSent(fresh.linkId, 'whatsapp').then(() => { onSent?.(patient.id); return load(); }).catch(() => {});
   };
 
   const handleStatus = (status, msg) => run(async () => {

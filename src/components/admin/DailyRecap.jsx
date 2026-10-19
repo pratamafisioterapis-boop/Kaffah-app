@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Calendar, Loader2, Plus, Search, X, Clock, Play, Square,
-  ChevronLeft, ChevronRight, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, BarChart3, CreditCard, Users, Link2
+  ChevronLeft, ChevronRight, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, BarChart3, CreditCard, Users
 } from 'lucide-react';
 import { getDailyRecaps, getDailyRecapsTotalAmount, getPhysiotherapists, getCachedClinicId } from '@/lib/api';
 import InvoiceStatusButton from '@/components/admin/InvoiceStatusButton';
@@ -35,6 +35,9 @@ import DailyRecapDetailModal from '@/components/shared/DailyRecapDetailModal';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import PageHero from '@/components/shared/PageHero';
 import SendClinaraDialog from '@/components/admin/patients/SendClinaraDialog';
+import { PortalStatusButton, SoapMark } from '@/components/admin/RecapRowMarks';
+import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
+import { isSoapFirstActiveOn } from '@/lib/soapFirst';
 
 // Pasien yang menerima layanan (bukan pemilik paket) berhak atas tautan portal.
 const getPortalPatient = (recap) => recap.actual_patients || recap.patients || null;
@@ -190,6 +193,9 @@ const DailyRecap = ({ hideControls = false, showPaymentFilter = false }) => {
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
 const [selectedInvoiceData, setSelectedInvoiceData] = useState(null);
   const [portalPatient, setPortalPatient] = useState(null);
+  // patient_id -> waktu tautan portal terakhir dikirim (hanya tautan yang masih hidup)
+  const [portalSentMap, setPortalSentMap] = useState({});
+  const { settings: soapFirstSettings } = useSoapFirstSettings();
   const [modalMode, setModalMode] = useState('add');
 useEffect(() => {
   fetchRecaps();
@@ -376,6 +382,25 @@ end_time: r.end_time,
       if (isMounted.current) setLoadingRecaps(false); 
     }
   }, [queryDateRange, currentPage, limit, debouncedSearch, sortConfig, toast, selectedTherapist, selectedPaymentMethod]);
+
+  const loadPortalSent = useCallback(async (recapList) => {
+    const ids = [...new Set((recapList || []).map((r) => getPortalPatient(r)?.id).filter(Boolean))];
+    if (ids.length === 0) { setPortalSentMap({}); return; }
+    const { data, error } = await supabase
+      .from('patient_portal_links')
+      .select('patient_id, sent_at')
+      .in('patient_id', ids)
+      .neq('status', 'revoked')
+      .not('sent_at', 'is', null);
+    if (error || !isMounted.current) return; // fitur portal belum aktif: semua tampil "belum dikirim"
+    setPortalSentMap(Object.fromEntries((data || []).map((l) => [l.patient_id, l.sent_at])));
+  }, []);
+
+  useEffect(() => { loadPortalSent(recaps); }, [recaps, loadPortalSent]);
+
+  const getPortalSentAt = (recap) => portalSentMap[getPortalPatient(recap)?.id] || null;
+  // SOAP hanya relevan di klinik SOAP-first (soap_completed_at diisi trigger).
+  const showSoapMark = (recap) => isSoapFirstActiveOn(soapFirstSettings, recap.date);
 
   const handleRowClick = (recap) => {
     setSelectedRecap(recap);
@@ -914,11 +939,14 @@ const getPremiumPastelBadge = (text) => {
                   {/* Baris 1: Tanggal + Status */}
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-slate-500 font-medium">{recap.date ? formatDateIndonesian(recap.date) : '-'}</span>
-                    {recap.end_time
-                      ? <Badge className="bg-emerald-50 text-emerald-700 border-0 text-xs">Selesai</Badge>
-                      : recap.start_time
-                      ? <Badge className="bg-app-soft text-app-accent-hover border-0 text-xs">Berlangsung</Badge>
-                      : <Badge className="bg-slate-100 text-slate-500 border-0 text-xs">Belum</Badge>}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {showSoapMark(recap) && <SoapMark done={!!recap.soap_completed_at} />}
+                      {recap.end_time
+                        ? <Badge className="bg-emerald-50 text-emerald-700 border-0 text-xs">Selesai</Badge>
+                        : recap.start_time
+                        ? <Badge className="bg-app-soft text-app-accent-hover border-0 text-xs">Berlangsung</Badge>
+                        : <Badge className="bg-slate-100 text-slate-500 border-0 text-xs">Belum</Badge>}
+                    </div>
                   </div>
 
                   {/* Baris 2: Nama Pasien + Nominal */}
@@ -966,16 +994,14 @@ const getPremiumPastelBadge = (text) => {
                         </div>
                         <div className="grid grid-cols-2 gap-2 [&>*:only-child]:col-span-2">
                           {getPortalPatient(recap) && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-9 w-full text-xs text-green-700 border-green-200 hover:bg-green-50 rounded-app-sm"
+                            <PortalStatusButton
+                              className="h-9 text-xs"
+                              sentAt={getPortalSentAt(recap)}
                               onClick={() => setPortalPatient(getPortalPatient(recap))}
-                            >
-                              <Link2 className="w-3 h-3 mr-1.5" />Portal
-                            </Button>
+                            />
                           )}
                           <InvoiceStatusButton
+                            className="h-9 text-xs"
                             recap={recap}
                             onClick={() => {
                               setSelectedInvoiceData(recap);
@@ -1087,13 +1113,16 @@ const getPremiumPastelBadge = (text) => {
                        )}
                      </td>
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center">
-                       {recap.end_time ? (
-                         <Badge className="bg-emerald-50 text-emerald-700 border-0 px-1 xl:px-2 py-0.5 rounded-app-sm whitespace-normal text-center leading-tight">Selesai</Badge>
-                       ) : recap.start_time ? (
-                         <Badge className="bg-blue-50 text-blue-700 border-0 px-1 xl:px-2 py-0.5 rounded-app-sm whitespace-normal text-center leading-tight">Berlangsung</Badge>
-                       ) : (
-                         <Badge className="bg-slate-100 text-slate-500 border-0 px-1 xl:px-2 py-0.5 rounded-app-sm whitespace-normal text-center leading-tight">Belum</Badge>
-                       )}
+                       <div className="flex flex-col items-center gap-1">
+                         {recap.end_time ? (
+                           <Badge className="bg-emerald-50 text-emerald-700 border-0 px-1 xl:px-2 py-0.5 rounded-app-sm whitespace-normal text-center leading-tight">Selesai</Badge>
+                         ) : recap.start_time ? (
+                           <Badge className="bg-blue-50 text-blue-700 border-0 px-1 xl:px-2 py-0.5 rounded-app-sm whitespace-normal text-center leading-tight">Berlangsung</Badge>
+                         ) : (
+                           <Badge className="bg-slate-100 text-slate-500 border-0 px-1 xl:px-2 py-0.5 rounded-app-sm whitespace-normal text-center leading-tight">Belum</Badge>
+                         )}
+                         {showSoapMark(recap) && <SoapMark done={!!recap.soap_completed_at} />}
+                       </div>
                      </td>
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center" onClick={(e) => e.stopPropagation()}>
                       {recap.start_time == null ? (
@@ -1125,14 +1154,10 @@ const getPremiumPastelBadge = (text) => {
       }}
     />
     {getPortalPatient(recap) && (
-      <Button
-        size="sm"
-        variant="outline"
-        className="text-green-700 border-green-200 hover:bg-green-50 h-7 px-2 text-xs xl:h-9 xl:px-3 xl:text-sm"
+      <PortalStatusButton
+        sentAt={getPortalSentAt(recap)}
         onClick={() => setPortalPatient(getPortalPatient(recap))}
-      >
-        <Link2 className="w-3 h-3 mr-1" />Portal
-      </Button>
+      />
     )}
   </div>
 </td>
@@ -1168,7 +1193,11 @@ const getPremiumPastelBadge = (text) => {
         onEdit={handleEditFromDetail}
         onDelete={fetchRecaps}
       />
-      <SendClinaraDialog patient={portalPatient} onClose={() => setPortalPatient(null)} />
+      <SendClinaraDialog
+        patient={portalPatient}
+        onClose={() => setPortalPatient(null)}
+        onSent={() => loadPortalSent(recaps)}
+      />
       <InvoiceModal
   isOpen={invoiceModalOpen}
   onClose={() => setInvoiceModalOpen(false)}
