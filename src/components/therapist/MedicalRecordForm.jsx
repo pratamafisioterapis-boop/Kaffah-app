@@ -73,7 +73,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
   const [reviseReason, setReviseReason] = useState('');
   const [revising, setRevising] = useState(false);
   // Kaffah: Recovery (DOMS) di luar paket - tidak memotong kuota sesi paket.
-  const [outsideOpen, setOutsideOpen] = useState(false);
+  const [outsideReminderOpen, setOutsideReminderOpen] = useState(false);
   const [outsideChoiceState, setOutsideChoiceState] = useState(undefined); // 'outside' | undefined
   const [undoOpen, setUndoOpen] = useState(false);
   const [undoReason, setUndoReason] = useState('');
@@ -466,15 +466,6 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     }
   };
 
-  // Batal = tidak jadi di luar paket: DOMS dibatalkan dari diagnosa, sesi tetap memakai paket.
-  const cancelOutside = () => {
-    setOutsideOpen(false);
-    setOutsideChoiceState(undefined);
-    setDiagnosis((prev) => prev.filter((d) => !String(
-      diagnosisOptions.find((o) => o.id === d || o.value === d)?.label || ''
-    ).toLowerCase().startsWith('doms')));
-  };
-
   const submitUndoOutside = async () => {
     const reason = undoReason.trim();
     if (reason.length < 5) {
@@ -548,7 +539,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     // Sesi lanjutan paket + DOMS: terapis wajib memilih, tidak boleh memutus paket diam-diam.
     const outsideChoice = forcedChoice ?? outsideChoiceState;
     if (askOutside && outsideChoice === undefined) {
-      setOutsideOpen(true);
+      setOutsideReminderOpen(true);
       return;
     }
 
@@ -888,15 +879,11 @@ if (isCreate) {
                     return;
                   }
                   setDiagnosis(v);
-                  // Kaffah: begitu DOMS dipilih pada sesi lanjutan paket, langsung tanya soal kuota paket.
+                  // Pilihan "di luar paket" hanya berlaku selama DOMS terpilih.
                   const hasDoms = Array.isArray(v) && v.some((d) => (
                     String(diagnosisOptions.find((o) => o.id === d || o.value === d)?.label || '').toLowerCase().startsWith('doms')
                   ));
-                  if (!hasDoms) {
-                    setOutsideChoiceState(undefined);
-                  } else if (isKaffahClinic && sfActive && packageFollowup && !sfLocked && !isOutsidePackage && !domsSelected) {
-                    setOutsideOpen(true);
-                  }
+                  if (!hasDoms) setOutsideChoiceState(undefined);
                 }}
                 rankOptions={rankDiagnosisOptions}
                 multiple={true}
@@ -916,11 +903,17 @@ if (isCreate) {
                 <p className="text-sm text-amber-900">
                   {outsideChoiceState === 'outside'
                     ? <><strong>Recovery di luar paket.</strong> Kuota paket tidak terpotong; dipisahkan dari paket saat SOAP disimpan.</>
-                    : <><strong>Diagnosa DOMS dipilih.</strong> Konfirmasi sesi ini diambil di luar paket, atau hapus DOMS.</>}
+                    : <><strong>DOMS pada sesi paket.</strong> Tanpa dipilih di luar paket, sesi ini memotong kuota paket dan dihitung 1 keluhan (bukan Recovery).</>}
                 </p>
-                {outsideChoiceState !== 'outside' && (
-                  <Button type="button" size="sm" variant="outline" onClick={() => setOutsideOpen(true)}>Konfirmasi</Button>
-                )}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={outsideChoiceState === 'outside' ? 'outline' : 'default'}
+                  className="shrink-0"
+                  onClick={() => setOutsideChoiceState(outsideChoiceState === 'outside' ? undefined : 'outside')}
+                >
+                  {outsideChoiceState === 'outside' ? 'Batalkan' : 'Ambil di luar paket'}
+                </Button>
               </div>
             )}
 
@@ -1200,19 +1193,21 @@ if (isCreate) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={outsideOpen} onOpenChange={(v) => { if (!v) cancelOutside(); }}>
+      <Dialog open={outsideReminderOpen} onOpenChange={setOutsideReminderOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Ambil sebagai Recovery di luar paket?</DialogTitle>
+            <DialogTitle>Recovery belum diambil di luar paket</DialogTitle>
             <DialogDescription>
-              Pasien masih memakai sesi paket dan Anda memilih diagnosa DOMS. Kuota paket tidak terpotong dan sesi ini dibayar sebagai Recovery (SOAP dulu, baru bayar). Pilih Batal untuk membatalkan DOMS dan tetap memakai paket.
+              Diagnosa DOMS dipilih pada sesi paket, tetapi tombol "Ambil di luar paket" belum diklik. Jika dilanjutkan, sesi ini memotong kuota paket dan dihitung 1 keluhan (bukan Recovery), termasuk insentif terapis.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
-            <Button type="button" onClick={() => { setOutsideChoiceState('outside'); setOutsideOpen(false); }}>
-              Ya, di luar paket
+            <Button type="button" onClick={() => setOutsideReminderOpen(false)}>
+              Kembali, ambil di luar paket
             </Button>
-            <Button type="button" variant="ghost" onClick={cancelOutside}>Batal</Button>
+            <Button type="button" variant="outline" onClick={() => { setOutsideReminderOpen(false); handleSubmit(null, 'package'); }}>
+              Tetap simpan sebagai 1 keluhan
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
