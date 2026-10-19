@@ -1334,23 +1334,24 @@ setFormData({
                 payload.special_type = formData.special_type || null;
                 payload.free_reason = formData.special_type === 'free' ? ((formData.free_reason || '').trim() || null) : null;
             }
-            // Sesi paket (metode 'Package') selalu Rp 0. Tanpa ini, nominal basi di form
-            // (mis. harga paket dari quote) / amount_original lama bisa ikut tersimpan dan
-            // melanggar chk_package_payment_zero_amount.
-            if (payload.payment_method === 'Package') {
-                payload.amount = 0;
-                payload.amount_original = 0;
-                payload.discount_type = null;
-                payload.discount_value = 0;
-                payload.discount_label = null;
-                payload.referral_reward_id = null;
-            }
             // Diskon recap tidak dipakai di kwitansi (diskon per item); invoice_items
             // disimpan terpisah setelah recap tersimpan.
             if (isKwitansi) {
                 if (invoiceItems.length > 0 && !isPackageSessionLocked) {
                     payload.amount = Math.round(itemsNetTotal(invoiceItems));
                 }
+                payload.discount_type = null;
+                payload.discount_value = 0;
+                payload.discount_label = null;
+                payload.referral_reward_id = null;
+            }
+            // Sesi paket (metode 'Package') selalu Rp 0. Tanpa ini, nominal basi di form
+            // (mis. harga paket dari quote) / amount_original lama bisa ikut tersimpan dan
+            // melanggar chk_package_payment_zero_amount. Harus setelah blok kwitansi,
+            // yang menimpa amount dari total item invoice (harga paket).
+            if (payload.payment_method === 'Package') {
+                payload.amount = 0;
+                payload.amount_original = 0;
                 payload.discount_type = null;
                 payload.discount_value = 0;
                 payload.discount_label = null;
