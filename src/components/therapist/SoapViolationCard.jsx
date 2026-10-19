@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ShieldAlert } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
+import SoapViolationSessionsDialog from '@/components/shared/SoapViolationSessionsDialog';
 import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
 import { fetchSoapViolations, isSoapFirstActiveOn, todayWita } from '@/lib/soapFirst';
 
@@ -8,6 +9,7 @@ import { fetchSoapViolations, isSoapFirstActiveOn, todayWita } from '@/lib/soapF
 const SoapViolationCard = ({ therapistId }) => {
   const { settings } = useSoapFirstSettings();
   const [result, setResult] = useState(null);
+  const [open, setOpen] = useState(false);
   const active = isSoapFirstActiveOn(settings, todayWita());
 
   useEffect(() => {
@@ -27,8 +29,11 @@ const SoapViolationCard = ({ therapistId }) => {
   if (!active || !result) return null;
   const ok = result.total === 0;
 
+  const sessions = result.byTherapist.flatMap((t) => t.sessions);
+
   return (
-    <div className={`flex items-center gap-3 rounded-[16px] border p-3.5 ${ok ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'}`}>
+    <>
+    <div role={ok ? undefined : 'button'} tabIndex={ok ? undefined : 0} onClick={() => !ok && setOpen(true)} onKeyDown={(e) => { if (!ok && e.key === 'Enter') setOpen(true); }} className={`${ok ? '' : 'cursor-pointer'} flex items-center gap-3 rounded-[16px] border p-3.5 ${ok ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'}`}>
       <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] ${ok ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>
         <ShieldAlert className="h-5 w-5" />
       </span>
@@ -42,6 +47,8 @@ const SoapViolationCard = ({ therapistId }) => {
       </div>
       <div className={`ml-auto text-2xl font-extrabold ${ok ? 'text-emerald-600' : 'text-red-600'}`}>{result.total}</div>
     </div>
+    <SoapViolationSessionsDialog open={open} onOpenChange={setOpen} title="Sesi melanggar aturan SOAP" sessions={sessions} />
+    </>
   );
 };
 

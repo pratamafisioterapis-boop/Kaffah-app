@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ShieldAlert } from 'lucide-react';
 import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
 import { fetchSoapViolations } from '@/lib/soapFirst';
+import SoapViolationSessionsDialog from '@/components/shared/SoapViolationSessionsDialog';
 import FinanceTile, { TileEmpty, TileLoading } from '@/components/owner/finance/FinanceTile';
 
 /** Sesi yang melanggar aturan SOAP per terapis pada periode dashboard (khusus klinik dengan SOAP-first). */
@@ -9,6 +10,7 @@ const SoapViolationWidget = ({ dateRange, className }) => {
   const { settings, loaded } = useSoapFirstSettings();
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [detail, setDetail] = useState(null);
   const enabled = !!settings?.enabled;
 
   useEffect(() => {
@@ -32,7 +34,7 @@ const SoapViolationWidget = ({ dateRange, className }) => {
         <div className="space-y-2">
           <div className="text-sm text-slate-600"><span className="text-2xl font-extrabold text-red-600">{result.total}</span> sesi melanggar</div>
           {result.byTherapist.map((t) => (
-            <div key={t.id} className="flex items-center justify-between rounded-xl border bg-white px-3 py-2 text-sm">
+            <button type="button" key={t.id} onClick={() => setDetail(t)} className="flex w-full items-center justify-between rounded-xl border bg-white px-3 py-2 text-left text-sm hover:bg-slate-50">
               <div className="min-w-0">
                 <div className="truncate font-semibold text-slate-800">{t.name}</div>
                 <div className="text-[11px] text-slate-500">
@@ -40,10 +42,11 @@ const SoapViolationWidget = ({ dateRange, className }) => {
                 </div>
               </div>
               <span className="ml-2 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-700">{t.count}</span>
-            </div>
+            </button>
           ))}
         </div>
       )}
+      <SoapViolationSessionsDialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)} title={detail ? `Pelanggaran SOAP — ${detail.name}` : ''} sessions={detail?.sessions || []} />
     </FinanceTile>
   );
 };
