@@ -74,6 +74,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
   const [revising, setRevising] = useState(false);
   // Kaffah: Recovery (DOMS) di luar paket - tidak memotong kuota sesi paket.
   const [outsideOpen, setOutsideOpen] = useState(false);
+  const [outsideChoiceState, setOutsideChoiceState] = useState(undefined); // 'outside' | 'package' | undefined
   const [undoOpen, setUndoOpen] = useState(false);
   const [undoReason, setUndoReason] = useState('');
   const [undoBusy, setUndoBusy] = useState(false);
@@ -490,7 +491,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     }
   };
 
-  const handleSubmit = async (e, outsideChoice) => {
+  const handleSubmit = async (e, forcedChoice) => {
     e?.preventDefault?.();
     
     // Strict Validation before submit
@@ -536,6 +537,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     }
 
     // Sesi lanjutan paket + DOMS: terapis wajib memilih, tidak boleh memutus paket diam-diam.
+    const outsideChoice = forcedChoice ?? outsideChoiceState;
     if (askOutside && outsideChoice === undefined) {
       setOutsideOpen(true);
       return;
@@ -877,6 +879,15 @@ if (isCreate) {
                     return;
                   }
                   setDiagnosis(v);
+                  // Kaffah: begitu DOMS dipilih pada sesi lanjutan paket, langsung tanya soal kuota paket.
+                  const hasDoms = Array.isArray(v) && v.some((d) => (
+                    String(diagnosisOptions.find((o) => o.id === d || o.value === d)?.label || '').toLowerCase().startsWith('doms')
+                  ));
+                  if (!hasDoms) {
+                    setOutsideChoiceState(undefined);
+                  } else if (isKaffahClinic && sfActive && packageFollowup && !sfLocked && !isOutsidePackage && !domsSelected) {
+                    setOutsideOpen(true);
+                  }
                 }}
                 rankOptions={rankDiagnosisOptions}
                 multiple={true}
@@ -890,6 +901,21 @@ if (isCreate) {
                   : 'Otomatis tertaut ke Daily Recap admin & owner.'}
               </p>
             </div>
+
+            {askOutside && (
+              <div className={`${isPWA ? 'px-4 py-3' : 'px-6 py-4'} border-b bg-amber-50 flex items-start justify-between gap-3`}>
+                <p className="text-sm text-amber-900">
+                  {outsideChoiceState === 'outside'
+                    ? <><strong>Recovery di luar paket.</strong> Kuota paket tidak terpotong; dipisahkan dari paket saat SOAP disimpan.</>
+                    : outsideChoiceState === 'package'
+                      ? <><strong>Tetap memotong kuota paket.</strong></>
+                      : <><strong>Diagnosa DOMS dipilih.</strong> Tentukan apakah sesi ini diambil di luar paket.</>}
+                </p>
+                <Button type="button" size="sm" variant="outline" onClick={() => setOutsideOpen(true)}>
+                  {outsideChoiceState === undefined ? 'Pilih' : 'Ubah'}
+                </Button>
+              </div>
+            )}
 
             {isOutsidePackage && (
               <div className={`${isPWA ? 'px-4 py-3' : 'px-6 py-4'} border-b bg-amber-50 flex items-start justify-between gap-3`}>
@@ -1176,10 +1202,10 @@ if (isCreate) {
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
-            <Button type="button" onClick={() => { setOutsideOpen(false); handleSubmit(null, 'outside'); }}>
+            <Button type="button" onClick={() => { setOutsideChoiceState('outside'); setOutsideOpen(false); }}>
               Ya, di luar paket (kuota tidak terpotong)
             </Button>
-            <Button type="button" variant="outline" onClick={() => { setOutsideOpen(false); handleSubmit(null, 'package'); }}>
+            <Button type="button" variant="outline" onClick={() => { setOutsideChoiceState('package'); setOutsideOpen(false); }}>
               Tidak, tetap potong kuota paket
             </Button>
             <Button type="button" variant="ghost" onClick={() => setOutsideOpen(false)}>Batal</Button>
