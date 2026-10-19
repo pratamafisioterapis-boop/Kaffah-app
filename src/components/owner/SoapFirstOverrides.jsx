@@ -42,6 +42,11 @@ const describePayload = (o) => {
     const v = Number(o.payload?.discount_value || 0);
     return `Diskon ${o.payload?.discount_label || 'manual'}: ${o.payload?.discount_type === 'percentage' ? `${v}%` : formatCurrency(v)}`;
   }
+  if (o.kind === 'discount_adjust') {
+    const fmt = (t, v) => (t === 'percentage' ? `${Number(v || 0)}%` : formatCurrency(Number(v || 0)));
+    const oldLine = o.payload?.old_discount_label ? `${o.payload.old_discount_label} ${fmt(o.payload.old_discount_type, o.payload.old_discount_value)}` : 'tanpa diskon';
+    return `Diskon ${o.payload?.discount_label || '-'}: ${fmt(o.payload?.discount_type, o.payload?.discount_value)} (sebelumnya ${oldLine}; nominal saat ini ${formatCurrency(o.payload?.old_amount || 0)})`;
+  }
   if (o.kind === 'vitals_edit') {
     const oldLine = formatVitalsLine(o.payload?.old) || '-';
     const newLine = formatVitalsLine(o.payload?.vitals) || '-';
