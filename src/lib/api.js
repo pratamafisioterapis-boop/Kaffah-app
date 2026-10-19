@@ -1945,6 +1945,8 @@ export const getDailyRecaps = async ({
   patient_type_ids,
   package_type,
   package_tracking_id,
+  bypass_package_id,
+  bypass_reason,
   therapist_id,
   amount,
   amount_original,

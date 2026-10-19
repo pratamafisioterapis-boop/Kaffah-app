@@ -47,6 +47,9 @@ const describePayload = (o) => {
     const newLine = formatVitalsLine(o.payload?.vitals) || '-';
     return `TTV lama: ${oldLine} → TTV baru: ${newLine}`;
   }
+  if (o.kind === 'recovery_outside_package') {
+    return o.payload?.outside === false ? 'Kembalikan sesi ke kuota paket' : 'Ambil sebagai Recovery di luar paket (tidak memotong kuota)';
+  }
   return null;
 };
 
