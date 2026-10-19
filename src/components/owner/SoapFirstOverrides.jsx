@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/use-toast';
 import UnpaidSessionsCard from '@/components/shared/UnpaidSessionsCard';
 import { supabase } from '@/lib/customSupabaseClient';
 import { formatCurrency } from '@/lib/utils';
+import { formatVitalsLine } from '@/lib/recapVitals';
 import {
   OVERRIDE_KIND_LABELS,
   OVERRIDE_STATUS_LABELS,
@@ -40,6 +41,11 @@ const describePayload = (o) => {
   if (o.kind === 'manual_discount') {
     const v = Number(o.payload?.discount_value || 0);
     return `Diskon ${o.payload?.discount_label || 'manual'}: ${o.payload?.discount_type === 'percentage' ? `${v}%` : formatCurrency(v)}`;
+  }
+  if (o.kind === 'vitals_edit') {
+    const oldLine = formatVitalsLine(o.payload?.old) || '-';
+    const newLine = formatVitalsLine(o.payload?.vitals) || '-';
+    return `TTV lama: ${oldLine} → TTV baru: ${newLine}`;
   }
   return null;
 };

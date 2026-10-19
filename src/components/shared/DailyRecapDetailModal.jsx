@@ -7,7 +7,9 @@ import { formatDateIndonesian, formatTime } from '@/lib/dateFormatHelpers';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
-import { fetchRecapVitals, formatVitalsLine } from '@/lib/recapVitals';
+import { fetchRecapVitals, fetchPendingVitalsEdit, formatVitalsLine } from '@/lib/recapVitals';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import RecapVitalsDialog from './RecapVitalsDialog';
 import { 
     getAllRecapOptions
 } from '@/lib/api';
@@ -44,15 +46,24 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
     // Cache for options (diagnosa, service_type, etc.)
     const [optionsMap, setOptionsMap] = useState({});
     const [isLoadingOptions, setIsLoadingOptions] = useState(false);
+    const { userDetails } = useAuth();
+    const canInputVitals = ['owner', 'super_admin', 'admin', 'clinic_admin'].includes(userDetails?.role);
     const [vitalsRow, setVitalsRow] = useState(null);
+    const [pendingVitalsEdit, setPendingVitalsEdit] = useState(null);
+    const [vitalsDialogOpen, setVitalsDialogOpen] = useState(false);
+
+    const loadVitals = React.useCallback(async () => {
+        if (!recap?.id) return;
+        const [row, pending] = await Promise.all([fetchRecapVitals(recap.id), fetchPendingVitalsEdit(recap.id)]);
+        setVitalsRow(row);
+        setPendingVitalsEdit(pending);
+    }, [recap?.id]);
 
     useEffect(() => {
         setVitalsRow(null);
-        if (!isOpen || !recap?.id) return undefined;
-        let cancelled = false;
-        fetchRecapVitals(recap.id).then((row) => { if (!cancelled) setVitalsRow(row); });
-        return () => { cancelled = true; };
-    }, [isOpen, recap?.id]);
+        setPendingVitalsEdit(null);
+        if (isOpen) loadVitals();
+    }, [isOpen, loadVitals]);
 
     useEffect(() => {
         if (isOpen) {
@@ -257,19 +268,36 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                         </div>
                     </div>
 
-                    {/* Tanda Vital (input admin, tertaut ke SOAP) */}
+                    {/* Tanda Vital (input admin, terkunci setelah diisi, tertaut ke SOAP) */}
                     <div className="space-y-2 md:col-span-2 p-5 rounded-app-lg border border-cyan-200/60 bg-cyan-50/40 shadow-sm">
-                        <div className="flex items-center gap-2 mb-2 pb-2 border-b border-cyan-200/60">
-                            <Activity className="w-4 h-4 text-cyan-700" />
-                            <h4 className="text-sm font-bold text-slate-800">Tanda-Tanda Vital</h4>
+                        <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-cyan-200/60">
+                            <div className="flex items-center gap-2">
+                                <Activity className="w-4 h-4 text-cyan-700" />
+                                <h4 className="text-sm font-bold text-slate-800">Tanda-Tanda Vital</h4>
+                            </div>
+                            {canInputVitals && !recap.is_virtual && (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 border-cyan-300 text-cyan-800 hover:bg-cyan-50"
+                                    disabled={!!pendingVitalsEdit}
+                                    onClick={() => setVitalsDialogOpen(true)}
+                                >
+                                    {vitalsRow ? 'Ajukan Perubahan' : 'Input TTV'}
+                                </Button>
+                            )}
                         </div>
-                        {formatVitalsLine(vitalsRow) ? (
+                        {vitalsRow ? (
                             <>
                                 <p className="text-[15px] font-semibold text-slate-900 break-words">{formatVitalsLine(vitalsRow)}</p>
-                                {vitalsRow?.notes && <p className="text-xs text-slate-500">{vitalsRow.notes}</p>}
+                                {vitalsRow.notes && <p className="text-xs text-slate-500">{vitalsRow.notes}</p>}
+                                <p className="text-xs text-slate-500">Terkunci. Perubahan perlu persetujuan owner beserta alasan.</p>
                             </>
                         ) : (
-                            <p className="text-sm text-slate-500">Belum diisi. Klik "Edit Data" untuk menambahkan tekanan darah, nadi, SpO2, dan lainnya.</p>
+                            <p className="text-sm text-slate-500">Belum diisi.</p>
+                        )}
+                        {pendingVitalsEdit && (
+                            <p className="text-xs font-medium text-amber-700">Pengajuan perubahan menunggu persetujuan owner{pendingVitalsEdit.requested_by_name ? ` (diajukan ${pendingVitalsEdit.requested_by_name})` : ''}.</p>
                         )}
                     </div>
 
@@ -340,6 +368,13 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                     </div>
                 </div>
             </DialogContent>
+            <RecapVitalsDialog
+                open={vitalsDialogOpen}
+                onOpenChange={setVitalsDialogOpen}
+                recap={recap}
+                existing={vitalsRow}
+                onDone={loadVitals}
+            />
         </Dialog>
     );
 };

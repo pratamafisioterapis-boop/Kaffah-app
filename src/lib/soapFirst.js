@@ -11,6 +11,7 @@ export const OVERRIDE_KIND_LABELS = {
   package_extend: 'Perpanjang masa aktif paket',
   amount_adjust: 'Ubah nominal',
   manual_discount: 'Diskon manual (perlu persetujuan)',
+  vitals_edit: 'Ubah tanda vital (TTV)',
 };
 
 export const OVERRIDE_STATUS_LABELS = {
