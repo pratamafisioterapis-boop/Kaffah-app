@@ -35,10 +35,10 @@ const StatusPill = ({ status }) => {
   return <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${cls}`}>{OVERRIDE_STATUS_LABELS[status] || status}</span>;
 };
 
-// Nominal akhir setelah diskon (rumus sama dengan penerapan di server: persen dibulatkan Rp1.000).
+// Nominal akhir setelah diskon (rumus sama dengan trigger apply_discount_to_amount di server).
 const discountedAmount = (base, type, value) => {
   const v = Number(value || 0);
-  if (type === 'percentage') return Math.max(Math.round((base - base * Math.min(v, 100) / 100) / 1000) * 1000, 0);
+  if (type === 'percentage') return Math.max(Math.round(base - base * Math.min(v, 100) / 100), 0);
   return Math.max(Math.round(base - Math.min(v, base)), 0);
 };
 
