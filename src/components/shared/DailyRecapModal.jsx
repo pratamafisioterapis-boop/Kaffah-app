@@ -215,6 +215,7 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
     // Other states
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState('');
     const [showDatePicker, setShowDatePicker] = useState(false);
     // Terkunci kalau recap ini SUDAH tertaut ke paket dengan nominal Rp 0 (sesi
     // pakai kuota paket, bukan transaksi pembelian) - dicek langsung ke DB
@@ -1237,6 +1238,7 @@ setFormData({
         }
 
         setIsSubmitting(true);
+        setSubmitError('');
         try {
             const isoDate = parseDateFromDisplay(formData.recap_date);
             const selectedTherapist = therapists.find(t => t.value === formData.therapist_id);
@@ -1352,6 +1354,7 @@ setFormData({
             if (onSuccess) onSuccess();
             onClose();
         } catch (error) {
+            setSubmitError(error.message || "Gagal menyimpan data.");
             toast({ variant: "destructive", title: "Error", description: error.message || "Gagal menyimpan data." });
         } finally {
             setIsSubmitting(false);
@@ -1946,6 +1949,11 @@ setFormData({
                     </div>
                     )}
 
+                    {submitError && (
+                        <div role="alert" className="mx-6 mb-3 rounded-app-sm border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                            Gagal menyimpan: {submitError}
+                        </div>
+                    )}
                     <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50">
                         <Button variant="outline" onClick={onClose} disabled={isSubmitting}>Batal</Button>
                         <Button onClick={handleSubmit} disabled={isSubmitting || sfBlocked || (sfActive && mode === 'add')} className="bg-app-accent hover:bg-app-accent-hover text-white">
