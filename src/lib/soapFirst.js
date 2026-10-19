@@ -131,3 +131,32 @@ export const markIncentiveFlags = async (recaps, { strict = true } = {}) => {
     return f?.zeroed ? { ...r, _incentiveZeroed: true, _incentiveReason: f.reason } : r;
   });
 };
+
+/**
+ * Hitung sesi yang melanggar aturan SOAP (insentif nol: terlambat / tidak diisi / ditandai owner)
+ * pada rentang tanggal recap. Hasil: { total, byTherapist: [{ id, name, count, terlambat, tidakDiisi, ditandai }] }.
+ * Klinik tanpa fitur SOAP-first menghasilkan nol karena server tidak menandai apa pun.
+ */
+export const fetchSoapViolations = async ({ startDate, endDate, therapistId = null }) => {
+  let q = supabase
+    .from('daily_recaps')
+    .select('id, therapist_id, therapist_name')
+    .gte('recap_date', startDate)
+    .lte('recap_date', endDate)
+    .limit(5000);
+  if (therapistId) q = q.eq('therapist_id', therapistId);
+  const { data, error } = await q;
+  if (error) throw error;
+  const flagged = (await markIncentiveFlags(data || [], { strict: true })).filter((r) => r._incentiveZeroed);
+  const map = new Map();
+  flagged.forEach((r) => {
+    const key = r.therapist_id || r.therapist_name || '-';
+    const row = map.get(key) || { id: key, name: r.therapist_name || 'Tanpa nama', count: 0, terlambat: 0, tidakDiisi: 0, ditandai: 0 };
+    row.count += 1;
+    if (r._incentiveReason === 'soap_terlambat') row.terlambat += 1;
+    else if (r._incentiveReason === 'soap_tidak_diisi') row.tidakDiisi += 1;
+    else row.ditandai += 1;
+    map.set(key, row);
+  });
+  return { total: flagged.length, byTherapist: [...map.values()].sort((a, b) => b.count - a.count) };
+};

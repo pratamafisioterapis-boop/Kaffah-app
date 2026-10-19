@@ -7,6 +7,7 @@ import TherapistTargetRing from './TherapistTargetRing';
 import TherapistWeeklyBars from './TherapistWeeklyBars';
 import { usePortalEnabled } from '@/hooks/usePortalEnabled';
 import SoapPendingBanner from '@/components/shared/SoapPendingBanner';
+import SoapViolationCard from './SoapViolationCard';
 import AvailableSlotsWidget from './AvailableSlotsWidget';
 import TherapistMetrics from './TherapistMetrics';
 import TherapistPerformanceWidget from './TherapistPerformanceWidget';
@@ -106,6 +107,7 @@ const TherapistDashboardWidget = ({ initialProfile = null, today = null }) => {
     <div className="space-y-4 animate-in fade-in duration-200 ease-out">
       <TherapistHero therapistName={therapistProfile.name} today={today} />
       <SoapPendingBanner therapistId={therapistProfile.id} role="therapist" />
+      <SoapViolationCard therapistId={therapistProfile.id} />
       <div className="grid grid-cols-1 items-stretch gap-3 lg:grid-cols-12 lg:gap-4">
         <div className={`${cell} lg:col-span-5 lg:row-span-2`}>
           <TherapistTodayPatientHistory therapist={therapistProfile} />

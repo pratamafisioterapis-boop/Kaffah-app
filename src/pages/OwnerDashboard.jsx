@@ -43,6 +43,7 @@ import BulletChartTargetVsRealization from '@/components/owner/operational/Bulle
 import ServiceDistributionChart from '@/components/owner/operational/ServiceDistributionChart';
 import PatientSourceChart from '@/components/owner/operational/PatientSourceChart';
 import PromoUsageWidget from '@/components/owner/operational/PromoUsageWidget';
+import SoapViolationWidget from '@/components/owner/operational/SoapViolationWidget';
 import { OWNER_NAV_ITEMS } from '@/lib/navItems';
 const AttendanceManagement = React.lazy(lazyRetry(() => import('@/pages/admin/AttendanceManagement'), 'AttendanceManagement'));
 const OwnerDecreesPage = React.lazy(lazyRetry(() => import('@/pages/owner/OwnerDecreesPage'), 'OwnerDecreesPage'));
@@ -482,6 +483,7 @@ setTherapists(enrichedTherapists);
               <ServiceDistributionChart dateRange={dateRange} className="col-span-2 md:col-span-2 lg:col-span-2" />
               <PatientSourceChart dateRange={dateRange} className="col-span-2 md:col-span-2 lg:col-span-2" />
               <PromoUsageWidget dateRange={dateRange} className="col-span-2 md:col-span-4 lg:col-span-2" />
+              <SoapViolationWidget dateRange={dateRange} className="col-span-2 md:col-span-4 lg:col-span-6" />
             </div>
           </TabsContent>
 
