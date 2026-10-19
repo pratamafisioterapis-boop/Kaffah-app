@@ -981,6 +981,7 @@ if (isCreate) {
                       diagnosisLabels={diagnosisLabels}
                       value={formData.plan_data}
                       goalsEnabled={portalEnabled}
+                      showVideo={isKaffahClinic}
                       previousGoals={latestGoals}
                       goalSuggestions={goalSuggestions}
                       onChange={(plan_data, plan, names) => {
