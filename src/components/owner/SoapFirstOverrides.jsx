@@ -35,6 +35,13 @@ const StatusPill = ({ status }) => {
   return <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${cls}`}>{OVERRIDE_STATUS_LABELS[status] || status}</span>;
 };
 
+// Nominal akhir setelah diskon (rumus sama dengan penerapan di server: persen dibulatkan Rp1.000).
+const discountedAmount = (base, type, value) => {
+  const v = Number(value || 0);
+  if (type === 'percentage') return Math.max(Math.round((base - base * Math.min(v, 100) / 100) / 1000) * 1000, 0);
+  return Math.max(Math.round(base - Math.min(v, base)), 0);
+};
+
 const describePayload = (o) => {
   if (o.kind === 'package_extend') return `Berakhir baru: ${o.payload?.new_end_date || '-'}`;
   if (o.kind === 'amount_adjust') return `Nominal baru: ${formatCurrency(o.payload?.amount || 0)}`;
@@ -79,7 +86,7 @@ const OverrideQueue = () => {
     setRows(list);
     const ids = [...new Set(list.map((o) => o.recap_id).filter(Boolean))];
     if (ids.length) {
-      const { data: rec } = await supabase.from('daily_recaps').select('id, recap_date, full_name, guest_name, therapist_name, patient_type, amount').in('id', ids);
+      const { data: rec } = await supabase.from('daily_recaps').select('id, recap_date, full_name, guest_name, therapist_name, patient_type, amount, amount_original').in('id', ids);
       setRecaps(Object.fromEntries((rec || []).map((r) => [r.id, r])));
     } else {
       setRecaps({});
@@ -123,6 +130,11 @@ const OverrideQueue = () => {
           </div>
         )}
         {describePayload(o) && <div className="text-xs font-medium text-slate-700">{describePayload(o)}</div>}
+        {o.kind === 'discount_adjust' && r?.amount_original != null && (
+          <div className="text-xs font-semibold text-slate-900">
+            {o.status === 'approved' ? 'Nominal akhir' : 'Nominal setelah disetujui'}: {formatCurrency(discountedAmount(Number(r.amount_original), o.payload?.discount_type, o.payload?.discount_value))}
+          </div>
+        )}
         <div className="text-sm text-slate-800">“{o.reason}”</div>
         <div className="text-xs text-slate-500">Diajukan oleh {o.requested_by_name || '-'}{o.decided_at ? ` · Diputuskan oleh ${o.decided_by_name || '-'} (${fmtDateTime(o.decided_at)})` : ''}{o.decision_note ? ` · Catatan: ${o.decision_note}` : ''}</div>
         {withActions && (
