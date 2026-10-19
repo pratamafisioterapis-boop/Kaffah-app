@@ -1525,7 +1525,7 @@ setFormData({
         <div className="space-y-1">
             <Label>Tipe Pasien (otomatis dari SOAP)</Label>
             <div className="rounded-app-sm border bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800">
-                {quote?.type_label || (['registered', 'guest'].includes(String(formData.patient_type || '').toLowerCase()) ? '' : formData.patient_type) || 'Menunggu SOAP'}
+                {quote?.type_label || (['registered', 'guest'].includes(String(formData.patient_type || '').toLowerCase()) ? '' : formData.patient_type) || (quote?.homecare ? 'Homecare (pilih waktu homecare)' : 'Menunggu SOAP')}
             </div>
         </div>
     ) : fPatientTypeEditable;
@@ -1769,14 +1769,16 @@ setFormData({
     const sfTherapistName = therapists.find(t => t.value === formData.therapist_id)?.label || 'terapis';
     const sfNeedHomecareTime = !!quote?.error && quote.error.includes('Pilih homecare');
 
+    const [homecareTimeLocal, setHomecareTimeLocal] = useState('');
     const setHomecareTime = async (value) => {
         const apptId = recapMeta?.appointment_id;
         if (!apptId || !initialData?.id) return;
-        const { error } = await supabase.from('appointments').update({ homecare_time_type: value }).eq('id', apptId);
-        if (error) {
-            toast({ variant: "destructive", title: "Gagal menyimpan", description: error.message });
+        const { data: saved, error } = await supabase.from('appointments').update({ homecare_time_type: value }).eq('id', apptId).select('id');
+        if (error || !saved?.length) {
+            toast({ variant: "destructive", title: "Gagal menyimpan", description: error?.message || 'Waktu homecare tidak tersimpan. Coba lagi.' });
             return;
         }
+        setHomecareTimeLocal(value);
         await supabase.from('daily_recaps').update({ updated_at: new Date().toISOString() }).eq('id', initialData.id);
         refreshQuote();
     };
@@ -1804,7 +1806,7 @@ setFormData({
                 </div>
                 <div>
                     <div className="text-xs text-slate-500">Tipe pasien</div>
-                    <div className="font-medium text-slate-800">{quote?.type_label || (['registered', 'guest'].includes(String(formData.patient_type || '').toLowerCase()) ? '' : formData.patient_type) || 'Menunggu SOAP'}</div>
+                    <div className="font-medium text-slate-800">{quote?.type_label || (['registered', 'guest'].includes(String(formData.patient_type || '').toLowerCase()) ? '' : formData.patient_type) || (quote?.homecare ? 'Homecare (pilih waktu homecare)' : 'Menunggu SOAP')}</div>
                 </div>
                 <div>
                     <div className="text-xs text-slate-500">Tagihan</div>
@@ -1827,7 +1829,7 @@ setFormData({
             {sfNeedHomecareTime && (
                 <div className="space-y-1 max-w-xs">
                     <Label className="text-xs">Waktu homecare</Label>
-                    <Select onValueChange={setHomecareTime}>
+                    <Select value={homecareTimeLocal} onValueChange={setHomecareTime}>
                         <SelectTrigger className="h-9 text-xs bg-white"><SelectValue placeholder="Dalam atau luar jam kerja" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="dalam">Dalam jam kerja</SelectItem>
