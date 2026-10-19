@@ -1,11 +1,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Info, Loader2, Plus, Search, X } from 'lucide-react';
+import { ChevronDown, Film, Info, Loader2, Plus, Search, VideoOff, X } from 'lucide-react';
+import { supabase } from '@/lib/customSupabaseClient';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { getPlanForDiagnoses, getPlanOptions, getPlanExercisesByIds, searchPlanExercises } from '@/lib/api';
 import { PHASE_TITLES, REQUIRED_MANUAL_OPTIONS, mergePlanPhases, buildPlanText } from '@/data/planModalities';
 import GoalTreatment from '@/components/therapist/GoalTreatment';
+
+const VIDEO_BUCKET = 'exercise-videos';
+
+// Penanda ada/tidaknya video latihan (hanya ditampilkan jika fitur video aktif untuk klinik).
+const VideoTag = ({ has }) => (has
+  ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700"><Film className="h-3 w-3" /> Ada video</span>
+  : <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500"><VideoOff className="h-3 w-3" /> Belum ada video</span>);
 
 const EMPTY = { epa: [], manual: [], dose: {}, exercises: {}, exDose: {}, notes: '' };
 
@@ -35,10 +44,13 @@ const PlanCard = ({ title, count, open, onToggleOpen, addLabel = 'Tambah', child
 
 const EmptyHint = ({ children }) => <p className="rounded-app border border-dashed border-slate-200 px-3 py-3 text-center text-xs text-slate-500">{children}</p>;
 
-const DoseRow = ({ name, dose, placeholder, onDose, onRemove, onInfo, infoOpen, detail }) => (
+const DoseRow = ({ name, dose, placeholder, onDose, onRemove, onInfo, infoOpen, detail, videoTag, onPreview }) => (
   <div className="rounded-app border border-slate-100 bg-slate-50/60 px-3 py-2">
     <div className="flex flex-wrap items-center gap-2">
-      <p className="min-w-0 flex-1 basis-40 text-sm font-medium text-slate-800">{name}</p>
+      <div className="min-w-0 flex-1 basis-40">
+        <p className="text-sm font-medium text-slate-800">{name}</p>
+        {videoTag}
+      </div>
       <Input
         value={dose || ''}
         onChange={(e) => onDose(e.target.value)}
@@ -46,6 +58,11 @@ const DoseRow = ({ name, dose, placeholder, onDose, onRemove, onInfo, infoOpen, 
         aria-label={`Dosis ${name}`}
         className="h-8 w-full rounded-app-sm border-slate-200 bg-white text-xs sm:w-56"
       />
+      {onPreview && (
+        <button type="button" onClick={onPreview} className="tap-target inline-flex items-center gap-1 rounded-app-sm border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100">
+          <Film className="h-3.5 w-3.5" /> Preview
+        </button>
+      )}
       {onInfo && (
         <button type="button" onClick={onInfo} aria-label="Detail latihan" className="tap-target rounded-app-sm p-1 text-slate-500 hover:bg-white">
           <Info className="h-4 w-4" />
@@ -94,7 +111,7 @@ const ExerciseDetail = ({ ex }) => (
  * value: { epa, manual, dose, exercises: {id: true}, exDose: {id: teks}, notes } | null
  * onChange(data, text, exerciseNames): text = ringkasan untuk kolom `plan`; exerciseNames = latihan terpilih.
  */
-const PlanChecklist = ({ diagnosisLabels, value, onChange, goalsEnabled = false, previousGoals = null, goalSuggestions = [] }) => {
+const PlanChecklist = ({ diagnosisLabels, value, onChange, goalsEnabled = false, previousGoals = null, goalSuggestions = [], showVideo = false }) => {
   // Daftar latihan diambil dari database untuk diagnosa terpilih (disimpan kumulatif).
   const [catalog, setCatalog] = useState({ byDiagnosis: {}, exercises: {}, fetched: [] });
   const [loading, setLoading] = useState(false);
@@ -105,7 +122,26 @@ const PlanChecklist = ({ diagnosisLabels, value, onChange, goalsEnabled = false,
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState({});
+  const [videoIds, setVideoIds] = useState(new Set());
+  const [preview, setPreview] = useState(null); // { id, name, url }
   const data = { ...EMPTY, ...(value || {}) };
+
+  useEffect(() => {
+    if (!showVideo) return undefined;
+    let alive = true;
+    supabase.from('exercise_video_assets').select('exercise_id').then(({ data: rows }) => {
+      if (alive) setVideoIds(new Set((rows || []).map((r) => r.exercise_id)));
+    });
+    return () => { alive = false; };
+  }, [showVideo]);
+
+  const openPreview = async (id, name) => {
+    setPreview({ id, name, url: null });
+    const { data: asset } = await supabase.from('exercise_video_assets').select('storage_path').eq('exercise_id', id).maybeSingle();
+    const { data: signed } = asset ? await supabase.storage.from(VIDEO_BUCKET).createSignedUrl(asset.storage_path, 1800) : { data: null };
+    setPreview((cur) => (cur?.id === id ? { ...cur, url: signed?.signedUrl || '' } : cur));
+  };
+  const videoTag = (id) => (showVideo ? <VideoTag has={videoIds.has(id)} /> : null);
 
   useEffect(() => {
     let alive = true;
@@ -242,6 +278,7 @@ const PlanChecklist = ({ diagnosisLabels, value, onChange, goalsEnabled = false,
                     <span className="min-w-0">
                       <span className="block text-sm font-medium text-slate-800">{results[id].n}</span>
                       <span className="block text-xs text-slate-500">{[results[id].g, results[id].d].filter(Boolean).join(' · ')}</span>
+                      {videoTag(id)}
                     </span>
                     <Plus className="h-4 w-4 shrink-0 text-rose-500" />
                   </button>
@@ -273,6 +310,7 @@ const PlanChecklist = ({ diagnosisLabels, value, onChange, goalsEnabled = false,
                                 <span className="min-w-0">
                                   <span className="block text-sm font-medium text-slate-800">{catalog.exercises[id].n}</span>
                                   <span className="block text-xs text-slate-500">{catalog.exercises[id].d}</span>
+                                  {videoTag(id)}
                                 </span>
                                 <Plus className="h-4 w-4 shrink-0 text-rose-500" />
                               </button>
@@ -303,6 +341,8 @@ const PlanChecklist = ({ diagnosisLabels, value, onChange, goalsEnabled = false,
               onInfo={() => setOpenInfo(openInfo === id ? null : id)}
               infoOpen={openInfo === id}
               detail={<ExerciseDetail ex={ex} />}
+              videoTag={videoTag(id)}
+              onPreview={showVideo && videoIds.has(id) ? () => openPreview(id, ex.n) : undefined}
             />
           );
         })}
@@ -312,6 +352,17 @@ const PlanChecklist = ({ diagnosisLabels, value, onChange, goalsEnabled = false,
           </p>
         ))}
       </PlanCard>
+
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>{preview?.name}</DialogTitle></DialogHeader>
+          {preview?.url
+            ? <video src={preview.url} controls autoPlay playsInline className="w-full rounded-lg bg-black" />
+            : <div className="flex h-40 items-center justify-center gap-2 rounded-lg bg-slate-100 text-sm text-slate-500">
+                {preview?.url === '' ? 'Video tidak dapat dimuat.' : <><Loader2 className="h-4 w-4 animate-spin" /> Memuat video…</>}
+              </div>}
+        </DialogContent>
+      </Dialog>
 
       {goalsEnabled && (
         <GoalTreatment goals={data.goals} previousGoals={previousGoals} suggestions={goalSuggestions} onChange={(goals) => emit({ ...data, goals })} />
