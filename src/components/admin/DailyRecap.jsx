@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input';
 import { useAppointmentState } from '@/contexts/AppointmentStateContext'; 
 import { supabase } from '@/lib/customSupabaseClient';
 import InvoiceModal from '@/components/admin/InvoiceModal';
+import AlkesSalesDialog from '@/components/admin/AlkesSalesDialog';
 import { sortRecapsByStatus } from '@/lib/dailyRecapHelpers';
 import DatePicker from '@/components/DatePicker';
 import DailyRecapModal from '@/components/shared/DailyRecapModal';
@@ -106,11 +107,22 @@ const renderPatientName = (recap) => {
 const DailyRecap = ({ hideControls = false, showPaymentFilter = false }) => {
   const location = useLocation();
   const { toast } = useToast();
-  const { clinicName } = useAuth();
+  const { clinicName, userDetails } = useAuth();
+  const [alkesOpen, setAlkesOpen] = useState(false);
+  const [alkesEnabled, setAlkesEnabled] = useState(false);
   const isMounted = useRef(true);
   const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const { lastSyncTime } = useAppointmentState(); 
   
+  // Penjualan alkes hanya untuk klinik dengan template invoice kwitansi (Praxis).
+  useEffect(() => {
+    if (!userDetails?.clinic_id) { setAlkesEnabled(false); return; }
+    let cancelled = false;
+    supabase.from('clinics').select('invoice_template').eq('id', userDetails.clinic_id).maybeSingle()
+      .then(({ data }) => { if (!cancelled) setAlkesEnabled(data?.invoice_template === 'kwitansi'); });
+    return () => { cancelled = true; };
+  }, [userDetails?.clinic_id]);
+
   const [recaps, setRecaps] = useState([]);
   const [activeFilter, setActiveFilter] = useState(null);
   const [todayOffset, setTodayOffset] = useState(0);
@@ -568,6 +580,14 @@ const getPremiumPastelBadge = (text) => {
         <PageHero image="/hero/clinara-recap-hero.webp" title="Rekap" highlight="Harian" description="Kelola data kunjungan dan pendapatan harian klinik." />
         <div className="flex flex-col gap-2 bg-white p-2.5 sm:p-3 rounded-[20px] border border-slate-100 shadow-sm">
           {!isPWA && <div className="hidden"><h1 className="text-2xl font-bold text-slate-900">Rekap Harian</h1><p className="text-slate-500 text-sm mt-1">Kelola data kunjungan dan pendapatan</p></div>}
+
+          {alkesEnabled && (
+            <div className="flex justify-end">
+              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setAlkesOpen(true)}>
+                <Plus className="w-3.5 h-3.5 mr-1" />Penjualan Alkes
+              </Button>
+            </div>
+          )}
 
           {/* Filter Tombol Periode */}
           <div className="grid grid-cols-4 gap-1.5">
@@ -1205,6 +1225,7 @@ const getPremiumPastelBadge = (text) => {
   data={selectedInvoiceData}
   onSent={fetchRecaps}
 />
+      {alkesEnabled && <AlkesSalesDialog isOpen={alkesOpen} onClose={() => setAlkesOpen(false)} />}
     </div>
   );
 };
