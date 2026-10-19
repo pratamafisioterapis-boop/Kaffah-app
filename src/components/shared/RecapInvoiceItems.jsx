@@ -12,7 +12,7 @@ export const itemsNetTotal = (items) => (items || []).reduce((s, it) => s + item
 
 // Pemilih item invoice (klinik dengan template Kwitansi). Item dipilih dari
 // Katalog Harga klinik dan disimpan di daily_recaps.invoice_items.
-const RecapInvoiceItems = ({ clinicId, items, onChange }) => {
+const RecapInvoiceItems = ({ clinicId, items, onChange, allowManual = false, defaultCategory = 'procedure' }) => {
   const [catalog, setCatalog] = useState([]);
   const [pick, setPick] = useState('');
 
@@ -49,6 +49,12 @@ const RecapInvoiceItems = ({ clinicId, items, onChange }) => {
         <Button type="button" size="sm" variant="outline" onClick={addFromCatalog} disabled={!pick}>
           <Plus className="w-4 h-4 mr-1" />Tambah
         </Button>
+        {allowManual && (
+          <Button type="button" size="sm" variant="outline"
+            onClick={() => onChange([...items, { category: defaultCategory, name: '', qty: 1, price: 0, discount: 0 }])}>
+            <Plus className="w-4 h-4 mr-1" />Manual
+          </Button>
+        )}
       </div>
 
       {items.length === 0 && (
