@@ -132,15 +132,24 @@ export const markIncentiveFlags = async (recaps, { strict = true } = {}) => {
   });
 };
 
+const parseDiagnosisIds = (d) => {
+  let list = [];
+  if (typeof d === 'string') { try { list = JSON.parse(d); } catch { list = [d]; } } else if (Array.isArray(d)) list = d;
+  if (!Array.isArray(list)) list = [list];
+  return list.flat().filter(Boolean);
+};
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * Hitung sesi yang melanggar aturan SOAP (insentif nol: terlambat / tidak diisi / ditandai owner)
- * pada rentang tanggal recap. Hasil: { total, byTherapist: [{ id, name, count, terlambat, tidakDiisi, ditandai }] }.
+ * pada rentang tanggal recap. Hasil: { total, byTherapist: [{ id, name, count, terlambat, tidakDiisi, ditandai, sessions }] }.
+ * Tiap sesi: { id, date, time, patient, diagnoses, reason }.
  * Klinik tanpa fitur SOAP-first menghasilkan nol karena server tidak menandai apa pun.
  */
 export const fetchSoapViolations = async ({ startDate, endDate, therapistId = null }) => {
   let q = supabase
     .from('daily_recaps')
-    .select('id, therapist_id, therapist_name')
+    .select('id, therapist_id, therapist_name, recap_date, full_name, guest_name, diagnosis, appointment:appointments!appointment_id(appointment_date)')
     .gte('recap_date', startDate)
     .lte('recap_date', endDate)
     .limit(5000);
@@ -148,15 +157,32 @@ export const fetchSoapViolations = async ({ startDate, endDate, therapistId = nu
   const { data, error } = await q;
   if (error) throw error;
   const flagged = (await markIncentiveFlags(data || [], { strict: true })).filter((r) => r._incentiveZeroed);
+
+  const ids = [...new Set(flagged.flatMap((r) => parseDiagnosisIds(r.diagnosis)).filter((d) => UUID_RE.test(d)))];
+  const labels = {};
+  if (ids.length) {
+    const { data: opts } = await supabase.from('operational_options').select('id, label').in('id', ids);
+    (opts || []).forEach((o) => { labels[o.id] = o.label; });
+  }
+
   const map = new Map();
   flagged.forEach((r) => {
     const key = r.therapist_id || r.therapist_name || '-';
-    const row = map.get(key) || { id: key, name: r.therapist_name || 'Tanpa nama', count: 0, terlambat: 0, tidakDiisi: 0, ditandai: 0 };
+    const row = map.get(key) || { id: key, name: r.therapist_name || 'Tanpa nama', count: 0, terlambat: 0, tidakDiisi: 0, ditandai: 0, sessions: [] };
     row.count += 1;
     if (r._incentiveReason === 'soap_terlambat') row.terlambat += 1;
     else if (r._incentiveReason === 'soap_tidak_diisi') row.tidakDiisi += 1;
     else row.ditandai += 1;
+    row.sessions.push({
+      id: r.id,
+      date: r.recap_date,
+      startAt: r.appointment?.appointment_date || null,
+      patient: r.full_name || r.guest_name || 'Pasien',
+      diagnoses: parseDiagnosisIds(r.diagnosis).map((d) => labels[d] || (UUID_RE.test(d) ? null : d)).filter(Boolean),
+      reason: r._incentiveReason,
+    });
     map.set(key, row);
   });
+  map.forEach((row) => row.sessions.sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.startAt || '').localeCompare(String(a.startAt || ''))));
   return { total: flagged.length, byTherapist: [...map.values()].sort((a, b) => b.count - a.count) };
 };
