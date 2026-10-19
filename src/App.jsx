@@ -18,7 +18,12 @@ import KonversiDokterProtectedRoute from '@/components/KonversiDokterProtectedRo
 import PemilihRelawanProtectedRoute from '@/components/PemilihRelawanProtectedRoute';
 import PemilihDpcProtectedRoute from '@/components/PemilihDpcProtectedRoute';
 import { lazyRetry } from '@/lib/lazyRetry';
-import { isStaleChunkError, reloadForStaleChunk, hardRefresh } from '@/lib/staleChunk';
+import { isStaleChunkError, reloadForStaleChunk, hardRefresh, consumeSkipSplash } from '@/lib/staleChunk';
+
+// Read once at load: true when this page is an automatic reload (new deploy
+// found after sitting idle), which should drop the user back where they were
+// rather than replay the launch splash.
+const SKIPS_SPLASH_THIS_LOAD = consumeSkipSplash();
 import { PUBLIC_DOMAIN, APP_DOMAIN, isAppOnlyPath, staysOnAppDomain, isOnAppDomain, isOnPublicDomain, isTenantHost } from '@/lib/domainRouting';
 const ClinicTenantSitePage = React.lazy(lazyRetry(() => import('@/pages/clinic/ClinicTenantSitePage'), 'ClinicTenantSitePage'));
 const ClinicBookingPage = React.lazy(lazyRetry(() => import('@/pages/clinic/ClinicBookingPage'), 'ClinicBookingPage'));
@@ -215,7 +220,13 @@ const AppSplashGate = () => {
   const { user, loading: authLoading, isImpersonating } = useAuth();
   const [showSplash, setShowSplash] = useState(false);
   const prevUserIdRef = useRef(undefined);
+  const greetedUserIdRef = useRef(null);
   const wasImpersonatingRef = useRef(false);
+  useEffect(() => {
+    const reset = () => { greetedUserIdRef.current = null; };
+    window.addEventListener('kaffah:signed-out', reset);
+    return () => window.removeEventListener('kaffah:signed-out', reset);
+  }, []);
   // Until the auth check settles, a PWA launch with a stored session would
   // flash the login form before the splash appears. Cover the screen with the
   // splash backdrop meanwhile. `settled` flips once we know whether a splash
@@ -250,9 +261,14 @@ const AppSplashGate = () => {
     // Hopping between accounts (owner switcher / remote login) is not a
     // fresh launch, so skip the splash for it.
     const isAccountHop = isImpersonating || wasImpersonatingRef.current;
-    if (currentUserId && prevUserIdRef.current !== currentUserId && !isAccountHop) {
+    // After a long idle the session can drop out and come back (token refresh
+    // failing once, then recovering) while the app is still open. That is the
+    // same person returning, not a launch, so don't replay the splash when
+    // they open another menu. Only a deliberate logout resets this.
+    if (currentUserId && greetedUserIdRef.current !== currentUserId && !isAccountHop && !SKIPS_SPLASH_THIS_LOAD) {
       setShowSplash(true);
     }
+    if (currentUserId && !isAccountHop) greetedUserIdRef.current = currentUserId;
     prevUserIdRef.current = currentUserId;
     wasImpersonatingRef.current = isImpersonating;
     setSettled(true);
