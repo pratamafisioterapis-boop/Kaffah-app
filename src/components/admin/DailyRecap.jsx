@@ -994,7 +994,12 @@ const getPremiumPastelBadge = (text) => {
                       )}
                       <div className="mt-0.5 text-xs text-slate-500">{recap.display_therapist_name}</div>
                     </div>
-                    <span className="shrink-0 whitespace-nowrap text-[15px] font-bold text-app-accent">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</span>
+                    <div className="flex shrink-0 flex-col items-end gap-0.5">
+                      <span className="whitespace-nowrap text-[15px] font-bold text-app-accent">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</span>
+                      {parseFloat(recap.amount) > 0 && !recap.payment_method && recap.special_type !== 'free' && (
+                        <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">Metode belum diisi</span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Tag baris 1: tipe pasien, paket, di luar paket */}
@@ -1153,6 +1158,9 @@ const getPremiumPastelBadge = (text) => {
                        <div className="font-semibold text-slate-800">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</div>
                        {recap.payment_method && (
                          <div className="text-xs text-slate-500 font-medium mt-0.5 capitalize">{recap.payment_method}</div>
+                       )}
+                       {parseFloat(recap.amount) > 0 && !recap.payment_method && recap.special_type !== 'free' && (
+                         <div className="mt-0.5 inline-block rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">Metode belum diisi</div>
                        )}
                      </td>
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center">
