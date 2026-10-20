@@ -3,8 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar as CalendarIcon, Loader2, Save, Plus, Trash2, ChevronDown } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Calendar as CalendarIcon, Loader2, Save, Plus, Trash2 } from 'lucide-react';
 import SearchableSelect from '@/components/ui/searchable-select';
 import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
 import DatePicker from '@/components/DatePicker';
@@ -1803,7 +1802,6 @@ setFormData({
 
     const openOverride = (cfg) => setOverrideDialog({ recapId: initialData?.id, ...cfg });
 
-    const showDiscountRequest = sfInvoiceLocked || !!quote?.homecare;
     const fSoapPanel = sfEdit ? (
         <div className="mx-6 mt-6 space-y-3">
             {quote?.error && !sfInvoiceLocked && sfIsPayment && (
@@ -1848,36 +1846,6 @@ setFormData({
                     </div>
                 )}
             </div>
-
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button type="button" size="sm" variant="outline" className="h-9 text-xs">
-                        Pengajuan Perubahan <ChevronDown className="ml-1.5 h-3.5 w-3.5" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                    <DropdownMenuItem onSelect={() => openOverride({ kind: 'amount_adjust', withAmount: true, description: 'Ubah nominal tagihan di luar daftar harga. Berlaku setelah disetujui owner.' })}>
-                        Pengajuan perubahan nominal
-                    </DropdownMenuItem>
-                    {showDiscountRequest && (
-                        <DropdownMenuItem onSelect={() => openOverride(sfInvoiceLocked
-                            ? { kind: 'discount_adjust', withDiscount: true, description: 'Invoice sudah terbit sehingga diskon terkunci. Pilih diskon yang seharusnya berlaku; nominal dihitung ulang setelah disetujui owner.' }
-                            : { kind: 'homecare_discount', description: 'Izinkan diskon untuk sesi homecare ini. Berlaku setelah disetujui owner.' })}>
-                            Pengajuan perubahan diskon
-                        </DropdownMenuItem>
-                    )}
-                    {!sfSoapDone && quote?.needs_soap && !sfInvoiceLocked && (
-                        <DropdownMenuItem onSelect={() => openOverride({ kind: 'payment_unlock', description: 'Buka kunci pembayaran tanpa menunggu SOAP (mis. terapis berhalangan). Berlaku setelah disetujui owner.' })}>
-                            Pengajuan buka kunci pembayaran
-                        </DropdownMenuItem>
-                    )}
-                    {!quote?.homecare && !quote?.xtratime && !sfInvoiceLocked && (
-                        <DropdownMenuItem onSelect={() => openOverride({ kind: 'xtratime', description: 'Tandai sesi ini sebagai Xtratime (pasien di luar jam kerja, bukan homecare). Berlaku setelah disetujui owner.' })}>
-                            Pengajuan Xtratime
-                        </DropdownMenuItem>
-                    )}
-                </DropdownMenuContent>
-            </DropdownMenu>
         </div>
     ) : (sfActive && mode === 'add' ? (
         <div className="mx-6 mt-6 rounded-app border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
