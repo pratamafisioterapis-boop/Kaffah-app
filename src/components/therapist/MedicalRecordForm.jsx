@@ -69,6 +69,8 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
   // SOAP-first: SOAP wajib lengkap & diagnosa maks. 2 sebelum pasien membayar; setelah invoice terbit SOAP terkunci (revisi lewat alasan).
   const { settings: sfSettings } = useSoapFirstSettings();
   const [recapInfo, setRecapInfo] = useState(null);
+  // Sesi paket yang dibeli 1 keluhan hanya boleh 1 diagnosa (dihitung server).
+  const [pkgMaxDiag, setPkgMaxDiag] = useState(2);
   const [reviseOpen, setReviseOpen] = useState(false);
   const [reviseReason, setReviseReason] = useState('');
   const [revising, setRevising] = useState(false);
@@ -182,6 +184,12 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
         setRecapInfo(data || null);
       });
   }, [linkedRecapId, recapTick]);
+
+  useEffect(() => {
+    if (!linkedRecapId || !isValidUUID(linkedRecapId) || !recapInfo?.package_tracking_id) { setPkgMaxDiag(2); return; }
+    supabase.rpc('package_max_diagnoses', { p_recap_id: linkedRecapId })
+      .then(({ data }) => setPkgMaxDiag(Number(data) === 1 ? 1 : 2));
+  }, [linkedRecapId, recapInfo?.package_tracking_id]);
 
   // Tanda vital yang diinput admin di Daily Recap (tertaut lewat daily_recap_id).
   const [recapVitals, setRecapVitals] = useState(null);
@@ -516,6 +524,10 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
       }
       if (diagnosis.length > 2) {
         toast({ variant: "destructive", title: "Diagnosa maksimal 2", description: "Pilih paling banyak dua diagnosa." });
+        return;
+      }
+      if (diagnosis.length > pkgMaxDiag) {
+        toast({ variant: "destructive", title: "Paket ini hanya 1 keluhan", description: "Pasien membeli paket untuk 1 keluhan, jadi hanya boleh 1 diagnosa. Untuk 2 keluhan, pasien perlu membayar tambahan (hubungi admin/owner)." });
         return;
       }
       const missing = [
@@ -878,6 +890,10 @@ if (isCreate) {
                     toast({ variant: "destructive", title: "Diagnosa maksimal 2", description: "Pilih paling banyak dua diagnosa." });
                     return;
                   }
+                  if (sfActive && Array.isArray(v) && v.length > pkgMaxDiag) {
+                    toast({ variant: "destructive", title: "Paket ini hanya 1 keluhan", description: "Pasien membeli paket untuk 1 keluhan, jadi hanya boleh 1 diagnosa. Untuk 2 keluhan, pasien perlu membayar tambahan (hubungi admin/owner)." });
+                    return;
+                  }
                   setDiagnosis(v);
                   // Pilihan "di luar paket" hanya berlaku selama DOMS terpilih.
                   const hasDoms = Array.isArray(v) && v.some((d) => (
@@ -893,7 +909,9 @@ if (isCreate) {
               />
               <p className="text-xs text-slate-500 mt-1">
                 {sfActive
-                  ? 'Maksimal 2 diagnosa. Tipe pasien & tagihan ditentukan otomatis dari diagnosa ini.'
+                  ? (pkgMaxDiag === 1
+                    ? 'Paket pasien ini 1 keluhan: maksimal 1 diagnosa. Tipe pasien & tagihan ditentukan otomatis dari diagnosa ini.'
+                    : 'Maksimal 2 diagnosa. Tipe pasien & tagihan ditentukan otomatis dari diagnosa ini.')
                   : 'Otomatis tertaut ke Daily Recap admin & owner.'}
               </p>
             </div>
