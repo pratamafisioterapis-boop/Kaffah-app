@@ -1,7 +1,8 @@
 import { initializeApp } from "firebase/app";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCy-o0bk02MS4YHJEi_zWvC4wCZ9KQFmnI",
+  // Kunci web Firebase bersifat publik; batasi via HTTP referrer di Google Cloud Console.
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCy-o0bk02MS4YHJEi_zWvC4wCZ9KQFmnI",
   authDomain: "kaffah-physiotherapy.firebaseapp.com",
   projectId: "kaffah-physiotherapy",
   storageBucket: "kaffah-physiotherapy.firebasestorage.app",
