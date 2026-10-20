@@ -138,10 +138,8 @@ export const processPendingQueue = async () => {
     const allowedTypes = [
   'reschedule_appointment',
   'therapy_reminder',
-  'reminder_therapist_h10',
   'cancel_appointment',
-  'booking_appointment',
-  'booking_appointment_therapist'
+  'booking_appointment'
 ];
 
 const { data: queue } = await getFollowUpQueue('pending');
