@@ -34,7 +34,7 @@ import {
 } from '@/lib/api';
 import { createOperationalOption } from '@/lib/api';
 import { useSoapFirstSettings, useRecapQuote } from '@/hooks/useSoapFirst';
-import { isSoapFirstActiveOn } from '@/lib/soapFirst';
+import { isSoapFirstActiveOn, ttvRequiredFor } from '@/lib/soapFirst';
 import SoapOverrideDialog from './SoapOverrideDialog';
 
 import { 
@@ -271,7 +271,7 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
         if (!initialData?.id) { setRecapMeta(null); return; }
         const { data } = await supabase
             .from('daily_recaps')
-            .select('appointment_id, special_type, free_reason, xtratime, soap_completed_at, invoice_created_at, diagnosis')
+            .select('appointment_id, special_type, free_reason, xtratime, soap_completed_at, invoice_created_at, diagnosis, start_time, created_at, appointment:appointments!appointment_id(appointment_date)')
             .eq('id', initialData.id)
             .maybeSingle();
         setRecapMeta(data || null);
@@ -1815,7 +1815,7 @@ setFormData({
             )}
             {quote?.error && !sfInvoiceLocked && !sfIsPayment && !sfSoapDone && quote?.needs_soap && (
                 <div className="rounded-app-sm border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-                    Pembayaran baru bisa disimpan setelah SOAP selesai. Minta {sfTherapistName} mengisi SOAP lebih dulu{sfSettings?.ttv_required ? ', dan pastikan TTV (tanda vital) sudah diisi karena TTV bagian dari SOAP' : ''}.
+                    Pembayaran baru bisa disimpan setelah SOAP selesai. Minta {sfTherapistName} mengisi SOAP lebih dulu{ttvRequiredFor(sfSettings, recapMeta) ? ', dan pastikan TTV (tanda vital) sudah diisi karena TTV bagian dari SOAP' : ''}.
                 </div>
             )}
 

@@ -14,7 +14,7 @@ import RecapVitalsDialog from './RecapVitalsDialog';
 import RecapSoapPreviewDialog from './RecapSoapPreviewDialog';
 import SoapOverrideDialog from './SoapOverrideDialog';
 import { useSoapFirstSettings, useRecapQuote } from '@/hooks/useSoapFirst';
-import { isSoapFirstActiveOn } from '@/lib/soapFirst';
+import { isSoapFirstActiveOn, ttvRequiredFor } from '@/lib/soapFirst';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { 
     getAllRecapOptions,
@@ -333,7 +333,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                         ) : (
                             <p className="text-sm text-slate-500">Belum diisi.</p>
                         )}
-                        {!vitalsRow && sfActive && sfSettings?.ttv_required && (
+                        {!vitalsRow && sfActive && ttvRequiredFor(sfSettings, recap) && (
                             <p className="text-xs font-medium text-amber-700">TTV bagian dari SOAP: SOAP belum dianggap selesai dan pembayaran tetap terkunci sampai TTV diisi.</p>
                         )}
                         {pendingVitalsEdit && (

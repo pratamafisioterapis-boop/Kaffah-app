@@ -37,6 +37,16 @@ export const isSoapFirstActiveOn = (settings, isoDate) => (
   !!settings && !!settings.enabled && !!isoDate && String(isoDate).slice(0, 10) >= settings.start_date
 );
 
+// TTV bagian dari SOAP: berlaku bila klinik mengaktifkannya dan jam pasien >= ttv_required_from.
+// Pasien sebelum batas waktu tetap memakai sistem lama.
+export const ttvRequiredFor = (settings, recap) => {
+  if (!settings?.enabled || !settings.ttv_required) return false;
+  if (!settings.ttv_required_from) return true;
+  const ref = recap?.appointment?.appointment_date || recap?.start_time || recap?.created_at;
+  if (!ref) return true;
+  return new Date(ref) >= new Date(settings.ttv_required_from);
+};
+
 export const fetchSoapFirstSettings = async () => {
   const { data, error } = await supabase.from('soap_first_settings').select('*').maybeSingle();
   if (error) return null;

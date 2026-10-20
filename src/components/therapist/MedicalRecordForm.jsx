@@ -27,7 +27,7 @@ import { validatePatientId, handleUndefinedPatientId } from '@/lib/validationHel
 import { format } from 'date-fns';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
-import { isSoapFirstActiveOn, reviseLockedSoap, setRecoveryOutsidePackage, requestOverride } from '@/lib/soapFirst';
+import { isSoapFirstActiveOn, ttvRequiredFor, reviseLockedSoap, setRecoveryOutsidePackage, requestOverride } from '@/lib/soapFirst';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useAssessmentMode } from '@/hooks/useAssessmentMode';
 import { suggestGoals } from '@/lib/goalSuggestions';
@@ -176,7 +176,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     if (!linkedRecapId || !isValidUUID(linkedRecapId)) return;
     supabase
       .from('daily_recaps')
-      .select('diagnosis, recap_date, invoice_created_at, soap_completed_at, package_tracking_id, bypass_package_id, amount, amount_original')
+      .select('diagnosis, recap_date, invoice_created_at, soap_completed_at, package_tracking_id, bypass_package_id, amount, amount_original, start_time, created_at, appointment:appointments!appointment_id(appointment_date)')
       .eq('id', linkedRecapId)
       .maybeSingle()
       .then(({ data }) => {
@@ -822,7 +822,7 @@ if (isCreate) {
                 {recapInfo?.soap_completed_at && !sfLocked && (
                   <p className="text-emerald-700 font-medium">SOAP sudah tercatat selesai ({format(new Date(recapInfo.soap_completed_at), 'HH:mm')}).</p>
                 )}
-                {sfSettings?.ttv_required && linkedRecapId && !recapVitals && !sfLocked && (
+                {ttvRequiredFor(sfSettings, recapInfo) && linkedRecapId && !recapVitals && !sfLocked && (
                   <p className="text-amber-700 font-medium">TTV (tanda vital) belum diisi admin. TTV bagian dari SOAP: SOAP baru tercatat selesai setelah TTV diisi.</p>
                 )}
                 {sfLocked && (
