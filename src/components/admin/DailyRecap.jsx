@@ -996,8 +996,8 @@ const getPremiumPastelBadge = (text) => {
                       <Calendar className="h-4 w-4 shrink-0" />
                       <span className="text-xs font-medium">{recap.date ? formatShortDate(recap.date) : '-'}</span>
                     </div>
-                    {/* Badge membungkus ke baris bawah (rata kanan) bila tidak muat, tidak lagi terpotong */}
-                    <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1 whitespace-nowrap">
+                    {/* Badge membungkus ke baris bawah (rata kiri) bila tidak muat, tidak lagi terpotong */}
+                    <div className="flex min-w-0 flex-wrap items-center gap-1 whitespace-nowrap">
                       {showSoapMark(recap) && <SoapMark done={!!recap.soap_completed_at} className="py-1" />}
                       {renderTtvMark(recap, 'py-1')}
                       {recap.end_time
