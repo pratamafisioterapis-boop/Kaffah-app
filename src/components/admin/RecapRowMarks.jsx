@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Clock, Link2, FileText } from 'lucide-react';
+import { Check, Clock, Link2, FileText, HeartPulse } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const fmtSent = (iso) =>
@@ -49,6 +49,25 @@ export function SoapMark({ done, className }) {
     >
       <FileText className="h-3 w-3 shrink-0" aria-hidden="true" />
       SOAP
+      {done ? <Check className="h-3 w-3 shrink-0" strokeWidth={3} aria-hidden="true" /> : <Clock className="h-3 w-3 shrink-0 text-slate-400" aria-hidden="true" />}
+      <span className="sr-only">{done ? 'sudah diisi' : 'belum diisi'}</span>
+    </span>
+  );
+}
+
+/** Penanda kecil: TTV (tanda vital) sudah diisi (centang hijau) atau belum (abu-abu). */
+export function TtvMark({ done, className }) {
+  return (
+    <span
+      title={done ? 'TTV sudah diisi' : 'TTV belum diisi'}
+      className={cn(
+        'inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-1.5 py-0.5 text-xs font-medium leading-tight',
+        done ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500',
+        className
+      )}
+    >
+      <HeartPulse className="h-3 w-3 shrink-0" aria-hidden="true" />
+      TTV
       {done ? <Check className="h-3 w-3 shrink-0" strokeWidth={3} aria-hidden="true" /> : <Clock className="h-3 w-3 shrink-0 text-slate-400" aria-hidden="true" />}
       <span className="sr-only">{done ? 'sudah diisi' : 'belum diisi'}</span>
     </span>
