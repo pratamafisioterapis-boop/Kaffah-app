@@ -1222,6 +1222,11 @@ setFormData({
             return;
         }
 
+        // Ada nominal tapi metode kosong = pembayaran tidak tercatat (termasuk Recovery di luar paket).
+        if (!useSplitPayment && formData.special_type !== 'free' && !formData.payment_method && parseFloat(formData.amount) > 0) {
+            newErrors.payment_method = "Metode pembayaran wajib dipilih karena nominal sudah terisi";
+        }
+
         if (useSplitPayment) {
             const incompleteRow = paymentSplits.some(row => !row.payment_method || !(parseFloat(row.amount) > 0));
             if (incompleteRow) {
@@ -1588,8 +1593,9 @@ setFormData({
                                         {sfEdit && sfFinalAmount == null && quote?.error && <p className="text-[11px] text-red-600">{quote.error}</p>}
                                     </div>
                                     <div className="space-y-1 min-w-0">
-                                        <Label className="block whitespace-nowrap">Metode Pembayaran</Label>
+                                        <Label className="block whitespace-nowrap">Metode Pembayaran{parseFloat(formData.amount) > 0 && !useSplitPayment && formData.special_type !== 'free' && <span className="text-red-500"> *</span>}</Label>
                                         <SearchableSelect options={paymentMethodOptions} value={formData.payment_method} onChange={v => handleChange('payment_method', v)} onSearch={setPaymentMethodSearch} placeholder="Cari metode..." isLoading={loadingPaymentMethods} disabled={isPackageSessionLocked || useSplitPayment} />
+                                        {errors.payment_method && <p className="text-xs text-red-500">{errors.payment_method}</p>}
                                     </div>
                                 </div>
                                 {isPackageSessionLocked && (
