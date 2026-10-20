@@ -1,3 +1,4 @@
+import { sanitizeSearchTerm } from '@/lib/safeFilter';
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import {
@@ -114,7 +115,7 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
 
   useEffect(() => {
     if (!referrerPopoverOpen) return;
-    const q = referrerQuery.trim().replace(/[,()]/g, '');
+    const q = sanitizeSearchTerm(referrerQuery);
     if (q.length < 2) {
       setReferrerResults([]);
       return;
