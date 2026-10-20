@@ -1,4 +1,11 @@
 node_modules
+dist
+
+# Environment & secrets (only .env.example is tracked)
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+*.pem
+*.key
+serviceAccount*.json
+*-service-account*.json
