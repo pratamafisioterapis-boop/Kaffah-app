@@ -2038,7 +2038,35 @@ export const getDailyRecaps = async ({
     if (error) return { error };
     
     const enrichedData = await enrichRecapsWithOptions(data);
- 
+
+    // Nomor sesi dalam paket (hanya paket > 1 sesi). Dihitung dari seluruh
+    // recap yang terhubung ke paket, bukan hanya yang ada di halaman ini.
+    const trackingIds = [...new Set((enrichedData || []).map(r => r.package_tracking_id).filter(Boolean))];
+    if (trackingIds.length > 0) {
+      const [{ data: linked }, { data: trackings }] = await Promise.all([
+        supabase
+          .from('daily_recaps')
+          .select('id, recap_date, package_tracking_id')
+          .in('package_tracking_id', trackingIds)
+          .order('recap_date', { ascending: true })
+          .order('id', { ascending: true }),
+        supabase.from('package_tracking').select('id, total_sessions').in('id', trackingIds),
+      ]);
+      const totalMap = Object.fromEntries((trackings || []).map(t => [t.id, Number(t.total_sessions) || 0]));
+      const counters = {};
+      const numberMap = {};
+      (linked || []).forEach(row => {
+        counters[row.package_tracking_id] = (counters[row.package_tracking_id] || 0) + 1;
+        numberMap[row.id] = counters[row.package_tracking_id];
+      });
+      enrichedData.forEach(r => {
+        if (r.package_tracking_id && totalMap[r.package_tracking_id] > 1) {
+          r.session_number = numberMap[r.id] || null;
+          r.package_total_sessions = totalMap[r.package_tracking_id];
+        }
+      });
+    }
+
     return { data: enrichedData, count, error: null };
   }, 'getDailyRecaps', { retry: true });
 };
