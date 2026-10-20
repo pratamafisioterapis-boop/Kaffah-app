@@ -105,6 +105,12 @@ const renderPatientName = (recap) => {
   );
 };
 
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+const formatShortDate = (d) => {
+  const m = String(d).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${Number(m[3])} ${MONTHS_SHORT[Number(m[2]) - 1]} ${m[1]}` : formatDateIndonesian(d);
+};
+
 const DailyRecap = ({ hideControls = false, showPaymentFilter = false }) => {
   const location = useLocation();
   const { toast } = useToast();
@@ -939,7 +945,7 @@ const getPremiumPastelBadge = (text) => {
       <div className="bg-white rounded-app shadow-sm border border-slate-200 overflow-hidden">
         <>
           {/* ── CARD LAYOUT (mobile/narrow) ── */}
-          <div className="sm:hidden space-y-3 p-3 bg-slate-50/60">
+          <div className="sm:hidden space-y-2.5 p-2 bg-slate-50/60">
             {loadingRecaps ? (
               <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto w-6 h-6 text-app-accent-bright"/></div>
             ) : recaps.length === 0 ? (
@@ -955,24 +961,24 @@ const getPremiumPastelBadge = (text) => {
               const isDifferent = recap.actual_patient_id && recap.patient_id && recap.actual_patient_id !== recap.patient_id;
 
               const portalPatient = portalButtonEnabled ? getPortalPatient(recap) : null;
-              const tagCls = 'inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-medium';
+              const tagCls = 'inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium';
 
               return (
                 <div
                   key={recap.id}
                   onClick={() => handleRowClick(recap)}
-                  className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm cursor-pointer active:bg-app-soft transition-colors"
+                  className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-sm cursor-pointer active:bg-app-soft transition-colors"
                 >
                   {/* Header: tanggal (kiri), SOAP + status (kanan) */}
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500"><Calendar className="h-4 w-4" /></span>
-                      <span className="truncate text-xs font-medium text-slate-500">{recap.date ? formatDateIndonesian(recap.date) : '-'}</span>
+                  <div className="flex items-center justify-between gap-1.5 whitespace-nowrap">
+                    <div className="flex items-center gap-1.5 text-slate-500">
+                      <Calendar className="h-4 w-4 shrink-0" />
+                      <span className="text-xs font-medium">{recap.date ? formatShortDate(recap.date) : '-'}</span>
                     </div>
-                    <div className="flex shrink-0 items-center gap-1.5">
+                    <div className="flex shrink-0 items-center gap-1">
                       {showSoapMark(recap) && <SoapMark done={!!recap.soap_completed_at} className="py-1" />}
                       {recap.end_time
-                        ? <Badge className="gap-1 rounded-full bg-emerald-50 text-emerald-700 border-0 text-xs py-1"><CheckCircle2 className="h-3.5 w-3.5" />Selesai</Badge>
+                        ? <Badge className="gap-1 rounded-full bg-emerald-50 text-emerald-700 border-0 text-xs px-2 py-1 whitespace-nowrap"><CheckCircle2 className="h-3.5 w-3.5" />Selesai</Badge>
                         : recap.start_time
                         ? <Badge className="rounded-full bg-app-soft text-app-accent-hover border-0 text-xs py-1">Berlangsung</Badge>
                         : <Badge className="rounded-full bg-slate-100 text-slate-500 border-0 text-xs py-1">Belum</Badge>}
@@ -980,19 +986,19 @@ const getPremiumPastelBadge = (text) => {
                   </div>
 
                   {/* Nama pasien (kiri) + nominal (kanan) */}
-                  <div className="mt-3 flex items-start justify-between gap-3">
+                  <div className="mt-2.5 flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="text-base font-bold leading-tight text-slate-900 break-words">{mainName}</div>
+                      <div className="text-[15px] font-bold leading-tight text-slate-900 break-words">{mainName}</div>
                       {isDifferent && recap.patients?.full_name && (
                         <div className="text-xs text-slate-500">(Paket: {recap.patients.full_name})</div>
                       )}
-                      <div className="mt-0.5 text-sm text-slate-500">{recap.display_therapist_name}</div>
+                      <div className="mt-0.5 text-xs text-slate-500">{recap.display_therapist_name}</div>
                     </div>
-                    <span className="shrink-0 text-base font-bold text-app-accent">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</span>
+                    <span className="shrink-0 whitespace-nowrap text-[15px] font-bold text-app-accent">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</span>
                   </div>
 
                   {/* Tag: tipe pasien, layanan/diagnosa, paket */}
-                  <div className="mt-3 flex flex-wrap gap-1.5">
+                  <div className="mt-2.5 flex flex-wrap gap-1.5">
                     <span className={cn(tagCls, getPremiumPastelBadge(patientTypeLabel))}>{patientTypeLabel}</span>
                     {portalButtonEnabled ? (
                       (Array.isArray(recap.diagnosis) ? recap.diagnosis : []).slice(0, 2).map((d, i) => (
