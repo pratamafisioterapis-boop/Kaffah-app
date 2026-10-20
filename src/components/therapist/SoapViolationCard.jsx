@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { ShieldAlert } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import SoapViolationSessionsDialog from '@/components/shared/SoapViolationSessionsDialog';
+import SoapOverrideDialog from '@/components/shared/SoapOverrideDialog';
+import { supabase } from '@/lib/customSupabaseClient';
 import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
 import { fetchSoapViolations, isSoapFirstActiveOn, todayWita } from '@/lib/soapFirst';
 
@@ -10,6 +12,9 @@ const SoapViolationCard = ({ therapistId }) => {
   const { settings } = useSoapFirstSettings();
   const [result, setResult] = useState(null);
   const [open, setOpen] = useState(false);
+  const [restoreTarget, setRestoreTarget] = useState(null);
+  const [pendingIds, setPendingIds] = useState(new Set());
+  const [reloadKey, setReloadKey] = useState(0);
   const active = isSoapFirstActiveOn(settings, todayWita());
 
   useEffect(() => {
@@ -21,10 +26,18 @@ const SoapViolationCard = ({ therapistId }) => {
       endDate: format(endOfMonth(now), 'yyyy-MM-dd'),
       therapistId,
     })
-      .then((r) => { if (!cancelled) setResult(r); })
+      .then(async (r) => {
+        if (cancelled) return;
+        setResult(r);
+        const ids = r.byTherapist.flatMap((t) => t.sessions).map((x) => x.id);
+        if (ids.length === 0) { setPendingIds(new Set()); return; }
+        const { data } = await supabase.from('soap_overrides').select('recap_id')
+          .eq('kind', 'incentive_restore').eq('status', 'pending').in('recap_id', ids);
+        if (!cancelled) setPendingIds(new Set((data || []).map((o) => o.recap_id)));
+      })
       .catch((e) => console.error('Gagal memuat pelanggaran SOAP', e));
     return () => { cancelled = true; };
-  }, [active, therapistId]);
+  }, [active, therapistId, reloadKey]);
 
   if (!active || !result) return null;
   const ok = result.total === 0;
@@ -47,7 +60,15 @@ const SoapViolationCard = ({ therapistId }) => {
       </div>
       <div className={`ml-auto text-2xl font-extrabold ${ok ? 'text-emerald-600' : 'text-red-600'}`}>{result.total}</div>
     </div>
-    <SoapViolationSessionsDialog open={open} onOpenChange={setOpen} title="Sesi melanggar aturan SOAP" sessions={sessions} />
+    <SoapViolationSessionsDialog open={open} onOpenChange={setOpen} title="Sesi melanggar aturan SOAP" sessions={sessions} onRestore={setRestoreTarget} pendingIds={pendingIds} />
+    <SoapOverrideDialog
+      open={!!restoreTarget}
+      onOpenChange={(v) => { if (!v) setRestoreTarget(null); }}
+      kind="incentive_restore"
+      recapId={restoreTarget?.id ?? null}
+      description={`Ajukan pemulihan insentif untuk sesi ${restoreTarget?.patient || ''} (mis. sesi molor atau pasien terlambat). Diajukan langsung ke owner.`}
+      onDone={() => setReloadKey((k) => k + 1)}
+    />
     </>
   );
 };

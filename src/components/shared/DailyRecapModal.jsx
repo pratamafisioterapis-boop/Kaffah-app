@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar as CalendarIcon, Loader2, Save, Plus, Trash2, Lock, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, Save, Plus, Trash2, ChevronDown } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import SearchableSelect from '@/components/ui/searchable-select';
 import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
 import DatePicker from '@/components/DatePicker';
@@ -34,7 +35,7 @@ import {
 } from '@/lib/api';
 import { createOperationalOption } from '@/lib/api';
 import { useSoapFirstSettings, useRecapQuote } from '@/hooks/useSoapFirst';
-import { isSoapFirstActiveOn, markIncentiveFlags } from '@/lib/soapFirst';
+import { isSoapFirstActiveOn } from '@/lib/soapFirst';
 import SoapOverrideDialog from './SoapOverrideDialog';
 
 import { 
@@ -280,18 +281,6 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
     useEffect(() => {
         if (isOpen && mode === 'edit') loadRecapMeta(); else setRecapMeta(null);
     }, [isOpen, mode, loadRecapMeta]);
-
-    // Pemulihan insentif hanya relevan bila insentif recap ini benar-benar nol
-    // (SOAP terlambat / tidak diisi / ditandai owner). Selain itu tombolnya disembunyikan.
-    const [incentiveZeroed, setIncentiveZeroed] = useState(false);
-    useEffect(() => {
-        if (!isOpen || !sfEdit || !initialData?.id) { setIncentiveZeroed(false); return; }
-        let cancelled = false;
-        markIncentiveFlags([{ id: initialData.id }], { strict: false })
-            .then(rows => { if (!cancelled) setIncentiveZeroed(!!rows?.[0]?._incentiveZeroed); })
-            .catch(() => { if (!cancelled) setIncentiveZeroed(false); });
-        return () => { cancelled = true; };
-    }, [isOpen, sfEdit, initialData?.id, recapMeta?.soap_completed_at]);
 
     // Diskon manual (mis. "Keluarga"): nilai diinput admin lalu wajib disetujui owner.
     const [manualOverride, setManualOverride] = useState(null);
@@ -1573,9 +1562,20 @@ setFormData({
     const fTherapist = (
         <>
                                 <div className="space-y-1">
-                                    <Label>Fisioterapis <span className="text-red-500">*</span></Label>
-                                    <SearchableSelect options={therapists} value={formData.therapist_id} onChange={v => handleChange('therapist_id', v)} placeholder="Pilih Terapis..." isLoading={isLoadingCoreData} />
-                                    {errors.therapist_id && <p className="text-xs text-red-500">{errors.therapist_id}</p>}
+                                    <Label>Fisioterapis{mode === 'edit' ? '' : <span className="text-red-500"> *</span>}</Label>
+                                    {mode === 'edit' ? (
+                                        <>
+                                            <div className="flex h-10 items-center rounded-md border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700">
+                                                {therapists.find(t => t.value === formData.therapist_id)?.label || initialData?.therapist_name || '-'}
+                                            </div>
+                                            <p className="text-[11px] text-slate-500">Ubah fisioterapis lewat appointment.</p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <SearchableSelect options={therapists} value={formData.therapist_id} onChange={v => handleChange('therapist_id', v)} placeholder="Pilih Terapis..." isLoading={isLoadingCoreData} />
+                                            {errors.therapist_id && <p className="text-xs text-red-500">{errors.therapist_id}</p>}
+                                        </>
+                                    )}
                                 </div>
         </>
     );
@@ -1776,7 +1776,6 @@ setFormData({
     );
 
     // ── Panel SOAP-first ──
-    const rupiah = (n) => `Rp ${Number(n || 0).toLocaleString('id-ID')}`;
     const sfSoapDone = !!(quote?.soap_done ?? recapMeta?.soap_completed_at);
     const sfInvoiceLocked = !!quote?.invoice_locked;
     const sfTherapistName = therapists.find(t => t.value === formData.therapist_id)?.label || 'terapis';
@@ -1804,38 +1803,9 @@ setFormData({
 
     const openOverride = (cfg) => setOverrideDialog({ recapId: initialData?.id, ...cfg });
 
+    const showDiscountRequest = sfInvoiceLocked || !!quote?.homecare;
     const fSoapPanel = sfEdit ? (
-        <div className="mx-6 mt-6 rounded-app border border-indigo-200 bg-indigo-50/40 p-4 space-y-3">
-            <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-indigo-900">
-                <Lock className="h-4 w-4" /> SOAP diisi terapis sebelum pembayaran
-                {sfInvoiceLocked && <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-700">Invoice terkunci</span>}
-                {quote?.xtratime && <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-medium text-violet-700">Xtratime</span>}
-                {quote?.homecare && <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-medium text-sky-700">Homecare</span>}
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                <div>
-                    <div className="text-xs text-slate-500">Status SOAP</div>
-                    {sfSoapDone ? (
-                        <div className="flex items-center gap-1 font-medium text-emerald-700"><CheckCircle2 className="h-4 w-4" /> Selesai</div>
-                    ) : quote?.needs_soap === false ? (
-                        <div className="font-medium text-slate-700">Boleh menyusul (batas 23.59 WITA)</div>
-                    ) : (
-                        <div className="flex items-center gap-1 font-medium text-amber-700"><AlertTriangle className="h-4 w-4" /> Menunggu SOAP dari {sfTherapistName}</div>
-                    )}
-                </div>
-                <div>
-                    <div className="text-xs text-slate-500">Tipe pasien</div>
-                    <div className="font-medium text-slate-800">{quote?.type_label || (['registered', 'guest'].includes(String(formData.patient_type || '').toLowerCase()) ? '' : formData.patient_type) || (quote?.homecare ? 'Homecare (pilih waktu homecare)' : 'Menunggu SOAP')}</div>
-                </div>
-                <div>
-                    <div className="text-xs text-slate-500">Tagihan</div>
-                    <div className="font-semibold text-slate-900">{sfFinalAmount != null ? rupiah(sfFinalAmount) : '-'}</div>
-                    {!sfInvoiceLocked && quote?.surcharge > 0 && (
-                        <div className="text-[11px] text-slate-500">Paket {rupiah(quote.base)} + tambahan 2 keluhan {rupiah(quote.surcharge)}</div>
-                    )}
-                </div>
-            </div>
-
+        <div className="mx-6 mt-6 space-y-3">
             {quote?.error && !sfInvoiceLocked && sfIsPayment && (
                 <div className="rounded-app-sm border border-red-200 bg-red-50 p-3 text-xs text-red-700">{quote.error}</div>
             )}
@@ -1879,36 +1849,35 @@ setFormData({
                 )}
             </div>
 
-            <div className="flex flex-wrap gap-2">
-                {!sfSoapDone && quote?.needs_soap && !sfInvoiceLocked && (
-                    <Button type="button" size="sm" variant="outline" className="h-8 text-xs" onClick={() => openOverride({ kind: 'payment_unlock', description: 'Buka kunci pembayaran tanpa menunggu SOAP (mis. terapis berhalangan). Berlaku setelah disetujui owner.' })}>
-                        Ajukan buka kunci pembayaran
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button type="button" size="sm" variant="outline" className="h-9 text-xs">
+                        Pengajuan Perubahan <ChevronDown className="ml-1.5 h-3.5 w-3.5" />
                     </Button>
-                )}
-                {!quote?.homecare && !quote?.xtratime && !sfInvoiceLocked && (
-                    <Button type="button" size="sm" variant="outline" className="h-8 text-xs" onClick={() => openOverride({ kind: 'xtratime', description: 'Tandai sesi ini sebagai Xtratime (pasien di luar jam kerja, bukan homecare). Berlaku setelah disetujui owner.' })}>
-                        Ajukan Xtratime
-                    </Button>
-                )}
-                {quote?.homecare && !sfInvoiceLocked && (
-                    <Button type="button" size="sm" variant="outline" className="h-8 text-xs" onClick={() => openOverride({ kind: 'homecare_discount', description: 'Izinkan diskon untuk sesi homecare ini. Berlaku setelah disetujui owner.' })}>
-                        Ajukan diskon homecare
-                    </Button>
-                )}
-                {sfInvoiceLocked && (
-                    <Button type="button" size="sm" variant="outline" className="h-8 text-xs" onClick={() => openOverride({ kind: 'discount_adjust', withDiscount: true, description: 'Invoice sudah terbit sehingga diskon terkunci. Pilih diskon yang seharusnya berlaku; nominal dihitung ulang setelah disetujui owner.' })}>
-                        Ajukan perubahan diskon ke owner
-                    </Button>
-                )}
-                <Button type="button" size="sm" variant="outline" className="h-8 text-xs" onClick={() => openOverride({ kind: 'amount_adjust', withAmount: true, description: 'Ubah nominal tagihan di luar daftar harga. Berlaku setelah disetujui owner.' })}>
-                    Ajukan ubah nominal
-                </Button>
-                {incentiveZeroed && (
-                    <Button type="button" size="sm" variant="outline" className="h-8 text-xs" onClick={() => openOverride({ kind: 'incentive_restore', description: 'Pulihkan jasa insentif terapis untuk sesi ini (mis. sesi molor atau pasien terlambat). Berlaku setelah disetujui owner.' })}>
-                        Ajukan pemulihan insentif
-                    </Button>
-                )}
-            </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                    <DropdownMenuItem onSelect={() => openOverride({ kind: 'amount_adjust', withAmount: true, description: 'Ubah nominal tagihan di luar daftar harga. Berlaku setelah disetujui owner.' })}>
+                        Pengajuan perubahan nominal
+                    </DropdownMenuItem>
+                    {showDiscountRequest && (
+                        <DropdownMenuItem onSelect={() => openOverride(sfInvoiceLocked
+                            ? { kind: 'discount_adjust', withDiscount: true, description: 'Invoice sudah terbit sehingga diskon terkunci. Pilih diskon yang seharusnya berlaku; nominal dihitung ulang setelah disetujui owner.' }
+                            : { kind: 'homecare_discount', description: 'Izinkan diskon untuk sesi homecare ini. Berlaku setelah disetujui owner.' })}>
+                            Pengajuan perubahan diskon
+                        </DropdownMenuItem>
+                    )}
+                    {!sfSoapDone && quote?.needs_soap && !sfInvoiceLocked && (
+                        <DropdownMenuItem onSelect={() => openOverride({ kind: 'payment_unlock', description: 'Buka kunci pembayaran tanpa menunggu SOAP (mis. terapis berhalangan). Berlaku setelah disetujui owner.' })}>
+                            Pengajuan buka kunci pembayaran
+                        </DropdownMenuItem>
+                    )}
+                    {!quote?.homecare && !quote?.xtratime && !sfInvoiceLocked && (
+                        <DropdownMenuItem onSelect={() => openOverride({ kind: 'xtratime', description: 'Tandai sesi ini sebagai Xtratime (pasien di luar jam kerja, bukan homecare). Berlaku setelah disetujui owner.' })}>
+                            Pengajuan Xtratime
+                        </DropdownMenuItem>
+                    )}
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
     ) : (sfActive && mode === 'add' ? (
         <div className="mx-6 mt-6 rounded-app border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
