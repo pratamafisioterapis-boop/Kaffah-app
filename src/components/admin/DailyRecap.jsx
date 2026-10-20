@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Calendar, Loader2, Plus, Search, X, Clock, Play, Square,
-  ChevronLeft, ChevronRight, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, BarChart3, CreditCard, Users
+  ChevronLeft, ChevronRight, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, BarChart3, CreditCard, Users, CheckCircle2
 } from 'lucide-react';
 import { getDailyRecaps, getDailyRecapsTotalAmount, getPhysiotherapists, getCachedClinicId } from '@/lib/api';
 import InvoiceStatusButton from '@/components/admin/InvoiceStatusButton';
@@ -939,7 +939,7 @@ const getPremiumPastelBadge = (text) => {
       <div className="bg-white rounded-app shadow-sm border border-slate-200 overflow-hidden">
         <>
           {/* ── CARD LAYOUT (mobile/narrow) ── */}
-          <div className="sm:hidden divide-y divide-slate-100">
+          <div className="sm:hidden space-y-3 p-3 bg-slate-50/60">
             {loadingRecaps ? (
               <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto w-6 h-6 text-app-accent-bright"/></div>
             ) : recaps.length === 0 ? (
@@ -954,84 +954,88 @@ const getPremiumPastelBadge = (text) => {
               const mainName = recap.actual_patients?.full_name || recap.patients?.full_name || recap.guest_name || 'Nama tidak tersedia';
               const isDifferent = recap.actual_patient_id && recap.patient_id && recap.actual_patient_id !== recap.patient_id;
 
+              const portalPatient = portalButtonEnabled ? getPortalPatient(recap) : null;
+              const tagCls = 'inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-medium';
+
               return (
                 <div
                   key={recap.id}
                   onClick={() => handleRowClick(recap)}
-                  className={cn("px-4 py-3 cursor-pointer active:bg-app-soft transition-colors", idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50')}
+                  className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm cursor-pointer active:bg-app-soft transition-colors"
                 >
-                  {/* Baris 1: Tanggal + Status */}
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-slate-500 font-medium">{recap.date ? formatDateIndonesian(recap.date) : '-'}</span>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {showSoapMark(recap) && <SoapMark done={!!recap.soap_completed_at} />}
+                  {/* Header: tanggal (kiri), SOAP + status (kanan) */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500"><Calendar className="h-4 w-4" /></span>
+                      <span className="truncate text-xs font-medium text-slate-500">{recap.date ? formatDateIndonesian(recap.date) : '-'}</span>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {showSoapMark(recap) && <SoapMark done={!!recap.soap_completed_at} className="py-1" />}
                       {recap.end_time
-                        ? <Badge className="bg-emerald-50 text-emerald-700 border-0 text-xs">Selesai</Badge>
+                        ? <Badge className="gap-1 rounded-full bg-emerald-50 text-emerald-700 border-0 text-xs py-1"><CheckCircle2 className="h-3.5 w-3.5" />Selesai</Badge>
                         : recap.start_time
-                        ? <Badge className="bg-app-soft text-app-accent-hover border-0 text-xs">Berlangsung</Badge>
-                        : <Badge className="bg-slate-100 text-slate-500 border-0 text-xs">Belum</Badge>}
+                        ? <Badge className="rounded-full bg-app-soft text-app-accent-hover border-0 text-xs py-1">Berlangsung</Badge>
+                        : <Badge className="rounded-full bg-slate-100 text-slate-500 border-0 text-xs py-1">Belum</Badge>}
                     </div>
                   </div>
 
-                  {/* Baris 2: Nama Pasien + Nominal */}
-                  <div className="flex items-start justify-between mb-1.5">
-                    <div className="flex flex-col">
-                      <span className="font-bold text-slate-900 text-sm leading-tight">{mainName}</span>
+                  {/* Nama pasien (kiri) + nominal (kanan) */}
+                  <div className="mt-3 flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-base font-bold leading-tight text-slate-900 break-words">{mainName}</div>
                       {isDifferent && recap.patients?.full_name && (
-                        <span className="text-xs text-slate-500">(Paket: {recap.patients.full_name})</span>
+                        <div className="text-xs text-slate-500">(Paket: {recap.patients.full_name})</div>
                       )}
+                      <div className="mt-0.5 text-sm text-slate-500">{recap.display_therapist_name}</div>
                     </div>
-                    <span className="font-bold text-app-accent text-sm ml-2 shrink-0">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</span>
+                    <span className="shrink-0 text-base font-bold text-app-accent">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</span>
                   </div>
 
-                  {/* Baris 3: Terapis + Badge */}
-                  <div className="flex items-center gap-1.5 flex-wrap mb-2">
-                    <span className="text-xs text-slate-500 font-medium">{recap.display_therapist_name}</span>
-                    <span className="text-slate-300 text-xs">·</span>
-                    <Badge className={cn("text-xs font-normal py-0 px-1.5", getPremiumPastelBadge(patientTypeLabel))}>{patientTypeLabel}</Badge>
+                  {/* Tag: tipe pasien, layanan/diagnosa, paket */}
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    <span className={cn(tagCls, getPremiumPastelBadge(patientTypeLabel))}>{patientTypeLabel}</span>
                     {portalButtonEnabled ? (
                       (Array.isArray(recap.diagnosis) ? recap.diagnosis : []).slice(0, 2).map((d, i) => (
-                        <Badge key={i} variant="outline" className="text-xs font-normal py-0 px-1.5">{optionsMap[d] || d}</Badge>
+                        <span key={i} className={cn(tagCls, 'bg-slate-100 text-slate-700')}>{optionsMap[d] || d}</span>
                       ))
                     ) : (
-                      <Badge variant="outline" className="text-xs font-normal py-0 px-1.5">{serviceLabel}</Badge>
+                      <span className={cn(tagCls, 'bg-slate-100 text-slate-700')}>{serviceLabel}</span>
                     )}
-                    {packageLabel !== '-' && <Badge className="text-xs py-0 px-1.5 bg-blue-50 text-blue-600 border-blue-100">{packageLabel}</Badge>}
-                    {recap.bypass_package_id && <Badge title={recap.bypass_reason || ''} className="text-xs py-0 px-1.5 bg-amber-50 text-amber-700 border-amber-200">Di luar paket</Badge>}
+                    {packageLabel !== '-' && <span className={cn(tagCls, 'bg-blue-50 text-blue-600')}>{packageLabel}</span>}
+                    {recap.bypass_package_id && <span title={recap.bypass_reason || ''} className={cn(tagCls, 'bg-amber-50 text-amber-700')}>Di luar paket</span>}
                   </div>
 
-                  {/* Baris 4: Tombol Sesi */}
-                  <div onClick={(e) => e.stopPropagation()}>
+                  {/* Sesi: tombol mulai / selesai / jam terapi */}
+                  <div className="mt-3" onClick={(e) => e.stopPropagation()}>
                     {recap.start_time == null ? (
-                      <Button size="sm" className="h-8 w-full text-xs bg-app-accent hover:bg-app-accent-hover rounded-app-sm" onClick={(e) => handleStartRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
-                        {actionLoadingId === recap.id ? <Loader2 className="w-3 h-3 animate-spin"/> : <><Play className="w-3 h-3 mr-1.5"/>Mulai Sesi</>}
+                      <Button size="sm" className="h-10 w-full text-sm bg-app-accent hover:bg-app-accent-hover rounded-xl" onClick={(e) => handleStartRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
+                        {actionLoadingId === recap.id ? <Loader2 className="w-4 h-4 animate-spin"/> : <><Play className="w-4 h-4 mr-1.5"/>Mulai Sesi</>}
                       </Button>
                     ) : !recap.end_time ? (
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-100 shrink-0">{formatTime(new Date(recap.start_time))}</span>
-                        <Button size="sm" className="h-8 text-xs bg-green-600 hover:bg-green-700 text-white flex-1 rounded-app-sm" onClick={(e) => handleEndRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
-                          {actionLoadingId === recap.id ? <Loader2 className="w-3 h-3 animate-spin"/> : <><Square className="w-3 h-3 mr-1.5"/>Selesai</>}
+                        <span className="font-mono text-sm text-blue-700 bg-blue-50 px-2.5 py-2 rounded-xl shrink-0">{formatTime(new Date(recap.start_time))}</span>
+                        <Button size="sm" className="h-10 text-sm bg-green-600 hover:bg-green-700 text-white flex-1 rounded-xl" onClick={(e) => handleEndRecap(e, recap.id)} disabled={actionLoadingId === recap.id}>
+                          {actionLoadingId === recap.id ? <Loader2 className="w-4 h-4 animate-spin"/> : <><Square className="w-4 h-4 mr-1.5"/>Selesai</>}
                         </Button>
                       </div>
                     ) : (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5 text-xs font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded border border-slate-200 w-fit">
-                            <span>{formatTime(new Date(recap.start_time))}</span>
-                            <span className="text-slate-300">→</span>
-                            <span>{formatTime(new Date(recap.end_time))}</span>
-                          </div>
+                      <div className="space-y-3">
+                        <div className="flex w-fit items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 font-mono text-sm text-slate-600">
+                          <Clock className="h-4 w-4 text-slate-500" />
+                          <span>{formatTime(new Date(recap.start_time))}</span>
+                          <span className="text-slate-400">–</span>
+                          <span>{formatTime(new Date(recap.end_time))}</span>
                         </div>
                         <div className="grid grid-cols-2 gap-2 [&>*:only-child]:col-span-2">
-                          {portalButtonEnabled && getPortalPatient(recap) && (
+                          {portalPatient && (
                             <PortalStatusButton
-                              className="h-9 text-xs"
+                              className="h-11 rounded-xl text-sm"
                               sentAt={getPortalSentAt(recap)}
-                              onClick={() => setPortalPatient(getPortalPatient(recap))}
+                              onClick={() => setPortalPatient(portalPatient)}
                             />
                           )}
                           <InvoiceStatusButton
-                            className="h-9 text-xs"
+                            className="h-11 rounded-xl text-sm"
                             recap={recap}
                             onClick={() => {
                               setSelectedInvoiceData(recap);
