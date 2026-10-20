@@ -64,13 +64,15 @@ function validateVitalRanges(v) {
 
 // Mengembalikan pesan kesalahan, atau null bila isian valid.
 export function validateVitals(v) {
-  if (!hasAnyVital(v)) return 'Isi minimal satu tanda vital.';
+  // Wajib: tekanan darah (sistolik + diastolik), nadi, dan SpO2. Sisanya opsional.
+  const missing = [];
+  if (toNum(v?.systolic) === null || toNum(v?.diastolic) === null) missing.push('tekanan darah (sistolik dan diastolik)');
+  if (toNum(v?.pulse) === null) missing.push('nadi');
+  if (toNum(v?.spo2) === null) missing.push('SpO2');
+  if (missing.length) return `Wajib diisi: ${missing.join(', ')}.`;
   const rangeErr = validateVitalRanges(v);
   if (rangeErr) return rangeErr;
-  const hasSys = toNum(v.systolic) !== null;
-  const hasDia = toNum(v.diastolic) !== null;
-  if (hasSys !== hasDia) return 'Tekanan darah harus diisi lengkap (sistolik dan diastolik).';
-  if (hasSys && toNum(v.systolic) <= toNum(v.diastolic)) return 'Sistolik harus lebih besar dari diastolik.';
+  if (toNum(v.systolic) <= toNum(v.diastolic)) return 'Sistolik harus lebih besar dari diastolik.';
   return null;
 }
 
