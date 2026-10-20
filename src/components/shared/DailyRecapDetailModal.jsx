@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, User, UserCircle, Activity, CreditCard, Clock, AlertCircle, Edit, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
+import { Calendar, User, UserCircle, Activity, CreditCard, Clock, AlertCircle, Edit, Trash2, AlertTriangle, Loader2, FileText } from 'lucide-react';
 import { formatDateIndonesian, formatTime } from '@/lib/dateFormatHelpers';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -10,6 +10,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { fetchRecapVitals, fetchPendingVitalsEdit, formatVitalsLine } from '@/lib/recapVitals';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import RecapVitalsDialog from './RecapVitalsDialog';
+import RecapSoapPreviewDialog from './RecapSoapPreviewDialog';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { 
     getAllRecapOptions
 } from '@/lib/api';
@@ -51,6 +53,8 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
     const [vitalsRow, setVitalsRow] = useState(null);
     const [pendingVitalsEdit, setPendingVitalsEdit] = useState(null);
     const [vitalsDialogOpen, setVitalsDialogOpen] = useState(false);
+    const [soapPreviewOpen, setSoapPreviewOpen] = useState(false);
+    const showSoapButton = userDetails?.clinic_id === KAFFAH_CLINIC_ID && !recap?.is_virtual;
 
     const loadVitals = React.useCallback(async () => {
         if (!recap?.id) return;
@@ -360,6 +364,11 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
 
                     <div className="flex gap-2">
                         <Button variant="outline" onClick={onClose} className="bg-white">Tutup</Button>
+                        {showSoapButton && (
+                            <Button variant="outline" onClick={() => setSoapPreviewOpen(true)} className="bg-white border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+                                <FileText className="w-4 h-4 mr-2" /> SOAP
+                            </Button>
+                        )}
                         {onEdit && (
                             <Button onClick={() => { onEdit(recap); onClose(); }} className="bg-app-accent hover:bg-app-accent-hover text-white">
                                 <Edit className="w-4 h-4 mr-2" /> Edit Data
@@ -368,6 +377,12 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                     </div>
                 </div>
             </DialogContent>
+            <RecapSoapPreviewDialog
+                open={soapPreviewOpen}
+                onOpenChange={setSoapPreviewOpen}
+                recapId={recap?.id}
+                patientName={recap?.actual_patients?.full_name || recap?.patients?.full_name || recap?.guest_name}
+            />
             <RecapVitalsDialog
                 open={vitalsDialogOpen}
                 onOpenChange={setVitalsDialogOpen}
