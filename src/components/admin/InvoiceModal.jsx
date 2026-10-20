@@ -1,3 +1,4 @@
+import { escapeHtml } from '@/lib/safeFilter';
 import React, { useRef, useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -593,7 +594,7 @@ const handleSendManualWA = async () => {
         windowWidth: 794,
       });
       const imgData = canvas.toDataURL('image/png');
-      const title = `Invoice - ${data?.patient_name || 'Patient'}`;
+      const title = escapeHtml(`Invoice - ${data?.patient_name || 'Patient'}`);
       const html = `<!doctype html>
         <html>
           <head>

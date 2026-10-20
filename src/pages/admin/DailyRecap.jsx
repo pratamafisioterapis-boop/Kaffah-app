@@ -1,3 +1,4 @@
+import { sanitizeSearchTerm } from '@/lib/safeFilter';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
@@ -178,7 +179,7 @@ const DailyRecap = ({ hideControls = false }) => {
         .lte('recap_date', queryDateRange.end);
 
       if (debouncedSearch.trim()) {
-        const q = debouncedSearch.trim();
+        const q = sanitizeSearchTerm(debouncedSearch);
         const { data: foundPatients } = await supabase.from('patients').select('id').ilike('full_name', `%${q}%`);
         const foundIds = foundPatients?.map(p => p.id) || [];
         

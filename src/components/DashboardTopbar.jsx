@@ -1,3 +1,4 @@
+import { sanitizeSearchTerm } from '@/lib/safeFilter';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -452,7 +453,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId, 
   }, []);
 
   useEffect(() => {
-    const q = query.trim();
+    const q = sanitizeSearchTerm(query);
     if (q.length < 2) {
       setResults({ patients: [], appointments: [], packages: [], medicalRecords: [], menu: [], summary: null });
       setIsSearching(false);

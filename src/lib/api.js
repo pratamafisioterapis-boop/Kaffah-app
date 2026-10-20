@@ -1,3 +1,4 @@
+import { sanitizeSearchTerm } from '@/lib/safeFilter';
 import { supabase } from '@/lib/customSupabaseClient';
 import {
     validatePackageTypeId,
@@ -997,7 +998,7 @@ export const getPatients = async (searchTerm = '') => {
       .order('full_name', { ascending: true });
 
     if (searchTerm && searchTerm.trim()) {
-      query = query.or(`full_name.ilike.%${searchTerm.trim()}%,medical_record_number.ilike.%${searchTerm.trim()}%`);
+      query = query.or(`full_name.ilike.%${sanitizeSearchTerm(searchTerm)}%,medical_record_number.ilike.%${sanitizeSearchTerm(searchTerm)}%`);
       query = query.limit(50);
     } else {
       query = query.limit(50);
@@ -1314,7 +1315,7 @@ export const getPlanForDiagnoses = async (labels = []) => {
 };
 // Cari exercise di seluruh katalog (nama atau kelompok), untuk menambah latihan di luar daftar diagnosa.
 export const searchPlanExercises = async (query = '') => {
-  const q = String(query).trim().replace(/[%,()]/g, ' ');
+  const q = sanitizeSearchTerm(query);
   if (!q) return { data: {}, error: null };
   const { data: rows, error } = await supabase
     .from('plan_exercises')
@@ -2009,7 +2010,7 @@ export const getDailyRecaps = async ({
 }
  
     if (search && search.trim()) {
-      const q = search.trim();
+      const q = sanitizeSearchTerm(search);
       const { data: foundPatients } = await supabase.from('patients').select('id').ilike('full_name', `%${q}%`);
       const foundIds = foundPatients?.map(p => p.id) || [];
       
@@ -2053,7 +2054,7 @@ export const getDailyRecapsTotalAmount = async ({ startDate, endDate, search = '
     if (paymentMethod) query = query.eq('payment_method', paymentMethod);
 
     if (search && search.trim()) {
-      const q = search.trim();
+      const q = sanitizeSearchTerm(search);
       const { data: foundPatients } = await supabase.from('patients').select('id').ilike('full_name', `%${q}%`);
       const foundIds = foundPatients?.map(p => p.id) || [];
       if (foundIds.length > 0) {
