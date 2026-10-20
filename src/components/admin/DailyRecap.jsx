@@ -1029,6 +1029,7 @@ const getPremiumPastelBadge = (text) => {
                   <div className="mt-2.5 flex flex-wrap gap-1.5">
                     <span className={cn(tagCls, getPremiumPastelBadge(patientTypeLabel))}>{patientTypeLabel}</span>
                     {packageLabel !== '-' && <span className={cn(tagCls, 'bg-blue-50 text-blue-600')}>{packageLabel}</span>}
+                    {recap.session_number && <span className={cn(tagCls, 'bg-violet-50 text-violet-700')}>Sesi {recap.session_number}</span>}
                     {recap.bypass_package_id && <span title={recap.bypass_reason || ''} className={cn(tagCls, 'bg-amber-50 text-amber-700')}>Di luar paket</span>}
                   </div>
                   {/* Tag baris 2: diagnosa (Kaffah) atau layanan */}
