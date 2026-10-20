@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, User, UserCircle, Activity, CreditCard, Clock, AlertCircle, Edit, Trash2, AlertTriangle, Loader2, FileText } from 'lucide-react';
+import { Calendar, User, UserCircle, Activity, CreditCard, Clock, AlertCircle, Edit, Trash2, AlertTriangle, Loader2, FileText, ChevronDown } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { formatDateIndonesian, formatTime } from '@/lib/dateFormatHelpers';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -11,9 +12,13 @@ import { fetchRecapVitals, fetchPendingVitalsEdit, formatVitalsLine } from '@/li
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import RecapVitalsDialog from './RecapVitalsDialog';
 import RecapSoapPreviewDialog from './RecapSoapPreviewDialog';
+import SoapOverrideDialog from './SoapOverrideDialog';
+import { useSoapFirstSettings, useRecapQuote } from '@/hooks/useSoapFirst';
+import { isSoapFirstActiveOn } from '@/lib/soapFirst';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { 
-    getAllRecapOptions
+    getAllRecapOptions,
+    getDiscountTypeOptions
 } from '@/lib/api';
 
 const DetailItem = ({ icon: Icon, label, value, className = "", valueClassName = "" }) => (
@@ -55,6 +60,26 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
     const [vitalsDialogOpen, setVitalsDialogOpen] = useState(false);
     const [soapPreviewOpen, setSoapPreviewOpen] = useState(false);
     const showSoapButton = userDetails?.clinic_id === KAFFAH_CLINIC_ID && !recap?.is_virtual;
+
+    // Pengajuan perubahan ke owner (nominal, diskon, dst) untuk klinik SOAP-first.
+    const { settings: sfSettings } = useSoapFirstSettings();
+    const sfActive = isSoapFirstActiveOn(sfSettings, recap?.date);
+    const canRequestChange = isOpen && !recap?.is_virtual && sfActive && ['admin', 'clinic_admin', 'owner', 'super_admin'].includes(userDetails?.role);
+    const { quote, refresh: refreshQuote } = useRecapQuote(recap?.id, null, canRequestChange);
+    const [overrideDialog, setOverrideDialog] = useState(null);
+    const [discountOptions, setDiscountOptions] = useState([]);
+    const openOverride = async (cfg) => {
+        if (cfg.withDiscount && discountOptions.length === 0) {
+            try {
+                const res = await getDiscountTypeOptions('');
+                const list = res?.data || res;
+                setDiscountOptions(Array.isArray(list) ? list.filter(o => !o.is_referral_reward) : []);
+            } catch (e) { console.error('Gagal memuat jenis diskon', e); }
+        }
+        setOverrideDialog({ recapId: recap.id, ...cfg });
+    };
+    const invoiceLocked = !!quote?.invoice_locked;
+    const showDiscountRequest = invoiceLocked || !!quote?.homecare;
 
     const loadVitals = React.useCallback(async () => {
         if (!recap?.id) return;
@@ -167,7 +192,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="w-[calc(100vw-1rem)] max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden rounded-app-lg p-0 shadow-xl border border-slate-200/60">
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-3xl max-h-[90vh] grid-cols-[minmax(0,1fr)] overflow-y-auto overflow-x-hidden rounded-app-lg p-0 shadow-xl border border-slate-200/60">
           <DialogHeader className="px-4 py-4 sm:px-6 sm:py-5 border-b border-slate-200/60 bg-white rounded-t-app-lg">
                     <div className="flex justify-between items-start">
                         <div>
@@ -279,7 +304,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
 
                     {/* Tanda Vital (input admin, terkunci setelah diisi, tertaut ke SOAP) */}
                     <div className="min-w-0 space-y-2 md:col-span-2 p-3.5 sm:p-5 rounded-app-lg border border-cyan-200/60 bg-cyan-50/40 shadow-sm">
-                        <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-cyan-200/60">
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-cyan-200/60">
                             <div className="flex items-center gap-2">
                                 <Activity className="w-4 h-4 text-cyan-700" />
                                 <h4 className="text-sm font-bold text-slate-800">Tanda-Tanda Vital</h4>
@@ -298,7 +323,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                         </div>
                         {vitalsRow ? (
                             <>
-                                <p className="text-[15px] font-semibold text-slate-900 break-words">{formatVitalsLine(vitalsRow)}</p>
+                                <p className="text-sm sm:text-[15px] font-semibold text-slate-900 break-words">{formatVitalsLine(vitalsRow)}</p>
                                 {vitalsRow.notes && <p className="text-xs text-slate-500">{vitalsRow.notes}</p>}
                                 <p className="text-xs text-slate-500">Terkunci. Perubahan perlu persetujuan owner beserta alasan.</p>
                             </>
@@ -347,7 +372,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                     </div>
                 </div>
 
-          <div className="px-6 py-4 border-t border-slate-200/60 bg-white flex justify-between items-center">
+          <div className="px-3 py-3 sm:px-6 sm:py-4 border-t border-slate-200/60 bg-white flex flex-wrap justify-between items-center gap-2">
                     {!showDeleteConfirm ? (
                         <div className="flex gap-2">
                             {onDelete && (
@@ -367,12 +392,43 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                         </div>
                     )}
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2 [&>button]:h-9 [&>button]:px-3 [&>button]:text-sm">
                         <Button variant="outline" onClick={onClose} className="bg-white">Tutup</Button>
                         {showSoapButton && (
                             <Button variant="outline" onClick={() => setSoapPreviewOpen(true)} className="bg-white border-emerald-300 text-emerald-700 hover:bg-emerald-50">
                                 <FileText className="w-4 h-4 mr-2" /> SOAP
                             </Button>
+                        )}
+                        {canRequestChange && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="bg-white">
+                                        Pengajuan Perubahan <ChevronDown className="ml-1.5 h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onSelect={() => openOverride({ kind: 'amount_adjust', withAmount: true, description: 'Ubah nominal tagihan di luar daftar harga. Berlaku setelah disetujui owner.' })}>
+                                        Pengajuan perubahan nominal
+                                    </DropdownMenuItem>
+                                    {showDiscountRequest && (
+                                        <DropdownMenuItem onSelect={() => openOverride(invoiceLocked
+                                            ? { kind: 'discount_adjust', withDiscount: true, description: 'Invoice sudah terbit sehingga diskon terkunci. Pilih diskon yang seharusnya berlaku; nominal dihitung ulang setelah disetujui owner.' }
+                                            : { kind: 'homecare_discount', description: 'Izinkan diskon untuk sesi homecare ini. Berlaku setelah disetujui owner.' })}>
+                                            Pengajuan perubahan diskon
+                                        </DropdownMenuItem>
+                                    )}
+                                    {!quote?.soap_done && quote?.needs_soap && !invoiceLocked && (
+                                        <DropdownMenuItem onSelect={() => openOverride({ kind: 'payment_unlock', description: 'Buka kunci pembayaran tanpa menunggu SOAP (mis. terapis berhalangan). Berlaku setelah disetujui owner.' })}>
+                                            Pengajuan buka kunci pembayaran
+                                        </DropdownMenuItem>
+                                    )}
+                                    {quote && !quote.homecare && !quote.xtratime && !invoiceLocked && (
+                                        <DropdownMenuItem onSelect={() => openOverride({ kind: 'xtratime', description: 'Tandai sesi ini sebagai Xtratime (pasien di luar jam kerja, bukan homecare). Berlaku setelah disetujui owner.' })}>
+                                            Pengajuan Xtratime
+                                        </DropdownMenuItem>
+                                    )}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         )}
                         {onEdit && (
                             <Button onClick={() => { onEdit(recap); onClose(); }} className="bg-app-accent hover:bg-app-accent-hover text-white">
@@ -382,6 +438,17 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                     </div>
                 </div>
             </DialogContent>
+            <SoapOverrideDialog
+                open={!!overrideDialog}
+                onOpenChange={(v) => { if (!v) setOverrideDialog(null); }}
+                kind={overrideDialog?.kind}
+                recapId={overrideDialog?.recapId ?? null}
+                description={overrideDialog?.description}
+                withAmount={!!overrideDialog?.withAmount}
+                withDiscount={!!overrideDialog?.withDiscount}
+                discountOptions={discountOptions}
+                onDone={refreshQuote}
+            />
             <RecapSoapPreviewDialog
                 open={soapPreviewOpen}
                 onOpenChange={setSoapPreviewOpen}
