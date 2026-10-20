@@ -989,7 +989,13 @@ const getPremiumPastelBadge = (text) => {
                     <span className="text-xs text-slate-500 font-medium">{recap.display_therapist_name}</span>
                     <span className="text-slate-300 text-xs">·</span>
                     <Badge className={cn("text-xs font-normal py-0 px-1.5", getPremiumPastelBadge(patientTypeLabel))}>{patientTypeLabel}</Badge>
-                    <Badge variant="outline" className="text-xs font-normal py-0 px-1.5">{serviceLabel}</Badge>
+                    {portalButtonEnabled ? (
+                      (Array.isArray(recap.diagnosis) ? recap.diagnosis : []).slice(0, 2).map((d, i) => (
+                        <Badge key={i} variant="outline" className="text-xs font-normal py-0 px-1.5">{optionsMap[d] || d}</Badge>
+                      ))
+                    ) : (
+                      <Badge variant="outline" className="text-xs font-normal py-0 px-1.5">{serviceLabel}</Badge>
+                    )}
                     {packageLabel !== '-' && <Badge className="text-xs py-0 px-1.5 bg-blue-50 text-blue-600 border-blue-100">{packageLabel}</Badge>}
                     {recap.bypass_package_id && <Badge title={recap.bypass_reason || ''} className="text-xs py-0 px-1.5 bg-amber-50 text-amber-700 border-amber-200">Di luar paket</Badge>}
                   </div>
