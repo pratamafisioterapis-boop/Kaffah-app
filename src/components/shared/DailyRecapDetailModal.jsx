@@ -333,6 +333,9 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                         ) : (
                             <p className="text-sm text-slate-500">Belum diisi.</p>
                         )}
+                        {!vitalsRow && sfActive && sfSettings?.ttv_required && (
+                            <p className="text-xs font-medium text-amber-700">TTV bagian dari SOAP: SOAP belum dianggap selesai dan pembayaran tetap terkunci sampai TTV diisi.</p>
+                        )}
                         {pendingVitalsEdit && (
                             <p className="text-xs font-medium text-amber-700">Pengajuan perubahan menunggu persetujuan owner{pendingVitalsEdit.requested_by_name ? ` (diajukan ${pendingVitalsEdit.requested_by_name})` : ''}.</p>
                         )}

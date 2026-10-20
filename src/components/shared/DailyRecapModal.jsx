@@ -1815,7 +1815,7 @@ setFormData({
             )}
             {quote?.error && !sfInvoiceLocked && !sfIsPayment && !sfSoapDone && quote?.needs_soap && (
                 <div className="rounded-app-sm border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-                    Pembayaran baru bisa disimpan setelah terapis menyelesaikan SOAP. Minta {sfTherapistName} mengisi SOAP lebih dulu.
+                    Pembayaran baru bisa disimpan setelah SOAP selesai. Minta {sfTherapistName} mengisi SOAP lebih dulu{sfSettings?.ttv_required ? ', dan pastikan TTV (tanda vital) sudah diisi karena TTV bagian dari SOAP' : ''}.
                 </div>
             )}
 

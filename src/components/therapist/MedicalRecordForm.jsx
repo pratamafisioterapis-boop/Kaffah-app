@@ -822,6 +822,9 @@ if (isCreate) {
                 {recapInfo?.soap_completed_at && !sfLocked && (
                   <p className="text-emerald-700 font-medium">SOAP sudah tercatat selesai ({format(new Date(recapInfo.soap_completed_at), 'HH:mm')}).</p>
                 )}
+                {sfSettings?.ttv_required && linkedRecapId && !recapVitals && !sfLocked && (
+                  <p className="text-amber-700 font-medium">TTV (tanda vital) belum diisi admin. TTV bagian dari SOAP: SOAP baru tercatat selesai setelah TTV diisi.</p>
+                )}
                 {sfLocked && (
                   <p className="text-amber-700 font-medium">Invoice sudah terbit: SOAP terkunci. Perubahan dicatat sebagai revisi beserta alasannya.</p>
                 )}

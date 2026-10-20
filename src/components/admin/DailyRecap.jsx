@@ -433,10 +433,11 @@ end_time: r.end_time,
   // Muat ulang saat daftar berubah dan saat detail ditutup (TTV bisa diisi dari dalam detail).
   useEffect(() => { loadVitalsFilled(recaps); }, [recaps, isDetailModalOpen, loadVitalsFilled]);
 
-  // Sudah diisi -> centang hijau. Belum diisi hanya ditampilkan di klinik SOAP-first (TTV wajib di sana).
+  // TTV bagian dari SOAP di klinik yang mengaktifkannya (ttv_required): sudah diisi -> centang hijau,
+  // belum diisi -> abu-abu. Di klinik lain badge hanya muncul bila TTV sudah diisi.
   const renderTtvMark = (recap, className) => {
     const done = !!vitalsFilledMap[recap.id];
-    if (!done && !showSoapMark(recap)) return null;
+    if (!done && !(showSoapMark(recap) && soapFirstSettings?.ttv_required)) return null;
     return <TtvMark done={done} className={className} />;
   };
 
