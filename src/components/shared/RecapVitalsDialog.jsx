@@ -59,7 +59,7 @@ const RecapVitalsDialog = ({ open, onOpenChange, recap, existing = null, onDone 
         if (error) {
           const friendly = {
             '23505': 'TTV untuk sesi ini sudah pernah diisi. Muat ulang lalu ajukan perubahan.',
-            '23514': 'Ada nilai TTV di luar batas wajar. Periksa kembali isian (mis. RR 4-80, nadi 20-250, SpO2 50-100).',
+            '23514': 'TTV belum sesuai aturan: tensi, nadi, dan SpO2 wajib diisi, dan nilainya harus wajar (mis. RR 4-80, nadi 20-250, SpO2 50-100).',
             '22P02': 'Ada nilai TTV yang formatnya tidak valid. Pastikan hanya angka (tensi, nadi, dan RR bilangan bulat).',
           };
           throw new Error(friendly[error.code] || error.message);
