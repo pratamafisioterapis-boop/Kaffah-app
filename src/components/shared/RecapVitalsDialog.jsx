@@ -57,7 +57,12 @@ const RecapVitalsDialog = ({ open, onOpenChange, recap, existing = null, onDone 
       } else {
         const { error } = await insertRecapVitals(recap.id, recap.actual_patient_id || recap.patient_id, vitals, { id: user?.id, name: userDetails?.name || userDetails?.full_name });
         if (error) {
-          throw new Error(error.code === '23505' ? 'TTV untuk sesi ini sudah pernah diisi. Muat ulang lalu ajukan perubahan.' : error.message);
+          const friendly = {
+            '23505': 'TTV untuk sesi ini sudah pernah diisi. Muat ulang lalu ajukan perubahan.',
+            '23514': 'Ada nilai TTV di luar batas wajar. Periksa kembali isian (mis. RR 4-80, nadi 20-250, SpO2 50-100).',
+            '22P02': 'Ada nilai TTV yang formatnya tidak valid. Pastikan hanya angka (tensi, nadi, dan RR bilangan bulat).',
+          };
+          throw new Error(friendly[error.code] || error.message);
         }
         toast({ title: 'TTV tersimpan', description: 'Perubahan selanjutnya perlu persetujuan owner.' });
       }

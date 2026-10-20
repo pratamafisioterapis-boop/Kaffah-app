@@ -37,9 +37,36 @@ export const vitalsToRow = (v) => {
   return row;
 };
 
+// Batas nilai sama dengan CHECK constraint di tabel recap_vital_signs; int = kolom bilangan bulat.
+const VITAL_LIMITS = {
+  systolic: { label: 'Sistolik', unit: 'mmHg', min: 30, max: 300, int: true },
+  diastolic: { label: 'Diastolik', unit: 'mmHg', min: 20, max: 200, int: true },
+  pulse: { label: 'Nadi', unit: 'x/mnt', min: 20, max: 250, int: true },
+  respiration: { label: 'RR (pernapasan)', unit: 'x/mnt', min: 4, max: 80, int: true },
+  spo2: { label: 'SpO2', unit: '%', min: 50, max: 100 },
+  temperature: { label: 'Suhu', unit: '°C', min: 30, max: 45 },
+  weight: { label: 'Berat badan', unit: 'kg', min: 1, max: 500 },
+  height: { label: 'Tinggi badan', unit: 'cm', min: 30, max: 260 },
+};
+
+// Pesan kesalahan untuk nilai di luar batas / bukan bilangan bulat, atau null bila semua wajar.
+function validateVitalRanges(v) {
+  for (const [key, lim] of Object.entries(VITAL_LIMITS)) {
+    const raw = v[key];
+    if (raw === '' || raw === null || raw === undefined) continue;
+    const n = toNum(raw);
+    if (n === null) return `${lim.label} harus berupa angka.`;
+    if (lim.int && !Number.isInteger(n)) return `${lim.label} harus berupa bilangan bulat (tanpa koma).`;
+    if (n < lim.min || n > lim.max) return `${lim.label} ${raw} di luar batas wajar. Isi antara ${lim.min} dan ${lim.max} ${lim.unit}.`;
+  }
+  return null;
+}
+
 // Mengembalikan pesan kesalahan, atau null bila isian valid.
 export function validateVitals(v) {
   if (!hasAnyVital(v)) return 'Isi minimal satu tanda vital.';
+  const rangeErr = validateVitalRanges(v);
+  if (rangeErr) return rangeErr;
   const hasSys = toNum(v.systolic) !== null;
   const hasDia = toNum(v.diastolic) !== null;
   if (hasSys !== hasDia) return 'Tekanan darah harus diisi lengkap (sistolik dan diastolik).';

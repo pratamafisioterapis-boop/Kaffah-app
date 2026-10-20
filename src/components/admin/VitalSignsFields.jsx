@@ -4,8 +4,8 @@ import { Label } from '@/components/ui/label';
 import { Activity } from 'lucide-react';
 
 const FIELDS = [
-  { key: 'pulse', label: 'Nadi (x/mnt)', ph: '80' },
-  { key: 'respiration', label: 'RR (x/mnt)', ph: '18' },
+  { key: 'pulse', label: 'Nadi (x/mnt)', ph: '80', mode: 'numeric' },
+  { key: 'respiration', label: 'RR (x/mnt, 4-80)', ph: '18', mode: 'numeric' },
   { key: 'spo2', label: 'SpO2 (%)', ph: '98' },
   { key: 'temperature', label: 'Suhu (°C)', ph: '36.5' },
   { key: 'weight', label: 'Berat (kg)', ph: '65' },
@@ -31,7 +31,7 @@ const VitalSignsFields = ({ value, onChange }) => {
         {FIELDS.map((f) => (
           <div key={f.key} className="space-y-1">
             <Label className="text-xs">{f.label}</Label>
-            <Input inputMode="decimal" value={value[f.key]} onChange={(e) => set(f.key, e.target.value)} placeholder={f.ph} className="bg-white" />
+            <Input inputMode={f.mode || 'decimal'} value={value[f.key]} onChange={(e) => set(f.key, e.target.value)} placeholder={f.ph} className="bg-white" />
           </div>
         ))}
       </div>
