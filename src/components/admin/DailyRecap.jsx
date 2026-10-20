@@ -38,7 +38,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import PageHero from '@/components/shared/PageHero';
 import SendClinaraDialog from '@/components/admin/patients/SendClinaraDialog';
-import { PortalStatusButton, SoapMark } from '@/components/admin/RecapRowMarks';
+import { PortalStatusButton, SoapMark, TtvMark } from '@/components/admin/RecapRowMarks';
 import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
 import { isSoapFirstActiveOn } from '@/lib/soapFirst';
 
@@ -419,6 +419,27 @@ end_time: r.end_time,
   }, []);
 
   useEffect(() => { loadPortalSent(recaps); }, [recaps, loadPortalSent]);
+
+  // TTV: tandai recap yang sudah punya tanda vital (tabel recap_vital_signs, satu baris per recap).
+  const [vitalsFilledMap, setVitalsFilledMap] = useState({});
+  const loadVitalsFilled = useCallback(async (recapList) => {
+    const ids = (recapList || []).map((r) => r.id).filter(Boolean);
+    if (ids.length === 0) { setVitalsFilledMap({}); return; }
+    const { data, error } = await supabase.from('recap_vital_signs').select('recap_id').in('recap_id', ids);
+    if (error || !isMounted.current) return;
+    setVitalsFilledMap(Object.fromEntries((data || []).map((v) => [v.recap_id, true])));
+  }, []);
+
+  // Muat ulang saat daftar berubah dan saat detail ditutup (TTV bisa diisi dari dalam detail).
+  useEffect(() => { loadVitalsFilled(recaps); }, [recaps, isDetailModalOpen, loadVitalsFilled]);
+
+  // TTV bagian dari SOAP di klinik yang mengaktifkannya (ttv_required): sudah diisi -> centang hijau,
+  // belum diisi -> abu-abu. Di klinik lain badge hanya muncul bila TTV sudah diisi.
+  const renderTtvMark = (recap, className) => {
+    const done = !!vitalsFilledMap[recap.id];
+    if (!done && !(showSoapMark(recap) && soapFirstSettings?.ttv_required)) return null;
+    return <TtvMark done={done} className={className} />;
+  };
 
   const getPortalSentAt = (recap) => portalSentMap[getPortalPatient(recap)?.id] || null;
   // SOAP hanya relevan di klinik SOAP-first (soap_completed_at diisi trigger).
@@ -977,6 +998,7 @@ const getPremiumPastelBadge = (text) => {
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
                       {showSoapMark(recap) && <SoapMark done={!!recap.soap_completed_at} className="py-1" />}
+                      {renderTtvMark(recap, 'py-1')}
                       {recap.end_time
                         ? <Badge className="gap-1 rounded-full bg-emerald-50 text-emerald-700 border-0 text-xs px-2 py-1 whitespace-nowrap"><CheckCircle2 className="h-3.5 w-3.5" />Selesai</Badge>
                         : recap.start_time
@@ -994,7 +1016,12 @@ const getPremiumPastelBadge = (text) => {
                       )}
                       <div className="mt-0.5 text-xs text-slate-500">{recap.display_therapist_name}</div>
                     </div>
-                    <span className="shrink-0 whitespace-nowrap text-[15px] font-bold text-app-accent">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</span>
+                    <div className="flex shrink-0 flex-col items-end gap-0.5">
+                      <span className="whitespace-nowrap text-[15px] font-bold text-app-accent">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</span>
+                      {parseFloat(recap.amount) > 0 && !recap.payment_method && recap.special_type !== 'free' && (
+                        <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">Metode belum diisi</span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Tag baris 1: tipe pasien, paket, di luar paket */}
@@ -1154,6 +1181,9 @@ const getPremiumPastelBadge = (text) => {
                        {recap.payment_method && (
                          <div className="text-xs text-slate-500 font-medium mt-0.5 capitalize">{recap.payment_method}</div>
                        )}
+                       {parseFloat(recap.amount) > 0 && !recap.payment_method && recap.special_type !== 'free' && (
+                         <div className="mt-0.5 inline-block rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">Metode belum diisi</div>
+                       )}
                      </td>
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center">
                        <div className="flex flex-col items-center gap-1">
@@ -1165,6 +1195,7 @@ const getPremiumPastelBadge = (text) => {
                            <Badge className="bg-slate-100 text-slate-500 border-0 px-1 xl:px-2 py-0.5 rounded-app-sm whitespace-normal text-center leading-tight">Belum</Badge>
                          )}
                          {showSoapMark(recap) && <SoapMark done={!!recap.soap_completed_at} />}
+                         {renderTtvMark(recap)}
                        </div>
                      </td>
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center" onClick={(e) => e.stopPropagation()}>
