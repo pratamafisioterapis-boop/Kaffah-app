@@ -118,6 +118,11 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
 
     const displayActualPatient = recap.actual_patients?.full_name || (recap.actual_patient_id ? "Loading..." : "-");
 
+    const ownerName = recap.patients?.full_name || recap.patient_name || recap.guest_name;
+    const samePatient = !recap.actual_patient_id
+        || recap.actual_patient_id === recap.patient_id
+        || (!!ownerName && ownerName === recap.actual_patients?.full_name);
+
     // Resolve labels from IDs using optionsMap
     const serviceLabel = optionsMap[recap.service_type] || recap.service_type || '-';
     const patientTypeLabel = optionsMap[recap.patient_type] || recap.patient_type || '-';
@@ -162,14 +167,12 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-app-lg p-0 shadow-xl border border-slate-200/60">
-          <DialogHeader className="px-6 py-5 border-b border-slate-200/60 bg-white rounded-t-app-lg">
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden rounded-app-lg p-0 shadow-xl border border-slate-200/60">
+          <DialogHeader className="px-4 py-4 sm:px-6 sm:py-5 border-b border-slate-200/60 bg-white rounded-t-app-lg">
                     <div className="flex justify-between items-start">
                         <div>
-                <DialogTitle className="text-2xl font-semibold text-slate-900 tracking-tight">Detail Recap Harian</DialogTitle>
-                <DialogDescription className="text-xs text-slate-500 mt-1 tracking-wide">
-                                ID: {recap.id?.slice(0,8)}...
-                            </DialogDescription>
+                <DialogTitle className="text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight">Detail Recap Harian</DialogTitle>
+                <DialogDescription className="sr-only">Rincian data recap harian pasien.</DialogDescription>
                         </div>
                         {isVirtual && (
                             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
@@ -179,25 +182,27 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                     </div>
                 </DialogHeader>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-6 py-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 px-3 py-3 sm:px-6 sm:py-6">
                     {/* Section 1: Pasien */}
-                    <div className="space-y-4 p-5 rounded-app-lg border border-slate-200/60 bg-white shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200">
+                    <div className="min-w-0 space-y-3 sm:space-y-4 p-3.5 sm:p-5 rounded-app-lg border border-slate-200/60 bg-white shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200">
                         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-200/60">
                             <UserCircle className="w-4 h-4 text-app-accent" />
                 <h4 className="text-sm font-semibold text-slate-700 tracking-tight">Identitas Pasien</h4>
                         </div>
                         
                         <DetailItem 
-                            label="Pemilik Akun/Paket" 
-                            value={recap.patients?.full_name || recap.patient_name || recap.guest_name} 
+                            label={samePatient ? "Pasien" : "Pemilik Akun/Paket"} 
+                            value={ownerName} 
                             valueClassName="text-base font-bold text-slate-900"
                         />
                         
-                        <DetailItem 
-                            label="Pasien Aktual" 
-                            value={displayActualPatient} 
-                            valueClassName={cn("font-medium", displayActualPatient !== '-' ? "text-app-accent-hover" : "text-slate-500")}
-                        />
+                        {!samePatient && (
+                            <DetailItem 
+                                label="Pasien Aktual" 
+                                value={displayActualPatient} 
+                                valueClassName={cn("font-medium", displayActualPatient !== '-' ? "text-app-accent-hover" : "text-slate-500")}
+                            />
+                        )}
 
                         <div className="grid grid-cols-2 gap-4">
                             <DetailItem label="Tipe Pasien" value={patientTypeLabel} />
@@ -206,7 +211,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                     </div>
 
                     {/* Section 2: Waktu */}
-                    <div className="space-y-4 p-5 rounded-app-lg border border-slate-200/60 bg-white shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200">
+                    <div className="min-w-0 space-y-3 sm:space-y-4 p-3.5 sm:p-5 rounded-app-lg border border-slate-200/60 bg-white shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200">
                         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-200/60">
                             <Clock className="w-4 h-4 text-app-accent" />
                             <h4 className="text-sm font-bold text-slate-800">Waktu & Status</h4>
@@ -235,13 +240,13 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 pt-2">
-                            <DetailItem label="Mulai" value={recap.start_time ? formatTime(new Date(recap.start_time)) : '-'} valueClassName="font-mono text-app-accent-hover" />
-                            <DetailItem label="Selesai" value={recap.end_time ? formatTime(new Date(recap.end_time)) : '-'} valueClassName="font-mono text-green-700" />
+                            <DetailItem label="Mulai" value={recap.start_time ? formatTime(new Date(recap.start_time)) : '-'} valueClassName="font-mono text-sm text-app-accent-hover" />
+                            <DetailItem label="Selesai" value={recap.end_time ? formatTime(new Date(recap.end_time)) : '-'} valueClassName="font-mono text-sm text-green-700" />
                         </div>
                     </div>
 
                     {/* Section 3: Detail Klinis */}
-            <div className="space-y-4 md:col-span-2 p-5 rounded-app-lg border border-slate-200/60 bg-white shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200">
+            <div className="min-w-0 space-y-3 sm:space-y-4 md:col-span-2 p-3.5 sm:p-5 rounded-app-lg border border-slate-200/60 bg-white shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200">
                         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-100">
                             <Activity className="w-4 h-4 text-app-accent" />
                             <h4 className="text-sm font-bold text-slate-800">Detail Layanan & Klinis</h4>
@@ -273,7 +278,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                     </div>
 
                     {/* Tanda Vital (input admin, terkunci setelah diisi, tertaut ke SOAP) */}
-                    <div className="space-y-2 md:col-span-2 p-5 rounded-app-lg border border-cyan-200/60 bg-cyan-50/40 shadow-sm">
+                    <div className="min-w-0 space-y-2 md:col-span-2 p-3.5 sm:p-5 rounded-app-lg border border-cyan-200/60 bg-cyan-50/40 shadow-sm">
                         <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-cyan-200/60">
                             <div className="flex items-center gap-2">
                                 <Activity className="w-4 h-4 text-cyan-700" />
@@ -306,7 +311,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                     </div>
 
                     {/* Section 4: Keuangan */}
-            <div className="space-y-4 md:col-span-2 p-5 rounded-app-lg border border-blue-200/40 bg-gradient-to-br from-app-soft via-white to-app-soft shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200">
+            <div className="min-w-0 space-y-3 sm:space-y-4 md:col-span-2 p-3.5 sm:p-5 rounded-app-lg border border-blue-200/40 bg-gradient-to-br from-app-soft via-white to-app-soft shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200">
                         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-blue-200/50">
                             <CreditCard className="w-4 h-4 text-app-accent" />
                             <h4 className="text-sm font-bold text-app-ink">Informasi Pembayaran</h4>

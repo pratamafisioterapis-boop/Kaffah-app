@@ -997,18 +997,21 @@ const getPremiumPastelBadge = (text) => {
                     <span className="shrink-0 whitespace-nowrap text-[15px] font-bold text-app-accent">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</span>
                   </div>
 
-                  {/* Tag: tipe pasien, layanan/diagnosa, paket */}
+                  {/* Tag baris 1: tipe pasien, paket, di luar paket */}
                   <div className="mt-2.5 flex flex-wrap gap-1.5">
                     <span className={cn(tagCls, getPremiumPastelBadge(patientTypeLabel))}>{patientTypeLabel}</span>
+                    {packageLabel !== '-' && <span className={cn(tagCls, 'bg-blue-50 text-blue-600')}>{packageLabel}</span>}
+                    {recap.bypass_package_id && <span title={recap.bypass_reason || ''} className={cn(tagCls, 'bg-amber-50 text-amber-700')}>Di luar paket</span>}
+                  </div>
+                  {/* Tag baris 2: diagnosa (Kaffah) atau layanan */}
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {portalButtonEnabled ? (
-                      (Array.isArray(recap.diagnosis) ? recap.diagnosis : []).slice(0, 2).map((d, i) => (
+                      (Array.isArray(recap.diagnosis) ? recap.diagnosis : []).map((d, i) => (
                         <span key={i} className={cn(tagCls, 'bg-slate-100 text-slate-700')}>{optionsMap[d] || d}</span>
                       ))
                     ) : (
                       <span className={cn(tagCls, 'bg-slate-100 text-slate-700')}>{serviceLabel}</span>
                     )}
-                    {packageLabel !== '-' && <span className={cn(tagCls, 'bg-blue-50 text-blue-600')}>{packageLabel}</span>}
-                    {recap.bypass_package_id && <span title={recap.bypass_reason || ''} className={cn(tagCls, 'bg-amber-50 text-amber-700')}>Di luar paket</span>}
                   </div>
 
                   {/* Sesi: tombol mulai / selesai / jam terapi */}
@@ -1026,8 +1029,8 @@ const getPremiumPastelBadge = (text) => {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        <div className="flex w-fit items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 font-mono text-sm text-slate-600">
-                          <Clock className="h-4 w-4 text-slate-500" />
+                        <div className="flex w-fit items-center gap-1.5 rounded-lg bg-slate-100 px-2 py-1 font-mono text-xs text-slate-600">
+                          <Clock className="h-3.5 w-3.5 text-slate-500" />
                           <span>{formatTime(new Date(recap.start_time))}</span>
                           <span className="text-slate-400">–</span>
                           <span>{formatTime(new Date(recap.end_time))}</span>

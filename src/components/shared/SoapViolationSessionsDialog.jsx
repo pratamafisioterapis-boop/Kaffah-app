@@ -2,6 +2,7 @@ import React from 'react';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { INCENTIVE_REASON_LABELS } from '@/lib/soapFirst';
 
 const fmtDate = (v) => {
@@ -13,7 +14,8 @@ const fmtClock = (v) => {
 };
 
 /** Daftar sesi yang melanggar aturan SOAP: tanggal, jam, pasien, dan diagnosa. */
-const SoapViolationSessionsDialog = ({ open, onOpenChange, title, sessions = [] }) => (
+// onRestore (opsional): menampilkan tombol pengajuan pemulihan insentif per sesi (khusus terapis).
+const SoapViolationSessionsDialog = ({ open, onOpenChange, title, sessions = [], onRestore, pendingIds }) => (
   <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
       <DialogHeader>
@@ -33,6 +35,15 @@ const SoapViolationSessionsDialog = ({ open, onOpenChange, title, sessions = [] 
             <div className="text-xs text-slate-700">
               <span className="text-slate-500">Diagnosa: </span>{s.diagnoses.length ? s.diagnoses.join(', ') : '-'}
             </div>
+            {onRestore && s.reason !== 'ditandai_owner' && (
+              pendingIds?.has(s.id) ? (
+                <div className="pt-1 text-xs font-medium text-amber-700">Pengajuan pemulihan menunggu persetujuan owner.</div>
+              ) : (
+                <Button type="button" size="sm" variant="outline" className="mt-1 h-8 text-xs" onClick={() => onRestore(s)}>
+                  Ajukan pemulihan insentif
+                </Button>
+              )
+            )}
           </div>
         ))}
       </div>
