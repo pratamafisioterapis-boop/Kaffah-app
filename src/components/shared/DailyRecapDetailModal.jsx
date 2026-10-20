@@ -32,6 +32,9 @@ const DetailItem = ({ icon: Icon, label, value, className = "", valueClassName =
     </div>
 );
 
+// Ukuran seragam semua tombol footer: 44px di mobile (target sentuh), 40px di desktop.
+const footerBtn = 'h-11 w-full rounded-xl px-4 text-sm font-medium sm:h-10 sm:w-auto';
+
 const isUuid = (v) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 
 const getDiagnosisIds = (diagnosis) => {
@@ -372,41 +375,40 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                     </div>
                 </div>
 
-          <div className="px-3 py-3 sm:px-6 sm:py-4 border-t border-slate-200/60 bg-white flex flex-wrap justify-between items-center gap-2">
-                    {!showDeleteConfirm ? (
-                        <div className="flex gap-2">
-                            {onDelete && (
-                                <Button variant="ghost" onClick={() => setShowDeleteConfirm(true)} className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                                    <Trash2 className="w-4 h-4 mr-2" /> Hapus
+          {/* Aksi: mobile = 3 baris (Pengajuan; SOAP + Edit; Hapus + Tutup), desktop = satu baris */}
+          <div className="grid grid-cols-2 gap-2 border-t border-slate-200/60 bg-white p-3 sm:flex sm:items-center sm:justify-end sm:px-6 sm:py-4">
+                    {showDeleteConfirm ? (
+                        <div className="order-4 col-span-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 animate-in fade-in sm:order-1 sm:col-span-1 sm:mr-auto sm:justify-start">
+                            <span className="flex items-center gap-1.5 text-xs font-medium text-red-700">
+                                <AlertTriangle className="h-4 w-4 shrink-0 text-red-600" /> Yakin hapus permanen?
+                            </span>
+                            <span className="flex gap-1.5">
+                                <Button size="sm" variant="destructive" onClick={handleDelete} disabled={isDeleting} className="h-8 rounded-lg text-xs">
+                                    {isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Ya, Hapus"}
                                 </Button>
-                            )}
+                                <Button size="sm" variant="ghost" onClick={() => setShowDeleteConfirm(false)} className="h-8 rounded-lg text-xs text-slate-600">Batal</Button>
+                            </span>
                         </div>
-                    ) : (
-                        <div className="flex items-center gap-2 bg-red-50 px-3 py-1.5 rounded-app-sm border border-red-100 animate-in fade-in">
-                            <AlertTriangle className="w-4 h-4 text-red-600" />
-                            <span className="text-xs font-medium text-red-700">Yakin hapus permanen?</span>
-                            <Button size="sm" variant="destructive" onClick={handleDelete} disabled={isDeleting} className="h-7 text-xs">
-                                {isDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : "Ya, Hapus"}
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={() => setShowDeleteConfirm(false)} className="h-7 text-xs text-slate-600">Batal</Button>
-                        </div>
+                    ) : onDelete && (
+                        <Button variant="ghost" onClick={() => setShowDeleteConfirm(true)} className={cn(footerBtn, 'order-4 text-red-600 hover:bg-red-50 hover:text-red-700 sm:order-1 sm:mr-auto')}>
+                            <Trash2 className="mr-2 h-4 w-4" /> Hapus
+                        </Button>
                     )}
 
-                    <div className="flex flex-wrap gap-2 [&>button]:h-9 [&>button]:px-3 [&>button]:text-sm">
-                        <Button variant="outline" onClick={onClose} className="bg-white">Tutup</Button>
-                        {showSoapButton && (
-                            <Button variant="outline" onClick={() => setSoapPreviewOpen(true)} className="bg-white border-emerald-300 text-emerald-700 hover:bg-emerald-50">
-                                <FileText className="w-4 h-4 mr-2" /> SOAP
-                            </Button>
-                        )}
-                        {canRequestChange && (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="bg-white">
-                                        Pengajuan Perubahan <ChevronDown className="ml-1.5 h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
+                    <Button variant="outline" onClick={onClose} className={cn(footerBtn, 'order-5 bg-white sm:order-2')}>Tutup</Button>
+                    {showSoapButton && (
+                        <Button variant="outline" onClick={() => setSoapPreviewOpen(true)} className={cn(footerBtn, 'order-2 border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-50 sm:order-3')}>
+                            <FileText className="mr-2 h-4 w-4" /> SOAP
+                        </Button>
+                    )}
+                    {canRequestChange && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className={cn(footerBtn, 'order-1 col-span-2 bg-white sm:order-4 sm:col-span-1')}>
+                                    Pengajuan Perubahan <ChevronDown className="ml-1.5 h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent side="top" align="start" className="w-[var(--radix-dropdown-menu-trigger-width)] sm:w-auto">
                                     <DropdownMenuItem onSelect={() => openOverride({ kind: 'amount_adjust', withAmount: true, description: 'Ubah nominal tagihan di luar daftar harga. Berlaku setelah disetujui owner.' })}>
                                         Pengajuan perubahan nominal
                                     </DropdownMenuItem>
@@ -428,14 +430,13 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                                         </DropdownMenuItem>
                                     )}
                                 </DropdownMenuContent>
-                            </DropdownMenu>
-                        )}
-                        {onEdit && (
-                            <Button onClick={() => { onEdit(recap); onClose(); }} className="bg-app-accent hover:bg-app-accent-hover text-white">
-                                <Edit className="w-4 h-4 mr-2" /> Edit Data
-                            </Button>
-                        )}
-                    </div>
+                        </DropdownMenu>
+                    )}
+                    {onEdit && (
+                        <Button onClick={() => { onEdit(recap); onClose(); }} className={cn(footerBtn, 'order-3 bg-app-accent text-white hover:bg-app-accent-hover sm:order-5')}>
+                            <Edit className="mr-2 h-4 w-4" /> Edit Data
+                        </Button>
+                    )}
                 </div>
             </DialogContent>
             <SoapOverrideDialog
