@@ -11,6 +11,8 @@
 // Satu lagi varian: modul lama yang sebagian filenya sudah berganti sehingga
 // import-nya menghasilkan undefined, dilaporkan sebagai
 //   "Cannot read properties of undefined (reading 'default')".
+// Safari/WebKit melaporkan varian yang sama dengan kalimat lain:
+//   "undefined is not an object (evaluating 'e._result.default')"
 // Satu pengenal bersama supaya semua penangkap error (lazyRetry, ErrorBoundary,
 // AuthErrorBoundary, listener global) mengenali semua varian tersebut.
 const STALE_CHUNK_RE = new RegExp(
@@ -26,6 +28,8 @@ const STALE_CHUNK_RE = new RegExp(
     'expected a javascript.*module script',
     "cannot access '.*' before initialization",
     "cannot read properties of undefined \\(reading 'default'\\)",
+    "undefined is not an object \\(evaluating '.*\\.default'\\)",
+    "undefined is not an object \\(evaluating '.*_result",
   ].join('|'),
   'i'
 );

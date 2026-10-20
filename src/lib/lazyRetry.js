@@ -10,16 +10,27 @@ import { isStaleChunkError, reloadForStaleChunk } from '@/lib/staleChunk';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Kadang import() "berhasil" tapi menghasilkan undefined / modul tanpa default
+// (chunk setengah basi, terutama di Safari). React.lazy lalu meledak dengan
+// "e._result.default" di tengah render, jadi tolak di sini agar ikut jalur retry.
+const loadModule = async (componentImport) => {
+  const mod = await componentImport();
+  if (!mod || mod.default === undefined) {
+    throw new TypeError("Cannot read properties of undefined (reading 'default')");
+  }
+  return mod;
+};
+
 export const lazyRetry = (componentImport, chunkName) => async () => {
   try {
-    return await componentImport();
+    return await loadModule(componentImport);
   } catch (error) {
     if (!isStaleChunkError(error)) throw error;
 
     for (const delay of [500, 1500]) {
       await wait(delay);
       try {
-        return await componentImport();
+        return await loadModule(componentImport);
       } catch {
         // keep retrying / fall through to reload below
       }
