@@ -603,9 +603,24 @@ if (isCreate) {
 
        // Tautkan diagnosa ke daily recap (terlihat oleh admin & owner)
        if (linkedRecapId && isValidUUID(linkedRecapId)) {
+         // Tipe layanan diturunkan dari parent diagnosa (sama seperti form rekap admin);
+         // tanpa ini rekap yang diagnosanya diisi terapis lewat SOAP tidak punya tipe layanan.
+         const selected = diagnosis
+           .map((id) => diagnosisOptions.find((o) => o.id === id || o.value === id))
+           .filter(Boolean);
+         let serviceParent = null;
+         if (selected.length <= 2) {
+           serviceParent = selected[0]?.parent_id || null;
+         } else {
+           const freq = {};
+           selected.forEach((o) => { if (o.parent_id) freq[o.parent_id] = (freq[o.parent_id] || 0) + 1; });
+           serviceParent = Object.keys(freq).reduce((a, b) => (freq[a] >= freq[b] ? a : b), null);
+         }
+         const recapUpdate = { diagnosis, updated_at: new Date().toISOString() };
+         if (serviceParent) recapUpdate.service_type = serviceParent;
          const { error: diagError } = await supabase
            .from('daily_recaps')
-           .update({ diagnosis, updated_at: new Date().toISOString() })
+           .update(recapUpdate)
            .eq('id', linkedRecapId);
          if (diagError) {
            toast({ variant: "destructive", title: "SOAP tersimpan, diagnosa gagal", description: diagError.message });
