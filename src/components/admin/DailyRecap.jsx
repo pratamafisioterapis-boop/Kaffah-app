@@ -40,7 +40,7 @@ import PageHero from '@/components/shared/PageHero';
 import SendClinaraDialog from '@/components/admin/patients/SendClinaraDialog';
 import { PortalStatusButton, SoapMark, TtvMark } from '@/components/admin/RecapRowMarks';
 import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
-import { isSoapFirstActiveOn } from '@/lib/soapFirst';
+import { isSoapFirstActiveOn, ttvRequiredFor } from '@/lib/soapFirst';
 
 // Pasien yang menerima layanan (bukan pemilik paket) berhak atas tautan portal.
 const getPortalPatient = (recap) => recap.actual_patients || recap.patients || null;
@@ -433,11 +433,11 @@ end_time: r.end_time,
   // Muat ulang saat daftar berubah dan saat detail ditutup (TTV bisa diisi dari dalam detail).
   useEffect(() => { loadVitalsFilled(recaps); }, [recaps, isDetailModalOpen, loadVitalsFilled]);
 
-  // TTV bagian dari SOAP di klinik yang mengaktifkannya (ttv_required): sudah diisi -> centang hijau,
+  // TTV bagian dari SOAP di klinik yang mengaktifkannya (ttv_required, sejak ttv_required_from): sudah diisi -> centang hijau,
   // belum diisi -> abu-abu. Di klinik lain badge hanya muncul bila TTV sudah diisi.
   const renderTtvMark = (recap, className) => {
     const done = !!vitalsFilledMap[recap.id];
-    if (!done && !(showSoapMark(recap) && soapFirstSettings?.ttv_required)) return null;
+    if (!done && !(showSoapMark(recap) && ttvRequiredFor(soapFirstSettings, recap))) return null;
     return <TtvMark done={done} className={className} />;
   };
 
