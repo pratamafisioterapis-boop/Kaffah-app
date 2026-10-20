@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/customSupabaseClient';
 import { format, parse, isValid, isAfter } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { isInvoiceResolved } from '@/lib/invoiceDelivery';
 
 export const fetchPhysiotherapists = async () => {
   try {
@@ -147,7 +148,7 @@ export const validateDailyRecapForm = (data) => {
 const recapPriority = (r) => {
     if (r.end_time) {
         const invoiceNotNeeded = parseFloat(r.amount || 0) === 0;
-        const invoiceDone = r.invoice_wa_status && r.invoice_wa_status !== 'gagal';
+        const invoiceDone = isInvoiceResolved(r.invoice_wa_status);
         return invoiceNotNeeded || invoiceDone ? 3 : 0;
     }
     return r.start_time ? 1 : 2;

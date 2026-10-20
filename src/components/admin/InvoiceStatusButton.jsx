@@ -1,40 +1,26 @@
 import React from 'react';
-import { Check, X, Clock } from 'lucide-react';
+import { Check, X, Clock, AlertTriangle, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { invoiceStatusView } from '@/lib/invoiceDelivery';
 
-const TONES = {
-  sent: {
-    label: 'Terkirim',
-    Icon: Check,
-    icon: 'text-emerald-600',
-    title:
-      'Terkirim. Status berdasarkan respons API — bukan konfirmasi pasien menerima. Jika pasien 24 jam terakhir tidak WA klinik, pesan bisa gagal masuk walau status ini hijau.',
-  },
-  failed: {
-    label: 'Gagal dikirim',
-    Icon: X,
-    icon: 'text-red-600',
-    title: 'Gagal dikirim',
-  },
-  pending: {
-    label: 'Belum dikirim',
-    Icon: Clock,
-    icon: 'text-amber-500',
-    title: 'Invoice belum pernah dikirim ke WhatsApp pasien',
-  },
+// Ikon kecil di dalam tombol (tanpa teks agar hemat tempat); arti lengkap ada di tooltip.
+const ICONS = {
+  green: { Icon: Check, cls: 'text-emerald-600' },
+  amber: { Icon: Clock, cls: 'text-amber-500' },
+  orange: { Icon: AlertTriangle, cls: 'text-orange-500' },
+  red: { Icon: X, cls: 'text-red-600' },
+  slate: { Icon: Minus, cls: 'text-slate-400' },
 };
 
-const getTone = (status) =>
-  status === 'gagal' ? TONES.failed : status ? TONES.sent : TONES.pending;
-
 /**
- * Tombol Invoice dengan penanda status pengiriman WhatsApp (ikon kecil
- * di dalam tombol, tanpa teks agar hemat tempat).
+ * Tombol Invoice dengan penanda status pengiriman WhatsApp.
+ * Hijau hanya bila ada bukti sampai (delivered/read/link dibuka/konfirmasi admin); kuning = menunggu bukti;
+ * oranye = menunggu terlalu lama; merah = gagal.
  */
 export default function InvoiceStatusButton({ recap, onClick, className }) {
   const disabled = parseFloat(recap?.amount || 0) === 0;
-  const tone = getTone(recap?.invoice_wa_status);
-  const { Icon } = tone;
+  const view = invoiceStatusView(recap);
+  const { Icon, cls } = ICONS[view.color] || ICONS.amber;
 
   return (
     <button
@@ -48,9 +34,9 @@ export default function InvoiceStatusButton({ recap, onClick, className }) {
     >
       Invoice
       {!disabled && (
-        <span title={tone.title} className="inline-flex">
-          <Icon className={cn('h-3.5 w-3.5 shrink-0', tone.icon)} strokeWidth={3} aria-hidden="true" />
-          <span className="sr-only">{tone.label}</span>
+        <span title={`${view.label}. ${view.hint}`} className="inline-flex">
+          <Icon className={cn('h-3.5 w-3.5 shrink-0', cls)} strokeWidth={3} aria-hidden="true" />
+          <span className="sr-only">{view.label}</span>
         </span>
       )}
     </button>

@@ -13,9 +13,13 @@ import { Printer, Download, X, Loader2, Send } from "lucide-react";
 import InvoiceTemplate from './InvoiceTemplate';
 import InvoiceTemplateKwitansi from './InvoiceTemplateKwitansi';
 import { useToast } from "@/components/ui/use-toast";
-import { getInvoiceSettings, getWaApiSettings } from '@/lib/api';
+import { getInvoiceSettings, getWaApiSettings, getDiscountTypeOptions } from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { stripSignatureBackground } from '@/lib/signatureImage';
+import { cn } from '@/lib/utils';
+import InvoiceDeliveryPanel from './InvoiceDeliveryPanel';
+import SoapOverrideDialog from '@/components/shared/SoapOverrideDialog';
+import { isInvoiceResolved } from '@/lib/invoiceDelivery';
 
 // Ukuran acuan A4 (210mm x 297mm) dalam px @96dpi — dipakai untuk menghitung
 // skala preview di layar sempit. Generasi PDF/print tetap memakai elemen asli
@@ -23,7 +27,9 @@ import { stripSignatureBackground } from '@/lib/signatureImage';
 const INVOICE_BASE_WIDTH  = 794;
 const INVOICE_BASE_HEIGHT = Math.round(794 * 297 / 210);
 
-const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
+// deliveryTracking: klinik dengan pelacakan pengiriman invoice (Kaffah) - kirim otomatis + cek hasil + kirim manual.
+// gate: mode wajib setelah pembayaran disimpan; tidak bisa ditutup sebelum invoice dikirim atau diajukan perubahan.
+const InvoiceModal = ({ isOpen, onClose, data, onSent, gate = false, deliveryTracking = false }) => {
   const { userDetails } = useAuth();
   const [detailData, setDetailData]       = useState(null);
   const componentRef                       = useRef();
@@ -44,9 +50,17 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
   const [loadingDetail, setLoadingDetail] = useState(true);
   const [waAutoAvailable, setWaAutoAvailable] = useState(false);
   const [processedSignatureUrl, setProcessedSignatureUrl] = useState(null);
+  const [deliveryResolved, setDeliveryResolved] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
+  const [overrideDialog, setOverrideDialog] = useState(null);
+  const [discountOptions, setDiscountOptions] = useState([]);
+  const [invoiceUrlReady, setInvoiceUrlReady] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
+      setDeliveryResolved(isInvoiceResolved(data?.invoice_wa_status));
+      setShowPreview(!gate);
+      setInvoiceUrlReady(!!data?.invoice_url);
       setLoadingDetail(true);
       fetchSettings();
       fetchDetailData();
@@ -104,7 +118,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     const observer = new ResizeObserver(computeScale);
     observer.observe(node);
     return () => observer.disconnect();
-  }, [isOpen, isPreviewLoading]);
+  }, [isOpen, isPreviewLoading, showPreview]);
 
   // ── Cek apakah klinik ini sudah punya API Key WA (untuk kirim otomatis) ───
   const fetchWaAvailability = async () => {
@@ -342,6 +356,59 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
         generated_at:   new Date(),
       }]);
     }
+  };
+
+  // ── Pastikan PDF invoice ada di Storage (dipakai alur terlacak) ───────────────
+  // force=true: buat ulang karena nominal/diskon bisa berubah sejak invoice dibuat; nama file berversi
+  // agar CDN tidak menyajikan file lama.
+  const ensureInvoiceFile = async ({ force = false } = {}) => {
+    const rawDate = data?.recap_date || new Date().toISOString().split('T')[0];
+    const [yr, mo, dy] = rawDate.split('-');
+    const fileName = `Kwitansi_${getPatientNameSlug()}_${dy}-${mo}-${yr.slice(2)}.pdf`;
+    let fileUrl = force ? null : (data?.invoice_url || detailData?.invoice_url || null);
+    if (!fileUrl) {
+      for (let i = 0; i < 40 && !componentRef.current; i += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+      const pdf = await generatePDF();
+      const storageName = force ? fileName.replace(/\.pdf$/, `_${Date.now()}.pdf`) : fileName;
+      fileUrl = await uploadPDF(pdf, storageName);
+      await saveInvoiceRecord(getInvoiceNumber());
+    }
+    setInvoiceUrlReady(true);
+    return { fileUrl, fileName };
+  };
+
+  const lockedGate = deliveryTracking && gate && !deliveryResolved;
+  const requestClose = () => {
+    if (lockedGate) {
+      toast({ variant: 'destructive', title: 'Invoice belum dikirim', description: 'Kirim invoice ke pasien atau ajukan perubahan terlebih dahulu.' });
+      return;
+    }
+    onClose?.();
+  };
+
+  const openChangeRequest = async (kind) => {
+    if (kind === 'discount' && discountOptions.length === 0) {
+      try {
+        const res = await getDiscountTypeOptions('');
+        const list = res?.data || res;
+        setDiscountOptions(Array.isArray(list) ? list.filter((o) => !o.is_referral_reward) : []);
+      } catch (e) { console.error('Gagal memuat jenis diskon', e); }
+    }
+    setOverrideDialog(kind === 'amount'
+      ? { kind: 'amount_adjust', withAmount: true, description: 'Ubah nominal tagihan di luar daftar harga. Berlaku setelah disetujui owner.' }
+      : { kind: 'discount_adjust', withDiscount: true, description: 'Invoice sudah terbit sehingga diskon terkunci. Pilih diskon yang seharusnya berlaku; nominal dihitung ulang setelah disetujui owner.' });
+  };
+
+  const deliverySummary = {
+    patientName: data?.actual_patients?.full_name || data?.patients?.full_name || data?.guest_name || data?.patient_name || 'Pasien',
+    patientType: data?.patient_type || '-',
+    packageType: data?.package_type || '-',
+    amount: data?.amount,
+    paymentMethod: Array.isArray(data?.payment_splits) && data.payment_splits.length > 1
+      ? data.payment_splits.map((sp) => `${sp.payment_method} Rp ${Number(sp.amount || 0).toLocaleString('id-ID')}`).join(' + ')
+      : data?.payment_method,
   };
 
   // ── Download PDF ──────────────────────────────────────────────────────────
@@ -657,12 +724,17 @@ const handleSendManualWA = async () => {
   if (!data) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[1000px] w-full max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 bg-slate-100">
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) requestClose(); }}>
+      <DialogContent
+        hideClose={deliveryTracking}
+        onInteractOutside={(e) => { if (lockedGate) e.preventDefault(); }}
+        onEscapeKeyDown={(e) => { if (lockedGate) e.preventDefault(); }}
+        className="max-w-[1000px] w-full max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 bg-slate-100"
+      >
 
         {/* Header */}
         <div className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b bg-white z-10 shrink-0">
-          <h2 className="text-base sm:text-lg font-semibold text-slate-900 shrink-0">Preview Invoice</h2>
+          <h2 className="text-base sm:text-lg font-semibold text-slate-900 shrink-0">{deliveryTracking ? (gate ? 'Konfirmasi Tagihan' : 'Invoice') : 'Preview Invoice'}</h2>
           <div className="flex flex-wrap justify-end gap-1.5 sm:gap-2">
 
             <Button variant="outline" size="sm" onClick={handlePrint} disabled={isPrinting}>
@@ -686,7 +758,7 @@ const handleSendManualWA = async () => {
               <span className="hidden sm:inline">Download PDF</span>
             </Button>
 
-            {waAutoAvailable && (
+            {!deliveryTracking && waAutoAvailable && (
               <Button
                 size="sm"
                 onClick={handleSendWA}
@@ -701,7 +773,7 @@ const handleSendManualWA = async () => {
               </Button>
             )}
 
-<Button
+{!deliveryTracking && <Button
   size="sm"
   onClick={handleSendManualWA}
   disabled={isSendingManualWA || isPreviewLoading}
@@ -712,19 +784,48 @@ const handleSendManualWA = async () => {
     : <Send className="w-4 h-4 sm:mr-2" />
   }
   <span className="hidden sm:inline">{isSendingManualWA ? 'Membuka...' : 'Kirim Manual'}</span>
-</Button>
+</Button>}
 
-            <DialogClose asChild>
-              <Button aria-label="Tutup" variant="ghost" size="icon">
+            {deliveryTracking ? (
+              <Button aria-label="Tutup" variant="ghost" size="icon" onClick={requestClose} disabled={lockedGate} title={lockedGate ? 'Selesaikan pengiriman invoice dulu' : 'Tutup'}>
                 <X className="w-4 h-4" />
               </Button>
-            </DialogClose>
+            ) : (
+              <DialogClose asChild>
+                <Button aria-label="Tutup" variant="ghost" size="icon">
+                  <X className="w-4 h-4" />
+                </Button>
+              </DialogClose>
+            )}
           </div>
         </div>
 
         {/* Preview Area — discalakan agar invoice A4 tetap utuh terlihat di layar sempit */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-8 bg-slate-200/50">
-          <div ref={previewWrapperRef} className="w-full flex justify-center">
+          {deliveryTracking && (
+            <div className="mx-auto mb-4 w-full max-w-xl">
+              <InvoiceDeliveryPanel
+                key={data.id}
+                mode={gate ? 'gate' : 'view'}
+                recapId={data.id}
+                recap={data}
+                summary={deliverySummary}
+                phone={getPatientPhone()}
+                clinicName={detailData?.clinic?.name || ''}
+                prepareFile={ensureInvoiceFile}
+                hasInvoiceUrl={invoiceUrlReady}
+                canRequestChange={gate && ['admin', 'clinic_admin', 'owner', 'super_admin'].includes(userDetails?.role)}
+                onRequestChange={openChangeRequest}
+                onStatusChange={(st) => { setDeliveryResolved(isInvoiceResolved(st)); onSent?.(); }}
+              />
+              {gate && (
+                <button type="button" className="mt-3 text-xs text-slate-600 underline" onClick={() => setShowPreview((v) => !v)}>
+                  {showPreview ? 'Sembunyikan pratinjau invoice' : 'Lihat pratinjau invoice'}
+                </button>
+              )}
+            </div>
+          )}
+          <div ref={previewWrapperRef} className={cn('w-full flex justify-center', deliveryTracking && gate && !showPreview && 'hidden')}>
             {isPreviewLoading ? (
               <div
                 className="flex items-center justify-center bg-white shadow-2xl shrink-0"
@@ -766,6 +867,25 @@ const handleSendManualWA = async () => {
         )}
 
       </DialogContent>
+      {deliveryTracking && (
+        <SoapOverrideDialog
+          open={!!overrideDialog}
+          onOpenChange={(v) => { if (!v) setOverrideDialog(null); }}
+          kind={overrideDialog?.kind}
+          recapId={data?.id ?? null}
+          description={overrideDialog?.description}
+          withAmount={!!overrideDialog?.withAmount}
+          withDiscount={!!overrideDialog?.withDiscount}
+          discountOptions={discountOptions}
+          onDone={() => {
+            setOverrideDialog(null);
+            setDeliveryResolved(true);
+            toast({ title: 'Pengajuan perubahan terkirim', description: 'Menunggu persetujuan owner. Invoice tetap harus dikirim setelah disetujui.' });
+            onSent?.();
+            onClose?.();
+          }}
+        />
+      )}
     </Dialog>
   );
 };

@@ -5,7 +5,7 @@ import {
   Calendar, Loader2, Plus, Search, X, Clock, Play, Square,
   ChevronLeft, ChevronRight, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, BarChart3, CreditCard, Users, CheckCircle2
 } from 'lucide-react';
-import { getDailyRecaps, getDailyRecapsTotalAmount, getPhysiotherapists, getCachedClinicId } from '@/lib/api';
+import { getDailyRecaps, getDailyRecapsByIds, getDailyRecapsTotalAmount, getPhysiotherapists, getCachedClinicId } from '@/lib/api';
 import InvoiceStatusButton from '@/components/admin/InvoiceStatusButton';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -41,6 +41,7 @@ import SendClinaraDialog from '@/components/admin/patients/SendClinaraDialog';
 import { PortalStatusButton, SoapMark, TtvMark } from '@/components/admin/RecapRowMarks';
 import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
 import { isSoapFirstActiveOn, ttvRequiredFor } from '@/lib/soapFirst';
+import { isGateActive, invoiceNeedsAction, invoiceStatusView } from '@/lib/invoiceDelivery';
 
 // Pasien yang menerima layanan (bukan pemilik paket) berhak atas tautan portal.
 const getPortalPatient = (recap) => recap.actual_patients || recap.patients || null;
@@ -218,6 +219,14 @@ const [selectedInvoiceData, setSelectedInvoiceData] = useState(null);
   // patient_id -> waktu tautan portal terakhir dikirim (hanya tautan yang masih hidup)
   const [portalSentMap, setPortalSentMap] = useState({});
   const { settings: soapFirstSettings } = useSoapFirstSettings();
+  // Alur invoice terlacak (Kaffah): kirim otomatis -> cek hasil -> kirim manual bila tidak masuk.
+  const invoiceTracking = isGateActive(soapFirstSettings);
+  // Jendela wajib (tidak bisa ditutup sebelum invoice beres) hanya untuk admin.
+  const invoiceGateOn = invoiceTracking && ['admin', 'clinic_admin'].includes(userDetails?.role);
+  const [invoiceGateMode, setInvoiceGateMode] = useState(false);
+  const [pendingInvoices, setPendingInvoices] = useState({ actions: [], awaiting: [] });
+  const autoOpenedGate = useRef(false);
+  const lastPendingLoad = useRef(0);
   const [modalMode, setModalMode] = useState('add');
 useEffect(() => {
   fetchRecaps();
@@ -233,7 +242,7 @@ useEffect(() => {
           setRecaps(prev =>
             prev.map(r =>
               r.id === payload.new.id
-                ? { ...r, invoice_wa_status: payload.new.invoice_wa_status, invoice_wa_sent_at: payload.new.invoice_wa_sent_at }
+                ? { ...r, invoice_wa_status: payload.new.invoice_wa_status, invoice_wa_sent_at: payload.new.invoice_wa_sent_at, invoice_wa_detail: payload.new.invoice_wa_detail, invoice_wa_wamid: payload.new.invoice_wa_wamid, invoice_opened_at: payload.new.invoice_opened_at, invoice_skip_reason: payload.new.invoice_skip_reason }
                 : r
             )
           );
@@ -439,6 +448,84 @@ end_time: r.end_time,
     const done = !!vitalsFilledMap[recap.id];
     if (!done && !(showSoapMark(recap) && ttvRequiredFor(soapFirstSettings, recap))) return null;
     return <TtvMark done={done} className={className} />;
+  };
+
+  // Invoice yang perlu tindakan admin (belum dikirim, gagal, WA manual belum dikonfirmasi, menunggu bukti terlalu lama).
+  const loadPendingInvoices = useCallback(async () => {
+    if (!invoiceGateOn) { setPendingInvoices({ actions: [], awaiting: [] }); return; }
+    lastPendingLoad.current = Date.now();
+    const { data, error } = await supabase
+      .from('daily_recaps')
+      .select('id, recap_date, full_name, guest_name, amount, payment_method, special_type, invoice_created_at, invoice_wa_status, invoice_wa_detail, invoice_wa_sent_at')
+      .gte('invoice_created_at', soapFirstSettings.invoice_gate_from)
+      .gt('amount', 0)
+      .not('payment_method', 'is', null)
+      .neq('payment_method', 'Package')
+      .order('invoice_created_at', { ascending: true })
+      .limit(100);
+    if (error || !isMounted.current) return;
+    const need = (data || []).filter((r) => invoiceNeedsAction(r, soapFirstSettings));
+    let awaitingIds = new Set();
+    if (need.length > 0) {
+      const { data: ov } = await supabase
+        .from('soap_overrides')
+        .select('recap_id')
+        .eq('status', 'pending')
+        .in('kind', ['amount_adjust', 'discount_adjust'])
+        .in('recap_id', need.map((r) => r.id));
+      awaitingIds = new Set((ov || []).map((o) => o.recap_id));
+    }
+    if (!isMounted.current) return;
+    setPendingInvoices({
+      actions: need.filter((r) => !awaitingIds.has(r.id)),
+      awaiting: need.filter((r) => awaitingIds.has(r.id)),
+    });
+  }, [invoiceGateOn, soapFirstSettings]);
+
+  useEffect(() => {
+    loadPendingInvoices();
+    if (!invoiceGateOn) return undefined;
+    const t = setInterval(loadPendingInvoices, 45000);
+    return () => clearInterval(t);
+  }, [loadPendingInvoices, invoiceGateOn]);
+
+  const pendingName = (r) => r.full_name || r.guest_name || 'Pasien';
+
+  // Buka jendela invoice wajib untuk satu recap (data lengkap, termasuk relasi pasien/terapis).
+  const openInvoiceGateFor = useCallback(async (recapId) => {
+    const { data } = await getDailyRecapsByIds([recapId]);
+    const rec = data?.[0];
+    if (!rec) return;
+    setSelectedInvoiceData(rec);
+    setInvoiceGateMode(true);
+    setInvoiceModalOpen(true);
+  }, []);
+
+  // Admin yang membuka halaman dengan invoice tertunda langsung diarahkan menyelesaikannya (sekali per kunjungan).
+  useEffect(() => {
+    if (!invoiceGateOn || autoOpenedGate.current) return;
+    if (pendingInvoices.actions.length === 0 || invoiceModalOpen || isAddModalOpen) return;
+    autoOpenedGate.current = true;
+    openInvoiceGateFor(pendingInvoices.actions[0].id);
+  }, [pendingInvoices, invoiceGateOn, invoiceModalOpen, isAddModalOpen, openInvoiceGateFor]);
+
+  // Setelah pembayaran disimpan: tampilkan konfirmasi tagihan dan wajib kirim invoice / ajukan perubahan.
+  const handleRecapSaved = useCallback(async (info) => {
+    loadPendingInvoices();
+    if (!invoiceGateOn || !info?.recapId) return;
+    const { data } = await getDailyRecapsByIds([info.recapId]);
+    const rec = data?.[0];
+    if (rec && invoiceNeedsAction(rec, soapFirstSettings) && !rec.invoice_wa_status) {
+      setSelectedInvoiceData(rec);
+      setInvoiceGateMode(true);
+      setInvoiceModalOpen(true);
+    }
+  }, [invoiceGateOn, soapFirstSettings, loadPendingInvoices]);
+
+  const openInvoice = (recap) => {
+    setSelectedInvoiceData(recap);
+    setInvoiceGateMode(invoiceGateOn && invoiceNeedsAction(recap, soapFirstSettings));
+    setInvoiceModalOpen(true);
   };
 
   const getPortalSentAt = (recap) => portalSentMap[getPortalPatient(recap)?.id] || null;
@@ -963,6 +1050,36 @@ const getPremiumPastelBadge = (text) => {
         </>
       )}
 
+      {invoiceGateOn && (pendingInvoices.actions.length > 0 || pendingInvoices.awaiting.length > 0) && (
+        <div className="mb-3 space-y-2">
+          {pendingInvoices.actions.length > 0 && (
+            <div className="flex flex-col gap-3 rounded-app border border-red-200 bg-red-50 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="flex items-center gap-2 text-sm font-semibold text-red-800">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  {pendingInvoices.actions.length} invoice belum terkirim ke pasien
+                </p>
+                <ul className="mt-1 space-y-0.5 text-xs text-red-700">
+                  {pendingInvoices.actions.slice(0, 3).map((r) => (
+                    <li key={r.id} className="truncate">{pendingName(r)} · {invoiceStatusView(r).label}</li>
+                  ))}
+                  {pendingInvoices.actions.length > 3 && <li>dan {pendingInvoices.actions.length - 3} lainnya</li>}
+                </ul>
+              </div>
+              <Button size="sm" className="shrink-0 bg-red-600 text-white hover:bg-red-700" onClick={() => openInvoiceGateFor(pendingInvoices.actions[0].id)}>
+                Selesaikan sekarang
+              </Button>
+            </div>
+          )}
+          {pendingInvoices.awaiting.length > 0 && (
+            <div className="rounded-app border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              <b>{pendingInvoices.awaiting.length} invoice menunggu persetujuan owner</b> (perubahan diskon/nominal): {pendingInvoices.awaiting.slice(0, 3).map(pendingName).join(', ')}.
+              Setelah disetujui, invoice tetap harus dikirim ke pasien.
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="bg-white rounded-app shadow-sm border border-slate-200 overflow-hidden">
         <>
           {/* ── CARD LAYOUT (mobile/narrow) ── */}
@@ -1075,10 +1192,7 @@ const getPremiumPastelBadge = (text) => {
                           <InvoiceStatusButton
                             className="h-11 rounded-xl text-sm"
                             recap={recap}
-                            onClick={() => {
-                              setSelectedInvoiceData(recap);
-                              setInvoiceModalOpen(true);
-                            }}
+                            onClick={() => openInvoice(recap)}
                           />
                         </div>
                       </div>
@@ -1224,10 +1338,7 @@ const getPremiumPastelBadge = (text) => {
   <div className="flex flex-col items-center gap-1">
     <InvoiceStatusButton
       recap={recap}
-      onClick={() => {
-        setSelectedInvoiceData(recap);
-        setInvoiceModalOpen(true);
-      }}
+      onClick={() => openInvoice(recap)}
     />
     {portalButtonEnabled && getPortalPatient(recap) && (
       <PortalStatusButton
@@ -1259,7 +1370,7 @@ const getPremiumPastelBadge = (text) => {
         onClose={() => setIsAddModalOpen(false)} 
         mode={modalMode} 
         initialData={selectedRecap} 
-        onSuccess={fetchRecaps} 
+        onSuccess={(info) => { fetchRecaps(); handleRecapSaved(info); }} 
       />
 
       <DailyRecapDetailModal
@@ -1276,9 +1387,11 @@ const getPremiumPastelBadge = (text) => {
       />
       <InvoiceModal
   isOpen={invoiceModalOpen}
-  onClose={() => setInvoiceModalOpen(false)}
+  onClose={() => { setInvoiceModalOpen(false); setInvoiceGateMode(false); loadPendingInvoices(); }}
   data={selectedInvoiceData}
-  onSent={fetchRecaps}
+  onSent={() => { fetchRecaps(); loadPendingInvoices(); }}
+  gate={invoiceGateMode}
+  deliveryTracking={invoiceTracking}
 />
       {alkesEnabled && <AlkesSalesDialog isOpen={alkesOpen} onClose={() => setAlkesOpen(false)} />}
     </div>

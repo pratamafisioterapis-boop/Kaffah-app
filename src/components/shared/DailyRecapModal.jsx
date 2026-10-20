@@ -1372,7 +1372,9 @@ setFormData({
             }
             toast({ title: "Berhasil", description: `Data berhasil ${mode === 'add' ? 'disimpan' : 'diperbarui'}.` });
             if (sfEdit) { loadRecapMeta(); refreshQuote(); }
-            if (onSuccess) onSuccess();
+            // id recap yang tersimpan dikirim ke pemanggil (mis. untuk membuka konfirmasi tagihan/invoice).
+            const savedRecapId = mode === 'add' ? (result.data?.recap_id ?? null) : (initialData?.id ?? null);
+            if (onSuccess) onSuccess({ recapId: savedRecapId, mode });
             onClose();
         } catch (error) {
             setSubmitError(error.message || "Gagal menyimpan data.");

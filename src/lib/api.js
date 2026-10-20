@@ -1919,20 +1919,8 @@ cleanedPayload.amount_original = payload.amount_original;
   }, 'updateDailyRecap');
 };
 
-export const getDailyRecaps = async ({ 
-  startDate, 
-  endDate, 
-  search = '', 
-  therapistId = null, // 🔥 TAMBAH INI
-  paymentMethod = null,
-  limit = 20, 
-  offset = 0, 
-  sort = { key: 'recap_date', direction: 'desc' } 
-}) => {
-  return safeQuery(async () => {
-    let query = supabase
-  .from('daily_recaps')
-  .select(`
+// Kolom + relasi satu baris rekap harian (dipakai daftar dan pemuatan per id).
+const DAILY_RECAP_SELECT = `
   id,
   receipt_number,
   guest_name,
@@ -1964,6 +1952,11 @@ export const getDailyRecaps = async ({
   end_time,
   status,
   invoice_wa_status,
+  invoice_wa_detail,
+  invoice_wa_wamid,
+  invoice_opened_at,
+  invoice_skip_reason,
+  invoice_created_at,
   invoice_wa_sent_at,
   invoice_url,
   soap_completed_at,
@@ -1993,7 +1986,22 @@ export const getDailyRecaps = async ({
   stamp_url,
   license_number
 )
-`, { count: 'exact' });
+`;
+
+export const getDailyRecaps = async ({ 
+  startDate, 
+  endDate, 
+  search = '', 
+  therapistId = null, // 🔥 TAMBAH INI
+  paymentMethod = null,
+  limit = 20, 
+  offset = 0, 
+  sort = { key: 'recap_date', direction: 'desc' } 
+}) => {
+  return safeQuery(async () => {
+    let query = supabase
+  .from('daily_recaps')
+  .select(DAILY_RECAP_SELECT, { count: 'exact' });
  
     if (startDate) {
         query = query.gte('recap_date', startDate);
@@ -2069,6 +2077,19 @@ export const getDailyRecaps = async ({
 
     return { data: enrichedData, count, error: null };
   }, 'getDailyRecaps', { retry: true });
+};
+
+// Satu atau beberapa rekap lengkap (bentuk sama dengan baris daftar) berdasarkan id,
+// mis. untuk membuka invoice dari banner di luar halaman/rentang tanggal daftar.
+export const getDailyRecapsByIds = async (ids = []) => {
+  const list = [...new Set((ids || []).filter(Boolean))];
+  if (list.length === 0) return { data: [], error: null };
+  return safeQuery(async () => {
+    const { data, error } = await supabase.from('daily_recaps').select(DAILY_RECAP_SELECT).in('id', list);
+    if (error) return { error };
+    const enriched = await enrichRecapsWithOptions(data);
+    return { data: enriched, error: null };
+  }, 'getDailyRecapsByIds', { retry: true });
 };
 
 export const getDailyRecapsTotalAmount = async ({ startDate, endDate, search = '', therapistId = null, paymentMethod = null }) => {
