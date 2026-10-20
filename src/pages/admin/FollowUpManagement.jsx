@@ -134,7 +134,6 @@ const FollowUpManagement = () => {
                 break;
 
             case 'therapy_reminder':
-            case 'reminder_therapist_h10':
                 functionName = 'generate_therapy_reminder_today';
                 break;
 
@@ -143,7 +142,6 @@ const FollowUpManagement = () => {
                 break;
 
             case 'booking_appointment':
-            case 'booking_appointment_therapist':
                 functionName = 'generate_appointment_reminders';
                 break;
 
@@ -357,7 +355,7 @@ const statusRank = { pending: 0, failed: 1, sent: 2, completed: 2, cancelled: 3 
 const byStatus = (a, b) => (statusRank[a.status] ?? 9) - (statusRank[b.status] ?? 9);
 
 const bookingQueue = queueData
-  .filter(q => ['booking_appointment', 'booking_appointment_therapist'].includes(q.follow_up_type))
+  .filter(q => ['booking_appointment'].includes(q.follow_up_type))
   .sort(byStatus);
 
 const postTreatmentQueue = queueData
@@ -369,7 +367,7 @@ const expiryQueue = queueData
   .sort(byStatus);
 
 const reminderQueue = queueData
-  .filter(q => ['therapy_reminder', 'reminder_therapist_h10'].includes(q.follow_up_type))
+  .filter(q => ['therapy_reminder'].includes(q.follow_up_type))
   .sort(byStatus);
 
 const birthdayQueue = queueData
