@@ -384,7 +384,8 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
     label: '',
     session_count: '',
     validity_days: '',
-    bank_account_id: ''
+    bank_account_id: '',
+    is_homecare: false
   });
   const [pasteContent, setPasteContent] = useState("");
   const [bankAccounts, setBankAccounts] = useState([]);
@@ -440,7 +441,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
 };
 
   const openAddDialog = () => {
-    setFormData({ label: '', session_count: '', validity_days: '', bank_account_id: '' });
+    setFormData({ label: '', session_count: '', validity_days: '', bank_account_id: '', is_homecare: false });
     setIsAddOpen(true);
   };
 
@@ -450,7 +451,8 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
       label: option.label,
       session_count: option.session_count || '',
       validity_days: option.validity_days || '',
-      bank_account_id: option.bank_account_id || ''
+      bank_account_id: option.bank_account_id || '',
+      is_homecare: !!option.is_homecare
     });
     setIsEditOpen(true);
   };
@@ -484,7 +486,8 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
     const extraData = {
       ...(isPackageType && {
         session_count: parseInt(formData.session_count),
-        validity_days: parseInt(formData.validity_days)
+        validity_days: parseInt(formData.validity_days),
+        is_homecare: !!formData.is_homecare
       }),
 
       ...(category === 'diagnosa' && {
@@ -522,7 +525,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
         setOptions([...options, result.data]);
         setIsAddOpen(false);
       }
-      setFormData({ label: '', session_count: '', validity_days: '' });
+      setFormData({ label: '', session_count: '', validity_days: '', is_homecare: false });
 
     } catch (error) {
       toast({ variant: "destructive", title: "Gagal Menyimpan", description: error.message || "Terjadi kesalahan sistem." });
@@ -705,7 +708,7 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
         {isPackageType && opt.session_count && (
           <span className="text-xs text-slate-500 ml-2 mt-1 flex items-center gap-2">
             <Package className="w-3 h-3" />
-            {opt.session_count} Sesi &bull; {opt.validity_days} Hari Aktif
+            {opt.session_count} Sesi &bull; {opt.validity_days} Hari Aktif{opt.is_homecare && <> &bull; Homecare</>}
           </span>
         )}
         {isPaymentMethodType && (
@@ -851,6 +854,18 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
               className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-app-accent-bright w-full"
             />
           </div>
+          <label className="col-span-2 flex items-start gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={!!formData.is_homecare}
+              onChange={(e) => setFormData({ ...formData, is_homecare: e.target.checked })}
+              className="mt-0.5"
+            />
+            <span>
+              Paket homecare
+              <span className="block text-xs text-slate-500">Harga flat dari harga paket (sama untuk dalam/luar jam kerja), hanya untuk appointment homecare.</span>
+            </span>
+          </label>
         </div>
       )}
     </div>
@@ -977,6 +992,18 @@ const OptionManager = ({ title, category, description, isLegacy = false }) => {
               className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-app-accent-bright w-full"
             />
           </div>
+          <label className="col-span-2 flex items-start gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={!!formData.is_homecare}
+              onChange={(e) => setFormData({ ...formData, is_homecare: e.target.checked })}
+              className="mt-0.5"
+            />
+            <span>
+              Paket homecare
+              <span className="block text-xs text-slate-500">Harga flat dari harga paket (sama untuk dalam/luar jam kerja), hanya untuk appointment homecare.</span>
+            </span>
+          </label>
         </div>
       )}
     </div>
