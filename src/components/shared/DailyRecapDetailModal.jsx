@@ -187,7 +187,13 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
             onClose();
         } catch (err) {
             console.error("Delete failed:", err);
-            toast({ variant: "destructive", title: "Gagal", description: "Gagal menghapus data." });
+            if (String(err?.message || '').includes('sudah memiliki invoice')) {
+                // Kaffah: recap ber-invoice hanya bisa dihapus lewat pengecualian owner.
+                setShowDeleteConfirm(false);
+                setOverrideDialog({ recapId: recap.id, kind: 'recap_delete', isDelete: true, description: 'Recap ini sudah memiliki invoice sehingga tidak bisa dihapus langsung. Ajukan ke owner; bila disetujui, recap dan appointment terkait akan dihapus.' });
+            } else {
+                toast({ variant: "destructive", title: "Gagal", description: "Gagal menghapus data." });
+            }
         } finally {
             setIsDeleting(false);
         }
@@ -451,7 +457,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                 withAmount={!!overrideDialog?.withAmount}
                 withDiscount={!!overrideDialog?.withDiscount}
                 discountOptions={discountOptions}
-                onDone={refreshQuote}
+                onDone={() => { if (overrideDialog?.isDelete) { if (onDelete) onDelete(); onClose(); } else { refreshQuote(); } }}
             />
             <RecapSoapPreviewDialog
                 open={soapPreviewOpen}

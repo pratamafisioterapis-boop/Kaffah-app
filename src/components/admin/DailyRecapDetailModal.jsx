@@ -30,7 +30,7 @@ const DailyRecapDetailModal = ({ isOpen, recap, onClose, onSave, mode = 'view' }
             onSave(); // Refresh list
             onClose();
         } catch (err) {
-            toast({ variant: "destructive", title: "Gagal", description: "Gagal menghapus data." });
+            toast({ variant: "destructive", title: "Gagal", description: String(err?.message || '').includes('sudah memiliki invoice') ? err.message : "Gagal menghapus data." });
         }
     };
 
