@@ -1958,6 +1958,7 @@ export const getDailyRecaps = async ({
   referral_reward_id,
   created_at,
   invoice_created_at,
+  revenue_date,
   special_type,
   appointment:appointments!appointment_id(appointment_date),
   payment_splits:daily_recap_payment_splits(id, payment_method, amount),
@@ -2075,10 +2076,11 @@ export const getDailyRecaps = async ({
 export const getDailyRecapsTotalAmount = async ({ startDate, endDate, search = '', therapistId = null, paymentMethod = null }) => {
   return safeQuery(async () => {
     
+    // Total uang masuk: berdasarkan tanggal pembayaran (revenue_date), bukan tanggal terapi.
     let query = supabase.from('daily_recaps').select('amount');
 
-    if (startDate) query = query.gte('recap_date', startDate);
-    if (endDate) query = query.lte('recap_date', endDate);
+    if (startDate) query = query.gte('revenue_date', startDate);
+    if (endDate) query = query.lte('revenue_date', endDate);
     if (therapistId) query = query.eq('therapist_id', therapistId);
     if (paymentMethod) query = query.eq('payment_method', paymentMethod);
 

@@ -61,10 +61,10 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
         ownerExpRes,
       ] = await Promise.all([
         supabase.from('daily_recaps')
-          .select('recap_date, amount, therapist_name, patient_type, package_tracking_id')
+          .select('recap_date, revenue_date, amount, therapist_name, patient_type, package_tracking_id')
           .eq('clinic_id', clinicId)
-          .gte('recap_date', startDate)
-          .lte('recap_date', endDate)
+          .gte('revenue_date', startDate)
+          .lte('revenue_date', endDate)
           .is('package_tracking_id', null),
         supabase.from('daily_recaps')
           .select('recap_date, therapist_name, patient_type, package_tracking_id, package_tracking!inner(nominal, total_sessions)')
@@ -116,7 +116,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
       const days = eachDayOfInterval({ start: parseISO(startDate), end: parseISO(endDate) });
       const dailyMap = {};
       days.forEach(d => { dailyMap[format(d, 'yyyy-MM-dd')] = { revenue: 0, expense: 0 }; });
-      nonPkgRecaps.forEach(r => { if (dailyMap[r.recap_date]) dailyMap[r.recap_date].revenue += Number(r.amount) || 0; });
+      nonPkgRecaps.forEach(r => { if (dailyMap[r.revenue_date]) dailyMap[r.revenue_date].revenue += Number(r.amount) || 0; });
       pkgRecaps.forEach(r => {
         const pt = r.package_tracking;
         if (pt && dailyMap[r.recap_date]) dailyMap[r.recap_date].revenue += Number(pt.nominal) / Number(pt.total_sessions);
@@ -169,7 +169,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
 
       // ── Recent transactions ──
       const allTx = [
-        ...nonPkgRecaps.filter(r => r.amount > 0).map(r => ({ date: r.recap_date, amount: r.amount, label: r.patient_type || 'Pasien', type: 'income' })),
+        ...nonPkgRecaps.filter(r => r.amount > 0).map(r => ({ date: r.revenue_date, amount: r.amount, label: r.patient_type || 'Pasien', type: 'income' })),
         ...pkgRecaps.map(r => {
           const pt = r.package_tracking;
           return { date: r.recap_date, amount: pt ? Math.round(Number(pt.nominal) / Number(pt.total_sessions)) : 0, label: `Paket - ${r.patient_type || ''}`, type: 'income' };

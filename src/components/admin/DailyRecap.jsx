@@ -41,6 +41,7 @@ import SendClinaraDialog from '@/components/admin/patients/SendClinaraDialog';
 import { PortalStatusButton, SoapMark, TtvMark } from '@/components/admin/RecapRowMarks';
 import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
 import { isSoapFirstActiveOn, ttvRequiredFor } from '@/lib/soapFirst';
+import PaidOnNote from '@/components/shared/PaidOnNote';
 
 // Pasien yang menerima layanan (bukan pemilik paket) berhak atas tautan portal.
 const getPortalPatient = (recap) => recap.actual_patients || recap.patients || null;
@@ -1019,6 +1020,7 @@ const getPremiumPastelBadge = (text) => {
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-0.5">
                       <span className="whitespace-nowrap text-[15px] font-bold text-app-accent">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</span>
+                      <PaidOnNote recap={recap} />
                       {parseFloat(recap.amount) > 0 && !recap.payment_method && recap.special_type !== 'free' && (
                         <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">Metode belum diisi</span>
                       )}
@@ -1180,6 +1182,7 @@ const getPremiumPastelBadge = (text) => {
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center text-slate-600">{recap.display_therapist_name}</td>
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center">
                        <div className="font-semibold text-slate-800">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</div>
+                       <PaidOnNote recap={recap} />
                        {recap.payment_method && (
                          <div className="text-xs text-slate-500 font-medium mt-0.5 capitalize">{recap.payment_method}</div>
                        )}
