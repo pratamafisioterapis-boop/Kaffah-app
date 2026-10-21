@@ -15,6 +15,7 @@ import { useAppointmentState } from '@/contexts/AppointmentStateContext';
 import { supabase } from '@/lib/customSupabaseClient';
 import { cn, isFieldChanged, validateAppointmentStatus } from '@/lib/utils'; 
 import { getCachedClinicId } from '@/lib/api';
+import PrepayPackagePanel from '@/components/admin/PrepayPackagePanel';
 
 const AppointmentDetailModal = ({ 
   isOpen, 
@@ -447,6 +448,10 @@ disabled={(!canEditDateTime && !isRescheduleMode) || isCompleted || !formData.ap
               <label className="text-sm font-medium">Notes</label>
               <Textarea value={formData.notes} onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))} placeholder="Notes..." className="resize-none" disabled={isTherapistRole} autoFocus={false} />
             </div>
+
+            {appointment?.id && (isOwnerRole || isAdminRole) && (
+              <PrepayPackagePanel appointment={appointment} onChanged={onSuccess} />
+            )}
           </div>
 
           <DialogFooter className="flex justify-between sm:justify-between items-center w-full">
