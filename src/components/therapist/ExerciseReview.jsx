@@ -86,6 +86,15 @@ const ExerciseReview = ({ therapist }) => {
   const activeReview = activeId ? reviews[activeId] : null;
   const setField = (k) => (ev) => setForm((f) => ({ ...f, [k]: ev.target.value }));
 
+  // Kunci scroll halaman di belakang saat modal review terbuka, supaya yang bergeser modalnya, bukan kartu di belakangnya.
+  const modalOpen = Boolean(active);
+  useEffect(() => {
+    if (!modalOpen) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [modalOpen]);
+
   const save = async (ev) => {
     ev.preventDefault();
     setSaving(true);
@@ -173,8 +182,8 @@ const ExerciseReview = ({ therapist }) => {
       </Dialog>
 
       {active && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-xl max-h-[95vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white p-4 sm:p-6 space-y-4">
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" role="dialog" aria-modal="true">
+          <div className="w-full max-w-xl max-h-[90dvh] overflow-y-auto overscroll-contain rounded-t-2xl sm:rounded-2xl bg-white p-4 sm:p-6 space-y-4">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">{activeReview ? 'Hasil review' : 'Review latihan'} <span className="font-mono text-slate-500">{active.id}</span></h2>
               {activeReview && <p className="text-sm text-emerald-700">Sudah direview oleh {activeReview.reviewer_name}.</p>}
