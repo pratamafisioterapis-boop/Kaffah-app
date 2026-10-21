@@ -617,13 +617,13 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       const [{ data: recaps }, { data: adminIncomes }] = await Promise.all([
         supabase
           .from('daily_recaps')
-          .select('id, recap_date, amount, payment_method, patient_id, actual_patient_id, full_name, guest_name')
+          .select('id, recap_date:revenue_date, amount, payment_method, patient_id, actual_patient_id, full_name, guest_name')
           .eq('clinic_id', clinicId)
-          .gte('recap_date', minDate)
-          .lte('recap_date', maxDate)
+          .gte('revenue_date', minDate)
+          .lte('revenue_date', maxDate)
           .not('amount', 'is', null)
           .gt('amount', 0)
-          .order('recap_date'),
+          .order('revenue_date'),
         supabase
           .from('admin_income')
           .select('id, date, amount, category, sub_category, description')
@@ -1085,10 +1085,10 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
 
       const { data: recaps, error } = await supabase
         .from('daily_recaps')
-        .select('id, recap_date, amount, payment_method, patient_id, actual_patient_id, full_name, guest_name')
+        .select('id, recap_date:revenue_date, amount, payment_method, patient_id, actual_patient_id, full_name, guest_name')
         .eq('clinic_id', clinicId)
-        .gte('recap_date', minDate)
-        .lte('recap_date', maxDate)
+        .gte('revenue_date', minDate)
+        .lte('revenue_date', maxDate)
         .not('amount', 'is', null)
         .gt('amount', 0)
         .order('id');
@@ -1430,9 +1430,9 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
     const DEBIT_UUID = '879709f1-9be0-4d2e-8006-a927ea96ff22';
     const { data: recaps } = await supabase
       .from('daily_recaps')
-      .select('id, recap_date, amount, payment_method, patient_id, actual_patient_id, full_name, guest_name')
+      .select('id, recap_date:revenue_date, amount, payment_method, patient_id, actual_patient_id, full_name, guest_name')
       .eq('clinic_id', clinicId)
-      .in('recap_date', validDates)
+      .in('revenue_date', validDates)
       .not('amount', 'is', null)
       .gt('amount', 0);
 
@@ -1573,10 +1573,10 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
       // 1) Semua daily recap non-tunai di rentang tanggal ini
       const { data: recaps, error } = await supabase
         .from('daily_recaps')
-        .select('id, recap_date, amount, payment_method, patient_id, actual_patient_id, full_name, guest_name')
+        .select('id, recap_date:revenue_date, amount, payment_method, patient_id, actual_patient_id, full_name, guest_name')
         .eq('clinic_id', clinicId)
-        .gte('recap_date', start)
-        .lte('recap_date', end)
+        .gte('revenue_date', start)
+        .lte('revenue_date', end)
         .not('amount', 'is', null)
         .gt('amount', 0)
         .order('id');

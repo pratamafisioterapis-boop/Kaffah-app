@@ -29,6 +29,7 @@ import DailyRecapDetailModal from '@/components/shared/DailyRecapDetailModal';
 import InvoiceStatusButton from '@/components/admin/InvoiceStatusButton';
 import InvoiceModal from '@/components/admin/InvoiceModal';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import PaidOnNote from '@/components/shared/PaidOnNote';
 
 const getTherapistName = (recap) => {
     if (recap.therapist_name && recap.therapist_name !== '-') {
@@ -259,8 +260,8 @@ const OwnerDailyRecap = () => {
       let query = supabase
         .from('daily_recaps')
         .select('amount')
-        .gte('recap_date', queryDateRange.start)
-        .lte('recap_date', queryDateRange.end);
+        .gte('revenue_date', queryDateRange.start)
+        .lte('revenue_date', queryDateRange.end);
 
       if (selectedPaymentMethod) {
         query = query.eq('payment_method', selectedPaymentMethod);
@@ -482,6 +483,7 @@ const OwnerDailyRecap = () => {
                     <div>
                       <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Nominal</p>
                       <p className="font-medium text-slate-800 text-sm">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</p>
+                      <PaidOnNote recap={recap} />
                       {recap.payment_method && (
                         <p className="text-xs text-slate-500 font-normal capitalize">{recap.payment_method}</p>
                       )}
@@ -585,6 +587,7 @@ const OwnerDailyRecap = () => {
 
                         <td className="px-4 py-3 text-center">
                           <div className="font-medium text-slate-800">Rp {parseFloat(recap.amount || 0).toLocaleString('id-ID')}</div>
+                          <PaidOnNote recap={recap} />
                           {recap.payment_method && (
                             <div className="text-xs text-slate-500 font-normal mt-0.5 capitalize">{recap.payment_method}</div>
                           )}

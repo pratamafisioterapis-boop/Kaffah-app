@@ -1,5 +1,13 @@
 import React, { forwardRef } from 'react';
 
+// Tanggal invoice = tanggal pembayaran (invoice_created_at); tanggal layanan = recap_date.
+const fmtInvoiceDate = (value) => {
+  if (!value) return '-';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '-';
+  return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+};
+
 const InvoiceTemplate = forwardRef(({ data }, ref) => {
 
   const formatCurrency = (value) => {
@@ -122,17 +130,17 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
     <span style={labelLeft}>DATE</span>
     <span style={colon}>:</span>
     <span style={value}>
-  {data?.recap_date
-    ? (() => {
-        const d = new Date(data.recap_date);
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const year = d.getFullYear();
-        return `${day}-${month}-${year}`;
-      })()
-    : '-'}
+  {fmtInvoiceDate(data?.invoice_created_at || data?.recap_date)}
 </span>
   </div>
+
+  {data?.invoice_created_at && data?.recap_date && fmtInvoiceDate(data.invoice_created_at) !== fmtInvoiceDate(data.recap_date) && (
+    <div style={infoRowLeft}>
+      <span style={labelLeft}>SERVICE DATE</span>
+      <span style={colon}>:</span>
+      <span style={value}>{fmtInvoiceDate(data.recap_date)}</span>
+    </div>
+  )}
 
   <div style={infoRowLeft}>
     <span style={labelLeft}>RECEIPT NO.</span>
