@@ -82,7 +82,7 @@ const DatePicker = ({ value, onChange, onClose }) => {
   return (
     <div 
       ref={calendarRef}
-      className="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-app-sm shadow-xl z-50 w-80 p-4 animate-in fade-in zoom-in-95 duration-100"
+      className="fixed inset-x-4 mx-auto max-w-80 sm:absolute sm:inset-x-auto sm:left-0 sm:mx-0 sm:w-80 mt-2 bg-white border border-slate-200 rounded-app-sm shadow-xl z-50 p-3 sm:p-4 animate-in fade-in zoom-in-95 duration-100"
     >
       <div className="flex items-center justify-between mb-4">
         <button aria-label="Sebelumnya" 
@@ -141,7 +141,7 @@ const DatePicker = ({ value, onChange, onClose }) => {
               onClick={() => handleDateClick(day)}
               type="button"
               className={cn(
-                "h-9 w-9 text-xs rounded-full flex items-center justify-center transition-[color,background-color,border-color,box-shadow,transform,opacity]",
+                "h-9 w-full max-w-9 mx-auto text-xs rounded-full flex items-center justify-center transition-[color,background-color,border-color,box-shadow,transform,opacity]",
                 !isCurrentMonth && "text-slate-300",
                 isCurrentMonth && "text-slate-700 hover:bg-slate-100",
                 isSelected && "bg-app-accent text-white hover:bg-app-accent-hover shadow-md font-medium",
