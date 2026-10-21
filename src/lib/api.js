@@ -1957,6 +1957,7 @@ export const getDailyRecaps = async ({
   discount_label,
   referral_reward_id,
   created_at,
+  invoice_created_at,
   special_type,
   appointment:appointments!appointment_id(appointment_date),
   payment_splits:daily_recap_payment_splits(id, payment_method, amount),

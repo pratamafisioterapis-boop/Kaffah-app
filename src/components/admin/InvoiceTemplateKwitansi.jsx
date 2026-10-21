@@ -26,6 +26,8 @@ const dayKey = (x) => `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDa
 // Khusus klinik Praxis: invoice yang dibuat setelah hari terapi memakai tanggal
 // registrasi dan jam akhir slot (mis. slot 09.00-10.00 -> 10.00).
 const getInvoiceDate = (data, clinic) => {
+  // Tanggal invoice = tanggal pembayaran (invoice_created_at); tanggal layanan tetap
+  // tampil terpisah sebagai Registration Date.
   const created = data?.created_at || data?.recap_date;
   const slotEnd = data?.slot_end_at ? new Date(data.slot_end_at) : null;
   const createdAt = new Date(created);
@@ -36,7 +38,7 @@ const getInvoiceDate = (data, clinic) => {
   ) {
     return slotEnd;
   }
-  return created;
+  return clinic?.id === PRAXIS_CLINIC_ID ? created : (data?.invoice_created_at || created);
 };
 const MONTHS =['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -90,7 +92,7 @@ const InvoiceTemplateKwitansi = forwardRef(({ data }, ref) => {
     ? data.payment_splits.map((s) => ({ mode: s.payment_method, amount: num(s.amount) }))
     : [{ mode: data?.payment_method || '-', amount: total }];
   const paid = splits.reduce((s, p) => s + p.amount, 0);
-  const payDate = fmtDate(data?.recap_date);
+  const payDate = fmtDate(data?.invoice_created_at || data?.recap_date);
 
   const INK = '#000';
   const MUTED = '#000';
