@@ -25,7 +25,12 @@ const PdfPreviewModal = ({ open, onClose, url, title = 'Preview Dokumen', footer
 
     (async () => {
       try {
-        pdfDoc = await pdfjsLib.getDocument(url).promise;
+        // Fetch on the main thread and hand pdf.js the bytes: iOS WebKit workers
+        // often can't open blob: URLs ("Unexpected server response (0)").
+        const res = await fetch(url);
+        const data = new Uint8Array(await res.arrayBuffer());
+        if (cancelled) return;
+        pdfDoc = await pdfjsLib.getDocument({ data }).promise;
         if (cancelled || !containerRef.current) return;
 
         containerRef.current.innerHTML = '';
