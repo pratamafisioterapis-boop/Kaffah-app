@@ -74,15 +74,18 @@ export async function checkInvoiceDelivery(recapId, { waitMs = 2500, tries = 5 }
     await sleep(i === 0 ? waitMs : 1500);
     const { data, error: e } = await supabase.rpc('invoice_wa_finish_check', { p_recap_id: recapId });
     if (e) throw new Error(e.message);
-    if (data?.done) return data.unknown ? null : { status: data.status, detail: data.detail };
+    if (data?.done) return data.unknown ? null : { status: data.status, detail: data.detail, waStatus: data.wa_status || null };
   }
   return null;
 }
 
-// Kirim otomatis lewat Watzap sebagai pesan teks berisi link invoice (hanya pesan teks/template yang tercatat di log
-// Watzap sehingga status akhirnya bisa dicek), lalu periksa hasilnya: kegagalan Meta (mis. di luar 24 jam) muncul
-// dalam beberapa detik. onStep('send' | 'check') untuk indikator proses.
-export async function sendInvoiceAuto({ recapId, phone, message, onStep }) {
+// Kirim otomatis lewat Watzap:
+//  1) pesan teks pengantar berisi link invoice (tercatat di log Watzap, statusnya bisa dicek);
+//  2) periksa statusnya - bila gagal (mis. 131047, pasien di luar jendela 24 jam) berhenti dan PDF TIDAK dikirim;
+//  3) bila lolos, PDF menyusul sebagai lampiran. Pengiriman lampiran tidak tercatat di log Watzap, jadi aturan 24 jam
+//     yang sama dipakai sebagai penentu: teks lolos berarti lampiran juga akan lolos.
+// onStep('send' | 'check' | 'file') untuk indikator proses. Hasil: { status, detail, fileError? }.
+export async function sendInvoiceAuto({ recapId, phone, message, fileUrl, fileName, fileCaption, onStep }) {
   onStep?.('send');
   const { error } = await supabase.rpc('invoice_wa_send', { p_recap_id: recapId, p_phone: phone, p_message: message });
   if (error) throw new Error(error.message);
@@ -97,15 +100,40 @@ export async function sendInvoiceAuto({ recapId, phone, message, onStep }) {
   if (!sent) return { status: 'mengirim', detail: 'Respons Watzap belum diterima. Status akan diperbarui otomatis.' };
   if (sent.status === 'gagal') return { status: 'gagal', detail: sent.detail };
 
+  // Tunggu status pasti dari WhatsApp (sent/delivered/read atau failed); kegagalan jendela 24 jam muncul dalam detik.
   onStep?.('check');
-  await sleep(1500);
   let result = null;
-  for (let k = 0; k < 2; k += 1) {
+  for (let i = 0; i < 8; i += 1) {
+    await sleep(i === 0 ? 1500 : 1000);
     result = await checkInvoiceDelivery(recapId);
-    if (result && result.status !== 'menunggu') break;
-    if (k === 0) await sleep(2500);
+    if (result?.status === 'gagal') return result;
+    if (result && ['sent', 'delivered', 'read'].includes(result.waStatus)) break;
   }
-  return result || { status: 'menunggu', detail: null };
+
+  // Lampiran PDF.
+  onStep?.('file');
+  let fileError = null;
+  try {
+    const { error: fe } = await supabase.rpc('invoice_wa_send_file', {
+      p_recap_id: recapId,
+      p_phone: phone,
+      p_file_url: fileUrl,
+      p_filename: fileName,
+      p_caption: fileCaption || null,
+    });
+    if (fe) throw new Error(fe.message);
+    let fin = null;
+    for (let i = 0; i < 6; i += 1) {
+      await sleep(1500);
+      const { data, error: e } = await supabase.rpc('invoice_wa_finish_file', { p_recap_id: recapId });
+      if (e) throw new Error(e.message);
+      if (data?.done) { fin = data; break; }
+    }
+    if (fin && !fin.ok) fileError = fin.message || 'Lampiran PDF ditolak Watzap.';
+  } catch (err) {
+    fileError = err.message || 'Lampiran PDF gagal dikirim.';
+  }
+  return { ...(result ? { status: result.status, detail: result.detail } : { status: 'menunggu', detail: null }), fileError };
 }
 
 // Konfirmasi manual: 'manual_menunggu' | 'terkirim_manual' | 'tidak_dikirim' (alasan wajib).

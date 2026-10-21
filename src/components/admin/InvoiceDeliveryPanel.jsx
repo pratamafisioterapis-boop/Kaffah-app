@@ -101,14 +101,20 @@ const InvoiceDeliveryPanel = ({
     setStep('prepare');
     let res;
     try {
-      // PDF dibuat ulang dan diunggah dulu agar link /i/<id> di pesan membuka invoice yang terbaru.
-      await prepareFile({ force: true });
+      // PDF dibuat ulang dan diunggah dulu agar link /i/<id> di pesan dan lampiran memakai invoice yang terbaru.
+      const { fileUrl, fileName } = await prepareFile({ force: true });
       res = await sendInvoiceAuto({
         recapId,
         phone,
         message: buildInvoiceMessage(clinicName, recapId),
+        fileUrl,
+        fileName,
+        fileCaption: 'Kwitansi Terapi',
         onStep: setStep,
       });
+      if (res.fileError) {
+        toast({ title: 'Lampiran PDF tidak terkirim', description: `Pesan berisi link invoice sudah terkirim ke pasien, tetapi lampiran PDF gagal: ${res.fileError}` });
+      }
     } catch (err) {
       // Gagal sebelum/ketika menghubungi Watzap (mis. nomor tidak valid): tampilkan sebagai gagal agar admin kirim manual.
       res = { status: 'gagal', detail: err.message || 'Gagal mengirim otomatis.' };
@@ -177,7 +183,7 @@ const InvoiceDeliveryPanel = ({
     </div>
   );
 
-  const stepLabel = step === 'prepare' ? 'Menyiapkan PDF invoice...' : step === 'send' ? 'Mengirim ke WhatsApp pasien...' : step === 'check' ? 'Memeriksa apakah pesan masuk...' : 'Memproses...';
+  const stepLabel = step === 'prepare' ? 'Menyiapkan PDF invoice...' : step === 'send' ? 'Mengirim pesan ke WhatsApp pasien...' : step === 'check' ? 'Memeriksa apakah pesan masuk...' : step === 'file' ? 'Mengirim lampiran PDF...' : 'Memproses...';
 
   // ───────────────────────── Tampilan ─────────────────────────
   if (phase === 'sending') {

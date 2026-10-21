@@ -1,7 +1,8 @@
 -- Pelacakan pengiriman invoice WhatsApp (khusus klinik yang mengaktifkan invoice_gate_enabled, saat ini Kaffah).
 --
--- Catatan: pengiriman lampiran (waba_send_file_url) TIDAK tercatat di log pesan Watzap (statusnya tidak bisa dicek),
--- jadi jalur otomatis memakai pesan teks berisi link invoice /i/<id> (waba_send_message).
+-- Catatan: pengiriman lampiran (waba_send_file_url) TIDAK tercatat di log pesan Watzap (statusnya tidak bisa dicek).
+-- Jalur otomatis: (1) pesan teks pengantar berisi link invoice /i/<id> (waba_send_message, tercatat), (2) bila teks
+-- lolos (aturan jendela 24 jam berlaku sama), PDF menyusul sebagai lampiran. Teks yang gagal = PDF tidak dikirim.
 --
 -- Masalah: respons "sukses" dari Watzap hanya berarti permintaan DITERIMA; Meta bisa menolak beberapa detik
 -- kemudian (mis. 131047 Re-engagement message: pasien tidak membalas dalam 24 jam). Status akhir diambil dari
@@ -27,6 +28,7 @@ ALTER TABLE public.daily_recaps
   ADD COLUMN IF NOT EXISTS invoice_wa_checked_at timestamptz,
   ADD COLUMN IF NOT EXISTS invoice_wa_send_req bigint,
   ADD COLUMN IF NOT EXISTS invoice_wa_check_req bigint,
+  ADD COLUMN IF NOT EXISTS invoice_wa_file_req bigint,
   ADD COLUMN IF NOT EXISTS invoice_opened_at timestamptz,
   ADD COLUMN IF NOT EXISTS invoice_wa_alerted_at timestamptz,
   ADD COLUMN IF NOT EXISTS invoice_skip_reason text;
@@ -311,6 +313,94 @@ BEGIN
 END;
 $fn$;
 
+-- Lampiran PDF (menyusul pesan teks yang lolos). Hasilnya hanya menunjukkan permintaan diterima Watzap.
+CREATE OR REPLACE FUNCTION public.invoice_wa_send_file(p_recap_id uuid, p_phone text, p_file_url text, p_filename text DEFAULT 'invoice.pdf', p_caption text DEFAULT NULL)
+RETURNS bigint
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $fn$
+DECLARE
+  v_clinic uuid;
+  v_key text;
+  v_number_key text;
+  v_phone text;
+  v_req bigint;
+BEGIN
+  SELECT d.clinic_id INTO v_clinic FROM daily_recaps d WHERE d.id = p_recap_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Recap tidak ditemukan.'; END IF;
+  IF v_clinic IS DISTINCT FROM get_my_clinic_id() OR COALESCE(get_my_role(), '') NOT IN ('admin', 'clinic_admin', 'owner', 'super_admin') THEN
+    RAISE EXCEPTION 'Anda tidak berhak mengirim invoice ini.';
+  END IF;
+
+  SELECT s.api_key, s.number_key INTO v_key, v_number_key
+  FROM wa_settings s WHERE s.clinic_id = v_clinic AND s.enabled LIMIT 1;
+  IF v_key IS NULL THEN RAISE EXCEPTION 'API WhatsApp belum diatur untuk klinik ini.'; END IF;
+
+  v_phone := regexp_replace(COALESCE(p_phone, ''), '[^0-9]', '', 'g');
+  IF v_phone LIKE '0%' THEN v_phone := '62' || substr(v_phone, 2); END IF;
+  IF length(v_phone) < 9 THEN RAISE EXCEPTION 'Nomor WhatsApp pasien tidak valid.'; END IF;
+
+  v_req := net.http_post(
+    url := 'https://api.watzap.id/v1/waba_send_file_url',
+    headers := jsonb_build_object('Content-Type', 'application/json'),
+    body := jsonb_build_object(
+      'api_key', v_key,
+      'number_key', COALESCE(v_number_key, 'ALL'),
+      'phone_no', v_phone,
+      'url', p_file_url,
+      'filename', p_filename,
+      'caption', COALESCE(p_caption, '')
+    )
+  );
+  UPDATE daily_recaps SET invoice_wa_file_req = v_req WHERE id = p_recap_id;
+  RETURN v_req;
+END;
+$fn$;
+
+CREATE OR REPLACE FUNCTION public.invoice_wa_finish_file(p_recap_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $fn$
+DECLARE
+  d record;
+  v_resp record;
+  j jsonb;
+  v_ok boolean := false;
+  v_msg text;
+BEGIN
+  SELECT * INTO d FROM daily_recaps WHERE id = p_recap_id;
+  IF NOT FOUND OR d.clinic_id IS DISTINCT FROM get_my_clinic_id()
+     OR COALESCE(get_my_role(), '') NOT IN ('admin', 'clinic_admin', 'owner', 'super_admin') THEN
+    RAISE EXCEPTION 'Anda tidak berhak.';
+  END IF;
+  IF d.invoice_wa_file_req IS NULL THEN RETURN jsonb_build_object('done', true, 'ok', true); END IF;
+
+  SELECT * INTO v_resp FROM net._http_response WHERE id = d.invoice_wa_file_req;
+  IF NOT FOUND THEN RETURN jsonb_build_object('done', false); END IF;
+
+  BEGIN
+    j := v_resp.content::jsonb;
+  EXCEPTION WHEN others THEN
+    j := NULL;
+  END;
+  IF v_resp.error_msg IS NOT NULL THEN
+    v_msg := 'Watzap tidak dapat dihubungi: ' || v_resp.error_msg;
+  ELSIF j IS NULL THEN
+    v_msg := 'Respons Watzap tidak dikenali.';
+  ELSIF j ->> 'ack' = 'successfully' OR j ->> 'status' = '200' THEN
+    v_ok := true;
+  ELSE
+    v_msg := COALESCE(NULLIF(btrim(j ->> 'message'), ''), 'Watzap menolak lampiran') || ' (kode ' || COALESCE(j ->> 'status', '?') || ')';
+  END IF;
+
+  UPDATE daily_recaps SET invoice_wa_file_req = NULL WHERE id = p_recap_id;
+  RETURN jsonb_build_object('done', true, 'ok', v_ok, 'message', v_msg);
+END;
+$fn$;
+
 -- 7. Hak eksekusi ------------------------------------------------------------------------------------------
 REVOKE ALL ON FUNCTION public.invoice_wa_error_text(int, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.invoice_wa_finish_send_core(uuid) FROM PUBLIC, anon, authenticated;
@@ -321,6 +411,10 @@ REVOKE ALL ON FUNCTION public.invoice_wa_start_check(uuid) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.invoice_wa_finish_check(uuid) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.invoice_wa_set_manual(uuid, text, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.invoice_wa_send(uuid, text, text) TO authenticated;
+REVOKE ALL ON FUNCTION public.invoice_wa_send_file(uuid, text, text, text, text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.invoice_wa_finish_file(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.invoice_wa_send_file(uuid, text, text, text, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.invoice_wa_finish_file(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.invoice_wa_finish_send(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.invoice_wa_start_check(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.invoice_wa_finish_check(uuid) TO authenticated;
