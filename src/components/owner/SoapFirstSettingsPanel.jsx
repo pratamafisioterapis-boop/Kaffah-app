@@ -174,7 +174,7 @@ const SoapFirstSettingsPanel = () => {
           <div className="grid gap-3 sm:grid-cols-2">
             {packages.map((p) => (
               <div key={p.id} className="flex items-center gap-2">
-                <Label className="flex-1 min-w-0 text-xs">{p.label} ({p.session_count} sesi)</Label>
+                <Label className="flex-1 min-w-0 text-xs">{new RegExp(`\\b${p.session_count}\\s*sesi\\b`, 'i').test(p.label) ? p.label : `${p.label} (${p.session_count} sesi)`}</Label>
                 <Input type="number" className="w-36 shrink-0 text-right" value={pkgPrices[p.id] ?? ''} onChange={(e) => setPkgPrices((prev) => ({ ...prev, [p.id]: e.target.value }))} placeholder="Belum diatur" />
               </div>
             ))}
