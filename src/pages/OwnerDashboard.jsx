@@ -47,6 +47,7 @@ import SoapViolationWidget from '@/components/owner/operational/SoapViolationWid
 import { OWNER_NAV_ITEMS } from '@/lib/navItems';
 const AttendanceManagement = React.lazy(lazyRetry(() => import('@/pages/admin/AttendanceManagement'), 'AttendanceManagement'));
 const OwnerDecreesPage = React.lazy(lazyRetry(() => import('@/pages/owner/OwnerDecreesPage'), 'OwnerDecreesPage'));
+const OwnerExerciseReviews = React.lazy(lazyRetry(() => import('@/pages/owner/OwnerExerciseReviews'), 'OwnerExerciseReviews'));
 const ClinicalDocuments = React.lazy(lazyRetry(() => import('@/pages/admin/ClinicalDocuments'), 'ClinicalDocuments'));
 
 // Reused for clinics where the owner is also the therapist (see
@@ -564,6 +565,7 @@ const OwnerDashboard = () => {
         <Route path="/attendance" element={<AttendanceManagement />} />
         <Route path="/clinical-documents" element={<ClinicalDocuments />} />
         <Route path="/decrees" element={<OwnerDecreesPage />} />
+        <Route path="/review-latihan" element={<OwnerExerciseReviews />} />
         
 
         {/* Fallback for old routes */}

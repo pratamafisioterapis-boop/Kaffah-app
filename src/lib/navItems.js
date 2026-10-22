@@ -34,6 +34,7 @@ export const OWNER_NAV_ITEMS = [
       { label: 'Owner Management', path: '/owner/owner-management', icon: 'Crown' },
       { label: 'Absensi Karyawan', path: '/owner/attendance', icon: 'Clock' },
       { label: 'SK Pimpinan', path: '/owner/decrees', icon: 'FileText', clinicOnly: KAFFAH_CLINIC_ID },
+      { label: 'Review Video Latihan', path: '/owner/review-latihan', icon: 'MonitorPlay', clinicOnly: KAFFAH_CLINIC_ID },
     ],
   },
   {
