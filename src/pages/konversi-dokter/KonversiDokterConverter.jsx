@@ -2,7 +2,7 @@ import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react'
 import {
   Upload, FileSpreadsheet, Loader2, CheckCircle2, AlertTriangle, Trash2, FileText,
   BarChart3, History, Save, ShieldCheck, Fuel, HeartPulse, FileCheck2, User,
-  Sparkles, Clock, CalendarDays, Stethoscope, Banknote,
+  Sparkles, Clock, CalendarDays, Stethoscope, Banknote, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -123,6 +123,85 @@ const DeskripsiTable = ({ data }) => (
   </div>
 );
 
+// ── Detail pasien Biaya Terapi Wicara/Okupasi + tindakan lain di hari sama ─
+const TERAPI_BADGE = {
+  Wicara: 'bg-pink-50 text-pink-700 border-pink-200',
+  Okupasi: 'bg-violet-50 text-violet-700 border-violet-200',
+};
+
+const BiayaTerapiSection = ({ data }) => {
+  const [showPasien, setShowPasien] = useState(false);
+  if (!data?.count) return null;
+  return (
+    <div className="space-y-3 rounded-2xl border border-violet-200/80 bg-violet-50/30 p-4">
+      <div>
+        <p className="font-bold text-slate-800">Detail Biaya Terapi Wicara / Okupasi</p>
+        <p className="text-xs text-slate-500">
+          Pasien yang di hari yang sama mendapat Biaya Terapi Wicara/Okupasi, beserta tindakan lain di hari itu.
+        </p>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatTile label="Pasien-Hari" value={data.count} />
+        <StatTile label="Biaya Terapi" value={rupiah(data.totalBiayaTerapi)} />
+        <StatTile label="Tindakan Lain" value={rupiah(data.totalLainnya)} />
+        <StatTile label="Total" value={rupiah(data.total)} />
+      </div>
+      <DeskripsiTable data={data} />
+      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowPasien((v) => !v)}>
+        {showPasien ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        {showPasien ? 'Sembunyikan' : 'Lihat'} rincian per pasien ({data.count})
+      </Button>
+      {showPasien && (
+        <div className="overflow-x-auto rounded-xl border border-slate-200/80 bg-white shadow-sm max-h-[32rem] overflow-y-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 sticky top-0">
+              <tr>
+                <th className="text-left px-4 py-2.5 font-semibold text-slate-500 border-b border-slate-200">Tanggal</th>
+                <th className="text-left px-3 py-2.5 font-semibold text-slate-500 border-b border-slate-200">Pasien</th>
+                <th className="text-left px-3 py-2.5 font-semibold text-slate-500 border-b border-slate-200">Tindakan</th>
+                <th className="text-right px-4 py-2.5 font-semibold text-slate-500 border-b border-slate-200">Nilai</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.groups.map((g, gi) => (
+                <React.Fragment key={`${g.namaPasien}|${g.tanggal}|${gi}`}>
+                  {g.items.map((it, i) => (
+                    <tr key={i} className={i === 0 ? 'border-t-2 border-slate-200' : ''}>
+                      {i === 0 && (
+                        <>
+                          <td rowSpan={g.items.length + 1} className="px-4 py-2 align-top text-slate-600 tabular-nums whitespace-nowrap">{g.tanggal}</td>
+                          <td rowSpan={g.items.length + 1} className="px-3 py-2 align-top">
+                            <p className="font-semibold text-slate-700">{g.namaPasien}</p>
+                            {g.noReg && <p className="text-[11px] text-slate-400">{g.noReg}</p>}
+                          </td>
+                        </>
+                      )}
+                      <td className="px-3 py-1.5 text-slate-700">
+                        <span className="flex items-center gap-1.5">
+                          {it.terapi && (
+                            <span className={`text-[10px] font-semibold border rounded px-1.5 py-0.5 ${TERAPI_BADGE[it.terapi]}`}>{it.terapi}</span>
+                          )}
+                          {it.deskripsi}
+                          {it.qty && it.qty !== '1' && <span className="text-slate-400 text-xs">&times;{it.qty}</span>}
+                        </span>
+                      </td>
+                      <td className="px-4 py-1.5 text-right text-slate-700 tabular-nums">{rupiah(it.nilai)}</td>
+                    </tr>
+                  ))}
+                  <tr className="bg-slate-50/80">
+                    <td className="px-3 py-1.5 text-xs font-semibold text-slate-500">Jumlah hari ini</td>
+                    <td className="px-4 py-1.5 text-right font-bold text-slate-800 tabular-nums">{rupiah(g.total)}</td>
+                  </tr>
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const CategoryPanel = ({ categoryKey, data, isBpjs }) => {
   const theme = CATEGORY_THEME[categoryKey];
   const Icon = theme.icon;
@@ -148,11 +227,12 @@ const CategoryPanel = ({ categoryKey, data, isBpjs }) => {
         <StatTile label="Total Nilai" value={rupiah(data.total)} />
       </div>
       {isBpjs ? <BpjsTable data={data} /> : <DeskripsiTable data={data} />}
+      <BiayaTerapiSection data={data.biayaTerapi} />
     </div>
   );
 };
 
-const AsuransiPanel = ({ subtypes }) => {
+const AsuransiPanel = ({ subtypes, biayaTerapi }) => {
   const combinedTotal = subtypes.reduce((sum, [, v]) => sum + (v.total || 0), 0);
   const combinedCount = subtypes.reduce((sum, [, v]) => sum + (v.count || 0), 0);
 
@@ -192,6 +272,7 @@ const AsuransiPanel = ({ subtypes }) => {
           );
         })}
       </div>
+      <BiayaTerapiSection data={biayaTerapi} />
     </div>
   );
 };
@@ -199,7 +280,7 @@ const AsuransiPanel = ({ subtypes }) => {
 // ── Sekumpulan tab BPJS/Asuransi/Tunai untuk SATU grup (Swasta atau Bukan
 // Swasta) ── dipakai dua kali oleh InsentifLaporan supaya kedua grup itu
 // tetap punya tampilan konsisten tanpa duplikasi markup.
-const CategoryGroup = ({ bpjs, jaminanSubtypes, tunai }) => {
+const CategoryGroup = ({ bpjs, jaminanSubtypes, tunai, asuransiBiayaTerapi }) => {
   const hasBpjs = (bpjs?.count || 0) > 0;
   const hasTunai = (tunai?.count || 0) > 0;
   const asuransiCount = jaminanSubtypes.reduce((sum, [, v]) => sum + (v.count || 0), 0);
@@ -234,7 +315,7 @@ const CategoryGroup = ({ bpjs, jaminanSubtypes, tunai }) => {
       )}
       {jaminanSubtypes.length > 0 && (
         <TabsContent value="asuransi" className="mt-4">
-          <AsuransiPanel subtypes={jaminanSubtypes} />
+          <AsuransiPanel subtypes={jaminanSubtypes} biayaTerapi={asuransiBiayaTerapi} />
         </TabsContent>
       )}
       {hasTunai && (
@@ -316,16 +397,16 @@ const InsentifLaporan = ({ report, meta }) => {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="swasta" className="mt-3">
-            <CategoryGroup jaminanSubtypes={swastaJaminanSubtypes} tunai={normalized.swasta.tunai} />
+            <CategoryGroup jaminanSubtypes={swastaJaminanSubtypes} tunai={normalized.swasta.tunai} asuransiBiayaTerapi={normalized.biayaTerapiAsuransi?.swasta} />
           </TabsContent>
           <TabsContent value="nonswasta" className="mt-3">
-            <CategoryGroup bpjs={normalized.bpjs} jaminanSubtypes={nonSwastaJaminanSubtypes} tunai={normalized.nonSwasta.tunai} />
+            <CategoryGroup bpjs={normalized.bpjs} jaminanSubtypes={nonSwastaJaminanSubtypes} tunai={normalized.nonSwasta.tunai} asuransiBiayaTerapi={normalized.biayaTerapiAsuransi?.nonSwasta} />
           </TabsContent>
         </Tabs>
       ) : hasSwasta ? (
-        <CategoryGroup jaminanSubtypes={swastaJaminanSubtypes} tunai={normalized.swasta.tunai} />
+        <CategoryGroup jaminanSubtypes={swastaJaminanSubtypes} tunai={normalized.swasta.tunai} asuransiBiayaTerapi={normalized.biayaTerapiAsuransi?.swasta} />
       ) : (
-        <CategoryGroup bpjs={normalized.bpjs} jaminanSubtypes={nonSwastaJaminanSubtypes} tunai={normalized.nonSwasta.tunai} />
+        <CategoryGroup bpjs={normalized.bpjs} jaminanSubtypes={nonSwastaJaminanSubtypes} tunai={normalized.nonSwasta.tunai} asuransiBiayaTerapi={normalized.biayaTerapiAsuransi?.nonSwasta} />
       )}
     </div>
   );
