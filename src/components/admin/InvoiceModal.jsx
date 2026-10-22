@@ -9,6 +9,7 @@ import {
   DialogClose
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Printer, Download, X, Loader2, Send } from "lucide-react";
 import InvoiceTemplate from './InvoiceTemplate';
 import InvoiceTemplateKwitansi from './InvoiceTemplateKwitansi';
@@ -16,6 +17,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { getInvoiceSettings, getWaApiSettings } from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { stripSignatureBackground } from '@/lib/signatureImage';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 
 // Ukuran acuan A4 (210mm x 297mm) dalam px @96dpi — dipakai untuk menghitung
 // skala preview di layar sempit. Generasi PDF/print tetap memakai elemen asli
@@ -44,9 +46,13 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
   const [loadingDetail, setLoadingDetail] = useState(true);
   const [waAutoAvailable, setWaAutoAvailable] = useState(false);
   const [processedSignatureUrl, setProcessedSignatureUrl] = useState(null);
+  // Khusus Kaffah: nama pasien pada invoice bisa diganti untuk satu kali kirim.
+  // Tidak disimpan ke database (lihat isOneOff di bawah).
+  const [oneOffName, setOneOffName] = useState('');
 
   useEffect(() => {
     if (isOpen) {
+      setOneOffName('');
       setLoadingDetail(true);
       fetchSettings();
       fetchDetailData();
@@ -80,6 +86,17 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
   };
   // Template kwitansi memakai nomor invoice yang sama dengan yang disimpan saat
   // download/kirim, supaya tampil sebelum record tersimpan.
+  const canOneOffName = (templateData.clinic?.id || detailData?.clinic?.id) === KAFFAH_CLINIC_ID;
+  const oneOffTrimmed = canOneOffName ? oneOffName.trim() : '';
+  // Mode kirim sekali: nama diganti, tidak ada yang dicatat (invoice_url, nomor
+  // kwitansi, invoice_records, status WA) dan invoice asli pasien tidak tertimpa.
+  const isOneOff = !!oneOffTrimmed;
+  if (isOneOff) {
+    templateData.patient_name = oneOffTrimmed;
+    templateData.guest_name = oneOffTrimmed;
+    templateData.patients = { ...(templateData.patients || {}), full_name: oneOffTrimmed };
+    if (templateData.patient) templateData.patient = { ...templateData.patient, full_name: oneOffTrimmed };
+  }
   if (!templateData.receipt_number && !templateData.invoice_number) {
     const rm = data?.patients?.medical_record_number || data?.patient?.medical_record_number || data?.medical_record_number || 'RM00000';
     templateData.invoice_number = `INV/KFF/${data?.recap_date || new Date().toISOString().split('T')[0]}/${rm}`;
@@ -263,6 +280,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
   // ── Helper: Nama Pasien (dipakai untuk nama file PDF) ─────────────────────
   const getPatientNameSlug = () => {
     const name =
+      oneOffTrimmed ||
       data?.patients?.full_name ||
       data?.patient?.full_name  ||
       data?.guest_name          ||
@@ -289,7 +307,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
 
   // ── Helper: Upload PDF ke Supabase Storage → return public URL ───────────
   // FIX: fileName diterima sebagai parameter, bukan hardcode inv_${data.id}.pdf
-  const uploadPDF = async (pdf, fileName) => {
+  const uploadPDF = async (pdf, fileName, { persist = true } = {}) => {
     const blob = pdf.output('blob');
 
     const { error: uploadError } = await supabase
@@ -305,6 +323,8 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       .getPublicUrl(fileName);
 
     const fileUrl = publicUrlData.publicUrl;
+
+    if (!persist) return fileUrl;
 
     // Simpan URL ke daily_recaps
     const { error: saveUrlError } = await supabase
@@ -351,9 +371,8 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       const pdf           = await generatePDF();
       const invoiceNumber = getInvoiceNumber();
 
-      await saveInvoiceRecord(invoiceNumber);
+      if (!isOneOff) await saveInvoiceRecord(invoiceNumber);
 
-      const rm      = getMedicalRecordNumber();
       const rawDate = data?.recap_date || new Date().toISOString().split('T')[0];
       const [yr, mo, dy] = rawDate.split('-');
       const dateFormatted = `${dy}-${mo}-${yr.slice(2)}`;
@@ -386,7 +405,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       }
 
       // 2. Gunakan invoice_url yang sudah ada, atau generate + upload baru
-      let fileUrl = data?.invoice_url || detailData?.invoice_url || null;
+      let fileUrl = isOneOff ? null : (data?.invoice_url || detailData?.invoice_url || null);
 
       // 3. Siapkan nama file dengan format Rcpt_RM_DD-MM-YY.pdf
       const rm       = getMedicalRecordNumber();
@@ -398,9 +417,14 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       if (!fileUrl) {
         toast({ title: "Menyiapkan Invoice...", description: "Sedang generate dan upload PDF." });
         const pdf = await generatePDF();
-        // FIX: teruskan fileName ke uploadPDF supaya nama file di Storage juga benar
-        fileUrl   = await uploadPDF(pdf, fileName);
-        await saveInvoiceRecord(getInvoiceNumber());
+        if (isOneOff) {
+          // File sementara di storage (nama unik) hanya agar bisa dikirim; tidak ditautkan ke recap mana pun.
+          fileUrl = await uploadPDF(pdf, `oneoff/${data.id}_${Date.now()}.pdf`, { persist: false });
+        } else {
+          // FIX: teruskan fileName ke uploadPDF supaya nama file di Storage juga benar
+          fileUrl = await uploadPDF(pdf, fileName);
+          await saveInvoiceRecord(getInvoiceNumber());
+        }
       }
 
       // 4. Siapkan pesan caption
@@ -433,13 +457,15 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
   status === '200' ||
   rpcResult?.request_id
 ) {
-        await supabase
-          .from('daily_recaps')
-          .update({
-            invoice_wa_status: 'terkirim',
-            invoice_wa_sent_at: new Date().toISOString(),
-          })
-          .eq('id', data.id);
+        if (!isOneOff) {
+          await supabase
+            .from('daily_recaps')
+            .update({
+              invoice_wa_status: 'terkirim',
+              invoice_wa_sent_at: new Date().toISOString(),
+            })
+            .eq('id', data.id);
+        }
 
         toast({
           title: "✅ Invoice Terkirim",
@@ -459,13 +485,15 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     } catch (err) {
       console.error("handleSendWA error:", err);
 
-      await supabase
-        .from('daily_recaps')
-        .update({
-          invoice_wa_status: 'gagal',
-          invoice_wa_sent_at: new Date().toISOString(),
-        })
-        .eq('id', data.id);
+      if (!isOneOff) {
+        await supabase
+          .from('daily_recaps')
+          .update({
+            invoice_wa_status: 'gagal',
+            invoice_wa_sent_at: new Date().toISOString(),
+          })
+          .eq('id', data.id);
+      }
 
       toast({
         variant: "destructive",
@@ -497,8 +525,6 @@ const handleSendManualWA = async () => {
       detailData?.invoice_url ||
       null;
 
-    const rm = getMedicalRecordNumber();
-
     const rawDate =
       data?.recap_date ||
       new Date().toISOString().split('T')[0];
@@ -511,7 +537,12 @@ const handleSendManualWA = async () => {
     const fileName =
       `Kwitansi_${getPatientNameSlug()}_${dateFormatted}.pdf`;
 
-    if (!fileUrl) {
+    if (isOneOff) {
+      // Link /i/:id menampilkan invoice asli (tersimpan), jadi untuk kirim sekali
+      // PDF diunduh dan admin melampirkannya sendiri di chat WhatsApp.
+      const pdf = await generatePDF();
+      pdf.save(fileName);
+    } else if (!fileUrl) {
 
       const pdf = await generatePDF();
 
@@ -532,20 +563,22 @@ const handleSendManualWA = async () => {
       `Berikut *Kwitansi Terapi* hari ini.\n\n` +
       `Terima kasih telah mempercayakan pemulihan di *${clinicName}*.\n` +
       `Semoga lekas membaik dan sehat selalu.\n\n` +
-      `Lihat/unduh kwitansi:\n${invoiceLink}\n\n` +
+      (isOneOff ? '' : `Lihat/unduh kwitansi:\n${invoiceLink}\n\n`) +
       `*Salam Sehat,*\n` +
       `${clinicName}`;
 
     const formattedPhone =
       rawPhone.replace(/^0/, '62');
 
-    await supabase
-      .from('daily_recaps')
-      .update({
-        invoice_wa_status: 'terkirim_manual',
-        invoice_wa_sent_at: new Date().toISOString(),
-      })
-      .eq('id', data.id);
+    if (!isOneOff) {
+      await supabase
+        .from('daily_recaps')
+        .update({
+          invoice_wa_status: 'terkirim_manual',
+          invoice_wa_sent_at: new Date().toISOString(),
+        })
+        .eq('id', data.id);
+    }
 
     window.open(
       `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`,
@@ -721,6 +754,26 @@ const handleSendManualWA = async () => {
             </DialogClose>
           </div>
         </div>
+
+        {canOneOffName && (
+          <div className="px-3 sm:px-4 py-2 border-b bg-amber-50 shrink-0">
+            <label className="text-xs font-medium text-amber-900">
+              Nama pada invoice (kirim sekali, tidak tercatat di sistem)
+            </label>
+            <Input
+              value={oneOffName}
+              onChange={(e) => setOneOffName(e.target.value)}
+              placeholder="Kosongkan untuk memakai nama pasien asli"
+              className="mt-1 h-9 bg-white"
+              maxLength={100}
+            />
+            {isOneOff && (
+              <p className="text-[11px] text-amber-800 mt-1">
+                Mode kirim sekali: Download/Kirim tidak menyimpan invoice, nomor kwitansi, atau status kirim. Kirim Manual akan mengunduh PDF untuk dilampirkan sendiri.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Preview Area — discalakan agar invoice A4 tetap utuh terlihat di layar sempit */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-8 bg-slate-200/50">
