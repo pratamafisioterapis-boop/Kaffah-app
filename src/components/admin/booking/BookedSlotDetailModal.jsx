@@ -19,6 +19,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { formatTimeIndonesia } from '@/lib/utils';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
+import PrepayPackagePanel from '@/components/admin/PrepayPackagePanel';
 
 const BookedSlotDetailModal = ({ 
   appointment, 
@@ -319,9 +320,11 @@ useEffect(() => {
             </div>
           </div>
         </div>
+
+        <PrepayPackagePanel appointment={appointment} onChanged={onSuccess} />
       </div>
 
-      
+
 <DialogFooter className="bg-white pt-3 pb-3 border-t flex flex-col gap-3 mt-4">
 
   {/* ACTION ROW */}
