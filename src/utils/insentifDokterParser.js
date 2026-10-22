@@ -135,9 +135,20 @@ function detectFormat(firstPageWords) {
 function extractPeriodeRange(firstPageWords) {
   const text = firstPageWords.map((w) => w.text).join(' ');
   const m = text.match(/(\d{2}\/\d{2}\/\d{4})\s*S\.?\s*D\.?\s*(\d{2}\/\d{2}\/\d{4})/i);
-  if (!m) return null;
-  return { awal: m[1], akhir: m[2] };
+  if (m) return { awal: m[1], akhir: m[2] };
+  // Layout BPJS baru: "PERIODE BULAN AGUSTUS 2026" → 01/08/2026 s.d. 31/08/2026
+  const b = text.toUpperCase().match(/PERIODE\s+BULAN\s+([A-Z]+)\s+(\d{4})/);
+  const monthIdx = b ? BULAN_ID.indexOf(b[1]) : -1;
+  if (monthIdx === -1) return null;
+  const mm = String(monthIdx + 1).padStart(2, '0');
+  const lastDay = new Date(Number(b[2]), monthIdx + 1, 0).getDate();
+  return { awal: `01/${mm}/${b[2]}`, akhir: `${lastDay}/${mm}/${b[2]}` };
 }
+
+const BULAN_ID = [
+  'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
+  'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER',
+];
 
 // PDF "Praktek Swasta" (format A/C) mencantumkan kata "PRAKTEK SWASTA" di
 // judul header, sementara PDF BPJS Individu (format B) tidak pernah punya
@@ -594,7 +605,71 @@ function detectFormatBBounds(pages) {
   return null;
 }
 
+// Layout BPJS Individu versi baru (judul "PERINCIAN INSENTIF JASA DOKTER BPJS
+// INDIVIDU" + "PERIODE BULAN <BULAN> <TAHUN>", ada kolom "Faktor Koef", footer
+// "TOTAL"). Di layout ini pdf.js membaca "No + Reg No + Nama Pasien" sebagai
+// SATU teks dan "Tanggal + Desc Transaksi" sebagai satu teks lagi, lalu diikuti
+// 7 angka (Nilai Bill, Nilai Inacbg, Koef, Qty, Jasa Medis Tarif, Jasa Medis
+// Diterima, Total). Pemetaan per posisi x tidak bisa dipakai, jadi tiap baris
+// dipecah berdasarkan pola teksnya.
+const COMPACT_B_HEAD_RE = /^(\d+)\s+(R?\d{6,})\s+(.*)$/;
+const COMPACT_B_DATE_RE = /^(\d{2}\/\d{2}\/\d{4})\s+(.*)$/;
+const COMPACT_B_NUM_RE = /^[\d.,]+$/;
+const COMPACT_B_NUM_KEYS = [
+  'nilaiBill', 'nilaiInacbg', 'koef', 'qty', 'jasaMedisTarif', 'jasaMedisDiterima', 'total',
+];
+
+function isCompactFormatB(pages) {
+  return pages.slice(0, 2).some((pageWords) =>
+    pageWords.some((w) => COMPACT_B_DATE_RE.test(w.text))
+  );
+}
+
+function parseFormatBCompact(pages) {
+  const rows = [];
+  const summary = {};
+
+  for (const pageWords of pages) {
+    const lines = clusterLines(pageWords);
+    for (const line of lines) {
+      const sortedLine = [...line].sort((a, b) => a.x - b.x);
+      const texts = sortedLine.map((w) => w.text);
+      const first = (texts[0] || '').toUpperCase();
+
+      if (first === 'TOTAL' || first.startsWith('JUMLAH')) {
+        const nums = texts.filter((t) => COMPACT_B_NUM_RE.test(t));
+        if (nums.length) summary.jumlahBersih = nums[nums.length - 1];
+        continue;
+      }
+
+      const dateIdx = texts.findIndex((t) => COMPACT_B_DATE_RE.test(t));
+      if (dateIdx === -1) continue;
+      const [, tanggal, desc] = COMPACT_B_DATE_RE.exec(texts[dateIdx]);
+      const head = COMPACT_B_HEAD_RE.exec(texts.slice(0, dateIdx).join(' '));
+      const nums = texts.slice(dateIdx + 1).filter((t) => COMPACT_B_NUM_RE.test(t));
+
+      const row = {
+        no: String(rows.length + 1),
+        noReg: head ? head[2] : '',
+        namaPasien: head ? head[3].trim() : texts.slice(0, dateIdx).join(' ').trim(),
+        tanggal,
+        descTransaksi: desc.trim(),
+      };
+      // Isi dari kanan: kalau ada kolom angka yang kosong, Total (kolom
+      // terpenting untuk rekap) tetap terbaca di tempat yang benar.
+      const offset = COMPACT_B_NUM_KEYS.length - nums.length;
+      COMPACT_B_NUM_KEYS.forEach((key, i) => {
+        row[key] = i - offset >= 0 ? nums[i - offset] : '';
+      });
+      rows.push(row);
+    }
+  }
+  stripDoctorPrefix(rows);
+  return { rows, summary };
+}
+
 function parseFormatB(pages) {
+  if (isCompactFormatB(pages)) return parseFormatBCompact(pages);
   // CATATAN: deteksi bounds otomatis (detectFormatBBounds) sempat dicoba di
   // sini tapi terbukti keliru pada file BPJS asli (salah kenali baris lain
   // sebagai header, sehingga hampir semua nilai hilang / total meleset
