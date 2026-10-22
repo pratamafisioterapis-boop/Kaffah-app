@@ -107,7 +107,7 @@ const ExerciseReview = ({ therapist }) => {
       await load();
       return;
     }
-    toast({ title: `Review ${activeId} selesai`, description: 'Owner sudah diberi tahu.' });
+    toast({ title: activeReview ? `Review ${activeId} diperbarui` : `Review ${activeId} selesai`, description: 'Owner sudah diberi tahu.' });
     setActiveId(null);
     setVideoUrl(null);
     await load();
@@ -120,7 +120,7 @@ const ExerciseReview = ({ therapist }) => {
       <div className="rounded-app-lg border border-slate-200 bg-white p-4 space-y-3">
         <p className="text-sm text-slate-600">
           Tonton video, lalu periksa nama, jenis, cara melakukan, dan dosisnya. Antrean tiap terapis dimulai dari bagian yang berbeda,
-          dan latihan yang sudah direview terapis mana pun tidak perlu direview lagi. Kode latihan tidak bisa diubah.
+          dan latihan yang sudah direview terapis mana pun tidak perlu direview lagi. Latihan yang sudah direview tetap bisa diedit bila ada yang salah. Kode latihan tidak bisa diubah.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" variant="ghost" onClick={() => setGuideOpen(true)}><Info className="w-4 h-4 mr-1" /> Panduan</Button>
@@ -152,7 +152,7 @@ const ExerciseReview = ({ therapist }) => {
                   </span>
                 )}
                 <Button size="sm" variant={r ? 'outline' : 'default'} onClick={() => open(e)}>
-                  <Play className="w-4 h-4 mr-1" /> {r ? 'Lihat' : 'Review'}
+                  <Play className="w-4 h-4 mr-1" /> {r ? 'Edit' : 'Review'}
                 </Button>
               </li>
             );
@@ -185,8 +185,8 @@ const ExerciseReview = ({ therapist }) => {
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" role="dialog" aria-modal="true">
           <div className="w-full max-w-xl max-h-[90dvh] overflow-y-auto overscroll-contain rounded-t-2xl sm:rounded-2xl bg-white p-4 sm:p-6 space-y-4">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">{activeReview ? 'Hasil review' : 'Review latihan'} <span className="font-mono text-slate-500">{active.id}</span></h2>
-              {activeReview && <p className="text-sm text-emerald-700">Sudah direview oleh {activeReview.reviewer_name}.</p>}
+              <h2 className="text-lg font-semibold text-slate-900">{activeReview ? 'Edit review' : 'Review latihan'} <span className="font-mono text-slate-500">{active.id}</span></h2>
+              {activeReview && <p className="text-sm text-emerald-700">Sudah direview oleh {activeReview.reviewer_name}. Jika ada yang salah, perbaiki lalu simpan ulang.</p>}
             </div>
             {videoUrl
               ? <video src={videoUrl} controls playsInline className="w-full rounded-lg bg-black" />
@@ -194,29 +194,27 @@ const ExerciseReview = ({ therapist }) => {
             <form onSubmit={save} className="space-y-3">
               <div>
                 <label htmlFor="rv-name" className={LABEL}>Nama latihan</label>
-                <Input id="rv-name" value={form.name} onChange={setField('name')} maxLength={120} disabled={Boolean(activeReview)} required />
+                <Input id="rv-name" value={form.name} onChange={setField('name')} maxLength={120} required />
               </div>
               <div>
                 <label htmlFor="rv-grp" className={LABEL}>Jenis latihan</label>
-                <Input id="rv-grp" value={form.grp} onChange={setField('grp')} maxLength={60} disabled={Boolean(activeReview)} required />
+                <Input id="rv-grp" value={form.grp} onChange={setField('grp')} maxLength={60} required />
               </div>
               <div>
                 <label htmlFor="rv-how" className={LABEL}>Cara melakukan</label>
-                <Textarea id="rv-how" value={form.howTo} onChange={setField('howTo')} rows={4} disabled={Boolean(activeReview)} />
+                <Textarea id="rv-how" value={form.howTo} onChange={setField('howTo')} rows={4} />
               </div>
               <div>
                 <label htmlFor="rv-dose" className={LABEL}>Dosis</label>
-                <Input id="rv-dose" value={form.dose} onChange={setField('dose')} disabled={Boolean(activeReview)} />
+                <Input id="rv-dose" value={form.dose} onChange={setField('dose')} />
               </div>
               <div className="flex justify-end gap-2 pt-1">
                 <Button type="button" variant="outline" onClick={() => { setActiveId(null); setVideoUrl(null); }} disabled={saving}>
-                  {activeReview ? 'Tutup' : 'Batal'}
+                  Batal
                 </Button>
-                {!activeReview && (
-                  <Button type="submit" disabled={saving || form.name.trim().length < 3 || !form.grp.trim()}>
-                    {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />} Simpan &amp; tandai direview
-                  </Button>
-                )}
+                <Button type="submit" disabled={saving || form.name.trim().length < 3 || !form.grp.trim()}>
+                  {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />} {activeReview ? 'Simpan perubahan' : 'Simpan & tandai direview'}
+                </Button>
               </div>
             </form>
           </div>
