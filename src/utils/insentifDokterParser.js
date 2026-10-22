@@ -865,6 +865,81 @@ function buildTunaiBreakdown(tunaiRows) {
   };
 }
 
+// ── Detail pasien Biaya Terapi Wicara / Biaya Terapi Okupasi ──────────────
+// Kelompokkan baris per pasien + tanggal, ambil hanya hari yang punya baris
+// "BIAYA TERAPI WICARA" / "BIAYA TERAPI OKUPASI", lalu tampilkan juga tindakan
+// lain di hari yang sama (mis. Exercise Alat, Konsul) beserta nominalnya.
+// Kunci pakai nama (bukan No Reg) karena satu pasien bisa punya No Reg
+// berbeda untuk kunjungan di hari yang sama.
+const BIAYA_TERAPI_RE = /BIAYA\s*TERAPI\s*(WICARA|OKUPASI)/i;
+
+function buildBiayaTerapiDetail(rows, getDesc, getValue) {
+  const groups = new Map();
+  rows.forEach((r) => {
+    const nama = (r.namaPasien || '').replace(/\s+/g, '').toUpperCase();
+    const key = `${nama || (r.noReg || '').trim().toUpperCase()}|${(r.tanggal || '').trim()}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(r);
+  });
+
+  const out = [];
+  groups.forEach((groupRows) => {
+    if (!groupRows.some((r) => BIAYA_TERAPI_RE.test(getDesc(r)))) return;
+    const items = groupRows
+      .map((r) => {
+        const deskripsi = getDesc(r).trim() || '(Tanpa Deskripsi)';
+        const m = BIAYA_TERAPI_RE.exec(deskripsi);
+        return {
+          deskripsi,
+          qty: (r.qty || '').trim(),
+          nilai: getValue(r),
+          terapi: m ? (/WICARA/i.test(m[1]) ? 'Wicara' : 'Okupasi') : null,
+        };
+      })
+      .filter((it) => it.nilai || it.terapi)
+      .sort((a, b) => (a.terapi ? 0 : 1) - (b.terapi ? 0 : 1));
+    const totalBiayaTerapi = items.filter((it) => it.terapi).reduce((s, it) => s + it.nilai, 0);
+    const total = items.reduce((s, it) => s + it.nilai, 0);
+    out.push({
+      namaPasien: (groupRows[0].namaPasien || '').trim(),
+      noReg: (groupRows[0].noReg || '').trim(),
+      tanggal: (groupRows[0].tanggal || '').trim(),
+      jenis: [...new Set(items.filter((it) => it.terapi).map((it) => it.terapi))],
+      items,
+      totalBiayaTerapi,
+      totalLainnya: total - totalBiayaTerapi,
+      total,
+    });
+  });
+
+  out.sort((a, b) => {
+    const d = toSortableDate(a.tanggal).localeCompare(toSortableDate(b.tanggal));
+    return d || a.namaPasien.localeCompare(b.namaPasien);
+  });
+
+  const byDesc = {};
+  out.forEach((g) => g.items.forEach((it) => {
+    if (!byDesc[it.deskripsi]) byDesc[it.deskripsi] = { deskripsi: it.deskripsi, isBiayaTerapi: !!it.terapi, count: 0, total: 0 };
+    byDesc[it.deskripsi].count += 1;
+    byDesc[it.deskripsi].total += it.nilai;
+  }));
+
+  return {
+    count: out.length,
+    totalBiayaTerapi: out.reduce((s, g) => s + g.totalBiayaTerapi, 0),
+    totalLainnya: out.reduce((s, g) => s + g.totalLainnya, 0),
+    total: out.reduce((s, g) => s + g.total, 0),
+    byDeskripsi: Object.values(byDesc).sort((a, b) => (b.isBiayaTerapi - a.isBiayaTerapi) || (b.total - a.total)),
+    groups: out,
+  };
+}
+
+const jaminanRowValue = (r) => Object.keys(JAMINAN_SUBTYPE_LABELS).reduce((s, k) => s + toNumber(r[k]), 0);
+
+function withBiayaTerapi(breakdown, rows, getDesc, getValue) {
+  return { ...breakdown, biayaTerapi: buildBiayaTerapiDetail(rows, getDesc, getValue) };
+}
+
 // Laporan Praktek Swasta (Jaminan/Pribadi & Tunai — dari PDF yang berjudul
 // "PRAKTEK SWASTA") ditampilkan TERPISAH dari laporan Bukan Praktek Swasta
 // (BPJS Individu, dan andaikan ada PDF Jaminan/Tunai non-swasta di masa
@@ -927,17 +1002,24 @@ export function buildInsentifDokterReport(results) {
     count: bpjsRows.length,
     total: bpjsByDeskripsi.reduce((s, r) => s + r.total, 0),
     byDeskripsi: bpjsByDeskripsi,
+    biayaTerapi: buildBiayaTerapiDetail(bpjsRows, (r) => r.descTransaksi || '', (r) => toNumber(r.total)),
   };
 
+  const deskOf = (r) => r.deskripsi || '';
+  const tunaiOf = (r) => toNumber(r.tunai);
   return {
     bpjs,
     swasta: {
       jaminan: buildJaminanBreakdown(swastaJaminanRows),
-      tunai: buildTunaiBreakdown(swastaTunaiRows),
+      tunai: withBiayaTerapi(buildTunaiBreakdown(swastaTunaiRows), swastaTunaiRows, deskOf, tunaiOf),
     },
     nonSwasta: {
       jaminan: buildJaminanBreakdown(nonSwastaJaminanRows),
-      tunai: buildTunaiBreakdown(nonSwastaTunaiRows),
+      tunai: withBiayaTerapi(buildTunaiBreakdown(nonSwastaTunaiRows), nonSwastaTunaiRows, deskOf, tunaiOf),
+    },
+    biayaTerapiAsuransi: {
+      swasta: buildBiayaTerapiDetail(swastaJaminanRows, deskOf, jaminanRowValue),
+      nonSwasta: buildBiayaTerapiDetail(nonSwastaJaminanRows, deskOf, jaminanRowValue),
     },
   };
 }
@@ -1034,98 +1116,57 @@ export async function parseInsentifDokterPdf(file) {
   };
 }
 
-// â”€â”€ Detail pasien Terapi Wicara / Terapi Okupasi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Pasien yang menjalani Terapi Wicara/Okupasi pada hari yang sama biasanya
-// juga punya tindakan lain (mis. Exercise Tanpa Alat/Exercise Alat) yang
-// tercatat sebagai baris terpisah. Fungsi ini mengelompokkan SEMUA baris per
-// pasien+tanggal (dari format A/C, satu-satunya format yang punya kolom
-// Deskripsi), lalu hanya menyimpan kelompok yang mengandung minimal satu
-// baris Terapi Wicara/Okupasi â€” supaya owner bisa lihat tindakan apa saja
-// yang menyertai terapi itu pada hari yang sama.
-const TERAPI_WICARA_RE = /TERAPI\s*WICARA/i;
-const TERAPI_OKUPASI_RE = /TERAPI\s*OKUPASI/i;
-
-function lineValueForRow(format, r) {
-  if (format === 'C') return toNumber(r.tunai);
-  if (format === 'A') {
-    return ['pertamina', 'pertamedika', 'jaminan', 'pribadi'].reduce((s, k) => s + toNumber(r[k]), 0);
-  }
-  return 0;
-}
-
 function toSortableDate(dmy) {
   const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(dmy || '');
   return m ? `${m[3]}${m[2]}${m[1]}` : (dmy || '');
 }
 
-export function buildTerapiWicaraOkupasiDetail(results) {
-  const pool = [];
-  (results || []).forEach((res) => {
-    if (res.format !== 'A' && res.format !== 'C') return;
-    res.rows.forEach((r) => {
-      pool.push({ ...r, __fileName: res.fileName, __format: res.format, __isSwasta: res.isSwasta });
-    });
-  });
-
-  const groups = new Map();
-  pool.forEach((r) => {
-    const key = `${(r.noReg || '').trim().toUpperCase() || (r.namaPasien || '').trim().toUpperCase()}|${(r.tanggal || '').trim()}`;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(r);
-  });
-
-  const matchedGroups = [];
-  groups.forEach((rows) => {
-    const hasTarget = rows.some((r) => TERAPI_WICARA_RE.test(r.deskripsi || '') || TERAPI_OKUPASI_RE.test(r.deskripsi || ''));
-    if (hasTarget) matchedGroups.push(rows);
-  });
-
-  matchedGroups.sort((a, b) => {
-    const an = (a[0].namaPasien || '').trim();
-    const bn = (b[0].namaPasien || '').trim();
-    if (an !== bn) return an.localeCompare(bn);
-    return toSortableDate(a[0].tanggal).localeCompare(toSortableDate(b[0].tanggal));
-  });
-
-  return matchedGroups;
-}
-
-// â”€â”€ Generate file Excel TERPISAH berisi detail pasien Terapi Wicara/Okupasi â”€
+// ── Generate file Excel TERPISAH berisi detail pasien Biaya Terapi Wicara/Okupasi
+// Sumber datanya sama dengan bagian "Detail Biaya Terapi" di Laporan: semua
+// tindakan pasien di hari yang sama dengan Biaya Terapi Wicara/Okupasi.
 export function generateTerapiWicaraOkupasiExcel(results, periodeLabel = '') {
-  const matchedGroups = buildTerapiWicaraOkupasiDetail(results);
+  const sections = [];
+  (results || []).forEach((res) => {
+    const label = `${res.formatLabel || res.format} — ${res.fileName}`;
+    const detail = res.format === 'B'
+      ? buildBiayaTerapiDetail(res.rows, (r) => r.descTransaksi || '', (r) => toNumber(r.total))
+      : res.format === 'C'
+      ? buildBiayaTerapiDetail(res.rows, (r) => r.deskripsi || '', (r) => toNumber(r.tunai))
+      : buildBiayaTerapiDetail(res.rows, (r) => r.deskripsi || '', jaminanRowValue);
+    if (detail.count) sections.push({ label, detail });
+  });
+
   const workbook = XLSX.utils.book_new();
   const aoa = [];
-  aoa.push(['DETAIL PASIEN TERAPI WICARA / TERAPI OKUPASI']);
+  aoa.push(['DETAIL PASIEN BIAYA TERAPI WICARA / BIAYA TERAPI OKUPASI']);
   if (periodeLabel) aoa.push([`Periode: ${periodeLabel}`]);
   aoa.push(['Menampilkan semua tindakan pasien pada hari yang sama dengan Biaya Terapi Wicara / Biaya Terapi Okupasi']);
   aoa.push([]);
-  aoa.push(['No', 'Nama Pasien', 'No Reg', 'Tanggal', 'Deskripsi Tindakan', 'Qty', 'Nilai', 'Kategori', 'File Asal']);
 
-  let no = 1;
-  matchedGroups.forEach((rows) => {
-    rows.forEach((r) => {
-      const kategori = TERAPI_WICARA_RE.test(r.deskripsi || '')
-        ? 'Terapi Wicara'
-        : TERAPI_OKUPASI_RE.test(r.deskripsi || '')
-        ? 'Terapi Okupasi'
-        : '';
-      aoa.push([
-        no++,
-        r.namaPasien,
-        r.noReg,
-        r.tanggal,
-        r.deskripsi,
-        r.qty,
-        lineValueForRow(r.__format, r),
-        kategori,
-        r.__fileName,
-      ]);
+  sections.forEach(({ label, detail }) => {
+    aoa.push([label]);
+    aoa.push(['No', 'Tanggal', 'Nama Pasien', 'No Reg', 'Deskripsi Tindakan', 'Qty', 'Nilai', 'Kategori']);
+    detail.groups.forEach((g, gi) => {
+      g.items.forEach((it, i) => {
+        aoa.push([
+          i === 0 ? gi + 1 : '',
+          g.tanggal, g.namaPasien, g.noReg,
+          it.deskripsi, it.qty, it.nilai,
+          it.terapi ? `Biaya Terapi ${it.terapi}` : '',
+        ]);
+      });
+      aoa.push(['', '', '', '', 'Jumlah hari ini', '', g.total, '']);
     });
-    aoa.push([]); // pemisah antar kelompok pasien+tanggal
+    aoa.push([]);
+    aoa.push(['', '', '', '', 'Total Biaya Terapi Wicara/Okupasi', '', detail.totalBiayaTerapi]);
+    aoa.push(['', '', '', '', 'Total Tindakan Lain di Hari yang Sama', '', detail.totalLainnya]);
+    aoa.push(['', '', '', '', 'TOTAL', '', detail.total]);
+    aoa.push([]);
+    aoa.push([]);
   });
 
-  if (!matchedGroups.length) {
-    aoa.push(['Tidak ditemukan transaksi Terapi Wicara / Terapi Okupasi pada data ini.']);
+  if (!sections.length) {
+    aoa.push(['Tidak ditemukan transaksi Biaya Terapi Wicara / Biaya Terapi Okupasi pada data ini.']);
   }
 
   const sheet = XLSX.utils.aoa_to_sheet(aoa);
