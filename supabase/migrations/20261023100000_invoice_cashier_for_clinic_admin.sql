@@ -13,7 +13,7 @@ AS $$
   SELECT u.full_name, u.signature_url
   FROM public.users u
   WHERE u.id = p_user_id
-    AND u.role IN ('admin', 'clinic_admin', 'owner')
+    AND u.role IN ('admin', 'clinic_admin')
     AND (u.clinic_id = public.get_my_clinic_id() OR public.get_my_role() = 'super_admin');
 $$;
 
