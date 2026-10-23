@@ -1370,6 +1370,13 @@ setFormData({
                     if (itemsError) throw itemsError;
                 }
             }
+            // Kasir invoice Praxis = admin yang pertama kali menyimpan rekap; hanya diisi sekali.
+            if (isKwitansi && userDetails?.id && ['admin', 'clinic_admin'].includes(userDetails.role)) {
+                const recapId = mode === 'add' ? result.data?.recap_id : initialData.id;
+                if (recapId) {
+                    await supabase.from('daily_recaps').update({ cashier_id: userDetails.id }).eq('id', recapId).is('cashier_id', null);
+                }
+            }
             toast({ title: "Berhasil", description: `Data berhasil ${mode === 'add' ? 'disimpan' : 'diperbarui'}.` });
             if (sfEdit) { loadRecapMeta(); refreshQuote(); }
             if (onSuccess) onSuccess();

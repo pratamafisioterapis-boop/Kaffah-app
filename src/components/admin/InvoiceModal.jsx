@@ -172,18 +172,30 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       return;
     }
 
-    // Admin pembuat invoice: dicatat sekali (created_by). Recap lama yang belum
-    // punya pencatat diklaim oleh admin yang pertama kali membukanya.
-    let creatorId = recap.created_by || null;
-    if (!creatorId && userDetails?.id && ['admin', 'clinic_admin'].includes(userDetails.role)) {
-      const { error: claimErr } = await supabase
-        .from('daily_recaps').update({ created_by: userDetails.id }).eq('id', recap.id).is('created_by', null);
-      if (!claimErr) creatorId = userDetails.id;
-    }
+    // Kasir = admin yang pertama kali menyimpan rekap (cashier_id, diisi sekali).
+    // Data lama yang belum punya cashier_id memakai created_by hanya jika rolenya admin;
+    // jika masih kosong, diklaim oleh admin yang pertama kali membukanya.
+    const isAdminRole = (r) => ['admin', 'clinic_admin'].includes(r);
+    let creatorId = recap.cashier_id || recap.created_by || null;
     let creator = null;
     if (creatorId) {
-      const { data: c } = await supabase.from('users').select('full_name, signature_url').eq('id', creatorId).maybeSingle();
-      creator = c;
+      const { data: c } = await supabase.from('users').select('full_name, signature_url, role').eq('id', creatorId).maybeSingle();
+      // RLS users hanya mengizinkan admin/owner membaca user lain, jadi clinic_admin
+      // (Praxis) yang membuka invoice rekannya mendapat hasil kosong; RPC hanya
+      // mengembalikan admin/clinic_admin satu klinik.
+      if (c && isAdminRole(c.role)) creator = c;
+      else if (!c) {
+        const { data: rows } = await supabase.rpc('get_invoice_cashier', { p_user_id: creatorId });
+        creator = rows?.[0] || null;
+      }
+    }
+    if (!creator && !recap.cashier_id && userDetails?.id && isAdminRole(userDetails.role)) {
+      const { error: claimErr } = await supabase
+        .from('daily_recaps').update({ cashier_id: userDetails.id }).eq('id', recap.id).is('cashier_id', null);
+      if (!claimErr) {
+        const { data: me } = await supabase.from('users').select('full_name, signature_url').eq('id', userDetails.id).maybeSingle();
+        creator = me;
+      }
     }
 
     let physioData = null;
