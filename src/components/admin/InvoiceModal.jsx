@@ -184,6 +184,12 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     if (creatorId) {
       const { data: c } = await supabase.from('users').select('full_name, signature_url').eq('id', creatorId).maybeSingle();
       creator = c;
+      // RLS users hanya mengizinkan admin/owner membaca user lain, jadi clinic_admin
+      // (Praxis) yang membuka invoice buatan rekannya mendapat hasil kosong.
+      if (!creator) {
+        const { data: rows } = await supabase.rpc('get_invoice_cashier', { p_user_id: creatorId });
+        creator = rows?.[0] || null;
+      }
     }
 
     let physioData = null;
