@@ -18,11 +18,13 @@ import {
 import {
   User, Bell, CalendarOff, KeyRound,
   Camera, Loader2, Plus, Trash2, ChevronRight,
-  Check, X, Eye, EyeOff, Umbrella, PenTool
+  Check, X, Eye, EyeOff, Umbrella, PenTool, CalendarDays
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { prepareImageForUpload } from '@/lib/imageUpload';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
+import TherapistGoogleCalendar from '@/components/therapist/TherapistGoogleCalendar';
 import { validatePassword } from '@/lib/passwordPolicy';
 
 // ─── Tab konstanta ────────────────────────────────────────────────────────────
@@ -30,6 +32,7 @@ const TABS = [
   { id: 'profil',    label: 'Profil',      icon: User },
   { id: 'notifikasi',label: 'Notifikasi',  icon: Bell },
   { id: 'cuti',      label: 'Cuti',        icon: CalendarOff },
+  { id: 'kalender',  label: 'Kalender',    icon: CalendarDays, kaffahOnly: true },
   { id: 'akun',      label: 'Akun',        icon: KeyRound },
 ];
 
@@ -744,7 +747,9 @@ const TherapistSettingsDrawer = ({ open, onClose, therapist, onTherapistUpdated,
     if (open) setActiveTab(initialTab);
   }, [open, initialTab]);
 
-  const activeTabData = TABS.find(t => t.id === activeTab);
+  const isKaffah = therapist?.clinic_id === KAFFAH_CLINIC_ID;
+  const tabs = TABS.filter(t => !t.kaffahOnly || isKaffah);
+  const activeTabData = tabs.find(t => t.id === activeTab);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -766,8 +771,8 @@ const TherapistSettingsDrawer = ({ open, onClose, therapist, onTherapistUpdated,
           </div>
 
           {/* Tab bar */}
-          <div className="grid grid-cols-4 px-1">
-            {TABS.map(tab => {
+          <div className={`grid ${tabs.length === 5 ? 'grid-cols-5' : 'grid-cols-4'} px-1`}>
+            {tabs.map(tab => {
               const Icon = tab.icon;
               const active = activeTab === tab.id;
               return (
@@ -807,6 +812,9 @@ const TherapistSettingsDrawer = ({ open, onClose, therapist, onTherapistUpdated,
             )}
             {activeTab === 'akun' && (
               <TabAkun user={user} />
+            )}
+            {activeTab === 'kalender' && isKaffah && (
+              <TherapistGoogleCalendar therapistId={therapist?.id} />
             )}
           </div>
         </div>

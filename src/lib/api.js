@@ -5247,6 +5247,53 @@ export const startGoogleDriveOAuth = async () => {
   }, 'startGoogleDriveOAuth');
 };
 
+// ============================================
+// GOOGLE CALENDAR TERAPIS (khusus Kaffah)
+// Tiap terapis menghubungkan Google Calendar pribadinya; booking yang
+// ditugaskan ke terapis tsb otomatis disinkron oleh trigger DB.
+// ============================================
+
+export const getMyGoogleCalendarLink = async (physiotherapistId) => {
+  return safeQuery(async () => {
+    if (!physiotherapistId) return { data: null };
+    const { data, error } = await supabase
+      .from('therapist_google_calendars')
+      .select('physiotherapist_id, google_email, connected_at, last_synced_at, last_error')
+      .eq('physiotherapist_id', physiotherapistId)
+      .maybeSingle();
+    if (error) return { error };
+    return { data: data || null, success: true, error: null };
+  }, 'getMyGoogleCalendarLink', { retry: true });
+};
+
+export const startGoogleCalendarOAuth = async () => {
+  return safeQuery(async () => {
+    const { data, error } = await supabase.functions.invoke('therapist-gcal-oauth-start', {
+      method: 'POST',
+    });
+    if (error) return { error };
+    if (data?.error) return { error: { message: data.error } };
+    return { data, success: true, error: null };
+  }, 'startGoogleCalendarOAuth');
+};
+
+const invokeGoogleCalendarSync = async (op) => {
+  const { data, error } = await supabase.functions.invoke('therapist-gcal-sync', {
+    body: { op },
+  });
+  if (error) return { error };
+  if (data?.error) return { error: { message: data.error } };
+  return { data, success: true, error: null };
+};
+
+export const resyncMyGoogleCalendar = async () => {
+  return safeQuery(() => invokeGoogleCalendarSync('backfill'), 'resyncMyGoogleCalendar', { timeout: 120000 });
+};
+
+export const disconnectMyGoogleCalendar = async () => {
+  return safeQuery(() => invokeGoogleCalendarSync('disconnect'), 'disconnectMyGoogleCalendar', { timeout: 120000 });
+};
+
 export const uploadFileToClinicDrive = async ({ file, label }) => {
   return safeQuery(async () => {
     const formData = new FormData();
