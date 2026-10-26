@@ -3,8 +3,8 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 // Callback OAuth Google Calendar terapis: tukar code -> refresh token, simpan, lalu
 // sinkronkan jadwal mendatang terapis tsb di background (therapist-gcal-sync op=backfill).
 
-const CLIENT_ID = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID");
-const CLIENT_SECRET = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET");
+const CLIENT_ID = (Deno.env.get("GOOGLE_CALENDAR_CLIENT_ID") || Deno.env.get("GOOGLE_OAUTH_CLIENT_ID"));
+const CLIENT_SECRET = (Deno.env.get("GOOGLE_CALENDAR_CLIENT_SECRET") || Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET"));
 const REDIRECT_URI = `${Deno.env.get("SUPABASE_URL")}/functions/v1/therapist-gcal-oauth-callback`;
 const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
 const DEFAULT_RETURN_URL = "https://kaffahphysio.id/therapist";

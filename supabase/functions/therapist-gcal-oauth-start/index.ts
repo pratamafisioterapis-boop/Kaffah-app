@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 const KAFFAH_CLINIC_ID = "bfdc3fd8-a052-4753-a5b7-229930b3237a";
-const CLIENT_ID = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID");
+const CLIENT_ID = (Deno.env.get("GOOGLE_CALENDAR_CLIENT_ID") || Deno.env.get("GOOGLE_OAUTH_CLIENT_ID"));
 const REDIRECT_URI = `${Deno.env.get("SUPABASE_URL")}/functions/v1/therapist-gcal-oauth-callback`;
 const SCOPES = ["https://www.googleapis.com/auth/calendar.events", "email"];
 const DEFAULT_RETURN_ORIGIN = "https://kaffahphysio.id";
@@ -44,7 +44,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    if (!CLIENT_ID) return json({ error: "GOOGLE_OAUTH_CLIENT_ID belum diset di secrets Supabase" }, 400);
+    if (!CLIENT_ID) return json({ error: "GOOGLE_CALENDAR_CLIENT_ID belum diset di secrets Supabase" }, 400);
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return json({ error: "Missing Authorization header" }, 401);

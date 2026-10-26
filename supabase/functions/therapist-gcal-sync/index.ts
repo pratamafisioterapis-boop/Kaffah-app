@@ -20,8 +20,8 @@ const corsHeaders = {
 };
 
 const KAFFAH_CLINIC_ID = "bfdc3fd8-a052-4753-a5b7-229930b3237a";
-const CLIENT_ID = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID")!;
-const CLIENT_SECRET = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET")!;
+const CLIENT_ID = (Deno.env.get("GOOGLE_CALENDAR_CLIENT_ID") || Deno.env.get("GOOGLE_OAUTH_CLIENT_ID"))!;
+const CLIENT_SECRET = (Deno.env.get("GOOGLE_CALENDAR_CLIENT_SECRET") || Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET"))!;
 const APP_URL = "https://kaffahphysio.id/therapist";
 const BACKFILL_LIMIT = 300;
 
