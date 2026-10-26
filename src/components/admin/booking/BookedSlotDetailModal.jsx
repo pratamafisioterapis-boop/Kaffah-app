@@ -251,6 +251,17 @@ useEffect(() => {
       />
     </div>
 
+    {/* JAM BEBAS */}
+    <div className="space-y-1">
+      <label className="text-[11px] tracking-wide font-semibold text-slate-500">JAM (BEBAS)</label>
+      <Input
+        type="time"
+        value={selectedTime}
+        onChange={(e) => setSelectedTime(e.target.value)}
+        className="rounded-app border-slate-200 focus:ring-2 focus:ring-app-accent-bright"
+      />
+    </div>
+
     {/* SLOT */}
     {availableSlots.length > 0 && selectedTherapist && newDate ? (
   <div className="space-y-2">
@@ -277,7 +288,7 @@ useEffect(() => {
   </div>
 ) : (
   <div className="text-sm text-slate-500 italic">
-    Tidak ada jadwal tersedia di tanggal ini
+    Tidak ada slot tersedia di tanggal ini, pilih jam bebas di atas
   </div>
 )}
   </div>
@@ -410,6 +421,10 @@ useEffect(() => {
         }
         if (!selectedTime) {
           toast({ variant: "destructive", title: "Pilih jam terlebih dahulu" });
+          return;
+        }
+        if (!selectedTherapist) {
+          toast({ variant: "destructive", title: "Pilih terapis terlebih dahulu" });
           return;
         }
 
