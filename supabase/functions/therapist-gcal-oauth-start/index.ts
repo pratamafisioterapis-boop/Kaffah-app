@@ -12,7 +12,7 @@ const KAFFAH_CLINIC_ID = "bfdc3fd8-a052-4753-a5b7-229930b3237a";
 const CLIENT_ID = (Deno.env.get("GOOGLE_CALENDAR_CLIENT_ID") || Deno.env.get("GOOGLE_OAUTH_CLIENT_ID"));
 const REDIRECT_URI = `${Deno.env.get("SUPABASE_URL")}/functions/v1/therapist-gcal-oauth-callback`;
 const SCOPES = ["https://www.googleapis.com/auth/calendar.events", "email"];
-const DEFAULT_RETURN_ORIGIN = "https://kaffahphysio.id";
+const DEFAULT_RETURN_ORIGIN = "https://clinara.id";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
