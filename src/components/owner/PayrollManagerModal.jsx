@@ -11,7 +11,9 @@ import {
 import {
   getPayrollRecordsForTherapist, upsertPayrollRecord, deletePayrollRecord, getCurrentClinic,
   getDailyRecaps, getTherapistSchedules, getTherapistTimeOff, getTherapistExtraShifts, getServiceRates, getRemunerationReport,
+  getAnnualLeavePayoutInfo,
 } from '@/lib/api';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import {
   calculateAttendanceDays, calculateFullSalary, calculateCustomSalary, calculateRemunerationCommission,
   getTherapistPeriodRange, resolvePatientTypeRate, buildPatientTypeRateIndex,
@@ -34,6 +36,7 @@ const emptyForm = (therapist) => ({
   tips: 0,
   prev_month_shortfall: 0,
   bonus_amount: 0,
+  annual_leave_payout: 0,
   notes: '',
 });
 
@@ -61,6 +64,10 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
   const [soapStatus, setSoapStatus] = useState(null);
   const [incentiveBreakdown, setIncentiveBreakdown] = useState([]);
   const [showIncentiveDetail, setShowIncentiveDetail] = useState(false);
+  const [leavePayoutInfo, setLeavePayoutInfo] = useState(null);
+
+  // Uang cuti tahunan saat ini khusus klinik Kaffah Physiotherapy.
+  const isKaffahClinic = (therapist?.clinic_id || clinic?.id) === KAFFAH_CLINIC_ID;
 
   useEffect(() => {
     if (open && therapist?.id) {
@@ -70,6 +77,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
       setSoapStatus(null);
       setIncentiveBreakdown([]);
       setShowIncentiveDetail(false);
+      setLeavePayoutInfo(null);
       fetchRecords();
       fetchClinic();
     }
@@ -88,6 +96,24 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, therapist?.id, form.payroll_period_start, form.payroll_period_end]);
+
+  // Slip gaji bulan terakhir MOU (tahun ke-2 dst) mendapat Uang Cuti Tahunan
+  // = sisa cuti x Rp100.000. Bulan lain field ini disembunyikan & bernilai 0.
+  useEffect(() => {
+    if (!open || !therapist?.id || !isKaffahClinic || !form.payroll_period_start || !form.payroll_period_end) {
+      setLeavePayoutInfo(null);
+      setForm((prev) => (prev.annual_leave_payout ? { ...prev, annual_leave_payout: 0 } : prev));
+      return undefined;
+    }
+    let cancelled = false;
+    getAnnualLeavePayoutInfo(therapist.id, form.payroll_period_start, form.payroll_period_end).then(({ data }) => {
+      if (cancelled) return;
+      setLeavePayoutInfo(data || null);
+      setForm((prev) => ({ ...prev, annual_leave_payout: data?.amount || 0 }));
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, therapist?.id, isKaffahClinic, form.payroll_period_start, form.payroll_period_end]);
 
   const fetchClinic = async () => {
     const { data } = await getCurrentClinic();
@@ -245,7 +271,8 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
       (parseFloat(form.custom_commission) || 0) +
       (parseFloat(form.tips) || 0) +
       (parseFloat(form.prev_month_shortfall) || 0) +
-      (parseFloat(form.bonus_amount) || 0)
+      (parseFloat(form.bonus_amount) || 0) +
+      (parseFloat(form.annual_leave_payout) || 0)
     );
   }, [form]);
 
@@ -303,6 +330,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
       tips: record.tips,
       prev_month_shortfall: record.prev_month_shortfall,
       bonus_amount: record.bonus_amount,
+      annual_leave_payout: record.annual_leave_payout,
       notes: record.notes,
       total_salary: record.total_salary,
       status: 'paid',
@@ -436,6 +464,19 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
                 Diisi manual untuk bonus/tunjangan tambahan di luar Jasa Insentif &amp; Komisi, misalnya THR atau bonus prestasi.
               </p>
             </div>
+            {leavePayoutInfo && (
+              <div className="space-y-1.5 sm:col-span-2 rounded-app-sm border border-emerald-200 bg-emerald-50/60 p-3">
+                <label className="text-xs font-medium text-emerald-800 flex items-center gap-1.5">
+                  <CalendarClock className="w-3.5 h-3.5" />
+                  Uang Cuti Tahunan (Akhir MOU Tahun ke-{leavePayoutInfo.mou.period_number})
+                </label>
+                <Input type="number" value={form.annual_leave_payout} onChange={(e) => setForm({ ...form, annual_leave_payout: e.target.value })} />
+                <p className="text-xs text-emerald-700">
+                  MOU tahun ke-{leavePayoutInfo.mou.period_number} berakhir {format(new Date(leavePayoutInfo.mou.period_end), 'dd MMM yyyy', { locale: idLocale })}.
+                  {' '}Sisa cuti {leavePayoutInfo.remaining} dari {leavePayoutInfo.quota} hari (terpakai {leavePayoutInfo.used}) × {formatCurrency(leavePayoutInfo.ratePerDay)} = {formatCurrency(leavePayoutInfo.amount)}.
+                </p>
+              </div>
+            )}
             <div className="space-y-1.5 sm:col-span-2">
               <label className="text-xs font-medium text-slate-600">
                 Catatan / Keterangan

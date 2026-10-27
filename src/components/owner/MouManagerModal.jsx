@@ -25,10 +25,13 @@ import { addYears, subDays, format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { confirmAction } from '@/lib/confirmAction';
 
-const STATUS_LABEL = { draft: 'Draft', signed: 'Sudah Ditandatangani' };
+// 'external' = MOU lama yang dibuat di luar aplikasi, dicatat sebagai penanda
+// riwayat masa kontrak saja (tanpa dokumen/scan).
+const STATUS_LABEL = { draft: 'Draft', signed: 'Sudah Ditandatangani', external: 'MOU di Luar Aplikasi' };
 const STATUS_BADGE_CLASS = {
   draft: 'bg-amber-50 text-amber-700 border border-amber-200',
   signed: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+  external: 'bg-slate-100 text-slate-600 border border-slate-200',
 };
 
 const computeNextPeriod = (therapist, records) => {
@@ -548,10 +551,12 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
                     </span>
                   </div>
                   <div className="flex items-center gap-1 flex-wrap">
-                    <Button size="sm" variant="ghost" className="h-8 gap-1 text-slate-600" onClick={() => handleEditRecord(r)} title="Edit">
-                      <Pencil className="w-3.5 h-3.5" /> Edit
-                    </Button>
-                    {r.status === 'signed' ? (
+                    {r.status !== 'external' && (
+                      <Button size="sm" variant="ghost" className="h-8 gap-1 text-slate-600" onClick={() => handleEditRecord(r)} title="Edit">
+                        <Pencil className="w-3.5 h-3.5" /> Edit
+                      </Button>
+                    )}
+                    {r.status === 'external' ? null : r.status === 'signed' ? (
                       <>
                         <Button size="sm" variant="ghost" className="h-8 gap-1 text-app-accent" onClick={() => handleViewSigned(r)} disabled={viewingSignedId === r.id} title="Lihat File Tertandatangan">
                           {viewingSignedId === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileCheck2 className="w-3.5 h-3.5" />} Lihat
