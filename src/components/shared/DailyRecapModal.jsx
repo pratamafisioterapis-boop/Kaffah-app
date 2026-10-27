@@ -350,6 +350,7 @@ setFormData({
     discount_type: initialData.discount_type || 'none',
     discount_value: initialData.discount_value || 0,
     discount_label: initialData.discount_label || '',
+    discount_referral_code: initialData.discount_referral_code || '',
     referral_reward_id: initialData.referral_reward_id || ''
 });
 
@@ -384,6 +385,7 @@ setFormData({
                     discount_type: 'none',
                     discount_value: 0,
                     discount_label: '',
+                    discount_referral_code: '',
                     referral_reward_id: ''
                 });
                 setRewardInfo(null);
@@ -1163,6 +1165,7 @@ setFormData({
     };
 
     // SOAP-first: nominal berasal dari server (daftar harga), dikurangi diskon bila ada.
+    const needsDiscountRefCode = formData.discount_type !== 'none' && /meranti\s*trail\s*run/i.test(formData.discount_label || '');
     const sfIsPayment = !!formData.payment_method && formData.payment_method !== 'Package';
     const sfBaseAmount = quote?.active && quote.total != null ? Number(quote.total) : null;
     const sfFinalAmount = (() => {
@@ -1205,6 +1208,9 @@ setFormData({
         }
         if (!formData.package_type_id) {
             newErrors.package_type = "Jenis paket wajib diisi";
+        }
+        if (needsDiscountRefCode && !(formData.discount_referral_code || '').trim()) {
+            newErrors.discount_referral_code = "Kode referral wajib diisi untuk diskon ini";
         }
         if (sfActive && mode === 'add') {
             toast({ variant: "destructive", title: "Recap manual dinonaktifkan", description: "Di klinik ini recap dibuat otomatis dari appointment. Buat appointment terlebih dahulu." });
@@ -1302,6 +1308,7 @@ setFormData({
                 discount_type: formData.discount_type === 'none' ? null : formData.discount_type,
                 discount_label: formData.discount_type === 'none' ? null : (formData.discount_label || null),
                 referral_reward_id: formData.referral_reward_id || null,
+                discount_referral_code: formData.discount_type !== 'none' && needsDiscountRefCode ? (formData.discount_referral_code || '').trim() : null,
                 package_type_id: formData.package_type_id || null,
                 package_type: formData.package_type || null,
                 // Kosong harus NULL: constraint daily_recaps_special_type_check hanya
@@ -1733,6 +1740,18 @@ setFormData({
                                             }));
                                         }} onSearch={setDiscountTypeSearch} placeholder="Cari jenis diskon..." isLoading={loadingDiscountTypes} allowCreate={!sfActive}/>
                                     </div>
+                                    {needsDiscountRefCode && (
+                                        <div className="space-y-1">
+                                            <Label className="text-xs">Kode Referral <span className="text-red-500">*</span></Label>
+                                            <Input
+                                                value={formData.discount_referral_code || ''}
+                                                onChange={e => { handleChange('discount_referral_code', e.target.value.toUpperCase()); setErrors(prev => ({ ...prev, discount_referral_code: undefined })); }}
+                                                placeholder="Masukkan kode referral"
+                                                className={errors.discount_referral_code ? 'border-red-500' : ''}
+                                            />
+                                            {errors.discount_referral_code && <p className="text-xs text-red-500">{errors.discount_referral_code}</p>}
+                                        </div>
+                                    )}
                                     {sfManualDiscount && (
                                         <div className="space-y-2 rounded-app-sm border border-amber-200 bg-amber-50 p-3">
                                             <p className="text-xs text-amber-800">Diskon “{formData.discount_label}” diisi manual dan baru berlaku setelah disetujui owner.</p>
