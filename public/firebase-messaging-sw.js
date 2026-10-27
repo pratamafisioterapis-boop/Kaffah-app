@@ -60,6 +60,9 @@ messaging.onBackgroundMessage(async (payload) => {
     {
       body,
       icon: iconUrl,
+      // Unique per message so Android never collapses several pushes that
+      // arrive together (e.g. one "SOAP Lengkap" per therapist) into one.
+      tag: payload?.fcmMessageId || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       data: {
         url: payload?.data?.url,
         appointment_date: payload?.data?.appointment_date,

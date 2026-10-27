@@ -125,7 +125,12 @@ export const listenForegroundNotifications = () => {
       );
 
       if (registration) {
-        registration.showNotification(title, { body, icon, data });
+        registration.showNotification(title, {
+          body,
+          icon,
+          data,
+          tag: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        });
       } else {
         new Notification(title, { body, icon, data });
       }
