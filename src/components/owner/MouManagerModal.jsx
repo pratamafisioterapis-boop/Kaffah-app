@@ -25,24 +25,57 @@ import { addYears, subDays, format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { confirmAction } from '@/lib/confirmAction';
 
-const STATUS_LABEL = { draft: 'Draft', signed: 'Sudah Ditandatangani' };
+// 'external' = MOU lama yang dibuat di luar aplikasi, dicatat sebagai penanda
+// riwayat masa kontrak saja (tanpa dokumen/scan).
+const STATUS_LABEL = { draft: 'Draft', signed: 'Sudah Ditandatangani', external: 'MOU di Luar Aplikasi' };
 const STATUS_BADGE_CLASS = {
   draft: 'bg-amber-50 text-amber-700 border border-amber-200',
   signed: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+  external: 'bg-slate-100 text-slate-600 border border-slate-200',
 };
 
-const computeNextPeriod = (therapist, records) => {
+// Periode tahun ke-N dihitung dari anniversary join_date.
+const periodForNumber = (therapist, periodNumber) => {
   if (!therapist?.join_date) return null;
   const joinDate = new Date(therapist.join_date);
-  const maxPeriodNumber = records.reduce((max, r) => Math.max(max, r.period_number || 0), 0);
-  const nextNumber = maxPeriodNumber + 1;
-  const start = addYears(joinDate, nextNumber - 1);
-  const end = subDays(addYears(joinDate, nextNumber), 1);
+  const start = addYears(joinDate, periodNumber - 1);
+  const end = subDays(addYears(joinDate, periodNumber), 1);
   return {
-    period_number: nextNumber,
+    period_number: periodNumber,
     period_start: format(start, 'yyyy-MM-dd'),
     period_end: format(end, 'yyyy-MM-dd'),
   };
+};
+
+const computeNextPeriod = (therapist, records) => {
+  const maxPeriodNumber = records.reduce((max, r) => Math.max(max, r.period_number || 0), 0);
+  return periodForNumber(therapist, maxPeriodNumber + 1);
+};
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / MS_PER_DAY);
+
+// Sama dengan guard validate_mou_period di database — dicek dulu di sini supaya
+// owner langsung dapat pesan yang jelas sebelum menyimpan.
+const validateMouForm = (form, records) => {
+  const { period_number: num, period_start: start, period_end: end, agreement_date: agreement } = form;
+  if (!start || !end) return 'Periode wajib diisi.';
+  if (end <= start) return 'Periode selesai MOU harus setelah periode mulai.';
+  const length = daysBetween(start, end) + 1;
+  if (length < 334 || length > 397) return 'Masa kontrak MOU harus sekitar 1 tahun.';
+  if (agreement && Math.abs(daysBetween(start, agreement)) > 60) {
+    return `Tanggal perjanjian (${agreement}) terlalu jauh dari periode mulai (${start}). Periksa kembali periode kontrak — kemungkinan periode masih terisi tanggal tahun sebelumnya.`;
+  }
+  const others = records.filter((r) => r.id !== form.id);
+  const orderConflict = others.find((r) => r.period_number === num
+    || (r.period_start < start && r.period_number >= num)
+    || (r.period_start > start && r.period_number <= num));
+  if (orderConflict) {
+    return `Tahun ke-${num} tidak sesuai urutan: sudah ada MOU tahun ke-${orderConflict.period_number} mulai ${orderConflict.period_start}.`;
+  }
+  const overlap = others.find((r) => r.status !== 'external' && r.period_start <= end && r.period_end >= start);
+  if (overlap) return `Periode MOU bertabrakan dengan MOU tahun ke-${overlap.period_number} (mulai ${overlap.period_start}).`;
+  return null;
 };
 
 // Cocokkan Tarif Jasa klinik (service_rates, per Tipe Pasien tunggal) ke daftar
@@ -183,8 +216,9 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
   };
 
   const handleSaveAndDownload = async () => {
-    if (!form.period_start || !form.period_end) {
-      toast({ variant: 'destructive', title: 'Validasi Gagal', description: 'Periode wajib diisi.' });
+    const validationError = validateMouForm(form, records);
+    if (validationError) {
+      toast({ variant: 'destructive', title: 'Validasi Gagal', description: validationError });
       return;
     }
     setSaving(true);
@@ -305,6 +339,7 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
   };
 
   const updateForm = (patch) => setForm((prev) => ({ ...prev, ...patch }));
+  const formValidationError = form?.period_start && form?.period_end ? validateMouForm(form, records) : null;
   const updateParty = (key, patch) => setForm((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
   const updateComp = (patch) => setForm((prev) => ({ ...prev, compensation: { ...prev.compensation, ...patch } }));
   const updatePatientTypeRate = (index, rateValue) => setForm((prev) => {
@@ -373,11 +408,22 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-slate-600">Tahun Ke-</label>
-              <Input type="number" min="1" value={form.period_number} onChange={(e) => updateForm({ period_number: parseInt(e.target.value, 10) || 1 })} />
+              <Input type="number" min="1" value={form.period_number} onChange={(e) => {
+                const periodNumber = parseInt(e.target.value, 10) || 1;
+                // MOU baru: ganti Tahun Ke- otomatis menggeser periode ke anniversary
+                // tahun itu, supaya periode tidak tertinggal di tanggal tahun sebelumnya.
+                const period = !form.id ? periodForNumber(therapist, periodNumber) : null;
+                updateForm(period ? { ...period, agreement_date: period.period_start } : { period_number: periodNumber });
+              }} />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-slate-600">Periode Mulai</label>
-              <Input type="date" value={form.period_start} onChange={(e) => updateForm({ period_start: e.target.value })} />
+              <Input type="date" value={form.period_start} onChange={(e) => {
+                const start = e.target.value;
+                updateForm(start
+                  ? { period_start: start, period_end: format(subDays(addYears(new Date(start), 1), 1), 'yyyy-MM-dd') }
+                  : { period_start: start });
+              }} />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-slate-600">Periode Selesai</label>
@@ -387,6 +433,11 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
               <label className="text-xs font-medium text-slate-600">Tanggal Perjanjian</label>
               <Input type="date" value={form.agreement_date} onChange={(e) => updateForm({ agreement_date: e.target.value })} />
             </div>
+            {formValidationError && (
+              <p className="sm:col-span-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-app-sm px-3 py-2">
+                {formValidationError}
+              </p>
+            )}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-slate-600">Kota Perjanjian</label>
               <Input value={form.agreement_city} onChange={(e) => updateForm({ agreement_city: e.target.value })} placeholder="Balikpapan" />
@@ -548,10 +599,12 @@ const MouManagerModal = ({ open, onClose, therapist }) => {
                     </span>
                   </div>
                   <div className="flex items-center gap-1 flex-wrap">
-                    <Button size="sm" variant="ghost" className="h-8 gap-1 text-slate-600" onClick={() => handleEditRecord(r)} title="Edit">
-                      <Pencil className="w-3.5 h-3.5" /> Edit
-                    </Button>
-                    {r.status === 'signed' ? (
+                    {r.status !== 'external' && (
+                      <Button size="sm" variant="ghost" className="h-8 gap-1 text-slate-600" onClick={() => handleEditRecord(r)} title="Edit">
+                        <Pencil className="w-3.5 h-3.5" /> Edit
+                      </Button>
+                    )}
+                    {r.status === 'external' ? null : r.status === 'signed' ? (
                       <>
                         <Button size="sm" variant="ghost" className="h-8 gap-1 text-app-accent" onClick={() => handleViewSigned(r)} disabled={viewingSignedId === r.id} title="Lihat File Tertandatangan">
                           {viewingSignedId === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileCheck2 className="w-3.5 h-3.5" />} Lihat

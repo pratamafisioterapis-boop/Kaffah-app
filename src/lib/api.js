@@ -5543,6 +5543,7 @@ const PAYROLL_EXPENSE_ITEMS = [
   { field: 'tips', label: 'Tips Non-Cash Pasien', subcategoryNames: ['tips', 'tips non-cash'] },
   { field: 'prev_month_shortfall', label: 'Kekurangan Gaji Bulan Lalu', subcategoryNames: ['kekurangan gaji bulan lalu'] },
   { field: 'bonus_amount', label: 'Bonus / Tunjangan Lain', subcategoryNames: ['bonus', 'bonus / tunjangan lain', 'tunjangan'] },
+  { field: 'annual_leave_payout', label: 'Uang Cuti Tahunan', subcategoryNames: ['uang cuti tahunan', 'cuti tahunan', 'tunjangan'] },
 ];
 
 const postPayrollToOwnerExpenditures = async (record, actingUserId) => {
@@ -5614,6 +5615,7 @@ export const upsertPayrollRecord = async (payload) => {
       tips: parseFloat(payload.tips) || 0,
       prev_month_shortfall: parseFloat(payload.prev_month_shortfall) || 0,
       bonus_amount: parseFloat(payload.bonus_amount) || 0,
+      annual_leave_payout: parseFloat(payload.annual_leave_payout) || 0,
       notes: payload.notes?.trim() || null,
       total_salary: parseFloat(payload.total_salary) || 0,
       status: payload.status || 'paid',
@@ -6849,6 +6851,52 @@ export const getTherapistAnnualLeaveBalance = async (therapistId, referenceDate 
       error: null
     };
   }, 'getTherapistAnnualLeaveBalance');
+};
+// Uang cuti tahunan: sisa cuti x tarif ini, dibayarkan di slip gaji bulan
+// terakhir MOU bagi terapis yang sudah masuk tahun ke-2 (MOU ke-2 dst).
+export const ANNUAL_LEAVE_PAYOUT_PER_DAY = 100000;
+
+// Cari MOU (tahun ke-2 ke atas) yang berakhir di bulan slip gaji ini. Siklus
+// gaji 28-27, sedangkan MOU lama ada yang berakhir di akhir bulan (mis. 31 Okt),
+// jadi dicocokkan per bulan-tahun dari periode selesai payroll — slip yang
+// ditutup tgl 27 Okt adalah slip terakhir untuk MOU yang berakhir 31 Okt.
+export const getAnnualLeavePayoutInfo = async (therapistId, payrollPeriodStart, payrollPeriodEnd) => {
+  return safeQuery(async () => {
+    if (!therapistId || !payrollPeriodStart || !payrollPeriodEnd) return { data: null };
+    const monthStart = `${payrollPeriodEnd.slice(0, 7)}-01`;
+    const [y, m] = payrollPeriodEnd.slice(0, 7).split('-').map(Number);
+    const monthEnd = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+
+    const { data: mou, error } = await supabase
+      .from('therapist_mou_documents')
+      .select('period_number, period_start, period_end, status')
+      .eq('physiotherapist_id', therapistId)
+      .gte('period_number', 2)
+      .gte('period_end', monthStart > payrollPeriodStart ? monthStart : payrollPeriodStart)
+      .lte('period_end', monthEnd)
+      .order('period_end', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) return { error };
+    if (!mou) return { data: null };
+
+    const { data: balance, error: balanceError } = await getTherapistAnnualLeaveBalance(therapistId, payrollPeriodEnd);
+    if (balanceError) return { error: balanceError };
+
+    const remaining = balance?.remaining || 0;
+    return {
+      data: {
+        mou,
+        quota: balance?.quota || 0,
+        used: balance?.used || 0,
+        remaining,
+        ratePerDay: ANNUAL_LEAVE_PAYOUT_PER_DAY,
+        amount: remaining * ANNUAL_LEAVE_PAYOUT_PER_DAY,
+      },
+      error: null,
+    };
+  }, 'getAnnualLeavePayoutInfo');
 };
 export const savePhysiotherapist = async (payload) => {
   return safeQuery(async () => {
