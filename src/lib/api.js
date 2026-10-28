@@ -1849,6 +1849,16 @@ export const getBirthdayRewardStatus = async (patientId, recapIsoDate, recapId =
   return { data: error ? null : data, error };
 };
 
+// Referral welcome reward (Kaffah): pasien yang direkomendasikan, 1x pakai.
+export const getWelcomeRewardStatus = async (patientId, recapId = null) => {
+  if (!patientId) return { data: null, error: null };
+  const { data, error } = await supabase.rpc('welcome_reward_status', {
+    p_patient_id: patientId,
+    p_recap_id: recapId
+  });
+  return { data: error ? null : data, error };
+};
+
 export const getReferralRewardById = async (id) => {
   if (!id) return { data: null, error: null };
   const { data, error } = await supabase
@@ -1968,6 +1978,7 @@ export const getDailyRecaps = async ({
   discount_label,
   referral_reward_id,
   birthday_reward_year,
+  welcome_reward_used,
   created_at,
   invoice_created_at,
   revenue_date,
