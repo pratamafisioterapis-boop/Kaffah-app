@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   User, Mail, Phone, Lock, Trash2, Edit2, 
-  Plus, Save, Loader2, ShieldAlert, KeyRound, Eye, EyeOff, Camera
+  Plus, Save, Loader2, ShieldAlert, KeyRound, Eye, EyeOff, Camera, UserCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -231,16 +231,21 @@ const AdminManager = () => {
   // We will just disable the user in the public table for now, or use a restricted edge function if needed.
   // For simplicity in this demo environment, we will soft delete from public.users which effectively hides them from this list,
   // though they might still technically be in Auth. 
-  const handleDelete = async (id) => {
-    if (!await confirmAction("Nonaktifkan admin ini? Mereka tidak akan bisa mengakses dashboard.")) return;
-    
-    const { error } = await supabase.from('users').update({ is_active: false }).eq('id', id);
-    
-    if (!error) {
-      toast({ title: "Admin Dinonaktifkan", description: "User telah dihapus dari daftar aktif." });
+  const handleToggleActive = async (admin) => {
+    const activate = admin.is_active === false;
+    const message = activate
+      ? "Aktifkan kembali admin ini? Mereka bisa login lagi ke dashboard."
+      : "Nonaktifkan admin ini? Mereka tidak akan bisa mengakses dashboard.";
+    if (!await confirmAction(message)) return;
+
+    const { data, error } = await supabase
+      .from('users').update({ is_active: activate }).eq('id', admin.id).select('id');
+
+    if (!error && data?.length) {
+      toast({ title: activate ? "Admin Diaktifkan" : "Admin Dinonaktifkan", description: activate ? "Akun bisa dipakai login kembali." : "Akun tidak bisa login lagi." });
       fetchAdmins();
     } else {
-      toast({ variant: "destructive", title: "Gagal", description: error.message });
+      toast({ variant: "destructive", title: "Gagal", description: error?.message || "Perubahan ditolak oleh database (tidak ada baris yang berubah)." });
     }
   };
 
@@ -265,12 +270,12 @@ const AdminManager = () => {
               key={admin.id}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-white rounded-app border border-slate-200 shadow-sm overflow-hidden flex flex-col"
+              className={`bg-white rounded-app border border-slate-200 shadow-sm overflow-hidden flex flex-col ${admin.is_active === false ? 'opacity-60' : ''}`}
             >
               <div className="h-20 bg-slate-900 relative flex items-center justify-center">
                   <ShieldAlert className="text-slate-700 w-24 h-24 absolute -bottom-8 -right-8 opacity-20" />
                   <div className="z-10 flex flex-col items-center">
-                     <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{admin.role.replace('_', ' ')}</span>
+                     <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{admin.role.replace('_', ' ')}{admin.is_active === false ? ' · Nonaktif' : ''}</span>
                   </div>
               </div>
               
@@ -304,8 +309,10 @@ const AdminManager = () => {
                    <Button variant="ghost" size="sm" onClick={() => setResetAdmin(admin)} className="text-amber-600 hover:bg-amber-50 hover:text-amber-700">
                       <KeyRound className="w-4 h-4 mr-2" /> Password
                    </Button>
-                   <Button variant="ghost" size="sm" onClick={() => handleDelete(admin.id)} className="text-red-600 hover:bg-red-50 hover:text-red-700">
-                      <Trash2 className="w-4 h-4 mr-2" /> Nonaktifkan Akun
+                   <Button variant="ghost" size="sm" onClick={() => handleToggleActive(admin)} className={admin.is_active === false ? "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700" : "text-red-600 hover:bg-red-50 hover:text-red-700"}>
+                      {admin.is_active === false
+                        ? <><UserCheck className="w-4 h-4 mr-2" /> Aktifkan Akun</>
+                        : <><Trash2 className="w-4 h-4 mr-2" /> Nonaktifkan Akun</>}
                    </Button>
                 </div>
               </div>

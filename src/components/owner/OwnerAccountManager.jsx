@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   User, Mail, Phone, Lock, Trash2,
-  Plus, Loader2, Crown
+  Plus, Loader2, Crown, UserCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -82,20 +82,26 @@ const OwnerAccountManager = () => {
     setSaving(false);
   };
 
-  const handleDelete = async (id) => {
+  const handleToggleActive = async (owner) => {
+    const id = owner.id;
+    const activate = owner.is_active === false;
     if (id === user?.id) {
       toast({ variant: "destructive", title: "Tidak Diizinkan", description: "Anda tidak bisa menonaktifkan akun Anda sendiri." });
       return;
     }
-    if (!await confirmAction("Nonaktifkan akun owner ini? Mereka tidak akan bisa mengakses dashboard.")) return;
+    const message = activate
+      ? "Aktifkan kembali akun owner ini?"
+      : "Nonaktifkan akun owner ini? Mereka tidak akan bisa mengakses dashboard.";
+    if (!await confirmAction(message)) return;
 
-    const { error } = await supabase.from('users').update({ is_active: false }).eq('id', id);
+    const { data, error } = await supabase
+      .from('users').update({ is_active: activate }).eq('id', id).select('id');
 
-    if (!error) {
-      toast({ title: "Akun Dinonaktifkan", description: "Owner telah dihapus dari daftar aktif." });
+    if (!error && data?.length) {
+      toast({ title: activate ? "Akun Diaktifkan" : "Akun Dinonaktifkan", description: activate ? "Owner bisa login kembali." : "Owner tidak bisa login lagi." });
       fetchOwners();
     } else {
-      toast({ variant: "destructive", title: "Gagal", description: error.message });
+      toast({ variant: "destructive", title: "Gagal", description: error?.message || "Perubahan ditolak oleh database (tidak ada baris yang berubah)." });
     }
   };
 
@@ -120,12 +126,12 @@ const OwnerAccountManager = () => {
               key={owner.id}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-white rounded-app border border-slate-200 shadow-sm overflow-hidden flex flex-col"
+              className={`bg-white rounded-app border border-slate-200 shadow-sm overflow-hidden flex flex-col ${owner.is_active === false ? 'opacity-60' : ''}`}
             >
               <div className="h-20 bg-slate-900 relative flex items-center justify-center">
                 <Crown className="text-amber-700 w-24 h-24 absolute -bottom-8 -right-8 opacity-20" />
                 <div className="z-10 flex flex-col items-center">
-                  <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">Owner</span>
+                  <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">Owner{owner.is_active === false ? ' · Nonaktif' : ''}</span>
                 </div>
               </div>
 
@@ -154,8 +160,10 @@ const OwnerAccountManager = () => {
 
                 <div className="mt-auto pt-4 border-t border-slate-100 flex justify-center">
                   {owner.id !== user?.id && (
-                    <Button variant="ghost" size="sm" onClick={() => handleDelete(owner.id)} className="text-red-600 hover:bg-red-50 hover:text-red-700">
-                      <Trash2 className="w-4 h-4 mr-2" /> Nonaktifkan Akun
+                    <Button variant="ghost" size="sm" onClick={() => handleToggleActive(owner)} className={owner.is_active === false ? "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700" : "text-red-600 hover:bg-red-50 hover:text-red-700"}>
+                      {owner.is_active === false
+                        ? <><UserCheck className="w-4 h-4 mr-2" /> Aktifkan Akun</>
+                        : <><Trash2 className="w-4 h-4 mr-2" /> Nonaktifkan Akun</>}
                     </Button>
                   )}
                 </div>

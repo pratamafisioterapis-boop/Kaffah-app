@@ -6542,7 +6542,7 @@ export const getCurrentClinic = async () => {
   }, 'getCurrentClinic');
 };
 
-export const getAdmins = async () => {
+export const getAdmins = async ({ includeInactive = true } = {}) => {
   return safeQuery(async () => {
     const { data: clinicData } = await getCurrentClinic();
     if (!clinicData?.id) return { data: [] };
@@ -6554,7 +6554,8 @@ export const getAdmins = async () => {
       .eq('clinic_id', clinicData.id)
       .order('created_at', { ascending: false });
     if (error) return { error };
-    return { data: data || [], error: null };
+    const rows = includeInactive ? (data || []) : (data || []).filter(u => u.is_active !== false);
+    return { data: rows, error: null };
   }, 'getAdmins');
 };
 
