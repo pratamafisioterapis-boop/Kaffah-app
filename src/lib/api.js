@@ -1143,7 +1143,7 @@ export async function getOperationalOptionsByCategory(category, searchTerm = '')
 
       let query = supabase
         .from('operational_options')
-        .select('id, label, category, parent_id, discount_value_type, discount_value, is_referral_reward')
+        .select('id, label, category, parent_id, discount_value_type, discount_value, is_referral_reward, session_count')
         .eq('category', category)
         .eq('clinic_id', userRow?.clinic_id)
         .eq('is_active', true);
@@ -1164,7 +1164,8 @@ export async function getOperationalOptionsByCategory(category, searchTerm = '')
           parent_id: i.parent_id || null,
           discount_value_type: i.discount_value_type,
           discount_value: i.discount_value,
-          is_referral_reward: !!i.is_referral_reward
+          is_referral_reward: !!i.is_referral_reward,
+          session_count: Number(i.session_count) || 0
         })),
         error: null
       };

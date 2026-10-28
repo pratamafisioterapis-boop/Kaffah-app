@@ -267,6 +267,19 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
     const sfDateLocked = sfEdit;
     const { quote, refresh: refreshQuote } = useRecapQuote(initialData?.id, formData.package_type, isOpen && sfEdit);
 
+    // Kaffah: paket dengan sesi > 1 tidak boleh ada diskon.
+    const selectedPackageOpt = packageOptions.find(p => (formData.package_type_id && p.value === formData.package_type_id) || (formData.package_type && p.label === formData.package_type));
+    const discountBlockedByPackage = !!sfSettings && Number(selectedPackageOpt?.session_count) > 1;
+
+    useEffect(() => {
+        if (!discountBlockedByPackage) return;
+        setFormData(prev => (
+            prev.discount_type === 'none' && !prev.discount_label && !prev.referral_reward_id && !Number(prev.discount_value) && !prev.discount_referral_code
+                ? prev
+                : { ...prev, referral_reward_id: '', discount_type: 'none', discount_value: 0, discount_label: '', discount_referral_code: '' }
+        ));
+    }, [discountBlockedByPackage]);
+
     const loadRecapMeta = useCallback(async () => {
         if (!initialData?.id) { setRecapMeta(null); return; }
         const { data } = await supabase
@@ -563,7 +576,8 @@ setFormData({
             setPackageOptions(
               rawPackages.map(p => ({
                 value: p.id || p.value || p.package_type_id,
-                label: p.name || p.label || p.package_name || p.package_type
+                label: p.name || p.label || p.package_name || p.package_type,
+                session_count: Number(p.session_count) || 0
               }))
             );
 
@@ -1304,11 +1318,11 @@ setFormData({
                 amount: parseFloat(formData.amount) || 0,
                 // Tanpa tipe potongan = tanpa diskon: nilai & label ikut dikosongkan
                 // supaya diskon lama benar-benar terhapus di DB dan invoice.
-                discount_value: formData.discount_type === 'none' ? 0 : (parseFloat(formData.discount_value) || 0),
-                discount_type: formData.discount_type === 'none' ? null : formData.discount_type,
-                discount_label: formData.discount_type === 'none' ? null : (formData.discount_label || null),
-                referral_reward_id: formData.referral_reward_id || null,
-                discount_referral_code: formData.discount_type !== 'none' && needsDiscountRefCode ? (formData.discount_referral_code || '').trim() : null,
+                discount_value: formData.discount_type === 'none' || discountBlockedByPackage ? 0 : (parseFloat(formData.discount_value) || 0),
+                discount_type: formData.discount_type === 'none' || discountBlockedByPackage ? null : formData.discount_type,
+                discount_label: formData.discount_type === 'none' || discountBlockedByPackage ? null : (formData.discount_label || null),
+                referral_reward_id: discountBlockedByPackage ? null : (formData.referral_reward_id || null),
+                discount_referral_code: !discountBlockedByPackage && formData.discount_type !== 'none' && needsDiscountRefCode ? (formData.discount_referral_code || '').trim() : null,
                 package_type_id: formData.package_type_id || null,
                 package_type: formData.package_type || null,
                 // Kosong harus NULL: constraint daily_recaps_special_type_check hanya
@@ -1677,6 +1691,9 @@ setFormData({
         <>
                                 <div className="space-y-3 bg-slate-50 p-3 rounded-app-sm border">
                                     <Label className="font-semibold">Diskon (Opsional)</Label>
+                                    {discountBlockedByPackage && (
+                                        <p className="text-xs text-amber-700">Paket dengan lebih dari 1 sesi tidak boleh mendapat diskon.</p>
+                                    )}
                                     {/* Kode Reward Referral */}
                                     <div className="space-y-1">
                                         <Label className="text-xs">Kode Reward Referral</Label>
@@ -1700,8 +1717,9 @@ setFormData({
                                                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyReferralReward(); } }}
                                                         placeholder="Contoh: REF-7QX4M"
                                                         className="h-9 text-xs bg-white"
+                                                        disabled={discountBlockedByPackage}
                                                     />
-                                                    <Button type="button" size="sm" className="h-9" onClick={applyReferralReward} disabled={rewardChecking || !rewardCode.trim()}>
+                                                    <Button type="button" size="sm" className="h-9" onClick={applyReferralReward} disabled={discountBlockedByPackage || rewardChecking || !rewardCode.trim()}>
                                                         {rewardChecking ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Terapkan'}
                                                     </Button>
                                                 </div>
@@ -1719,7 +1737,7 @@ setFormData({
                                     </div>
                                     <div className="space-y-1">
                                         <Label className="text-xs">Jenis Diskon</Label>
-                                        <SearchableSelect disabled={!!formData.referral_reward_id} options={discountTypeOptions.filter(o => !o.is_referral_reward)} value={formData.discount_label} onChange={v => {
+                                        <SearchableSelect disabled={discountBlockedByPackage || !!formData.referral_reward_id} options={discountTypeOptions.filter(o => !o.is_referral_reward)} value={formData.discount_label} onChange={v => {
                                             // Dihapus (tombol X): reset seluruh diskon
                                             if (!v) {
                                                 setFormData(prev => ({ ...prev, discount_label: '', discount_type: 'none', discount_value: 0 }));
@@ -1785,7 +1803,7 @@ setFormData({
                                     <div className={`${sfManualDiscount ? 'hidden' : ''} grid grid-cols-2 gap-4`}>
                                         <div className="space-y-1">
                                             <Label className="text-xs">Tipe Potongan</Label>
-                                            <Select disabled={!!formData.referral_reward_id || sfActive} value={formData.discount_type} onValueChange={v => {
+                                            <Select disabled={discountBlockedByPackage || !!formData.referral_reward_id || sfActive} value={formData.discount_type} onValueChange={v => {
                                                 if (v === 'none') setFormData(prev => ({ ...prev, discount_type: 'none', discount_value: 0, discount_label: '' }));
                                                 else handleChange('discount_type', v);
                                             }}>
@@ -1799,7 +1817,7 @@ setFormData({
                                         </div>
                                         <div className="space-y-1">
                                             <Label className="text-xs">Nilai</Label>
-                                            <Input type="number" value={formData.discount_value || ''} onChange={e => handleChange('discount_value', e.target.value)} disabled={!!formData.referral_reward_id || sfActive || formData.discount_type === 'none' || !formData.discount_label}/>
+                                            <Input type="number" value={formData.discount_value || ''} onChange={e => handleChange('discount_value', e.target.value)} disabled={discountBlockedByPackage || !!formData.referral_reward_id || sfActive || formData.discount_type === 'none' || !formData.discount_label}/>
                                         </div>
                                     </div>
                                 </div>
