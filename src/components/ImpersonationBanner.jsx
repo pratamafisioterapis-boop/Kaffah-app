@@ -8,7 +8,6 @@ const ROLE_HOME_PATH = {
   super_admin: '/super-admin',
   owner: '/owner',
   admin: '/admin',
-  clinic_admin: '/admin',
   therapist: '/therapist',
   physiotherapist: '/therapist',
 };

@@ -175,14 +175,14 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     // Kasir = admin yang pertama kali menyimpan rekap (cashier_id, diisi sekali).
     // Data lama yang belum punya cashier_id memakai created_by hanya jika rolenya admin;
     // jika masih kosong, diklaim oleh admin yang pertama kali membukanya.
-    const isAdminRole = (r) => ['admin', 'clinic_admin'].includes(r);
+    const isAdminRole = (r) => r === 'admin';
     let creatorId = recap.cashier_id || recap.created_by || null;
     let creator = null;
     if (creatorId) {
       const { data: c } = await supabase.from('users').select('full_name, signature_url, role').eq('id', creatorId).maybeSingle();
-      // RLS users hanya mengizinkan admin/owner membaca user lain, jadi clinic_admin
+      // RLS users hanya mengizinkan admin/owner membaca user lain, jadi admin
       // (Praxis) yang membuka invoice rekannya mendapat hasil kosong; RPC hanya
-      // mengembalikan admin/clinic_admin satu klinik.
+      // mengembalikan admin satu klinik.
       if (c && isAdminRole(c.role)) creator = c;
       else if (!c) {
         const { data: rows } = await supabase.rpc('get_invoice_cashier', { p_user_id: creatorId });

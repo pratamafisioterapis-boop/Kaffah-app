@@ -65,7 +65,7 @@ Deno.serve(async (req: Request) => {
     const isOwnerCreatingStaff =
       callerProfile.role === "owner" &&
       clinic_id === callerProfile.clinic_id &&
-      ["clinic_admin", "therapist", "physiotherapist", "owner"].includes(role);
+      ["admin", "therapist", "physiotherapist", "owner"].includes(role);
 
     if (!isSuperAdmin && !isOwnerCreatingStaff) {
       return new Response(JSON.stringify({ error: "Forbidden: tidak punya izin membuat akun ini" }), {

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Loader2, AlertCircle, Mail, Lock, ArrowRight, CheckCircle2, Eye, EyeOff, ShieldCheck, BarChart3 } from 'lucide-react';
 import { getUser, getPhysiotherapistByUserId } from '@/lib/api';
+import { normalizeRole } from '@/lib/roles';
 
 // Served from /public rather than bundled, so swapping the brand asset
 // later is a file replace, not a code change. Only rendered on APP_DOMAIN
@@ -50,7 +51,7 @@ const cardItem = {
 // Accounts with one of these already have a normal dashboard to land on,
 // so granting them Konversi Dokter access (see below) must never override
 // their usual post-login redirect.
-const CLINIC_ROLES = ['owner', 'admin', 'clinic_admin', 'therapist', 'physiotherapist', 'super_admin'];
+const CLINIC_ROLES = ['owner', 'admin', 'therapist', 'physiotherapist', 'super_admin'];
 
 const withRoleCheckTimeout = (promise, ms = 8000) =>
   Promise.race([
@@ -191,7 +192,7 @@ const LoginPage = () => {
              console.log("[LoginPage] Using metadata role:", metaRole);
              if (metaRole === 'super_admin') navigate('/super-admin', { replace: true });
              else if (metaRole === 'owner') navigate('/owner', { replace: true });
-             else if (metaRole === 'admin' || metaRole === 'clinic_admin') navigate('/admin', { replace: true });
+             else if (normalizeRole(metaRole) === 'admin') navigate('/admin', { replace: true });
              else navigate('/therapist', { replace: true });
              return;
           }
@@ -314,7 +315,6 @@ switch (role) {
     break;
 
   case 'admin':
-case 'clinic_admin':
   navigate('/admin', { replace: true });
   break;
 

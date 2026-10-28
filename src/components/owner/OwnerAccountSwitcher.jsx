@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 
-const ADMIN_ROLES = ['admin', 'clinic_admin'];
+const ADMIN_ROLES = ['admin'];
 const THERAPIST_ROLES = ['therapist', 'physiotherapist'];
 const LEGACY_CACHE_KEY = 'owner_switcher_accounts';
 // Scoped per clinic so a list cached for one clinic is never shown in another.

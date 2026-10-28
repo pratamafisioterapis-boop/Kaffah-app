@@ -67,7 +67,7 @@ if (authHeader) {
       .eq("id", callerAuth.user.id)
       .single();
     isSameClinicManager = !!callerRow &&
-      ["owner", "admin", "clinic_admin", "super_admin"].includes(callerRow.role) &&
+      ["owner", "admin", "super_admin"].includes(callerRow.role) &&
       (callerRow.role === "super_admin" || (userData?.clinic_id && callerRow.clinic_id === userData.clinic_id));
   }
 

@@ -13,7 +13,7 @@ import { PageHead, Panel, Pill, EmptyState, Spinner, Initials, RowAction, SHEET_
 import { cn } from '@/lib/utils';
 import { validatePassword } from '@/lib/passwordPolicy';
 
-const ROLES = ['owner', 'admin', 'clinic_admin', 'therapist', 'physiotherapist', 'super_admin'];
+const ROLES = ['owner', 'admin', 'therapist', 'physiotherapist', 'super_admin'];
 
 // Dedicated accounts made only for the standalone Konversi Jasa/Tindakan
 // Dokter app — this role has no dashboard of its own in ROLE_HOME_PATH, so
@@ -37,7 +37,6 @@ const ROLE_HOME_PATH = {
   super_admin: '/super-admin',
   owner: '/owner',
   admin: '/admin',
-  clinic_admin: '/admin',
   therapist: '/therapist',
   physiotherapist: '/therapist',
 };
@@ -93,7 +92,7 @@ const SuperAdminUsers = () => {
     if (pemilihUserIds.has(u.id)) return 'pemilih';
     if (u.role === 'owner') return 'owner';
     if (u.role === 'therapist' || u.role === 'physiotherapist') return 'terapis';
-    if (u.role === 'admin' || u.role === 'clinic_admin') return 'admin';
+    if (u.role === 'admin') return 'admin';
     return 'non_klinik';
   };
 

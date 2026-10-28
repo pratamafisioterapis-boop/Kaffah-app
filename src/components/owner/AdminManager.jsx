@@ -31,7 +31,7 @@ const AdminManager = () => {
     full_name: '',
     email: '',
     phone: '',
-    role: 'clinic_admin'
+    role: 'admin'
   });
   const [password, setPassword] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -97,7 +97,7 @@ const AdminManager = () => {
       full_name: '',
       email: '',
       phone: '',
-      role: 'clinic_admin'
+      role: 'admin'
     });
     setPassword('');
     setIsDialogOpen(true);
@@ -204,7 +204,7 @@ const AdminManager = () => {
     setSaving(true);
     
     // Owner hanya boleh membuat Admin Klinik, bukan Super Admin.
-    const payload = { ...formData, role: 'clinic_admin', clinic_id: clinicId };
+    const payload = { ...formData, role: 'admin', clinic_id: clinicId };
     const { data: created, error } = await createAdminAccount(payload, password);
 
     if (!error) {

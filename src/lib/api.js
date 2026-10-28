@@ -6550,7 +6550,7 @@ export const getAdmins = async ({ includeInactive = true } = {}) => {
     const { data, error } = await supabase
       .from('users')
       .select('*')
-      .in('role', ['admin', 'clinic_admin'])
+      .eq('role', 'admin')
       .eq('clinic_id', clinicData.id)
       .order('created_at', { ascending: false });
     if (error) return { error };

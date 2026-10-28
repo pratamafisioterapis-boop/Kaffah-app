@@ -640,7 +640,7 @@ const DashboardTopbar = ({ role, userName, clinicName, navItems = [], clinicId, 
 
       // Admin's notification feed must never include the owner's own
       // activity; the owner's feed keeps seeing every admin/therapist action.
-      if (role === 'admin' || role === 'clinic_admin') {
+      if (role === 'admin') {
         mapped = mapped.filter((item) => item.actorRoleRaw !== 'owner');
       }
 

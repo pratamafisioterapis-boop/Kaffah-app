@@ -52,7 +52,7 @@ const [loadingWhatsApp, setLoadingWhatsApp] = useState(false);
   const [therapistStatus, setTherapistStatus] = useState(null);
 
   const isTherapistRole = role === 'therapist' || role === 'physiotherapist';
-  const isAdminRole = role === 'admin' || role === 'clinic_admin';
+  const isAdminRole = role === 'admin';
   const isOwnerRole = role === 'owner' || role === 'super_admin';
 
   const canEditTherapist = isOwnerRole || isAdminRole;
