@@ -1838,6 +1838,17 @@ export const getActiveReferralRewards = async (patientId) => {
   return { data: data || [], error };
 };
 
+// Diskon ultah (Kaffah): status kelayakan + nilai diskon untuk tanggal rekap tertentu.
+export const getBirthdayRewardStatus = async (patientId, recapIsoDate, recapId = null) => {
+  if (!patientId || !recapIsoDate) return { data: null, error: null };
+  const { data, error } = await supabase.rpc('birthday_reward_status', {
+    p_patient_id: patientId,
+    p_recap_date: recapIsoDate,
+    p_recap_id: recapId
+  });
+  return { data: error ? null : data, error };
+};
+
 export const getReferralRewardById = async (id) => {
   if (!id) return { data: null, error: null };
   const { data, error } = await supabase
@@ -1956,6 +1967,7 @@ export const getDailyRecaps = async ({
   discount_value,
   discount_label,
   referral_reward_id,
+  birthday_reward_year,
   created_at,
   invoice_created_at,
   revenue_date,
