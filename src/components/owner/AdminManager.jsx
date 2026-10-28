@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { useToast } from '@/components/ui/use-toast';
 import { 
   getAdmins, createAdminAccount, getCurrentClinic 
@@ -362,8 +363,7 @@ const AdminManager = () => {
                 <h4 className="font-semibold text-yellow-800 flex items-center gap-2 text-sm">
                    <Lock className="w-3 h-3" /> Set Password
                 </h4>
-                <Input 
-                   type="password" 
+                <PasswordInput 
                    value={password} 
                    onChange={(e) => setPassword(e.target.value)} 
                    placeholder="Min. 8 karakter, huruf & angka"

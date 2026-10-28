@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { Switch } from "@/components/ui/switch";
@@ -1285,8 +1286,7 @@ const headerColorMap = {
                         ? 'Password Login * (terapis ini belum punya akun login)'
                         : 'Password Login *'}
                   </label>
-                  <Input
-                    type="password"
+                  <PasswordInput
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={editingTherapist?.user_id ? "********" : "Min. 8 karakter, huruf & angka"}
