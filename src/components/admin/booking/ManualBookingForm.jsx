@@ -29,6 +29,7 @@ import { format, isValid } from 'date-fns';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
+import HomecareShiftHint, { useHomecareShift, homecareExpected } from '@/components/admin/booking/HomecareShiftHint';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
@@ -58,6 +59,10 @@ const [showDropdown, setShowDropdown] = useState(false);
   const [isHomecare, setIsHomecare] = useState(false);
   const [homecareTimeType, setHomecareTimeType] = useState('');
   const { settings: soapFirstSettings } = useSoapFirstSettings();
+  const hcISO = (date && isValid(date) && formData.start_time)
+    ? new Date(`${format(date, 'yyyy-MM-dd')}T${formData.start_time}:00`).toISOString()
+    : null;
+  const hcShift = useHomecareShift(therapist?.id, hcISO, !!soapFirstSettings && isHomecare);
   const [isRecurring, setIsRecurring] = useState(false);
   const [conflictData, setConflictData] = useState(null);
   const [showConflictModal, setShowConflictModal] = useState(false);
@@ -195,6 +200,20 @@ if (pkg) {
           ? "Jadwal terapis ini terkunci karena dokumentasi SOAP belum lengkap."
           : `Fisioterapis sedang ${leaveStatus}.`
       });
+      return;
+    }
+
+    if (soapFirstSettings && isHomecare && !homecareTimeType) {
+      toast({
+        variant: "destructive",
+        title: "Waktu Homecare wajib dipilih",
+        description: "Pilih dalam jam kerja atau luar jam kerja."
+      });
+      return;
+    }
+
+    if (soapFirstSettings && isHomecare && hcShift && homecareTimeType !== homecareExpected(hcShift)
+        && !window.confirm('Pilihan waktu homecare tidak sesuai jadwal aktif terapis. Ini memengaruhi tarif & insentif. Tetap lanjutkan?')) {
       return;
     }
 
@@ -649,14 +668,15 @@ const handleConfirmRecurring = async () => {
       </div>
       {soapFirstSettings && isHomecare && (
         <div className="space-y-1">
-          <Label className="text-xs">Waktu Homecare <span className="text-slate-400">(opsional, otomatis dari jam appointment)</span></Label>
+          <Label className="text-xs">Waktu Homecare <span className="text-red-500">*</span></Label>
           <Select value={homecareTimeType} onValueChange={setHomecareTimeType}>
-            <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Otomatis" /></SelectTrigger>
+            <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Pilih dalam / luar jam kerja" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="dalam">Dalam jam kerja</SelectItem>
               <SelectItem value="luar">Luar jam kerja</SelectItem>
             </SelectContent>
           </Select>
+          <HomecareShiftHint info={hcShift} value={homecareTimeType} />
         </div>
       )}
       {isRecurring && (

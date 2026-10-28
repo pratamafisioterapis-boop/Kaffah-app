@@ -785,8 +785,7 @@ console.log("PAYLOAD RPC FINAL", payload);
     }
 
     // SOAP-first: homecare dalam / luar jam kerja menentukan tipe pasien & tarif.
-    if ((params.p_is_homecare ?? false) && params.homecareTimeType && data) {
-      const { error: hcError } = await supabase
+    if ((params.p_is_homecare ?? false) && params.homecareTimeType && data) {      const { error: hcError } = await supabase
         .from('appointments')
         .update({ homecare_time_type: params.homecareTimeType })
         .eq('id', data);
