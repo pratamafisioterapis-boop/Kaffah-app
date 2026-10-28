@@ -19,6 +19,7 @@ import { id as idLocale } from 'date-fns/locale';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import FinanceTile from '@/components/owner/finance/FinanceTile';
+import HomecareTimeAudit from '@/components/owner/HomecareTimeAudit';
 import { Pill } from '@/components/owner/finance/TxList';
 import { fmtShort, fmtRp } from '@/components/owner/finance/financeTheme';
 
@@ -432,6 +433,7 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
 
   return (
     <div className="space-y-4">
+      <HomecareTimeAudit startDate={dateRange?.startDate} endDate={dateRange?.endDate} />
       {/* Periode + hitung */}
       <FinanceTile tone="vio" icon={Calendar} title="Periode">
         <div className="flex flex-wrap items-center gap-3">

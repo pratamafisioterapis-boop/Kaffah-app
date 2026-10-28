@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
+import HomecareShiftHint, { useHomecareShift, homecareExpected } from '@/components/admin/booking/HomecareShiftHint';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatus = 'aktif' }) => {
@@ -59,6 +60,10 @@ const SlotBookingForm = ({ slot, therapist, date, onClose, onSuccess, leaveStatu
     homecare_time_type: ''
   });
   const { settings: soapFirstSettings } = useSoapFirstSettings();
+  const hcISO = (date && isValid(date) && slot?.slot_start_time)
+    ? new Date(`${format(date, 'yyyy-MM-dd')}T${slot.slot_start_time.substring(0, 5)}:00`).toISOString()
+    : null;
+  const hcShift = useHomecareShift(therapist?.id, hcISO, !!soapFirstSettings && formData.is_homecare);
 
   const [conflictData, setConflictData] = useState(null);
   const [showConflictModal, setShowConflictModal] = useState(false);
@@ -196,6 +201,11 @@ setPackageInfo(pkg);
 
     if (soapFirstSettings && formData.is_homecare && !formData.homecare_time_type) {
       toast({ variant: "destructive", title: "Waktu Homecare wajib dipilih", description: "Pilih dalam jam kerja atau luar jam kerja." });
+      return;
+    }
+
+    if (soapFirstSettings && formData.is_homecare && hcShift && formData.homecare_time_type !== homecareExpected(hcShift)
+        && !window.confirm('Pilihan waktu homecare tidak sesuai jadwal aktif terapis. Ini memengaruhi tarif & insentif. Tetap lanjutkan?')) {
       return;
     }
 
@@ -464,6 +474,7 @@ action_by: user?.id,
               <SelectItem value="luar">Luar jam kerja</SelectItem>
             </SelectContent>
           </Select>
+          <HomecareShiftHint info={hcShift} value={formData.homecare_time_type} />
         </div>
       )}
 
