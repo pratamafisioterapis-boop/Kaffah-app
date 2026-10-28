@@ -16,6 +16,8 @@ import WhatsAppMessagePreview from './WhatsAppMessagePreview';
 import WhatsAppScheduleConfig from './WhatsAppScheduleConfig';
 import WhatsAppLogs from './WhatsAppLogs';
 
+import WhatsAppCloudPanel from '@/components/owner/WhatsAppCloudPanel';
+
 const WaApiKeySection = () => {
     const { toast } = useToast();
     const [loading, setLoading] = useState(true);
@@ -567,6 +569,8 @@ const WhatsAppSettings = ({ hideApiKey = false }) => {
                 </h2>
                 <p className="text-slate-500 mt-1">Kelola pesan otomatis dan notifikasi WhatsApp untuk pasien klinik.</p>
             </div>
+
+            <WhatsAppCloudPanel />
 
             {!hideApiKey && <WaApiKeySection />}
 

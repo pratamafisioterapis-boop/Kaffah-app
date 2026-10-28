@@ -18,6 +18,7 @@ import {
 import { supabase } from '@/lib/customSupabaseClient';
 // Import Pages/Components
 const DailyRecap = React.lazy(lazyRetry(() => import('@/components/admin/DailyRecap'), 'DailyRecap'));
+const WhatsAppInboxPage = React.lazy(lazyRetry(() => import('@/components/admin/WhatsAppInboxPage'), 'WhatsAppInboxPage'));
 const FollowUpManagementPage = React.lazy(lazyRetry(() => import('@/components/admin/FollowUpManagementPage'), 'FollowUpManagementPage'));
 const AdminAccountingDashboard = React.lazy(lazyRetry(() => import('@/components/admin/AdminAccountingDashboard'), 'AdminAccountingDashboard'));
 import AdminDashboardMetrics from '@/components/admin/AdminDashboardMetrics'; 
@@ -712,6 +713,7 @@ return (
         <Route path="/daily-recap" element={<DailyRecap />} />
         <Route path="/package-recaps" element={<OwnerPackageRecap />} />
         <Route path="/follow-up-management" element={<FollowUpManagementPage />} />
+        <Route path="/wa-inbox" element={<WhatsAppInboxPage />} />
         
         {/* Task 2: Add new route */}
         <Route path="/clinical-documents" element={<ClinicalDocuments />} />

@@ -191,6 +191,11 @@ const isPWA =
              newItems.push({ label: 'Package Recaps', path: packagePath, icon: 'Package' });
          }
 
+         const inboxPath = role === 'owner' ? '/owner/wa-inbox' : '/admin/wa-inbox';
+         if (!hasPath(inboxPath)) {
+            newItems.push({ label: 'WhatsApp Inbox', path: inboxPath, icon: 'MessageSquare' });
+         }
+
          const followUpPath = '/admin/follow-up-management';
          if (role === 'admin' && !hasPath(followUpPath)) {
             newItems.push({ label: 'Follow Up Management', path: followUpPath, icon: 'MessageSquare' });
