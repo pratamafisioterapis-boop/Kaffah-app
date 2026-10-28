@@ -432,7 +432,7 @@ function App() {
                 <Route
                   path="/admin/feedback"
                   element={
-                    <ProtectedRoute allowedRoles={['admin', 'clinic_admin']}>
+                    <ProtectedRoute allowedRoles={['admin']}>
                       <FeedbackManagementAdmin />
                     </ProtectedRoute>
                   }
@@ -450,7 +450,7 @@ function App() {
                 <Route
                   path="/admin/clinara-pasien"
                   element={
-                    <ProtectedRoute allowedRoles={['admin', 'clinic_admin']}>
+                    <ProtectedRoute allowedRoles={['admin']}>
                       <ClinaraPatientsAdmin />
                     </ProtectedRoute>
                   }
@@ -486,7 +486,7 @@ function App() {
                 <Route
   path="/admin/package-recaps"
   element={
-    <ProtectedRoute allowedRoles={['admin', 'clinic_admin']}>
+    <ProtectedRoute allowedRoles={['admin']}>
       <PackageRecapsAdmin />
     </ProtectedRoute>
   }
@@ -494,7 +494,7 @@ function App() {
                 <Route
   path="/admin/inventory-takeout"
   element={
-    <ProtectedRoute allowedRoles={['admin', 'clinic_admin']}>
+    <ProtectedRoute allowedRoles={['admin']}>
       <InventoryTakeOutPage />
     </ProtectedRoute>
   }
@@ -502,7 +502,7 @@ function App() {
                 <Route
                   path="/admin/*"
                   element={
-                    <ProtectedRoute allowedRoles={['admin', 'clinic_admin']}>
+                    <ProtectedRoute allowedRoles={['admin']}>
                       <AdminDashboard />
                     </ProtectedRoute>
                   }
@@ -511,7 +511,7 @@ function App() {
                 <Route
                   path="/admin/as-therapist/*"
                   element={
-                    <ProtectedRoute allowedRoles={['admin', 'clinic_admin']}>
+                    <ProtectedRoute allowedRoles={['admin']}>
                       <AdminAsTherapist />
                     </ProtectedRoute>
                   }

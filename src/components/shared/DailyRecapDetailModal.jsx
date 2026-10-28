@@ -57,7 +57,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
     const [optionsMap, setOptionsMap] = useState({});
     const [isLoadingOptions, setIsLoadingOptions] = useState(false);
     const { userDetails } = useAuth();
-    const canInputVitals = ['owner', 'super_admin', 'admin', 'clinic_admin'].includes(userDetails?.role);
+    const canInputVitals = ['owner', 'super_admin', 'admin'].includes(userDetails?.role);
     const [vitalsRow, setVitalsRow] = useState(null);
     const [pendingVitalsEdit, setPendingVitalsEdit] = useState(null);
     const [vitalsDialogOpen, setVitalsDialogOpen] = useState(false);
@@ -67,7 +67,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
     // Pengajuan perubahan ke owner (nominal, diskon, dst) untuk klinik SOAP-first.
     const { settings: sfSettings } = useSoapFirstSettings();
     const sfActive = isSoapFirstActiveOn(sfSettings, recap?.date);
-    const canRequestChange = isOpen && !recap?.is_virtual && sfActive && ['admin', 'clinic_admin', 'owner', 'super_admin'].includes(userDetails?.role);
+    const canRequestChange = isOpen && !recap?.is_virtual && sfActive && ['admin', 'owner', 'super_admin'].includes(userDetails?.role);
     const { quote, refresh: refreshQuote } = useRecapQuote(recap?.id, null, canRequestChange);
     const [overrideDialog, setOverrideDialog] = useState(null);
     const [discountOptions, setDiscountOptions] = useState([]);

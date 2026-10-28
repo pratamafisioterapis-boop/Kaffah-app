@@ -135,7 +135,7 @@ const OnboardingChecklist = () => {
         supabase.from('users').select('avatar_url').eq('id', user.id).single(),
         supabase.from('physiotherapists').select('id', { count: 'exact', head: true }).eq('clinic_id', clinicId),
         supabase.from('therapist_schedules').select('id', { count: 'exact', head: true }).eq('clinic_id', clinicId).eq('is_active', true),
-        supabase.from('users').select('id', { count: 'exact', head: true }).eq('clinic_id', clinicId).in('role', ['admin', 'clinic_admin']),
+        supabase.from('users').select('id', { count: 'exact', head: true }).eq('clinic_id', clinicId).eq('role', 'admin'),
         supabase.from('operational_options').select('id', { count: 'exact', head: true }).eq('clinic_id', clinicId).eq('category', 'patient_type'),
         supabase.from('operational_options').select('id', { count: 'exact', head: true }).eq('clinic_id', clinicId).eq('category', 'tipe_paket'),
         supabase.from('bank_accounts').select('id', { count: 'exact', head: true }).eq('clinic_id', clinicId),

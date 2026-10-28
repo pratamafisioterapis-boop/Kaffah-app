@@ -23,7 +23,7 @@ const PrepayPackagePanel = ({ appointment, onChanged }) => {
   const { toast } = useToast();
   const { userDetails, role } = useAuth();
   const isOwner = role === 'owner' || role === 'super_admin';
-  const isAdmin = role === 'admin' || role === 'clinic_admin';
+  const isAdmin = role === 'admin';
 
   const [loading, setLoading] = useState(true);
   const [recap, setRecap] = useState(null);

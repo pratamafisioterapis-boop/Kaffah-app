@@ -95,7 +95,7 @@ Deno.serve(async (req: Request) => {
     if (!clinic_id) return json({ success: false, error: "clinic_id wajib diisi." }, 400);
 
     const isSuperAdmin = profile.role === "super_admin";
-    const isClinicOwner = ["owner", "admin", "clinic_admin"].includes(profile.role) && profile.clinic_id === clinic_id;
+    const isClinicOwner = ["owner", "admin"].includes(profile.role) && profile.clinic_id === clinic_id;
     if (!isSuperAdmin && !isClinicOwner) {
       return json({ success: false, error: "Anda tidak punya akses ke klinik ini." }, 403);
     }

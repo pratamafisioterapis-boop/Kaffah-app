@@ -79,7 +79,7 @@ Deno.serve(async (req: Request) => {
 
       if (
         targetErr || !target ||
-        target.role !== "clinic_admin" ||
+        target.role !== "admin" ||
         !callerProfile.clinic_id ||
         target.clinic_id !== callerProfile.clinic_id
       ) {

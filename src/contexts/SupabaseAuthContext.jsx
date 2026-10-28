@@ -5,6 +5,7 @@ import {
   listenForegroundNotifications
 } from '@/lib/pushNotifications';
 import { useToast } from '@/components/ui/use-toast';
+import { normalizeRole } from '@/lib/roles';
 import { initLightLoadMode, refreshLightLoadMode, isLightLoadModeEnabled } from '@/lib/lightLoadMode';
 
 const AuthContext = createContext(undefined);
@@ -110,7 +111,7 @@ export const AuthProvider = ({ children }) => {
         }
         return null;
       }
-      return data;
+      return data ? { ...data, role: normalizeRole(data.role) } : data;
     } catch (error) {
       console.error('[AuthContext] Unexpected error fetching user details:', error);
       return null;
@@ -535,7 +536,7 @@ export const AuthProvider = ({ children }) => {
   }, [isSwitching, user?.id, userDetails?.id]);
 
   const role = useMemo(() => {
-    return userDetails?.role || user?.user_metadata?.role || 'guest';
+    return normalizeRole(userDetails?.role || user?.user_metadata?.role) || 'guest';
   }, [userDetails, user]);
 
   useEffect(() => {

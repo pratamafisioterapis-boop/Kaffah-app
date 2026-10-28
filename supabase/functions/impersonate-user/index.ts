@@ -92,7 +92,7 @@ Deno.serve(async (req: Request) => {
 
     // Owners may only switch to admin/therapist accounts in their own clinic.
     if (isOwner) {
-      const allowedRoles = ["admin", "clinic_admin", "therapist", "physiotherapist"];
+      const allowedRoles = ["admin", "therapist", "physiotherapist"];
       if (
         !callerProfile.clinic_id ||
         targetProfile.clinic_id !== callerProfile.clinic_id ||
