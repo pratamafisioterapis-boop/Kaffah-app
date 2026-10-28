@@ -29,6 +29,7 @@ import {
     lookupReferralReward,
     getActiveReferralRewards,
     getReferralRewardById,
+    getBirthdayRewardStatus,
     getPatientActivePackage,
     extendPackage
 } from '@/lib/api';
@@ -274,9 +275,9 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
     useEffect(() => {
         if (!discountBlockedByPackage) return;
         setFormData(prev => (
-            prev.discount_type === 'none' && !prev.discount_label && !prev.referral_reward_id && !Number(prev.discount_value) && !prev.discount_referral_code
+            prev.discount_type === 'none' && !prev.discount_label && !prev.referral_reward_id && !prev.birthday_reward_year && !Number(prev.discount_value) && !prev.discount_referral_code
                 ? prev
-                : { ...prev, referral_reward_id: '', discount_type: 'none', discount_value: 0, discount_label: '', discount_referral_code: '' }
+                : { ...prev, referral_reward_id: '', birthday_reward_year: null, discount_type: 'none', discount_value: 0, discount_label: '', discount_referral_code: '' }
         ));
     }, [discountBlockedByPackage]);
 
@@ -364,7 +365,8 @@ setFormData({
     discount_value: initialData.discount_value || 0,
     discount_label: initialData.discount_label || '',
     discount_referral_code: initialData.discount_referral_code || '',
-    referral_reward_id: initialData.referral_reward_id || ''
+    referral_reward_id: initialData.referral_reward_id || '',
+    birthday_reward_year: initialData.birthday_reward_year || null
 });
 
                 const existingSplits = Array.isArray(initialData.payment_splits) ? initialData.payment_splits : [];
@@ -399,7 +401,8 @@ setFormData({
                     discount_value: 0,
                     discount_label: '',
                     discount_referral_code: '',
-                    referral_reward_id: ''
+                    referral_reward_id: '',
+                    birthday_reward_year: null
                 });
                 setRewardInfo(null);
                 setRewardCode('');
@@ -957,6 +960,46 @@ setFormData({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [formData.patient_id]);
 
+    const isoToDisplay = (iso) => String(iso || '').slice(0, 10).split('-').reverse().join('/');
+
+    // Diskon ultah (Kaffah): cek otomatis berdasarkan tanggal lahir pasien & tanggal rekap.
+    const [birthdayStatus, setBirthdayStatus] = useState(null);
+    useEffect(() => {
+        if (!isOpen || !sfSettings || !formData.patient_id || !recapIso) { setBirthdayStatus(null); return; }
+        let cancelled = false;
+        getBirthdayRewardStatus(formData.patient_id, recapIso, mode === 'edit' ? initialData?.id : null).then(({ data }) => {
+            if (!cancelled) setBirthdayStatus(data && !data.hidden ? data : null);
+        });
+        return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, !!sfSettings, formData.patient_id, recapIso, mode, initialData?.id]);
+
+    // Ganti pasien/tanggal: diskon ultah yang terpasang dilepas (periode & kuota bisa berbeda).
+    const birthdayKeyRef = useRef(`${formData.patient_id}|${recapIso}`);
+    useEffect(() => {
+        const key = `${formData.patient_id}|${recapIso}`;
+        if (birthdayKeyRef.current === key) return;
+        birthdayKeyRef.current = key;
+        if (formData.birthday_reward_year) clearBirthdayReward();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData.patient_id, recapIso]);
+
+    const applyBirthdayReward = () => {
+        if (!birthdayStatus?.year) return;
+        clearReferralReward();
+        setFormData(prev => ({
+            ...prev,
+            birthday_reward_year: birthdayStatus.year,
+            discount_type: birthdayStatus.discount_value_type,
+            discount_value: String(birthdayStatus.discount_value),
+            discount_label: birthdayStatus.discount_label
+        }));
+    };
+
+    const clearBirthdayReward = () => {
+        setFormData(prev => ({ ...prev, birthday_reward_year: null, discount_type: 'none', discount_value: 0, discount_label: '' }));
+    };
+
     const clearReferralReward = () => {
         setRewardInfo(null);
         setRewardCode('');
@@ -964,11 +1007,15 @@ setFormData({
         setFormData(prev => ({ ...prev, referral_reward_id: '', discount_type: 'none', discount_value: 0, discount_label: '' }));
     };
 
-    const applyReferralReward = async () => {
-        const code = rewardCode.trim();
+    const applyReferralReward = async (codeArg) => {
+        const code = (typeof codeArg === 'string' ? codeArg : rewardCode).trim();
         if (!code) return;
         if (!formData.patient_id) {
             setRewardError('Pilih pasien terlebih dahulu.');
+            return;
+        }
+        if (formData.birthday_reward_year) {
+            setRewardError('Lepas diskon ultah dulu — tidak bisa digabung dengan reward referral.');
             return;
         }
         setRewardChecking(true);
@@ -1322,6 +1369,7 @@ setFormData({
                 discount_type: formData.discount_type === 'none' || discountBlockedByPackage ? null : formData.discount_type,
                 discount_label: formData.discount_type === 'none' || discountBlockedByPackage ? null : (formData.discount_label || null),
                 referral_reward_id: discountBlockedByPackage ? null : (formData.referral_reward_id || null),
+                birthday_reward_year: discountBlockedByPackage ? null : (formData.birthday_reward_year || null),
                 discount_referral_code: !discountBlockedByPackage && formData.discount_type !== 'none' && needsDiscountRefCode ? (formData.discount_referral_code || '').trim() : null,
                 package_type_id: formData.package_type_id || null,
                 package_type: formData.package_type || null,
@@ -1358,6 +1406,7 @@ setFormData({
                 payload.discount_value = 0;
                 payload.discount_label = null;
                 payload.referral_reward_id = null;
+                payload.birthday_reward_year = null;
             }
             // Sesi paket (metode 'Package') selalu Rp 0. Tanpa ini, nominal basi di form
             // (mis. harga paket dari quote) / amount_original lama bisa ikut tersimpan dan
@@ -1694,6 +1743,42 @@ setFormData({
                                     {discountBlockedByPackage && (
                                         <p className="text-xs text-amber-700">Paket dengan lebih dari 1 sesi tidak boleh mendapat diskon.</p>
                                     )}
+                                    {/* Diskon tersedia otomatis (ultah & referral) */}
+                                    {!discountBlockedByPackage && (birthdayStatus || activeRewards.length > 0) && (
+                                        <div className="space-y-2 rounded-md border border-emerald-200 bg-emerald-50 p-3">
+                                            <p className="text-xs font-semibold text-emerald-800">Diskon tersedia untuk pasien ini</p>
+                                            {birthdayStatus && (
+                                                <div className="flex items-center justify-between gap-2 text-xs">
+                                                    <span className="text-slate-800">
+                                                        <span className="font-semibold">🎂 {birthdayStatus.discount_label}</span>{' '}
+                                                        ({birthdayStatus.discount_value_type === 'percentage'
+                                                            ? `${Number(birthdayStatus.discount_value)}%`
+                                                            : `Rp ${Number(birthdayStatus.discount_value).toLocaleString('id-ID')}`})
+                                                        {birthdayStatus.eligible
+                                                            ? <span className="text-slate-500"> · berlaku s/d {isoToDisplay(birthdayStatus.window_end)}</span>
+                                                            : <span className="font-semibold text-red-600"> · {birthdayStatus.reason}</span>}
+                                                    </span>
+                                                    {formData.birthday_reward_year ? (
+                                                        <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-xs text-red-600" onClick={clearBirthdayReward}>Lepas</Button>
+                                                    ) : birthdayStatus.eligible ? (
+                                                        <Button type="button" size="sm" className="h-7 px-3 text-xs" onClick={applyBirthdayReward}>Terapkan</Button>
+                                                    ) : null}
+                                                </div>
+                                            )}
+                                            {!formData.referral_reward_id && activeRewards.map(r => (
+                                                <div key={r.id} className="flex items-center justify-between gap-2 text-xs">
+                                                    <span className="text-slate-800">
+                                                        <span className="font-semibold">🤝 {r.code}</span>{' · '}{r.discount_label || 'Referral Reward'}{' '}
+                                                        ({r.discount_value_type === 'percentage'
+                                                            ? `${Number(r.discount_value)}%`
+                                                            : `Rp ${Number(r.discount_value).toLocaleString('id-ID')}`})
+                                                        <span className="text-slate-500"> · s/d {isoToDisplay(r.expires_at)}</span>
+                                                    </span>
+                                                    <Button type="button" size="sm" className="h-7 px-3 text-xs" disabled={rewardChecking || !!formData.birthday_reward_year} onClick={() => applyReferralReward(r.code)}>Terapkan</Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                     {/* Kode Reward Referral */}
                                     <div className="space-y-1">
                                         <Label className="text-xs">Kode Reward Referral</Label>
@@ -1717,9 +1802,9 @@ setFormData({
                                                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyReferralReward(); } }}
                                                         placeholder="Contoh: REF-7QX4M"
                                                         className="h-9 text-xs bg-white"
-                                                        disabled={discountBlockedByPackage}
+                                                        disabled={discountBlockedByPackage || !!formData.birthday_reward_year}
                                                     />
-                                                    <Button type="button" size="sm" className="h-9" onClick={applyReferralReward} disabled={discountBlockedByPackage || rewardChecking || !rewardCode.trim()}>
+                                                    <Button type="button" size="sm" className="h-9" onClick={() => applyReferralReward()} disabled={discountBlockedByPackage || rewardChecking || !rewardCode.trim()}>
                                                         {rewardChecking ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Terapkan'}
                                                     </Button>
                                                 </div>
@@ -1737,7 +1822,7 @@ setFormData({
                                     </div>
                                     <div className="space-y-1">
                                         <Label className="text-xs">Jenis Diskon</Label>
-                                        <SearchableSelect disabled={discountBlockedByPackage || !!formData.referral_reward_id} options={discountTypeOptions.filter(o => !o.is_referral_reward)} value={formData.discount_label} onChange={v => {
+                                        <SearchableSelect disabled={discountBlockedByPackage || !!formData.referral_reward_id || !!formData.birthday_reward_year} options={discountTypeOptions.filter(o => !o.is_referral_reward && !(sfSettings && /^birthday reward$/i.test((o.label || '').trim())))} value={formData.discount_label} onChange={v => {
                                             // Dihapus (tombol X): reset seluruh diskon
                                             if (!v) {
                                                 setFormData(prev => ({ ...prev, discount_label: '', discount_type: 'none', discount_value: 0 }));
@@ -1803,7 +1888,7 @@ setFormData({
                                     <div className={`${sfManualDiscount ? 'hidden' : ''} grid grid-cols-2 gap-4`}>
                                         <div className="space-y-1">
                                             <Label className="text-xs">Tipe Potongan</Label>
-                                            <Select disabled={discountBlockedByPackage || !!formData.referral_reward_id || sfActive} value={formData.discount_type} onValueChange={v => {
+                                            <Select disabled={discountBlockedByPackage || !!formData.referral_reward_id || !!formData.birthday_reward_year || sfActive} value={formData.discount_type} onValueChange={v => {
                                                 if (v === 'none') setFormData(prev => ({ ...prev, discount_type: 'none', discount_value: 0, discount_label: '' }));
                                                 else handleChange('discount_type', v);
                                             }}>
@@ -1817,7 +1902,7 @@ setFormData({
                                         </div>
                                         <div className="space-y-1">
                                             <Label className="text-xs">Nilai</Label>
-                                            <Input type="number" value={formData.discount_value || ''} onChange={e => handleChange('discount_value', e.target.value)} disabled={discountBlockedByPackage || !!formData.referral_reward_id || sfActive || formData.discount_type === 'none' || !formData.discount_label}/>
+                                            <Input type="number" value={formData.discount_value || ''} onChange={e => handleChange('discount_value', e.target.value)} disabled={discountBlockedByPackage || !!formData.referral_reward_id || !!formData.birthday_reward_year || sfActive || formData.discount_type === 'none' || !formData.discount_label}/>
                                         </div>
                                     </div>
                                 </div>
