@@ -656,6 +656,12 @@ if (isCreate) {
        }
 
        navigate(-1);
+       // Halaman tujuan baru terpasang setelah navigasi; kirim ulang agar status SOAP-nya ikut segar.
+       setTimeout(() => {
+         window.dispatchEvent(new CustomEvent('medical-record-updated', {
+           detail: { patientId: formData.patient_id }
+         }));
+       }, 300);
     } catch (err) {
        toast({ variant: "destructive", title: "Gagal", description: err.message });
     } finally {

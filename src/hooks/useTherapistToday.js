@@ -87,7 +87,25 @@ export const useTherapistToday = (therapistId) => {
   useEffect(() => {
     load();
     const t = setInterval(load, 60000);
-    return () => clearInterval(t);
+    // Setelah SOAP disimpan / tab kembali aktif, muat ulang segera supaya status "SOAP terisi"
+    // langsung tampil tanpa menunggu interval. Muat ulang kedua menutup jeda trigger database.
+    let retry;
+    const refresh = () => {
+      load();
+      clearTimeout(retry);
+      retry = setTimeout(load, 1500);
+    };
+    const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
+    window.addEventListener('medical-record-updated', refresh);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(t);
+      clearTimeout(retry);
+      window.removeEventListener('medical-record-updated', refresh);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [load]);
 
   return { sessions, loading, soapActive, soapLoaded, now, today, reload: load };
