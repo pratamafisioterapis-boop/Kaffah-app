@@ -198,6 +198,15 @@ if (pkg) {
       return;
     }
 
+    if (soapFirstSettings && isHomecare && !homecareTimeType) {
+      toast({
+        variant: "destructive",
+        title: "Waktu Homecare wajib dipilih",
+        description: "Pilih dalam jam kerja atau luar jam kerja."
+      });
+      return;
+    }
+
     // Booking manual tidak diblokir oleh slot — selalu diizinkan
     if (!matchedSlot) {
       setMatchedSlot({
@@ -649,9 +658,9 @@ const handleConfirmRecurring = async () => {
       </div>
       {soapFirstSettings && isHomecare && (
         <div className="space-y-1">
-          <Label className="text-xs">Waktu Homecare <span className="text-slate-400">(opsional, otomatis dari jam appointment)</span></Label>
+          <Label className="text-xs">Waktu Homecare <span className="text-red-500">*</span></Label>
           <Select value={homecareTimeType} onValueChange={setHomecareTimeType}>
-            <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Otomatis" /></SelectTrigger>
+            <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Pilih dalam / luar jam kerja" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="dalam">Dalam jam kerja</SelectItem>
               <SelectItem value="luar">Luar jam kerja</SelectItem>

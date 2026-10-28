@@ -194,6 +194,11 @@ setPackageInfo(pkg);
       return;
     }
 
+    if (soapFirstSettings && formData.is_homecare && !formData.homecare_time_type) {
+      toast({ variant: "destructive", title: "Waktu Homecare wajib dipilih", description: "Pilih dalam jam kerja atau luar jam kerja." });
+      return;
+    }
+
     if (formData.isRecurring) {
         if (!formData.recurringEndDate) {
             toast({ variant: "destructive", title: "Tanggal Akhir Diperlukan" });
@@ -451,9 +456,9 @@ action_by: user?.id,
       </div>
       {soapFirstSettings && formData.is_homecare && (
         <div className="space-y-1">
-          <Label className="text-xs">Waktu Homecare <span className="text-slate-400">(opsional, otomatis dari jam appointment)</span></Label>
+          <Label className="text-xs">Waktu Homecare <span className="text-red-500">*</span></Label>
           <Select value={formData.homecare_time_type} onValueChange={(v) => setFormData(p => ({ ...p, homecare_time_type: v }))}>
-            <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Otomatis" /></SelectTrigger>
+            <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Pilih dalam / luar jam kerja" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="dalam">Dalam jam kerja</SelectItem>
               <SelectItem value="luar">Luar jam kerja</SelectItem>
