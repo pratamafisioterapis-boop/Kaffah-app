@@ -3,3 +3,5 @@
 -- Data lama yang NULL sengaja tidak di-backfill agar bisa ditinjau & diisi manual.
 DROP TRIGGER IF EXISTS aa_appointment_homecare_time ON public.appointments;
 DROP FUNCTION IF EXISTS public.trg_appointment_homecare_time();
+-- Fungsi lama menghitung dari jam buka klinik (salah). "Luar jam kerja" = di luar shift/slot aktif terapis.
+DROP FUNCTION IF EXISTS public.homecare_time_from_date(timestamptz);
