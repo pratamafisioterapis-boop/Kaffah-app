@@ -12,7 +12,7 @@ const FIELDS = [
   { key: 'height', label: 'Tinggi (cm)', ph: '170' },
 ];
 
-const VitalSignsFields = ({ value, onChange }) => {
+const VitalSignsFields = ({ value, onChange, bpRequired = true }) => {
   const set = (k, v) => onChange({ ...value, [k]: v });
   return (
     <div className="rounded-app border border-cyan-200 bg-cyan-50/40 p-3 space-y-3">
@@ -21,7 +21,7 @@ const VitalSignsFields = ({ value, onChange }) => {
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="space-y-1 col-span-2 md:col-span-1">
-          <Label className="text-xs">Tekanan Darah (mmHg) <span className="text-red-500">*</span></Label>
+          <Label className="text-xs">Tekanan Darah (mmHg){bpRequired && <span className="text-red-500"> *</span>}</Label>
           <div className="flex items-center gap-1">
             <Input inputMode="numeric" value={value.systolic} onChange={(e) => set('systolic', e.target.value)} placeholder="120" className="bg-white" />
             <span className="text-slate-400">/</span>

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/customSupabaseClient';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 
 export const EMPTY_VITALS = {
   systolic: '', diastolic: '', pulse: '', spo2: '',
@@ -63,16 +64,23 @@ function validateVitalRanges(v) {
 }
 
 // Mengembalikan pesan kesalahan, atau null bila isian valid.
-export function validateVitals(v) {
-  // Wajib: tekanan darah (sistolik + diastolik), nadi, dan SpO2. Sisanya opsional.
+// Tekanan darah boleh kosong khusus klinik Kaffah Physiotherapy.
+export const isBpRequired = (clinicId) => clinicId !== KAFFAH_CLINIC_ID;
+
+export function validateVitals(v, { clinicId } = {}) {
+  // Wajib: nadi dan SpO2 (+ tekanan darah di luar Kaffah). Sisanya opsional.
+  const bpRequired = isBpRequired(clinicId);
+  const hasSys = toNum(v?.systolic) !== null;
+  const hasDia = toNum(v?.diastolic) !== null;
   const missing = [];
-  if (toNum(v?.systolic) === null || toNum(v?.diastolic) === null) missing.push('tekanan darah (sistolik dan diastolik)');
+  if (bpRequired && (!hasSys || !hasDia)) missing.push('tekanan darah (sistolik dan diastolik)');
   if (toNum(v?.pulse) === null) missing.push('nadi');
   if (toNum(v?.spo2) === null) missing.push('SpO2');
   if (missing.length) return `Wajib diisi: ${missing.join(', ')}.`;
+  if (hasSys !== hasDia) return 'Tekanan darah harus diisi sistolik dan diastolik sekaligus, atau dikosongkan keduanya.';
   const rangeErr = validateVitalRanges(v);
   if (rangeErr) return rangeErr;
-  if (toNum(v.systolic) <= toNum(v.diastolic)) return 'Sistolik harus lebih besar dari diastolik.';
+  if (hasSys && toNum(v.systolic) <= toNum(v.diastolic)) return 'Sistolik harus lebih besar dari diastolik.';
   return null;
 }
 
