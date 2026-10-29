@@ -59,6 +59,10 @@ const describePayload = (o) => {
     const newLine = formatVitalsLine(o.payload?.vitals) || '-';
     return `TTV lama: ${oldLine} → TTV baru: ${newLine}`;
   }
+  if (o.kind === 'package_change') {
+    const oldDisc = o.payload?.old_discount_label ? `, diskon ${o.payload.old_discount_label} dilepas` : '';
+    return `${o.payload?.old_package || '-'} → ${o.payload?.package_label || '-'}: nominal ${formatCurrency(o.payload?.old_amount || 0)} → ${formatCurrency(o.payload?.new_amount || 0)}${oldDisc}. Invoice perlu diterbitkan ulang.`;
+  }
   if (o.kind === 'recovery_outside_package') {
     return o.payload?.outside === false ? 'Kembalikan sesi ke kuota paket' : 'Ambil sebagai Recovery di luar paket (tidak memotong kuota)';
   }
