@@ -71,8 +71,54 @@ const EXT: Record<string, string> = {
   "video/mp4": "mp4",
   "audio/ogg": "ogg",
   "audio/mpeg": "mp3",
+  "audio/mp4": "m4a",
+  "audio/aac": "aac",
   "application/pdf": "pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
 };
+
+/** Media yang sudah diunduh pihak ketiga (mis. CDN Watzap), tanpa token Meta. */
+export type ExternalMedia = { url: string; mime?: string; filename?: string };
+
+// Hanya CDN Watzap yang boleh diunduh dari payload webhook: tanpa batas ini,
+// pemegang token webhook bisa menyuruh server mengambil URL internal (SSRF).
+const MEDIA_HOSTS = [".b-cdn.net", ".watzap.id"];
+const MAX_MEDIA_BYTES = 16 * 1024 * 1024;
+
+async function storeExternalMedia(
+  admin: ReturnType<typeof adminClient>,
+  clinicId: string,
+  mediaId: string,
+  media: ExternalMedia,
+): Promise<{ path: string; mime: string } | null> {
+  try {
+    const u = new URL(media.url);
+    if (u.protocol !== "https:" || !MEDIA_HOSTS.some((h) => u.hostname.endsWith(h))) {
+      console.warn("[inbox] host media tidak diizinkan", u.hostname);
+      return null;
+    }
+    const res = await fetch(u, { redirect: "error" });
+    if (!res.ok) return null;
+    if (Number(res.headers.get("content-length") || 0) > MAX_MEDIA_BYTES) return null;
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    if (bytes.length > MAX_MEDIA_BYTES) return null;
+
+    // Content-Type dari CDN bisa generik (voice note = octet-stream); pakai mime dari payload.
+    const mime = media.mime || res.headers.get("content-type") || "application/octet-stream";
+    const fileExt = media.filename?.match(/\.([A-Za-z0-9]{1,8})$/)?.[1]?.toLowerCase();
+    const ext = EXT[String(mime).split(";")[0].trim()] || fileExt || "bin";
+    const path = `${clinicId}/${mediaId}.${ext}`;
+    const { error } = await admin.storage.from("wa-media").upload(path, bytes, {
+      contentType: String(mime).split(";")[0].trim(),
+      upsert: true,
+    });
+    return error ? null : { path, mime };
+  } catch (e) {
+    console.error("[inbox] media eksternal gagal diunduh", e);
+    return null;
+  }
+}
 
 async function storeMedia(
   admin: ReturnType<typeof adminClient>,
@@ -107,6 +153,7 @@ export async function handleMessage(
   clinicId: string,
   contacts: any[],
   msg: any,
+  externalMedia?: ExternalMedia,
 ) {
   const waId = msg.from as string;
   const profile = (contacts || []).find((c) => c.wa_id === waId)?.profile?.name;
@@ -120,7 +167,13 @@ export async function handleMessage(
 
   let mediaPath: string | null = null;
   let mediaMime: string | null = mime ?? null;
-  if (mediaId) {
+  if (mediaId && externalMedia?.url) {
+    const stored = await storeExternalMedia(admin, clinicId, mediaId, externalMedia);
+    if (stored) {
+      mediaPath = stored.path;
+      mediaMime = stored.mime;
+    }
+  } else if (mediaId) {
     const acc = await loadAccount(admin, clinicId);
     if (acc) {
       const stored = await storeMedia(admin, clinicId, mediaId, acc.token);

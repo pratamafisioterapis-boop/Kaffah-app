@@ -46,8 +46,14 @@ Deno.serve(async (req) => {
     const payload = JSON.parse(raw);
     const v = payload?.data?.root_value;
     if (v && typeof v === "object") {
+      // Watzap sudah mengunduh media dan menaruhnya di CDN-nya (media_info.cdn_url);
+      // tautan Meta di message_raw butuh token yang hanya dipegang Watzap.
+      const mi = payload.data?.media_info;
+      const media = mi?.cdn_url
+        ? { url: String(mi.cdn_url), mime: mi.mime_type, filename: mi.filename }
+        : undefined;
       for (const msg of v.messages || []) {
-        await handleMessage(admin, cfg.clinic_id, v.contacts || [], msg);
+        await handleMessage(admin, cfg.clinic_id, v.contacts || [], msg, media);
       }
       for (const st of v.statuses || []) {
         await handleStatus(admin, st);
