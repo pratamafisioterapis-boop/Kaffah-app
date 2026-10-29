@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import VitalSignsFields from '@/components/admin/VitalSignsFields';
-import { EMPTY_VITALS, insertRecapVitals, validateVitals, vitalsFromRow, vitalsToRow } from '@/lib/recapVitals';
+import { EMPTY_VITALS, insertRecapVitals, isBpRequired, validateVitals, vitalsFromRow, vitalsToRow } from '@/lib/recapVitals';
 import { requestOverride } from '@/lib/soapFirst';
 
 /**
@@ -23,6 +23,7 @@ const RecapVitalsDialog = ({ open, onOpenChange, recap, existing = null, onDone 
   const { toast } = useToast();
   const { userDetails, user } = useAuth();
   const isEdit = !!existing;
+  const bpRequired = isBpRequired(userDetails?.clinic_id);
   const isOwner = ['owner', 'super_admin'].includes(userDetails?.role);
   const [vitals, setVitals] = useState({ ...EMPTY_VITALS });
   const [reason, setReason] = useState('');
@@ -37,7 +38,7 @@ const RecapVitalsDialog = ({ open, onOpenChange, recap, existing = null, onDone 
   }, [open, existing]);
 
   const askConfirm = () => {
-    const err = validateVitals(vitals) || (isEdit && reason.trim().length < 5 ? 'Alasan perubahan wajib diisi (minimal 5 karakter).' : null);
+    const err = validateVitals(vitals, { clinicId: userDetails?.clinic_id }) || (isEdit && reason.trim().length < 5 ? 'Alasan perubahan wajib diisi (minimal 5 karakter).' : null);
     if (err) {
       toast({ variant: 'destructive', title: 'Data belum lengkap', description: err });
       return;
@@ -59,7 +60,7 @@ const RecapVitalsDialog = ({ open, onOpenChange, recap, existing = null, onDone 
         if (error) {
           const friendly = {
             '23505': 'TTV untuk sesi ini sudah pernah diisi. Muat ulang lalu ajukan perubahan.',
-            '23514': 'TTV belum sesuai aturan: tensi, nadi, dan SpO2 wajib diisi, dan nilainya harus wajar (mis. RR 4-80, nadi 20-250, SpO2 50-100).',
+            '23514': `TTV belum sesuai aturan: ${bpRequired ? 'tensi, nadi, dan SpO2' : 'nadi dan SpO2'} wajib diisi, dan nilainya harus wajar (mis. RR 4-80, nadi 20-250, SpO2 50-100).`,
             '22P02': 'Ada nilai TTV yang formatnya tidak valid. Pastikan hanya angka (tensi, nadi, dan RR bilangan bulat).',
           };
           throw new Error(friendly[error.code] || error.message);
@@ -86,7 +87,7 @@ const RecapVitalsDialog = ({ open, onOpenChange, recap, existing = null, onDone 
             <DialogDescription>
               {isEdit
                 ? 'TTV sudah terkunci. Perubahan baru berlaku setelah disetujui owner.'
-                : 'Isi tekanan darah, nadi, SpO2, dan tanda vital lain. Data ini terhubung ke SOAP pasien.'}
+                : (bpRequired ? 'Isi tekanan darah, nadi, SpO2, dan tanda vital lain.' : 'Isi nadi, SpO2, dan tanda vital lain (tekanan darah boleh kosong).') + ' Data ini terhubung ke SOAP pasien.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -99,7 +100,7 @@ const RecapVitalsDialog = ({ open, onOpenChange, recap, existing = null, onDone 
             </p>
           </div>
 
-          <VitalSignsFields value={vitals} onChange={setVitals} />
+          <VitalSignsFields value={vitals} onChange={setVitals} bpRequired={bpRequired} />
 
           {isEdit && (
             <div className="space-y-2">
