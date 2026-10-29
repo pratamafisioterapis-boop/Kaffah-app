@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import {
-  getWaCloudAccount, waSendText, waSendTemplate, waMarkRead,
+  getWaInboxProvider, sendInboxText, markInboxRead, waSendTemplate,
 } from '@/lib/waCloud';
 
 const WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -111,7 +111,7 @@ const TemplateComposer = ({ conv, templates, onSent }) => {
 };
 
 const WhatsAppInboxPage = () => {
-  const [account, setAccount] = useState(undefined); // undefined = memuat, null = belum terhubung
+  const [provider, setProvider] = useState(undefined); // undefined = memuat, null = tidak aktif
   const [convs, setConvs] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -142,11 +142,16 @@ const WhatsAppInboxPage = () => {
   }, []);
 
   useEffect(() => {
-    getWaCloudAccount().then(setAccount).catch(() => setAccount(null));
+    getWaInboxProvider().then(setProvider);
     loadConvs();
+  }, [loadConvs]);
+
+  // Template Meta hanya relevan untuk provider Cloud API langsung.
+  useEffect(() => {
+    if (provider !== 'cloud') return;
     supabase.from('wa_meta_templates').select('name, language, components')
       .eq('status', 'APPROVED').then(({ data }) => setTemplates(data || []));
-  }, [loadConvs]);
+  }, [provider]);
 
   // Realtime: pesan baru / status berubah muncul tanpa refresh. RLS tetap berlaku.
   useEffect(() => {
@@ -164,8 +169,8 @@ const WhatsAppInboxPage = () => {
   useEffect(() => {
     if (!activeId) return;
     loadMessages(activeId);
-    waMarkRead(activeId).catch(() => {});
-  }, [activeId, loadMessages]);
+    markInboxRead(provider, activeId).catch(() => {});
+  }, [activeId, loadMessages, provider]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ block: 'end' }); }, [messages.length, activeId]);
 
@@ -183,7 +188,7 @@ const WhatsAppInboxPage = () => {
     if (!body || !active) return;
     setSending(true);
     try {
-      await waSendText(active.wa_id, body);
+      await sendInboxText(provider, active.wa_id, body);
       setDraft('');
     } catch (e) {
       toast({ title: 'Gagal mengirim', description: e.message, variant: 'destructive' });
@@ -192,17 +197,16 @@ const WhatsAppInboxPage = () => {
     }
   };
 
-  if (account === undefined) {
+  if (provider === undefined) {
     return <div className="p-8 text-slate-500 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Memuat…</div>;
   }
 
-  if (!account) {
+  if (!provider) {
     return (
       <div className="p-8 max-w-xl">
         <h1 className="text-xl font-bold text-slate-800 mb-2">WhatsApp Inbox</h1>
         <p className="text-slate-600 text-sm">
-          WhatsApp Cloud API belum dihubungkan. Owner dapat menghubungkannya di
-          Pengaturan → WhatsApp → Cloud API.
+          Inbox WhatsApp belum diaktifkan untuk klinik ini.
         </p>
       </div>
     );
@@ -297,6 +301,11 @@ const WhatsAppInboxPage = () => {
                       {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     </Button>
                   </div>
+                ) : provider === 'watzap' ? (
+                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                    Lebih dari 24 jam sejak pasien membalas, WhatsApp hanya mengizinkan <b>template yang disetujui</b>.
+                    Kirim template lewat menu Follow Up; balasan bebas bisa lagi setelah pasien membalas.
+                  </p>
                 ) : (
                   <TemplateComposer conv={active} templates={templates} onSent={() => loadMessages(active.id)} />
                 )}

@@ -1,11 +1,10 @@
 import { supabase } from '@/lib/customSupabaseClient';
+import { getCachedClinicId } from '@/lib/api';
 
 // Semua aksi WhatsApp Cloud API lewat Edge Function `wa-cloud`. Token Meta
 // tidak pernah sampai ke browser; fungsi ini hanya membawa JWT user.
-const call = async (action, params = {}) => {
-  const { data, error } = await supabase.functions.invoke('wa-cloud', {
-    body: { action, ...params },
-  });
+const invoke = async (fn, body) => {
+  const { data, error } = await supabase.functions.invoke(fn, { body });
 
   // functions.invoke melempar FunctionsHttpError untuk status non-2xx dan
   // menyembunyikan pesan aslinya di error.context; ambil supaya pengguna
@@ -21,6 +20,8 @@ const call = async (action, params = {}) => {
   if (!data?.success) throw new Error(data?.error || 'Permintaan gagal');
   return data.data;
 };
+
+const call = (action, params = {}) => invoke('wa-cloud', { action, ...params });
 
 export const waSaveAccount = (p) => call('account_save', p);
 export const waAccountStatus = () => call('account_status');
@@ -63,4 +64,39 @@ export const isWaCloudActive = async () => {
   } catch (_) {
     return false;
   }
+};
+
+// ───────────── Inbox: Watzap atau Cloud API langsung ─────────────
+// Provider inbox per klinik: 'watzap' bila wa_settings.inbox_enabled, 'cloud'
+// bila Cloud API Meta terhubung (dan flag build aktif), selain itu null.
+export const getWaInboxProvider = async () => {
+  try {
+    const { data: sess } = await supabase.auth.getSession();
+    const userId = sess?.session?.user?.id;
+    if (!userId) return null;
+    const clinicId = await getCachedClinicId(userId);
+    if (!clinicId) return null;
+    const { data } = await supabase
+      .from('wa_settings')
+      .select('inbox_enabled')
+      .eq('clinic_id', clinicId)
+      .maybeSingle();
+    if (data?.inbox_enabled) return 'watzap';
+    if (WA_CLOUD_ENABLED && (await getWaCloudAccount())) return 'cloud';
+  } catch (_) { /* tanpa inbox */ }
+  return null;
+};
+
+export const sendInboxText = (provider, to, body) =>
+  provider === 'watzap'
+    ? invoke('wa-watzap-send', { to, body })
+    : waSendText(to, body);
+
+export const markInboxRead = async (provider, conversationId) => {
+  if (provider === 'watzap') {
+    // Hanya mereset penghitung lokal; tidak ada "centang biru" lewat Watzap.
+    await supabase.from('wa_conversations').update({ unread_count: 0 }).eq('id', conversationId);
+    return;
+  }
+  await waMarkRead(conversationId);
 };

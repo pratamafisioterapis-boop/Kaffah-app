@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { WA_CLOUD_ENABLED } from '@/lib/waCloud';
+import { getWaInboxProvider } from '@/lib/waCloud';
 import { supabase } from '@/lib/customSupabaseClient';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -146,6 +146,14 @@ useEffect(() => {
   const [scrolled, setScrolled] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({});
   const [menuSearchQuery, setMenuSearchQuery] = useState('');
+  // Menu WhatsApp Inbox hanya untuk klinik yang inbox-nya diaktifkan (mis. Kaffah).
+  const [waInboxOn, setWaInboxOn] = useState(false);
+  useEffect(() => {
+    if (!['owner', 'admin'].includes(role)) return;
+    let alive = true;
+    getWaInboxProvider().then((p) => { if (alive) setWaInboxOn(!!p); });
+    return () => { alive = false; };
+  }, [role, userDetails?.clinic_id]);
 const isPWA =
   window.matchMedia('(display-mode: standalone)').matches ||
   window.navigator.standalone === true;
@@ -193,7 +201,7 @@ const isPWA =
          }
 
          const inboxPath = role === 'owner' ? '/owner/wa-inbox' : '/admin/wa-inbox';
-         if (WA_CLOUD_ENABLED && !hasPath(inboxPath)) {
+         if (waInboxOn && !hasPath(inboxPath)) {
             newItems.push({ label: 'WhatsApp Inbox', path: inboxPath, icon: 'MessageSquare' });
          }
 
@@ -259,7 +267,7 @@ const isPWA =
         return isNavItemDisabled(item.label, role, disabledFeatures) ? null : item;
       })
       .filter(Boolean);
-  }, [navItems, role, clinicInfo, clinicFeaturesLoaded, userDetails?.clinic_id]);
+  }, [navItems, role, clinicInfo, clinicFeaturesLoaded, userDetails?.clinic_id, waInboxOn]);
 
   const displayedNavItems = useMemo(() => {
     if (role !== 'owner' || !menuSearchQuery.trim()) return finalNavItems;
