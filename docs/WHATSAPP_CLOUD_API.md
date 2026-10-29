@@ -39,8 +39,9 @@ hanya Edge Function yang bisa membaca; browser tidak pernah menerimanya.
    `wa-webhook` wajib `--no-verify-jwt` karena Meta tidak mengirim JWT Supabase;
    keamanannya dijaga oleh verifikasi `X-Hub-Signature-256`.
 5. **Webhook di Meta**: Callback URL `https://<project>.supabase.co/functions/v1/wa-webhook`,
-   Verify Token = `META_WEBHOOK_VERIFY_TOKEN`; subscribe `messages` dan
-   `message_template_status_update`.
+   Verify Token = `META_WEBHOOK_VERIFY_TOKEN`; subscribe `messages`,
+   `message_template_status_update`, dan untuk coexistence `smb_message_echoes`,
+   `history`, `smb_app_state_sync`.
 6. **Aplikasi**: Pengaturan → WhatsApp → Cloud API → isi WABA ID, Phone Number
    ID, Access Token → Hubungkan. Lalu tab Template → Sinkronkan dari Meta.
 
@@ -60,3 +61,24 @@ Pengingat otomatis dari `follow_up_queue` masih berupa teks bebas. Lewat Cloud
 API, teks bebas hanya terkirim bila pasien sedang dalam jendela 24 jam; selain
 itu butuh template + pemetaan variabel per jenis follow-up. Fungsi SQL pengirim
 lama (`net.http_post` ke Watzap) tidak diubah dan cron-nya tetap nonaktif.
+
+## Coexistence (nomor yang tetap dipakai di aplikasi WhatsApp Business)
+
+Webhook sudah menangani tiga event tambahan:
+
+| Field | Isi | Perilaku |
+|---|---|---|
+| `smb_message_echoes` | Balasan yang diketik dari aplikasi di HP | Masuk inbox sebagai pesan keluar |
+| `history` | Riwayat chat hingga 180 hari, sekali saat onboarding | Diimpor tanpa duplikat; media tidak diunduh |
+| `smb_app_state_sync` | Kontak dari buku kontak aplikasi | Mengisi nama pada percakapan yang sudah ada |
+
+Syarat dari Meta (sumber pihak ketiga, **konfirmasikan di dokumentasi resmi Meta**):
+
+- Onboarding **hanya lewat Embedded Signup** dengan `featureType = whatsapp_business_app_onboarding`,
+  oleh Tech Provider / Solution Partner. Token manual dari System User saja **tidak** cukup untuk
+  memulai coexistence. Panel Koneksi di aplikasi hanya menyimpan kredensial setelah onboarding itu ada.
+- Nomor harus sudah aktif di aplikasi WhatsApp Business (v2.24.17+) minimal 7 hari.
+- WABA yang dibuat lewat aplikasi developer tidak bisa di-onboard sebagai coexistence.
+- Aplikasi di HP harus dibuka sekitar tiap 13 hari agar koneksi tidak putus.
+- Batas 20 pesan/detik per nomor; riwayat dan kontak hanya sinkron sekali (ulang = offboard lalu onboard).
+- Pesan dari perangkat tertaut yang tidak didukung tidak memicu `smb_message_echoes`.

@@ -134,7 +134,7 @@ const ConnectionTab = () => {
         </div>
         <p className="text-xs text-slate-500">
           Meta App → WhatsApp → Configuration → Webhook. Isi Callback URL di atas dan Verify Token sesuai secret
-          <code> META_WEBHOOK_VERIFY_TOKEN</code>, lalu subscribe field <code>messages</code> dan <code>message_template_status_update</code>.
+          <code> META_WEBHOOK_VERIFY_TOKEN</code>, lalu subscribe field <code>messages</code>, <code>message_template_status_update</code>, dan untuk coexistence juga <code>smb_message_echoes</code>, <code>history</code>, <code>smb_app_state_sync</code>.
         </p>
       </div>
     </div>
