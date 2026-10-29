@@ -51,7 +51,12 @@ export const getWaCloudAccount = async () => {
 };
 
 // true bila klinik ini sudah menyambungkan Cloud API dan aktif.
+// Cloud API dimatikan secara default: Watzap adalah jalur satu-satunya sampai
+// migrasi wa_cloud_api diterapkan dan VITE_WA_CLOUD_ENABLED=true diset.
+export const WA_CLOUD_ENABLED = import.meta.env.VITE_WA_CLOUD_ENABLED === 'true';
+
 export const isWaCloudActive = async () => {
+  if (!WA_CLOUD_ENABLED) return false;
   try {
     const acc = await getWaCloudAccount();
     return !!acc?.enabled;

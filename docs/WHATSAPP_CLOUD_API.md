@@ -4,6 +4,10 @@ Koneksi resmi ke Meta tanpa vendor perantara (Watzap dsb.). Mencakup kirim
 pesan + status, inbox pesan masuk (termasuk nomor baru), manajemen template,
 dan broadcast.
 
+> **Status: nonaktif.** Watzap adalah jalur satu-satunya. Kode ini baru hidup bila
+> migrasi `20261029000000_wa_cloud_api.sql` diterapkan **dan** `VITE_WA_CLOUD_ENABLED=true`
+> diset saat build. Tanpa itu, panel, menu Inbox, dan pengalihan pengirim tidak aktif.
+
 ## Arsitektur
 
 | Bagian | Lokasi |

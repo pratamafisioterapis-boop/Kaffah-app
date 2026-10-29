@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { WA_CLOUD_ENABLED } from '@/lib/waCloud';
 import { supabase } from '@/lib/customSupabaseClient';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -192,7 +193,7 @@ const isPWA =
          }
 
          const inboxPath = role === 'owner' ? '/owner/wa-inbox' : '/admin/wa-inbox';
-         if (!hasPath(inboxPath)) {
+         if (WA_CLOUD_ENABLED && !hasPath(inboxPath)) {
             newItems.push({ label: 'WhatsApp Inbox', path: inboxPath, icon: 'MessageSquare' });
          }
 
