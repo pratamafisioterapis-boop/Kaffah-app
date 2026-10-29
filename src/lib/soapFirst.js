@@ -15,6 +15,7 @@ export const OVERRIDE_KIND_LABELS = {
   recovery_outside_package: 'Recovery di luar paket',
   discount_adjust: 'Ubah diskon (invoice terbit)',
   recap_delete: 'Hapus recap & appointment (invoice terbit)',
+  package_change: 'Ubah paket (invoice terbit)',
 };
 
 export const OVERRIDE_STATUS_LABELS = {
@@ -66,6 +67,13 @@ export const fetchRecapQuote = async (recapId, packageLabel = null) => {
 export const requestOverride = async ({ kind, recapId = null, packageId = null, reason, payload = {} }) => {
   if (kind === 'recap_delete') {
     const { data, error } = await supabase.rpc('request_invoiced_recap_delete', { p_recap_id: recapId, p_reason: reason });
+    if (error) throw error;
+    return data;
+  }
+  if (kind === 'package_change') {
+    const { data, error } = await supabase.rpc('request_invoiced_package_change', {
+      p_recap_id: recapId, p_package_label: payload?.package_label, p_reason: reason,
+    });
     if (error) throw error;
     return data;
   }

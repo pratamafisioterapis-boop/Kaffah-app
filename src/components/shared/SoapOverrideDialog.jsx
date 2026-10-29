@@ -14,7 +14,7 @@ import { OVERRIDE_KIND_LABELS, requestOverride } from '@/lib/soapFirst';
  * Dialog pengajuan pengecualian (override) dengan alasan wajib.
  * Admin mengajukan -> owner menyetujui. Bila pemohon adalah owner, langsung disetujui.
  */
-const SoapOverrideDialog = ({ open, onOpenChange, kind, recapId = null, packageId = null, payload = {}, description, withAmount = false, withDiscount = false, discountOptions = [], onDone }) => {
+const SoapOverrideDialog = ({ open, onOpenChange, kind, recapId = null, packageId = null, payload = {}, description, withAmount = false, withDiscount = false, discountOptions = [], withPackage = false, packageOptions = [], onDone }) => {
   const { toast } = useToast();
   const { userDetails } = useAuth();
   const [reason, setReason] = useState('');
@@ -22,10 +22,11 @@ const SoapOverrideDialog = ({ open, onOpenChange, kind, recapId = null, packageI
   const [discLabel, setDiscLabel] = useState('');
   const [discType, setDiscType] = useState('nominal');
   const [discValue, setDiscValue] = useState('');
+  const [pkgLabel, setPkgLabel] = useState('');
   const [saving, setSaving] = useState(false);
   const isOwner = ['owner', 'super_admin'].includes(userDetails?.role);
 
-  useEffect(() => { if (open) { setReason(''); setAmount(''); setDiscLabel(''); setDiscType('nominal'); setDiscValue(''); } }, [open]);
+  useEffect(() => { if (open) { setReason(''); setAmount(''); setDiscLabel(''); setDiscType('nominal'); setDiscValue(''); setPkgLabel(''); } }, [open]);
 
   const pickDiscount = (label) => {
     setDiscLabel(label);
@@ -47,6 +48,10 @@ const SoapOverrideDialog = ({ open, onOpenChange, kind, recapId = null, packageI
       toast({ variant: 'destructive', title: 'Nominal wajib diisi', description: 'Isi nominal baru yang benar.' });
       return;
     }
+    if (withPackage && !pkgLabel) {
+      toast({ variant: 'destructive', title: 'Paket belum dipilih', description: 'Pilih paket yang diambil pasien.' });
+      return;
+    }
     if (withDiscount) {
       const v = Number(discValue);
       if (!discLabel || !(v > 0) || (discType === 'percentage' && v > 100)) {
@@ -58,7 +63,9 @@ const SoapOverrideDialog = ({ open, onOpenChange, kind, recapId = null, packageI
     try {
       const extra = withAmount
         ? { ...payload, amount: Number(amount) }
-        : withDiscount
+        : withPackage
+          ? { ...payload, package_label: pkgLabel }
+          : withDiscount
           ? { ...payload, discount_label: discLabel, discount_type: discType, discount_value: Number(discValue) }
           : payload;
       await requestOverride({ kind, recapId, packageId, reason: reason.trim(), payload: extra });
@@ -86,6 +93,17 @@ const SoapOverrideDialog = ({ open, onOpenChange, kind, recapId = null, packageI
           <div className="space-y-2">
             <Label>Nominal baru (Rp) <span className="text-red-500">*</span></Label>
             <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" />
+          </div>
+        )}
+        {withPackage && (
+          <div className="space-y-2">
+            <Label>Paket baru <span className="text-red-500">*</span></Label>
+            <Select value={pkgLabel} onValueChange={setPkgLabel}>
+              <SelectTrigger><SelectValue placeholder="Pilih paket" /></SelectTrigger>
+              <SelectContent>
+                {packageOptions.map((o) => <SelectItem key={o.value || o.label} value={o.label}>{o.label} ({o.session_count} sesi)</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
         )}
         {withDiscount && (

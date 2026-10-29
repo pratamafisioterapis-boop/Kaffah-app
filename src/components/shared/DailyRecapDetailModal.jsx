@@ -18,7 +18,8 @@ import { isSoapFirstActiveOn, ttvRequiredFor } from '@/lib/soapFirst';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { 
     getAllRecapOptions,
-    getDiscountTypeOptions
+    getDiscountTypeOptions,
+    getPackageOptions
 } from '@/lib/api';
 
 const DetailItem = ({ icon: Icon, label, value, className = "", valueClassName = "" }) => (
@@ -71,6 +72,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
     const { quote, refresh: refreshQuote } = useRecapQuote(recap?.id, null, canRequestChange);
     const [overrideDialog, setOverrideDialog] = useState(null);
     const [discountOptions, setDiscountOptions] = useState([]);
+    const [packageOptions, setPackageOptions] = useState([]);
     const openOverride = async (cfg) => {
         if (cfg.withDiscount && discountOptions.length === 0) {
             try {
@@ -79,9 +81,18 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                 setDiscountOptions(Array.isArray(list) ? list.filter(o => !o.is_referral_reward) : []);
             } catch (e) { console.error('Gagal memuat jenis diskon', e); }
         }
+        if (cfg.withPackage && packageOptions.length === 0) {
+            try {
+                const res = await getPackageOptions('');
+                const list = res?.data || res;
+                setPackageOptions(Array.isArray(list) ? list.filter(o => Number(o.session_count) > 1) : []);
+            } catch (e) { console.error('Gagal memuat paket', e); }
+        }
         setOverrideDialog({ recapId: recap.id, ...cfg });
     };
     const invoiceLocked = !!quote?.invoice_locked;
+    // Ubah paket (REGULER -> paket) setelah invoice terbit; hanya sesi yang belum tertaut paket.
+    const showPackageChange = invoiceLocked && !recap?.package_tracking_id && recap?.special_type !== 'free';
     const showDiscountRequest = invoiceLocked || !!quote?.homecare;
 
     const loadVitals = React.useCallback(async () => {
@@ -428,6 +439,11 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                                             Pengajuan perubahan diskon
                                         </DropdownMenuItem>
                                     )}
+                                    {showPackageChange && (
+                                        <DropdownMenuItem onSelect={() => openOverride({ kind: 'package_change', withPackage: true, description: 'Invoice sudah terbit. Pilih paket yang diambil pasien. Setelah disetujui owner, diskon/reward dilepas (paket tidak boleh diskon), nominal dihitung ulang dari harga paket, dan paket pasien dibuat. Invoice perlu diterbitkan ulang.' })}>
+                                            Pengajuan ubah paket
+                                        </DropdownMenuItem>
+                                    )}
                                     {!quote?.soap_done && quote?.needs_soap && !invoiceLocked && (
                                         <DropdownMenuItem onSelect={() => openOverride({ kind: 'payment_unlock', description: 'Buka kunci pembayaran tanpa menunggu SOAP (mis. terapis berhalangan). Berlaku setelah disetujui owner.' })}>
                                             Pengajuan buka kunci pembayaran
@@ -457,6 +473,8 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                 withAmount={!!overrideDialog?.withAmount}
                 withDiscount={!!overrideDialog?.withDiscount}
                 discountOptions={discountOptions}
+                withPackage={!!overrideDialog?.withPackage}
+                packageOptions={packageOptions}
                 onDone={() => { if (overrideDialog?.isDelete) { if (onDelete) onDelete(); onClose(); } else { refreshQuote(); } }}
             />
             <RecapSoapPreviewDialog
