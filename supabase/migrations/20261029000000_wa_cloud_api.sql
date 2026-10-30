@@ -158,6 +158,7 @@ CREATE POLICY clinic_isolated_wa_conversations ON public.wa_conversations
     get_my_role() = 'super_admin'
     OR (get_my_role() IN ('owner', 'admin') AND clinic_id = get_my_clinic_id())
   );
+DROP POLICY IF EXISTS clinic_update_wa_conversations ON public.wa_conversations;
 CREATE POLICY clinic_update_wa_conversations ON public.wa_conversations
   FOR UPDATE
   USING (get_my_role() IN ('owner', 'admin') AND clinic_id = get_my_clinic_id())
@@ -198,7 +199,7 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
   -- service role / postgres (Edge Function) bebas mengubah apa pun.
-  IF auth.role() <> 'authenticated' THEN
+  IF coalesce(auth.role(), '') <> 'authenticated' THEN
     RETURN NEW;
   END IF;
   IF NEW.clinic_id IS DISTINCT FROM OLD.clinic_id
@@ -210,6 +211,7 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+-- (idempoten: aman bila sudah dibuat lewat supabase/manual/11_inbox_whatsapp_watzap.sql)
 DROP TRIGGER IF EXISTS trg_wa_conversations_staff_update_guard ON public.wa_conversations;
 CREATE TRIGGER trg_wa_conversations_staff_update_guard
   BEFORE UPDATE ON public.wa_conversations
