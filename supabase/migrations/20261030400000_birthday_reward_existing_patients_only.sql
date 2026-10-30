@@ -5,10 +5,9 @@
 -- "Birthday reward". Padahal promo ini apresiasi untuk pasien yang sudah jadi
 -- pasien klinik sebelum ulang tahunnya.
 --
--- Aturan baru: pasien berhak hanya bila sudah punya rekap (kunjungan) SEBELUM
--- awal masa promo (tanggal ulang tahun). Pasien yang kunjungan pertamanya
--- terjadi pada/sesudah tanggal ulang tahun tidak berhak, termasuk di tahun
--- berikutnya bila ulang tahunnya sudah lewat sebelum ia pernah berobat.
+-- Aturan baru: pasien berhak bila (a) sudah punya rekap (kunjungan) pada/sebelum
+-- tanggal ulang tahun, atau (b) berobat tepat di hari H ulang tahunnya.
+-- Pasien baru yang kunjungan pertamanya SESUDAH tanggal ulang tahun tidak berhak.
 --
 -- Pengecekan ada di birthday_reward_status, sehingga berlaku untuk kartu di
 -- UI sekaligus trigger validasi di daily_recaps (tidak bisa ditembus lewat API).
@@ -73,12 +72,13 @@ BEGIN
     RETURN jsonb_build_object('eligible', false, 'hidden', true);
   END IF;
 
-  -- Pasien baru (belum pernah berobat sebelum ulang tahunnya) tidak berhak.
-  IF NOT EXISTS (
+  -- Pasien baru yang belum pernah berobat sampai hari ulang tahunnya tidak
+  -- berhak, kecuali berobat tepat di hari H.
+  IF p_recap_date <> v_start AND NOT EXISTS (
     SELECT 1
     FROM daily_recaps r
     WHERE r.patient_id = p_patient_id
-      AND r.recap_date < v_start
+      AND r.recap_date <= v_start
       AND r.id IS DISTINCT FROM p_recap_id
   ) THEN
     RETURN jsonb_build_object('eligible', false, 'hidden', true);
