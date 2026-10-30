@@ -20,9 +20,14 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
+  const t0 = performance.now();
+  const laps: string[] = [];
+  const lap = (name: string) => laps.push(`${name}=${Math.round(performance.now() - t0)}ms`);
+
   const admin = adminClient();
   try {
     const caller = await getCaller(req, admin);
+    lap("auth");
     if (!caller) return json({ success: false, error: "Tidak terautentikasi" }, 401);
     if (!STAFF.includes(caller.role) || !caller.clinicId) {
       return json({ success: false, error: "Tidak punya akses" }, 403);
@@ -38,11 +43,13 @@ Deno.serve(async (req) => {
     const { data: wa } = await admin.from("wa_settings")
       .select("api_key, number_key, enabled, inbox_enabled")
       .eq("clinic_id", caller.clinicId).maybeSingle();
+    lap("settings");
     if (!wa?.inbox_enabled || !wa.enabled || !wa.api_key || !wa.number_key || wa.number_key === "ALL") {
       return json({ success: false, error: "Inbox WhatsApp belum diaktifkan untuk klinik ini." }, 412);
     }
 
     const conv = await ensureConversation(admin, caller.clinicId, to);
+    lap("conversation");
     if (!windowOpen(conv.last_inbound_at)) {
       return json({
         success: false,
@@ -61,6 +68,7 @@ Deno.serve(async (req) => {
       }),
     });
     const text = await res.text();
+    lap("watzap");
     let out: any = {};
     try { out = JSON.parse(text); } catch { /* biarkan kosong */ }
 
@@ -88,16 +96,21 @@ Deno.serve(async (req) => {
       return json({ success: false, error: `Watzap menolak: ${reason}` }, 502);
     }
 
-    await admin.from("wa_inbox_messages").insert({
-      ...row,
-      wa_message_id: out?.wamid ?? null,
-      status: "sent",
-      status_at: now,
-    });
-    await admin.from("wa_inbox_conversations").update({
-      last_message_at: now,
-      last_preview: body.slice(0, 120),
-    }).eq("id", conv.id);
+    // Dua penulisan ini tidak saling bergantung: jalankan bersamaan.
+    await Promise.all([
+      admin.from("wa_inbox_messages").insert({
+        ...row,
+        wa_message_id: out?.wamid ?? null,
+        status: "sent",
+        status_at: now,
+      }),
+      admin.from("wa_inbox_conversations").update({
+        last_message_at: now,
+        last_preview: body.slice(0, 120),
+      }).eq("id", conv.id),
+    ]);
+    lap("db");
+    console.log(`[wa-watzap-send] timing ${laps.join(" ")}`);
 
     return json({ success: true, data: { wa_message_id: out?.wamid ?? null, conversation_id: conv.id } });
   } catch (e) {
