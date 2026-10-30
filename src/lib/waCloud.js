@@ -103,7 +103,8 @@ export const markInboxRead = async (provider, conversationId) => {
 
 // Menarik status terbaru (terkirim → sampai → dibaca) pesan keluar satu percakapan dari Watzap.
 // Untuk provider Cloud API langsung, status datang lewat webhook sehingga tidak perlu ditarik.
-export const refreshInboxStatuses = async (provider, conversationId) => {
-  if (provider !== 'watzap') return { checked: 0, updated: 0 };
-  return invoke('wa-watzap-status', { conversation_id: conversationId });
+// `limit` = jumlah pesan terbaru yang dicek (server membatasi maks 15; bawaan 3 untuk polling).
+export const refreshInboxStatuses = async (provider, conversationId, limit) => {
+  if (provider !== 'watzap') return { checked: 0, updated: 0, rate_limited: false };
+  return invoke('wa-watzap-status', { conversation_id: conversationId, ...(limit ? { limit } : {}) });
 };
