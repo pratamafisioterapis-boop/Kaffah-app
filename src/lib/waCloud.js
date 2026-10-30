@@ -100,3 +100,10 @@ export const markInboxRead = async (provider, conversationId) => {
   }
   await waMarkRead(conversationId);
 };
+
+// Menarik status terbaru (terkirim → sampai → dibaca) pesan keluar satu percakapan dari Watzap.
+// Untuk provider Cloud API langsung, status datang lewat webhook sehingga tidak perlu ditarik.
+export const refreshInboxStatuses = async (provider, conversationId) => {
+  if (provider !== 'watzap') return { checked: 0, updated: 0 };
+  return invoke('wa-watzap-status', { conversation_id: conversationId });
+};
