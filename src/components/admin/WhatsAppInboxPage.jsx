@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
-import { Send, Search, MessageCircle, Check, CheckCheck, AlertCircle, Clock, UserCheck, FileText, Loader2 } from 'lucide-react';
+import { Send, Search, MessageCircle, Check, CheckCheck, AlertCircle, Clock, UserCheck, FileText, Loader2, Download, ExternalLink, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import {
@@ -32,26 +33,108 @@ const StatusIcon = ({ status }) => {
   return <Clock className="w-3.5 h-3.5 text-slate-300" />;
 };
 
+const BUCKET = 'wa-media';
+
+// Nama file saat diunduh: nama asli untuk dokumen, selain itu dari jenis + ID media.
+const downloadName = (msg) => {
+  const ext = (msg.media_path || '').split('.').pop() || 'bin';
+  if (msg.msg_type === 'document') {
+    const m = /^\u{1F4C4}\s*(.+)$/u.exec((msg.body || '').split('\n')[0]);
+    if (m?.[1]) return m[1];
+  }
+  const kind = { image: 'gambar', audio: 'audio', video: 'video', document: 'dokumen' }[msg.msg_type] || 'berkas';
+  return `${kind}-${(msg.media_id || msg.id || '').toString().slice(-8)}.${ext}`;
+};
+
 const Media = ({ msg }) => {
   const [url, setUrl] = useState(null);
+  const [open, setOpen] = useState(false);
   useEffect(() => {
     let alive = true;
     if (!msg.media_path) return undefined;
-    supabase.storage.from('wa-media').createSignedUrl(msg.media_path, 3600).then(({ data }) => {
+    supabase.storage.from(BUCKET).createSignedUrl(msg.media_path, 3600).then(({ data }) => {
       if (alive) setUrl(data?.signedUrl || null);
     });
     return () => { alive = false; };
   }, [msg.media_path]);
 
+  // Tautan bertanda "download" membuat server mengirim Content-Disposition: attachment,
+  // jadi file benar-benar tersimpan (bukan sekadar terbuka di tab) dan tetap jalan di PWA.
+  const download = async () => {
+    const { data, error } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUrl(msg.media_path, 120, { download: downloadName(msg) });
+    if (error || !data?.signedUrl) {
+      toast({ title: 'Gagal mengunduh', description: error?.message || 'Tautan tidak tersedia', variant: 'destructive' });
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = data.signedUrl;
+    a.rel = 'noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
   if (!msg.media_path || !url) return null;
   const mime = msg.media_mime || '';
-  if (mime.startsWith('image/')) return <img src={url} alt="" className="rounded-lg max-h-64 mb-1" />;
-  if (mime.startsWith('audio/')) return <audio controls src={url} className="mb-1 max-w-full" />;
-  if (mime.startsWith('video/')) return <video controls src={url} className="rounded-lg max-h-64 mb-1" />;
+
+  if (mime.startsWith('image/')) {
+    return (
+      <>
+        <button type="button" onClick={() => setOpen(true)} className="block mb-1 cursor-zoom-in" aria-label="Perbesar gambar">
+          <img src={url} alt="Gambar dari pasien" className="rounded-lg max-h-64 max-w-full" loading="lazy" />
+        </button>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="max-w-3xl w-[95vw] p-3 sm:p-4">
+            <DialogHeader>
+              <DialogTitle className="text-base">Gambar</DialogTitle>
+              <DialogDescription className="sr-only">Pratinjau gambar dari pasien</DialogDescription>
+            </DialogHeader>
+            <div className="flex items-center justify-center bg-slate-100 rounded-lg overflow-auto max-h-[70vh]">
+              <img src={url} alt="Gambar dari pasien" className="max-h-[70vh] w-auto object-contain" />
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <a href={url} target="_blank" rel="noreferrer"><ExternalLink className="w-4 h-4 mr-1.5" /> Buka di tab baru</a>
+              </Button>
+              <Button size="sm" onClick={download}><Download className="w-4 h-4 mr-1.5" /> Unduh</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
+  const DownloadBtn = (
+    <button type="button" onClick={download} className="inline-flex items-center gap-1 text-xs text-sky-700 hover:underline" aria-label="Unduh berkas">
+      <Download className="w-3.5 h-3.5" /> Unduh
+    </button>
+  );
+
+  if (mime.startsWith('audio/')) {
+    return (
+      <div className="mb-1">
+        <audio controls src={url} className="max-w-full" />
+        <div className="mt-0.5">{DownloadBtn}</div>
+      </div>
+    );
+  }
+  if (mime.startsWith('video/')) {
+    return (
+      <div className="mb-1">
+        <video controls src={url} className="rounded-lg max-h-64" />
+        <div className="mt-0.5">{DownloadBtn}</div>
+      </div>
+    );
+  }
   return (
-    <a href={url} target="_blank" rel="noreferrer" className="text-sky-600 underline text-xs flex items-center gap-1 mb-1">
-      <FileText className="w-3 h-3" /> Buka berkas
-    </a>
+    <div className="flex items-center gap-3 mb-1">
+      <a href={url} target="_blank" rel="noreferrer" className="text-sky-600 underline text-xs flex items-center gap-1">
+        <FileText className="w-3 h-3" /> Buka berkas
+      </a>
+      {DownloadBtn}
+    </div>
   );
 };
 
@@ -118,7 +201,7 @@ const WhatsAppInboxPage = () => {
   const [templates, setTemplates] = useState([]);
   const [search, setSearch] = useState('');
   const [draft, setDraft] = useState('');
-  const [sending, setSending] = useState(false);
+  const [pending, setPending] = useState([]); // pesan yang sedang/gagal dikirim (tampil langsung)
   const bottomRef = useRef(null);
   const activeIdRef = useRef(null);
   activeIdRef.current = activeId;
@@ -172,7 +255,7 @@ const WhatsAppInboxPage = () => {
     markInboxRead(provider, activeId).catch(() => {});
   }, [activeId, loadMessages, provider]);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ block: 'end' }); }, [messages.length, activeId]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ block: 'end' }); }, [messages.length, pending.length, activeId]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -183,19 +266,37 @@ const WhatsAppInboxPage = () => {
       || c.wa_id.includes(q.replace(/\D/g, '') || '§'));
   }, [convs, search]);
 
-  const sendText = async () => {
-    const body = draft.trim();
-    if (!body || !active) return;
-    setSending(true);
+  // Pesan langsung tampil sebagai "Mengirim…" dan kolom ketik dikosongkan, tanpa
+  // menunggu server (kirim lewat Watzap bisa beberapa detik). Setelah sukses, pesan
+  // asli dimuat ulang lalu bubble sementara dibuang; bila gagal, bubble menampilkan
+  // alasannya dengan tombol kirim ulang.
+  const deliver = async (tempId, conversationId, to, body) => {
     try {
-      await sendInboxText(provider, active.wa_id, body);
-      setDraft('');
+      await sendInboxText(provider, to, body);
+      await loadMessages(conversationId);
+      setPending((list) => list.filter((p) => p.tempId !== tempId));
     } catch (e) {
-      toast({ title: 'Gagal mengirim', description: e.message, variant: 'destructive' });
-    } finally {
-      setSending(false);
+      setPending((list) => list.map((p) => (p.tempId === tempId ? { ...p, status: 'failed', error: e.message } : p)));
     }
   };
+
+  const sendText = () => {
+    const body = draft.trim();
+    if (!body || !active) return;
+    const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    setPending((list) => [...list, {
+      tempId, conversation_id: active.id, to: active.wa_id, body, status: 'sending', created_at: new Date().toISOString(),
+    }]);
+    setDraft('');
+    deliver(tempId, active.id, active.wa_id, body);
+  };
+
+  const retry = (p) => {
+    setPending((list) => list.map((x) => (x.tempId === p.tempId ? { ...x, status: 'sending', error: null } : x)));
+    deliver(p.tempId, p.conversation_id, p.to, p.body);
+  };
+
+  const dismiss = (p) => setPending((list) => list.filter((x) => x.tempId !== p.tempId));
 
   if (provider === undefined) {
     return <div className="p-8 text-slate-500 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Memuat…</div>;
@@ -288,6 +389,26 @@ const WhatsAppInboxPage = () => {
                     </div>
                   </div>
                 ))}
+                {pending.filter((p) => p.conversation_id === active.id).map((p) => (
+                  <div key={p.tempId} className="flex justify-end">
+                    <div className={`max-w-[80%] rounded-xl px-3 py-2 text-sm shadow-sm ${p.status === 'failed' ? 'bg-red-50 border border-red-200' : 'bg-green-100 opacity-80'}`}>
+                      <p className="whitespace-pre-wrap break-words">{p.body}</p>
+                      {p.status === 'failed' ? (
+                        <div className="mt-1 space-y-1">
+                          <p className="text-[11px] text-red-600">{p.error || 'Gagal mengirim'}</p>
+                          <div className="flex gap-3 text-[11px]">
+                            <button type="button" onClick={() => retry(p)} className="inline-flex items-center gap-1 text-sky-700 hover:underline"><RotateCcw className="w-3 h-3" /> Kirim ulang</button>
+                            <button type="button" onClick={() => dismiss(p)} className="text-slate-500 hover:underline">Hapus</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-end gap-1 mt-0.5 text-[10px] text-slate-400">
+                          <span>Mengirim…</span><Clock className="w-3.5 h-3.5" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
                 <div ref={bottomRef} />
               </div>
 
@@ -297,8 +418,8 @@ const WhatsAppInboxPage = () => {
                     <Textarea rows={2} value={draft} placeholder="Tulis balasan…"
                       onChange={(e) => setDraft(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(); } }} />
-                    <Button onClick={sendText} disabled={sending || !draft.trim()}>
-                      {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    <Button onClick={sendText} disabled={!draft.trim()} aria-label="Kirim">
+                      <Send className="w-4 h-4" />
                     </Button>
                   </div>
                 ) : provider === 'watzap' ? (
