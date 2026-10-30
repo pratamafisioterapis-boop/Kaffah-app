@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import {
-  getWaInboxProvider, sendInboxText, markInboxRead, waSendTemplate,
+  getWaInboxProvider, sendInboxText, markInboxRead, refreshInboxStatuses, waSendTemplate,
 } from '@/lib/waCloud';
 
 const WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -254,6 +254,35 @@ const WhatsAppInboxPage = () => {
     loadMessages(activeId);
     markInboxRead(provider, activeId).catch(() => {});
   }, [activeId, loadMessages, provider]);
+
+  // Status centang (terkirim/sampai/dibaca) dari Watzap tidak didorong ke kita, jadi ditarik:
+  // sekali saat percakapan dibuka, lalu tiap 20 dtk hanya selama ada pesan keluar
+  // berumur < 30 menit yang belum "dibaca". Pesan lama cukup dicek saat dibuka.
+  const recentUnreadOut = useMemo(
+    () => messages.some((m) => m.direction === 'out' && ['sent', 'delivered'].includes(m.status)
+      && Date.now() - new Date(m.created_at).getTime() < 30 * 60 * 1000),
+    [messages],
+  );
+
+  const refreshStatuses = useCallback(async (id) => {
+    try {
+      const r = await refreshInboxStatuses(provider, id);
+      if (r?.updated > 0) loadMessages(id);
+    } catch (_) { /* status hanya pelengkap; abaikan galat jaringan */ }
+  }, [provider, loadMessages]);
+
+  useEffect(() => {
+    if (!activeId || provider !== 'watzap') return;
+    refreshStatuses(activeId);
+  }, [activeId, provider, refreshStatuses]);
+
+  useEffect(() => {
+    if (!activeId || provider !== 'watzap' || !recentUnreadOut) return undefined;
+    const t = setInterval(() => {
+      if (document.visibilityState === 'visible') refreshStatuses(activeId);
+    }, 20000);
+    return () => clearInterval(t);
+  }, [activeId, provider, recentUnreadOut, refreshStatuses]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ block: 'end' }); }, [messages.length, pending.length, activeId]);
 
