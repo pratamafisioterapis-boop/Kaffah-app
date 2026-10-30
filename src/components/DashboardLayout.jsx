@@ -176,9 +176,19 @@ const isPWA =
   const processNavItems = (items) => {
    if (!items) return [];
 
+   // Menu WhatsApp Inbox disisipkan SEBELUM cabang PWA di bawah: di PWA menu
+   // dipakai apa adanya, sehingga penyisipan di dalam blok owner/admin tidak
+   // pernah berjalan dan menu ini tidak muncul di aplikasi terpasang.
+   const inboxPath = role === 'owner' ? '/owner/wa-inbox' : '/admin/wa-inbox';
+   const withInbox = (list) => {
+     if (!waInboxOn || !['owner', 'admin'].includes(role)) return list;
+     const has = list.some((i) => i.path === inboxPath || (i.submenu || []).some((sub) => sub.path === inboxPath));
+     return has ? list : [...list, { label: 'WhatsApp Inbox', path: inboxPath, icon: 'MessageSquare' }];
+   };
+
    // PWA: gunakan menu apa adanya
    if (isPWA) {
-      return items;
+      return withInbox(items);
    }
 
    let newItems = [...items];
@@ -200,16 +210,13 @@ const isPWA =
              newItems.push({ label: 'Package Recaps', path: packagePath, icon: 'Package' });
          }
 
-         const inboxPath = role === 'owner' ? '/owner/wa-inbox' : '/admin/wa-inbox';
-         if (waInboxOn && !hasPath(inboxPath)) {
-            newItems.push({ label: 'WhatsApp Inbox', path: inboxPath, icon: 'MessageSquare' });
-         }
-
          const followUpPath = '/admin/follow-up-management';
          if (role === 'admin' && !hasPath(followUpPath)) {
             newItems.push({ label: 'Follow Up Management', path: followUpPath, icon: 'MessageSquare' });
          }
      }
+
+     newItems = withInbox(newItems);
 
      newItems = newItems.map(item => {
         if (item.label === 'Accounting') return { ...item, label: 'Accounting System' };
