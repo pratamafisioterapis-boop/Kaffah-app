@@ -210,3 +210,29 @@ SELECT
 --   FROM public.wa_watzap_raw r
 --   JOIN public.wa_watzap_config c ON c.clinic_id = r.clinic_id
 --  WHERE r.id IN (2, 3, 4, 5);
+
+
+-- ───────────── BAGIAN E (perbaikan balapan webhook bersamaan) ───────────────
+-- Fungsi atomik wa_inbox_bump + perbaikan hitungan percakapan Kaffah yang
+-- terlanjur salah (unread_count / last_inbound_at). Aman dijalankan ulang.
+
+CREATE OR REPLACE FUNCTION public.wa_inbox_bump(p_conversation_id uuid, p_ts timestamptz, p_preview text)
+RETURNS void
+LANGUAGE sql
+AS $$
+  UPDATE public.wa_inbox_conversations
+     SET unread_count    = unread_count + 1,
+         last_inbound_at = greatest(coalesce(last_inbound_at, '-infinity'), p_ts),
+         last_preview    = CASE WHEN p_ts >= coalesce(last_message_at, '-infinity') THEN p_preview ELSE last_preview END,
+         last_message_at = greatest(coalesce(last_message_at, '-infinity'), p_ts)
+   WHERE id = p_conversation_id
+$$;
+REVOKE ALL ON FUNCTION public.wa_inbox_bump(uuid, timestamptz, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.wa_inbox_bump(uuid, timestamptz, text) TO service_role;
+
+UPDATE public.wa_inbox_conversations c
+   SET unread_count    = (SELECT count(*) FROM public.wa_inbox_messages m WHERE m.conversation_id = c.id AND m.direction = 'in'),
+       last_inbound_at = (SELECT max(m.created_at) FROM public.wa_inbox_messages m WHERE m.conversation_id = c.id AND m.direction = 'in'),
+       last_message_at = (SELECT max(m.created_at) FROM public.wa_inbox_messages m WHERE m.conversation_id = c.id),
+       last_preview    = (SELECT left(m.body, 120) FROM public.wa_inbox_messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1)
+ WHERE c.clinic_id = 'bfdc3fd8-a052-4753-a5b7-229930b3237a';

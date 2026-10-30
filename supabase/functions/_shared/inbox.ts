@@ -206,12 +206,23 @@ export async function handleMessage(
   // Reaksi bukan percakapan baru: jangan menaikkan unread / jendela 24 jam.
   if (msg.type === "reaction") return;
 
-  await admin.from("wa_inbox_conversations").update({
-    last_message_at: ts,
-    last_inbound_at: ts,
-    last_preview: body.slice(0, 120),
-    unread_count: (conv.unread_count ?? 0) + 1,
-  }).eq("id", conv.id);
+  // Atomik di database: webhook yang datang bersamaan (mis. beberapa foto
+  // beruntun) tidak boleh saling menimpa unread_count / last_inbound_at.
+  const { error: bumpErr } = await admin.rpc("wa_inbox_bump", {
+    p_conversation_id: conv.id,
+    p_ts: ts,
+    p_preview: body.slice(0, 120),
+  });
+  if (bumpErr) {
+    // Cadangan bila fungsi SQL belum terpasang: perilaku lama (rawan balapan).
+    console.error("[inbox] wa_inbox_bump gagal, pakai cadangan", bumpErr.message);
+    await admin.from("wa_inbox_conversations").update({
+      last_message_at: ts,
+      last_inbound_at: ts,
+      last_preview: body.slice(0, 120),
+      unread_count: (conv.unread_count ?? 0) + 1,
+    }).eq("id", conv.id);
+  }
 }
 
 export async function handleStatus(
