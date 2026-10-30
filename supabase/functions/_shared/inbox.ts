@@ -185,7 +185,7 @@ export async function handleMessage(
   }
 
   // wa_message_id UNIQUE → Meta yang mengirim ulang webhook tidak menggandakan pesan.
-  const { error } = await admin.from("wa_messages").insert({
+  const { error } = await admin.from("wa_inbox_messages").insert({
     clinic_id: clinicId,
     conversation_id: conv.id,
     direction: "in",
@@ -206,7 +206,7 @@ export async function handleMessage(
   // Reaksi bukan percakapan baru: jangan menaikkan unread / jendela 24 jam.
   if (msg.type === "reaction") return;
 
-  await admin.from("wa_conversations").update({
+  await admin.from("wa_inbox_conversations").update({
     last_message_at: ts,
     last_inbound_at: ts,
     last_preview: body.slice(0, 120),
@@ -225,7 +225,7 @@ export async function handleStatus(
     : new Date().toISOString();
 
   const { data: m } = await admin
-    .from("wa_messages")
+    .from("wa_inbox_messages")
     .select("id, status, queue_id")
     .eq("wa_message_id", st.id)
     .maybeSingle();
@@ -234,7 +234,7 @@ export async function handleStatus(
     const forward = next === "failed" ||
       (RANK[next] ?? -1) > (RANK[m.status] ?? -1);
     if (forward) {
-      await admin.from("wa_messages").update({
+      await admin.from("wa_inbox_messages").update({
         status: next,
         status_at: at,
         error_code: err ? String(err.code) : null,

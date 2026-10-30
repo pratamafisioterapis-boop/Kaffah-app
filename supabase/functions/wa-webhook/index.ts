@@ -90,7 +90,7 @@ async function handleEcho(
     ? new Date(Number(msg.timestamp) * 1000).toISOString()
     : new Date().toISOString();
 
-  const { error } = await admin.from("wa_messages").insert({
+  const { error } = await admin.from("wa_inbox_messages").insert({
     clinic_id: clinicId,
     conversation_id: conv.id,
     direction: "out",
@@ -107,7 +107,7 @@ async function handleEcho(
     if (error.code === "23505") return; // sudah ada (mis. dikirim lewat API)
     throw error;
   }
-  await admin.from("wa_conversations").update({
+  await admin.from("wa_inbox_conversations").update({
     last_message_at: ts,
     last_preview: body.slice(0, 120),
   }).eq("id", conv.id);
@@ -153,7 +153,7 @@ async function handleHistory(
     });
 
     // ignoreDuplicates: webhook history yang dikirim ulang tidak menggandakan pesan.
-    const { error } = await admin.from("wa_messages").upsert(
+    const { error } = await admin.from("wa_inbox_messages").upsert(
       rows.map((r: any) => r.row),
       { onConflict: "wa_message_id", ignoreDuplicates: true },
     );
@@ -174,7 +174,7 @@ async function handleHistory(
       patch.last_inbound_at = lastIn.ts;
     }
     if (Object.keys(patch).length) {
-      await admin.from("wa_conversations").update(patch).eq("id", conv.id);
+      await admin.from("wa_inbox_conversations").update(patch).eq("id", conv.id);
     }
   }
 }
@@ -189,7 +189,7 @@ async function handleContactSync(
   const waId = normalizePhone(item.contact?.phone_number || "");
   const name = item.contact?.full_name || item.contact?.first_name;
   if (!waId || !name) return;
-  await admin.from("wa_conversations").update({ contact_name: name })
+  await admin.from("wa_inbox_conversations").update({ contact_name: name })
     .eq("clinic_id", clinicId).eq("wa_id", waId).is("contact_name", null);
 }
 

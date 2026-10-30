@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
 
     if (!ok) {
       const reason = out?.message || `HTTP ${res.status}`;
-      await admin.from("wa_messages").insert({
+      await admin.from("wa_inbox_messages").insert({
         ...row,
         status: "failed",
         error_code: String(out?.status ?? res.status),
@@ -88,13 +88,13 @@ Deno.serve(async (req) => {
       return json({ success: false, error: `Watzap menolak: ${reason}` }, 502);
     }
 
-    await admin.from("wa_messages").insert({
+    await admin.from("wa_inbox_messages").insert({
       ...row,
       wa_message_id: out?.wamid ?? null,
       status: "sent",
       status_at: now,
     });
-    await admin.from("wa_conversations").update({
+    await admin.from("wa_inbox_conversations").update({
       last_message_at: now,
       last_preview: body.slice(0, 120),
     }).eq("id", conv.id);

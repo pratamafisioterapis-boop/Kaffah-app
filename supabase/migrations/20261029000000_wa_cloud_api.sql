@@ -35,7 +35,7 @@ REVOKE ALL ON public.wa_meta_credentials FROM anon, authenticated;
 
 -- ───────────────────────── Percakapan & pesan ─────────────────────────
 
-CREATE TABLE IF NOT EXISTS public.wa_conversations (
+CREATE TABLE IF NOT EXISTS public.wa_inbox_conversations (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   clinic_id        uuid NOT NULL REFERENCES public.clinics(id) ON DELETE CASCADE,
   wa_id            text NOT NULL,                 -- nomor format 62xxxxxxxx
@@ -48,13 +48,13 @@ CREATE TABLE IF NOT EXISTS public.wa_conversations (
   created_at       timestamptz NOT NULL DEFAULT now(),
   UNIQUE (clinic_id, wa_id)
 );
-CREATE INDEX IF NOT EXISTS idx_wa_conversations_clinic_last
-  ON public.wa_conversations (clinic_id, last_message_at DESC);
+CREATE INDEX IF NOT EXISTS idx_wa_inbox_conversations_clinic_last
+  ON public.wa_inbox_conversations (clinic_id, last_message_at DESC);
 
-CREATE TABLE IF NOT EXISTS public.wa_messages (
+CREATE TABLE IF NOT EXISTS public.wa_inbox_messages (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   clinic_id        uuid NOT NULL REFERENCES public.clinics(id) ON DELETE CASCADE,
-  conversation_id  uuid NOT NULL REFERENCES public.wa_conversations(id) ON DELETE CASCADE,
+  conversation_id  uuid NOT NULL REFERENCES public.wa_inbox_conversations(id) ON DELETE CASCADE,
   direction        text NOT NULL CHECK (direction IN ('in', 'out')),
   wa_message_id    text UNIQUE,
   msg_type         text NOT NULL DEFAULT 'text',
@@ -73,9 +73,9 @@ CREATE TABLE IF NOT EXISTS public.wa_messages (
   created_at       timestamptz NOT NULL DEFAULT now(),
   status_at        timestamptz
 );
-CREATE INDEX IF NOT EXISTS idx_wa_messages_conv_created
-  ON public.wa_messages (conversation_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_wa_messages_clinic ON public.wa_messages (clinic_id);
+CREATE INDEX IF NOT EXISTS idx_wa_inbox_messages_conv_created
+  ON public.wa_inbox_messages (conversation_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_wa_inbox_messages_clinic ON public.wa_inbox_messages (clinic_id);
 
 -- ───────────────────────── Template ─────────────────────────
 
@@ -134,7 +134,7 @@ DO $$
 DECLARE t text;
 BEGIN
   FOREACH t IN ARRAY ARRAY[
-    'wa_meta_accounts','wa_conversations','wa_messages',
+    'wa_meta_accounts','wa_inbox_conversations','wa_inbox_messages',
     'wa_meta_templates','wa_broadcasts','wa_broadcast_recipients'
   ] LOOP
     EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t);
@@ -152,19 +152,19 @@ CREATE POLICY clinic_isolated_wa_meta_accounts ON public.wa_meta_accounts
 
 -- Percakapan/pesan/rekap broadcast: baca untuk staf; tulis hanya lewat Edge
 -- Function, kecuali reset unread_count yang boleh dilakukan staf.
-CREATE POLICY clinic_isolated_wa_conversations ON public.wa_conversations
+CREATE POLICY clinic_isolated_wa_inbox_conversations ON public.wa_inbox_conversations
   FOR SELECT
   USING (
     get_my_role() = 'super_admin'
     OR (get_my_role() IN ('owner', 'admin') AND clinic_id = get_my_clinic_id())
   );
-DROP POLICY IF EXISTS clinic_update_wa_conversations ON public.wa_conversations;
-CREATE POLICY clinic_update_wa_conversations ON public.wa_conversations
+DROP POLICY IF EXISTS clinic_update_wa_inbox_conversations ON public.wa_inbox_conversations;
+CREATE POLICY clinic_update_wa_inbox_conversations ON public.wa_inbox_conversations
   FOR UPDATE
   USING (get_my_role() IN ('owner', 'admin') AND clinic_id = get_my_clinic_id())
   WITH CHECK (get_my_role() IN ('owner', 'admin') AND clinic_id = get_my_clinic_id());
 
-CREATE POLICY clinic_isolated_wa_messages ON public.wa_messages
+CREATE POLICY clinic_isolated_wa_inbox_messages ON public.wa_inbox_messages
   FOR SELECT
   USING (
     get_my_role() = 'super_admin'
@@ -193,7 +193,7 @@ CREATE POLICY clinic_isolated_wa_broadcast_recipients ON public.wa_broadcast_rec
   );
 
 -- Staf hanya boleh mengubah unread_count lewat UPDATE; kolom lain dikunci.
-CREATE OR REPLACE FUNCTION public.wa_conversations_staff_update_guard()
+CREATE OR REPLACE FUNCTION public.wa_inbox_conversations_staff_update_guard()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -212,10 +212,10 @@ BEGIN
 END;
 $$;
 -- (idempoten: aman bila sudah dibuat lewat supabase/manual/11_inbox_whatsapp_watzap.sql)
-DROP TRIGGER IF EXISTS trg_wa_conversations_staff_update_guard ON public.wa_conversations;
-CREATE TRIGGER trg_wa_conversations_staff_update_guard
-  BEFORE UPDATE ON public.wa_conversations
-  FOR EACH ROW EXECUTE FUNCTION public.wa_conversations_staff_update_guard();
+DROP TRIGGER IF EXISTS trg_wa_inbox_conversations_staff_update_guard ON public.wa_inbox_conversations;
+CREATE TRIGGER trg_wa_inbox_conversations_staff_update_guard
+  BEFORE UPDATE ON public.wa_inbox_conversations
+  FOR EACH ROW EXECUTE FUNCTION public.wa_inbox_conversations_staff_update_guard();
 
 -- ───────────────────────── Realtime ─────────────────────────
 
@@ -223,11 +223,11 @@ DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
     BEGIN
-      ALTER PUBLICATION supabase_realtime ADD TABLE public.wa_messages;
+      ALTER PUBLICATION supabase_realtime ADD TABLE public.wa_inbox_messages;
     EXCEPTION WHEN duplicate_object THEN NULL;
     END;
     BEGIN
-      ALTER PUBLICATION supabase_realtime ADD TABLE public.wa_conversations;
+      ALTER PUBLICATION supabase_realtime ADD TABLE public.wa_inbox_conversations;
     EXCEPTION WHEN duplicate_object THEN NULL;
     END;
   END IF;

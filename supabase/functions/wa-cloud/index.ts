@@ -126,13 +126,13 @@ async function sendOutbound(
     });
     const waMessageId = res?.messages?.[0]?.id as string;
     const now = new Date().toISOString();
-    await admin.from("wa_messages").insert({
+    await admin.from("wa_inbox_messages").insert({
       ...base,
       wa_message_id: waMessageId,
       status: "sent",
       status_at: now,
     });
-    await admin.from("wa_conversations").update({
+    await admin.from("wa_inbox_conversations").update({
       last_message_at: now,
       last_preview: shownBody.slice(0, 120),
     }).eq("id", conv.id);
@@ -148,7 +148,7 @@ async function sendOutbound(
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     const code = e instanceof MetaError ? e.code : "";
-    await admin.from("wa_messages").insert({
+    await admin.from("wa_inbox_messages").insert({
       ...base,
       status: "failed",
       error_code: code,
@@ -300,12 +300,12 @@ const handlers: Record<
   },
 
   async mark_read({ admin, clinicId, p }) {
-    const { data: conv } = await admin.from("wa_conversations").select("id, clinic_id").eq("id", p.conversation_id)
+    const { data: conv } = await admin.from("wa_inbox_conversations").select("id, clinic_id").eq("id", p.conversation_id)
       .maybeSingle();
     if (!conv || conv.clinic_id !== clinicId) throw new HttpError("Percakapan tidak ditemukan", 404);
-    await admin.from("wa_conversations").update({ unread_count: 0 }).eq("id", conv.id);
+    await admin.from("wa_inbox_conversations").update({ unread_count: 0 }).eq("id", conv.id);
     // Centang biru di sisi pasien — best effort, tidak boleh menggagalkan aksi.
-    const { data: last } = await admin.from("wa_messages").select("wa_message_id")
+    const { data: last } = await admin.from("wa_inbox_messages").select("wa_message_id")
       .eq("conversation_id", conv.id).eq("direction", "in").not("wa_message_id", "is", null)
       .order("created_at", { ascending: false }).limit(1).maybeSingle();
     const acc = await loadAccount(admin, clinicId);

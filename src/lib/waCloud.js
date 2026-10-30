@@ -95,7 +95,7 @@ export const sendInboxText = (provider, to, body) =>
 export const markInboxRead = async (provider, conversationId) => {
   if (provider === 'watzap') {
     // Hanya mereset penghitung lokal; tidak ada "centang biru" lewat Watzap.
-    await supabase.from('wa_conversations').update({ unread_count: 0 }).eq('id', conversationId);
+    await supabase.from('wa_inbox_conversations').update({ unread_count: 0 }).eq('id', conversationId);
     return;
   }
   await waMarkRead(conversationId);

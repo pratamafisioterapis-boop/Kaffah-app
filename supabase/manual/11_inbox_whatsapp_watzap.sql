@@ -15,7 +15,7 @@
 -- ───────────────────────────── BAGIAN A ─────────────────────────────────────
 BEGIN;
 
-CREATE TABLE IF NOT EXISTS public.wa_conversations (
+CREATE TABLE IF NOT EXISTS public.wa_inbox_conversations (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   clinic_id        uuid NOT NULL REFERENCES public.clinics(id) ON DELETE CASCADE,
   wa_id            text NOT NULL,                 -- nomor format 62xxxxxxxx
@@ -28,13 +28,13 @@ CREATE TABLE IF NOT EXISTS public.wa_conversations (
   created_at       timestamptz NOT NULL DEFAULT now(),
   UNIQUE (clinic_id, wa_id)
 );
-CREATE INDEX IF NOT EXISTS idx_wa_conversations_clinic_last
-  ON public.wa_conversations (clinic_id, last_message_at DESC);
+CREATE INDEX IF NOT EXISTS idx_wa_inbox_conversations_clinic_last
+  ON public.wa_inbox_conversations (clinic_id, last_message_at DESC);
 
-CREATE TABLE IF NOT EXISTS public.wa_messages (
+CREATE TABLE IF NOT EXISTS public.wa_inbox_messages (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   clinic_id        uuid NOT NULL REFERENCES public.clinics(id) ON DELETE CASCADE,
-  conversation_id  uuid NOT NULL REFERENCES public.wa_conversations(id) ON DELETE CASCADE,
+  conversation_id  uuid NOT NULL REFERENCES public.wa_inbox_conversations(id) ON DELETE CASCADE,
   direction        text NOT NULL CHECK (direction IN ('in', 'out')),
   wa_message_id    text UNIQUE,
   msg_type         text NOT NULL DEFAULT 'text',
@@ -53,30 +53,30 @@ CREATE TABLE IF NOT EXISTS public.wa_messages (
   created_at       timestamptz NOT NULL DEFAULT now(),
   status_at        timestamptz
 );
-CREATE INDEX IF NOT EXISTS idx_wa_messages_conv_created
-  ON public.wa_messages (conversation_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_wa_messages_clinic ON public.wa_messages (clinic_id);
+CREATE INDEX IF NOT EXISTS idx_wa_inbox_messages_conv_created
+  ON public.wa_inbox_messages (conversation_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_wa_inbox_messages_clinic ON public.wa_inbox_messages (clinic_id);
 
 -- RLS: pesan pasien bisa memuat data kesehatan → hanya owner/admin klinik itu
 -- (dan super_admin). Penulisan hanya lewat Edge Function (service role),
 -- kecuali reset unread_count oleh staf (dijaga trigger di bawah).
-ALTER TABLE public.wa_conversations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.wa_messages      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.wa_inbox_conversations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.wa_inbox_messages      ENABLE ROW LEVEL SECURITY;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='wa_conversations' AND policyname='clinic_isolated_wa_conversations') THEN
-    CREATE POLICY clinic_isolated_wa_conversations ON public.wa_conversations FOR SELECT
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='wa_inbox_conversations' AND policyname='clinic_isolated_wa_inbox_conversations') THEN
+    CREATE POLICY clinic_isolated_wa_inbox_conversations ON public.wa_inbox_conversations FOR SELECT
       USING (get_my_role() = 'super_admin'
              OR (get_my_role() IN ('owner', 'admin') AND clinic_id = get_my_clinic_id()));
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='wa_conversations' AND policyname='clinic_update_wa_conversations') THEN
-    CREATE POLICY clinic_update_wa_conversations ON public.wa_conversations FOR UPDATE
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='wa_inbox_conversations' AND policyname='clinic_update_wa_inbox_conversations') THEN
+    CREATE POLICY clinic_update_wa_inbox_conversations ON public.wa_inbox_conversations FOR UPDATE
       USING (get_my_role() IN ('owner', 'admin') AND clinic_id = get_my_clinic_id())
       WITH CHECK (get_my_role() IN ('owner', 'admin') AND clinic_id = get_my_clinic_id());
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='wa_messages' AND policyname='clinic_isolated_wa_messages') THEN
-    CREATE POLICY clinic_isolated_wa_messages ON public.wa_messages FOR SELECT
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='wa_inbox_messages' AND policyname='clinic_isolated_wa_inbox_messages') THEN
+    CREATE POLICY clinic_isolated_wa_inbox_messages ON public.wa_inbox_messages FOR SELECT
       USING (get_my_role() = 'super_admin'
              OR (get_my_role() IN ('owner', 'admin') AND clinic_id = get_my_clinic_id()));
   END IF;
@@ -84,7 +84,7 @@ END $$;
 
 -- Staf yang login hanya boleh mengubah unread_count/nama/tautan pasien; kolom
 -- sistem (klinik, nomor, waktu pesan) dikunci. Service role & postgres bebas.
-CREATE OR REPLACE FUNCTION public.wa_conversations_staff_update_guard()
+CREATE OR REPLACE FUNCTION public.wa_inbox_conversations_staff_update_guard()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -104,10 +104,10 @@ $$;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_wa_conversations_staff_update_guard') THEN
-    CREATE TRIGGER trg_wa_conversations_staff_update_guard
-      BEFORE UPDATE ON public.wa_conversations
-      FOR EACH ROW EXECUTE FUNCTION public.wa_conversations_staff_update_guard();
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_wa_inbox_conversations_staff_update_guard') THEN
+    CREATE TRIGGER trg_wa_inbox_conversations_staff_update_guard
+      BEFORE UPDATE ON public.wa_inbox_conversations
+      FOR EACH ROW EXECUTE FUNCTION public.wa_inbox_conversations_staff_update_guard();
   END IF;
 END $$;
 
@@ -116,11 +116,11 @@ DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
     BEGIN
-      ALTER PUBLICATION supabase_realtime ADD TABLE public.wa_messages;
+      ALTER PUBLICATION supabase_realtime ADD TABLE public.wa_inbox_messages;
     EXCEPTION WHEN duplicate_object THEN NULL;
     END;
     BEGIN
-      ALTER PUBLICATION supabase_realtime ADD TABLE public.wa_conversations;
+      ALTER PUBLICATION supabase_realtime ADD TABLE public.wa_inbox_conversations;
     EXCEPTION WHEN duplicate_object THEN NULL;
     END;
   END IF;
@@ -183,15 +183,15 @@ COMMIT;
 -- ───────────────────────────── BAGIAN B (cek) ───────────────────────────────
 -- Semua kolom "ok" harus true.
 SELECT
-  to_regclass('public.wa_conversations') IS NOT NULL                                   AS tabel_percakapan_ok,
-  to_regclass('public.wa_messages') IS NOT NULL                                        AS tabel_pesan_ok,
+  to_regclass('public.wa_inbox_conversations') IS NOT NULL                                   AS tabel_percakapan_ok,
+  to_regclass('public.wa_inbox_messages') IS NOT NULL                                        AS tabel_pesan_ok,
   (SELECT count(*) FROM pg_policies
-    WHERE tablename IN ('wa_conversations','wa_messages')) = 3                         AS rls_3_policy_ok,
-  (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.wa_messages'::regclass)     AS rls_aktif_ok,
+    WHERE tablename IN ('wa_inbox_conversations','wa_inbox_messages')) = 3                         AS rls_3_policy_ok,
+  (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.wa_inbox_messages'::regclass)     AS rls_aktif_ok,
   EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'wa-media' AND NOT public)         AS bucket_privat_ok,
-  EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_wa_conversations_staff_update_guard') AS trigger_ok,
+  EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_wa_inbox_conversations_staff_update_guard') AS trigger_ok,
   (SELECT count(*) FROM pg_publication_tables WHERE pubname = 'supabase_realtime'
-    AND tablename IN ('wa_messages','wa_conversations')) = 2                           AS realtime_ok,
+    AND tablename IN ('wa_inbox_messages','wa_inbox_conversations')) = 2                           AS realtime_ok,
   EXISTS (SELECT 1 FROM information_schema.columns
     WHERE table_name = 'wa_settings' AND column_name = 'inbox_enabled')                AS kolom_inbox_ok;
 

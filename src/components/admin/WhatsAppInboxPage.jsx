@@ -127,7 +127,7 @@ const WhatsAppInboxPage = () => {
 
   const loadConvs = useCallback(async () => {
     const { data } = await supabase
-      .from('wa_conversations')
+      .from('wa_inbox_conversations')
       .select('*, patient:patients(id, full_name)')
       .order('last_message_at', { ascending: false, nullsFirst: false })
       .limit(200);
@@ -136,7 +136,7 @@ const WhatsAppInboxPage = () => {
 
   const loadMessages = useCallback(async (id) => {
     const { data } = await supabase
-      .from('wa_messages').select('*').eq('conversation_id', id)
+      .from('wa_inbox_messages').select('*').eq('conversation_id', id)
       .order('created_at', { ascending: true }).limit(500);
     setMessages(data || []);
   }, []);
@@ -156,12 +156,12 @@ const WhatsAppInboxPage = () => {
   // Realtime: pesan baru / status berubah muncul tanpa refresh. RLS tetap berlaku.
   useEffect(() => {
     const ch = supabase.channel('wa-inbox')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'wa_messages' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'wa_inbox_messages' }, (payload) => {
         const row = payload.new;
         if (row?.conversation_id === activeIdRef.current) loadMessages(row.conversation_id);
         loadConvs();
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'wa_conversations' }, () => loadConvs())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'wa_inbox_conversations' }, () => loadConvs())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [loadConvs, loadMessages]);

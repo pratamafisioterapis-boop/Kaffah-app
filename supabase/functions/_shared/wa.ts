@@ -129,7 +129,7 @@ export async function ensureConversation(
   contactName?: string | null,
 ) {
   const { data: existing } = await admin
-    .from("wa_conversations")
+    .from("wa_inbox_conversations")
     .select("*")
     .eq("clinic_id", clinicId)
     .eq("wa_id", waId)
@@ -144,14 +144,14 @@ export async function ensureConversation(
       if (pid) patch.patient_id = pid;
     }
     if (Object.keys(patch).length) {
-      await admin.from("wa_conversations").update(patch).eq("id", existing.id);
+      await admin.from("wa_inbox_conversations").update(patch).eq("id", existing.id);
       return { ...existing, ...patch };
     }
     return existing;
   }
   const patientId = await findPatientId(admin, clinicId, waId);
   const { data: created, error } = await admin
-    .from("wa_conversations")
+    .from("wa_inbox_conversations")
     .insert({
       clinic_id: clinicId,
       wa_id: waId,
@@ -163,7 +163,7 @@ export async function ensureConversation(
   if (error) {
     // Balapan dua webhook bersamaan: ambil yang sudah dibuat pihak lain.
     const { data: again } = await admin
-      .from("wa_conversations")
+      .from("wa_inbox_conversations")
       .select("*")
       .eq("clinic_id", clinicId)
       .eq("wa_id", waId)
