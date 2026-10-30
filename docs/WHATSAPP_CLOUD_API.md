@@ -5,14 +5,14 @@ pesan + status, inbox pesan masuk (termasuk nomor baru), manajemen template,
 dan broadcast.
 
 > **Status: nonaktif.** Watzap adalah jalur satu-satunya. Kode ini baru hidup bila
-> migrasi `20261029000000_wa_cloud_api.sql` diterapkan **dan** `VITE_WA_CLOUD_ENABLED=true`
+> migrasi `20261029200000_wa_cloud_api.sql` diterapkan **dan** `VITE_WA_CLOUD_ENABLED=true`
 > diset saat build. Tanpa itu, panel, menu Inbox, dan pengalihan pengirim tidak aktif.
 
 ## Arsitektur
 
 | Bagian | Lokasi |
 |---|---|
-| Tabel + RLS + bucket `wa-media` | `supabase/migrations/20261029000000_wa_cloud_api.sql` |
+| Tabel + RLS + bucket `wa-media` | `supabase/migrations/20261029200000_wa_cloud_api.sql` |
 | Webhook Meta (pesan masuk, status, status template) | `supabase/functions/wa-webhook` |
 | Aksi staf (kirim, template, broadcast, akun) | `supabase/functions/wa-cloud` |
 | UI Koneksi / Template / Broadcast | Pengaturan → WhatsApp → panel "Cloud API" |
