@@ -26,3 +26,8 @@ export function shouldAdvance(current: string, next: string): boolean {
   if (next === "failed") return current !== "failed";
   return (RANK[next] ?? 0) > (RANK[current] ?? 0);
 }
+
+/** Watzap menjawab HTTP 200 dengan {status:false, message:"Limit Exceeded ..."} saat kena batas laju. */
+export function isRateLimited(out: any): boolean {
+  return out?.status === false && /limit exceeded/i.test(String(out?.message ?? ""));
+}

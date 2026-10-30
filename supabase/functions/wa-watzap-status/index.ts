@@ -8,10 +8,11 @@
 // klinik pemanggil; api_key Watzap dibaca di server dan tidak pernah ke browser.
 
 import { adminClient, CORS, getCaller, json } from "../_shared/wa.ts";
-import { parseStatus, shouldAdvance } from "./parse.ts";
+import { isRateLimited, parseStatus, shouldAdvance } from "./parse.ts";
 
 const STAFF = ["owner", "admin", "super_admin"];
-const MAX_MESSAGES = 30;
+const DEFAULT_LIMIT = 3;   // polling berulang: hanya pesan terbaru
+const MAX_LIMIT = 15;      // saat percakapan baru dibuka
 const CONCURRENCY = 5;
 const LOOKBACK_MS = 3 * 24 * 60 * 60 * 1000;
 
@@ -28,6 +29,7 @@ Deno.serve(async (req) => {
     }
     const p = await req.json().catch(() => ({}));
     if (!p.conversation_id) return json({ success: false, error: "conversation_id wajib" }, 400);
+    const limit = Math.min(Math.max(Number(p.limit) || DEFAULT_LIMIT, 1), MAX_LIMIT);
 
     const { data: wa } = await admin.from("wa_settings")
       .select("api_key, enabled, inbox_enabled")
@@ -46,11 +48,12 @@ Deno.serve(async (req) => {
       .not("wa_message_id", "is", null)
       .gte("created_at", new Date(Date.now() - LOOKBACK_MS).toISOString())
       .order("created_at", { ascending: false })
-      .limit(MAX_MESSAGES);
+      .limit(limit);
 
     const todo = msgs || [];
     let updated = 0;
-    for (let i = 0; i < todo.length; i += CONCURRENCY) {
+    let rateLimited = false;
+    for (let i = 0; i < todo.length && !rateLimited; i += CONCURRENCY) {
       await Promise.all(todo.slice(i, i + CONCURRENCY).map(async (m: any) => {
         try {
           const res = await fetch("https://api.watzap.id/v1/messages", {
@@ -58,7 +61,9 @@ Deno.serve(async (req) => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ api_key: wa.api_key, action: "status", message_id: m.wa_message_id }),
           });
-          const parsed = parseStatus(await res.json().catch(() => ({})));
+          const out = await res.json().catch(() => ({}));
+          if (isRateLimited(out)) { rateLimited = true; return; }
+          const parsed = parseStatus(out);
           if (!parsed || !shouldAdvance(m.status, parsed.status)) return;
           const { error } = await admin.from("wa_inbox_messages").update({
             status: parsed.status,
@@ -71,7 +76,7 @@ Deno.serve(async (req) => {
         }
       }));
     }
-    return json({ success: true, data: { checked: todo.length, updated } });
+    return json({ success: true, data: { checked: todo.length, updated, rate_limited: rateLimited } });
   } catch (e) {
     console.error("[wa-watzap-status]", e);
     return json({ success: false, error: "Terjadi kesalahan di server" }, 500);

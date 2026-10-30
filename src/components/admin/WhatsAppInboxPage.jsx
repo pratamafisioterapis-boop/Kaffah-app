@@ -255,34 +255,73 @@ const WhatsAppInboxPage = () => {
     markInboxRead(provider, activeId).catch(() => {});
   }, [activeId, loadMessages, provider]);
 
-  // Status centang (terkirim/sampai/dibaca) dari Watzap tidak didorong ke kita, jadi ditarik:
-  // sekali saat percakapan dibuka, lalu tiap 20 dtk hanya selama ada pesan keluar
-  // berumur < 30 menit yang belum "dibaca". Pesan lama cukup dicek saat dibuka.
-  const recentUnreadOut = useMemo(
-    () => messages.some((m) => m.direction === 'out' && ['sent', 'delivered'].includes(m.status)
-      && Date.now() - new Date(m.created_at).getTime() < 30 * 60 * 1000),
-    [messages],
+  // Status centang (terkirim → sampai → dibaca) dari Watzap tidak didorong ke kita, jadi ditarik.
+  // Jadwal menyesuaikan umur pesan keluar terbaru yang belum "dibaca": rapat saat baru dikirim
+  // (status berubah dalam hitungan detik), lalu makin jarang, lalu berhenti. Kunci API Watzap
+  // yang sama dipakai untuk pengingat pasien, jadi jumlah panggilan sengaja dibatasi.
+  const STATUS_POLL_STEPS = [
+    { until: 45 * 1000, every: 5 * 1000 },
+    { until: 3 * 60 * 1000, every: 15 * 1000 },
+    { until: 15 * 60 * 1000, every: 60 * 1000 },
+  ];
+  const pendingOutAges = (list) => list
+    .filter((m) => m.direction === 'out' && ['sent', 'delivered'].includes(m.status))
+    .map((m) => Date.now() - new Date(m.created_at).getTime());
+
+  const nextStatusDelay = (list) => {
+    const ages = pendingOutAges(list);
+    if (!ages.length) return null;
+    const youngest = Math.min(...ages);
+    const step = STATUS_POLL_STEPS.find((s) => youngest < s.until);
+    return step ? step.every : null;
+  };
+
+  const hasRecentPendingOut = useMemo(
+    () => pendingOutAges(messages).some((age) => age < STATUS_POLL_STEPS[STATUS_POLL_STEPS.length - 1].until),
+    [messages], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  const refreshStatuses = useCallback(async (id) => {
+  const messagesRef = useRef([]);
+  messagesRef.current = messages;
+  const statusInFlight = useRef(false);
+
+  // Mengembalikan true bila Watzap menjawab "kena batas laju".
+  const refreshStatuses = useCallback(async (id, limit) => {
+    if (statusInFlight.current) return false;
+    statusInFlight.current = true;
     try {
-      const r = await refreshInboxStatuses(provider, id);
+      const r = await refreshInboxStatuses(provider, id, limit);
       if (r?.updated > 0) loadMessages(id);
-    } catch (_) { /* status hanya pelengkap; abaikan galat jaringan */ }
+      return !!r?.rate_limited;
+    } catch (_) {
+      return false; // status hanya pelengkap; abaikan galat jaringan
+    } finally {
+      statusInFlight.current = false;
+    }
   }, [provider, loadMessages]);
 
+  // Saat percakapan dibuka: satu kali cek menyeluruh (pesan lama ikut diperbarui).
   useEffect(() => {
     if (!activeId || provider !== 'watzap') return;
-    refreshStatuses(activeId);
+    refreshStatuses(activeId, 15);
   }, [activeId, provider, refreshStatuses]);
 
+  // Selama ada pesan keluar baru yang belum dibaca: tarik sesuai jadwal di atas.
   useEffect(() => {
-    if (!activeId || provider !== 'watzap' || !recentUnreadOut) return undefined;
-    const t = setInterval(() => {
-      if (document.visibilityState === 'visible') refreshStatuses(activeId);
-    }, 20000);
-    return () => clearInterval(t);
-  }, [activeId, provider, recentUnreadOut, refreshStatuses]);
+    if (!activeId || provider !== 'watzap' || !hasRecentPendingOut) return undefined;
+    let stopped = false;
+    let timer;
+    const tick = async () => {
+      if (stopped) return;
+      let limited = false;
+      if (document.visibilityState === 'visible') limited = await refreshStatuses(activeId);
+      if (stopped) return;
+      const delay = limited ? 60 * 1000 : nextStatusDelay(messagesRef.current);
+      if (delay != null) timer = setTimeout(tick, delay);
+    };
+    timer = setTimeout(tick, 2500); // cek pertama sebentar setelah pesan terkirim
+    return () => { stopped = true; clearTimeout(timer); };
+  }, [activeId, provider, hasRecentPendingOut, refreshStatuses]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ block: 'end' }); }, [messages.length, pending.length, activeId]);
 
