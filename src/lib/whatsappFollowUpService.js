@@ -2,6 +2,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { format, differenceInYears } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { calculateDayNameIndonesia } from './whatsappService';
+import { isWaCloudActive, waSendText } from './waCloud';
 
 // Helper to get salutation
 const getSalutation = (patient) => {
@@ -108,6 +109,17 @@ export const generatePackageExpiryMessage = async (patient, pkg) => {
 
 // ─── Kirim pesan via Watzap API ───────────────────────────────────────────────
 const sendViaWatzap = async (phone, message) => {
+  // Klinik yang sudah menyambungkan Cloud API Meta dikirim lewat sana (Edge
+  // Function wa-cloud); Watzap hanya jalur cadangan untuk klinik lain.
+  if (await isWaCloudActive()) {
+    try {
+      await waSendText(phone, message);
+      return { success: true, status: true };
+    } catch (e) {
+      return { success: false, status: false, error: e.message, message: e.message };
+    }
+  }
+
   const { data: wa } = await supabase
     .from('wa_settings')
     .select('api_key, number_key')
