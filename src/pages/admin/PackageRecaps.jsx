@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-    Search, Plus, Package, Clock, CheckCircle, 
+    Search, Package, Clock, CheckCircle, 
     AlertTriangle, Loader2, Filter, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,6 @@ import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { formatDateIndonesian } from '@/lib/dateFormatHelpers';
 import { cn } from '@/lib/utils';
-import AddPackageModal from '@/components/shared/AddPackageModal';
 import ExtendPackageModal from '@/components/shared/ExtendPackageModal';
 import PackageHistoryModal from '@/components/shared/PackageHistoryModal';
 import { Label } from '@/components/ui/label';
@@ -39,7 +38,6 @@ export const PackageRecapsContent = () => {
     const [itemsPerPage, setItemsPerPage] = useState(20);
 
     // Modals
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isExtendModalOpen, setIsExtendModalOpen] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [isExtending, setIsExtending] = useState(false);
@@ -325,11 +323,6 @@ export const PackageRecapsContent = () => {
         <div className="space-y-6">
             <PageHero image="/hero/clinara-package-hero.webp" title="Rekap" highlight="Paket" description="Kelola status dan riwayat paket pasien." />
 
-            <div className="flex justify-end">
-              <Button onClick={() => setIsAddModalOpen(true)} className="bg-app-accent hover:bg-app-accent-hover shadow-sm w-full sm:w-auto">
-                <Plus className="w-4 h-4 mr-2" /> Tambahkan Pasien Paket
-              </Button>
-            </div>
 
             {/* Restructured Filter Section */}
             <div className="bg-white p-4 sm:p-5 rounded-app border border-slate-200 shadow-sm">
@@ -535,11 +528,6 @@ export const PackageRecapsContent = () => {
             {filteredAndSortedPackages.length > 0 && <PaginationControls />}
 
             {/* Modals */}
-            <AddPackageModal 
-                isOpen={isAddModalOpen} 
-                onClose={() => setIsAddModalOpen(false)} 
-                onSuccess={fetchPackages}
-            />
 
             <ExtendPackageModal
                 open={isExtendModalOpen}
