@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-    Search, Plus, Package, Clock, CheckCircle, 
-    AlertTriangle, Trash2, Loader2, Filter, ChevronLeft, ChevronRight
+    Search, Package, Clock, CheckCircle, 
+    AlertTriangle, Loader2, Filter, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,11 +10,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { formatDateIndonesian } from '@/lib/dateFormatHelpers';
 import { cn } from '@/lib/utils';
-import AddPackageModal from '@/components/shared/AddPackageModal';
 import ExtendPackageModal from '@/components/shared/ExtendPackageModal';
 import PackageHistoryModal from '@/components/shared/PackageHistoryModal';
-import EditPackageStatusModal from '@/components/admin/EditPackageStatusModal';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { ADMIN_NAV_ITEMS } from '@/lib/navItems';
 import {
@@ -41,11 +38,8 @@ export const PackageRecapsContent = () => {
     const [itemsPerPage, setItemsPerPage] = useState(20);
 
     // Modals
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isExtendModalOpen, setIsExtendModalOpen] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
-    const [isEditStatusModalOpen, setIsEditStatusModalOpen] = useState(false);
-    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [isExtending, setIsExtending] = useState(false);
 
     const [selectedPackage, setSelectedPackage] = useState(null);
@@ -105,36 +99,6 @@ export const PackageRecapsContent = () => {
             toast({ variant: "destructive", title: "Gagal", description: error.message || "Gagal memperpanjang paket." });
         } finally {
             setIsExtending(false);
-        }
-    };
-
-    const handleDeleteClick = (e, pkg) => {
-        e.stopPropagation();
-        setSelectedPackage(pkg);
-        setIsDeleteConfirmOpen(true);
-    };
-
-    const handleEditStatusClick = (e, pkg) => {
-        e.stopPropagation();
-        setSelectedPackage(pkg);
-        setIsEditStatusModalOpen(true);
-    };
-
-    const confirmDelete = async () => {
-        try {
-            const { error } = await supabase
-                .from('package_tracking')
-                .delete()
-                .eq('id', selectedPackage.id);
-
-            if (error) throw error;
-
-            toast({ title: "Terhapus", description: "Paket berhasil dihapus." });
-            fetchPackages();
-            setIsDeleteConfirmOpen(false);
-        } catch (error) {
-            console.error("Error deleting package:", error);
-            toast({ variant: "destructive", title: "Gagal", description: "Gagal menghapus paket." });
         }
     };
 
@@ -359,11 +323,6 @@ export const PackageRecapsContent = () => {
         <div className="space-y-6">
             <PageHero image="/hero/clinara-package-hero.webp" title="Rekap" highlight="Paket" description="Kelola status dan riwayat paket pasien." />
 
-            <div className="flex justify-end">
-              <Button onClick={() => setIsAddModalOpen(true)} className="bg-app-accent hover:bg-app-accent-hover shadow-sm w-full sm:w-auto">
-                <Plus className="w-4 h-4 mr-2" /> Tambahkan Pasien Paket
-              </Button>
-            </div>
 
             {/* Restructured Filter Section */}
             <div className="bg-white p-4 sm:p-5 rounded-app border border-slate-200 shadow-sm">
@@ -494,12 +453,6 @@ export const PackageRecapsContent = () => {
                                                     Perpanjang
                                                 </Button>
                                             )}
-                                            <Button size="sm" variant="outline" className="h-7 text-xs border-app-accent/25 text-app-accent-hover whitespace-nowrap shrink-0" onClick={(e) => handleEditStatusClick(e, pkg)}>
-                                                Ubah Status
-                                            </Button>
-                                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-slate-500 hover:text-red-600 shrink-0" onClick={(e) => handleDeleteClick(e, pkg)}>
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                            </Button>
                                         </div>
                                     </div>
                                 </div>
@@ -560,12 +513,6 @@ export const PackageRecapsContent = () => {
                                                             Perpanjang
                                                         </Button>
                                                     )}
-                                                    <Button size="sm" variant="outline" className="h-7 text-xs border-blue-200 text-blue-700 hover:bg-blue-50" onClick={(e) => handleEditStatusClick(e, pkg)}>
-                                                        Ubah Status
-                                                    </Button>
-                                                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-slate-500 hover:text-red-600" onClick={(e) => handleDeleteClick(e, pkg)}>
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </Button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -581,11 +528,6 @@ export const PackageRecapsContent = () => {
             {filteredAndSortedPackages.length > 0 && <PaginationControls />}
 
             {/* Modals */}
-            <AddPackageModal 
-                isOpen={isAddModalOpen} 
-                onClose={() => setIsAddModalOpen(false)} 
-                onSuccess={fetchPackages}
-            />
 
             <ExtendPackageModal
                 open={isExtendModalOpen}
@@ -599,29 +541,6 @@ export const PackageRecapsContent = () => {
                 onClose={() => setIsHistoryModalOpen(false)}
                 packageData={selectedPackage}
             />
-
-            <EditPackageStatusModal
-                isOpen={isEditStatusModalOpen}
-                onClose={() => setIsEditStatusModalOpen(false)}
-                packageData={selectedPackage}
-                onSuccess={fetchPackages}
-            />
-
-            <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-                <DialogContent className="max-w-sm">
-                    <DialogHeader>
-                        <DialogTitle>Hapus Paket</DialogTitle>
-                        <DialogDescription>
-                            Anda yakin ingin menghapus paket milik <b>{selectedPackage?.patients?.full_name}</b>?
-                            Tindakan ini tidak dapat dibatalkan.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDeleteConfirmOpen(false)}>Batal</Button>
-                        <Button variant="destructive" onClick={confirmDelete}>Hapus</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
 
         </div>
     );
