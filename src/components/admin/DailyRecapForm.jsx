@@ -855,7 +855,7 @@ disabled={isPackageSessionLocked}
 </div>
 {isPackageSessionLocked && (
   <p className="text-xs text-slate-500 col-span-2 -mt-2">
-    Sesi ini memakai kuota paket (Rp 0) sehingga nominal &amp; metode pembayaran dikunci. Kalau pasien batal memakai paket, ajukan "Lepas dari paket" ke owner lewat Detail recap > Pengajuan Perubahan.
+    Sesi ini memakai kuota paket (Rp 0) sehingga nominal &amp; metode pembayaran dikunci. Kalau pasien batal memakai paket, ajukan “Lepas dari paket” ke owner lewat Detail recap > Pengajuan Perubahan.
   </p>
 )}
 </div>
