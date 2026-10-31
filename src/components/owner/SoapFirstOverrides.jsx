@@ -63,6 +63,10 @@ const describePayload = (o) => {
     const oldDisc = o.payload?.old_discount_label ? `, diskon ${o.payload.old_discount_label} dilepas` : '';
     return `${o.payload?.old_package || '-'} → ${o.payload?.package_label || '-'}: nominal ${formatCurrency(o.payload?.old_amount || 0)} → ${formatCurrency(o.payload?.new_amount || 0)}${oldDisc}. Invoice perlu diterbitkan ulang.`;
   }
+  if (o.kind === 'package_release') {
+    const owner = o.payload?.package_owner ? ` milik ${o.payload.package_owner}` : '';
+    return `Lepas dari ${o.payload?.package_name || 'paket'}${owner} (terpakai ${o.payload?.sessions_used ?? '-'}/${o.payload?.total_sessions ?? '-'}). Kuota paket kembali 1 sesi, sesi menjadi reguler dan nominal/metode pembayaran diisi admin.${o.payload?.invoice_issued ? ' Invoice Rp 0 yang sudah terbit dibatalkan dan perlu diterbitkan ulang.' : ''}`;
+  }
   if (o.kind === 'recovery_outside_package') {
     return o.payload?.outside === false ? 'Kembalikan sesi ke kuota paket' : 'Ambil sebagai Recovery di luar paket (tidak memotong kuota)';
   }

@@ -79,6 +79,9 @@ const [showExtendModal, setShowExtendModal] = useState(false);
 // ketik nominal di sesi gratis (jadi bikin "paket hantu" baru & sesi lain
 // yang harusnya kepakai malah tidak kehitung).
 const [isPackageSessionLocked, setIsPackageSessionLocked] = useState(false);
+// package_tracking_id recap yang TERKINI di DB. initialData bisa basi: kalau paketnya sudah
+// dilepas (mis. pengajuan "Lepas dari paket"), menyimpan nilai lama akan menautkan paket lagi.
+const [livePackageTrackingId, setLivePackageTrackingId] = useState(null);
 
 const [formData, setFormData] = useState({
 recap_date: formatDateDisplay(new Date().toISOString()),
@@ -114,6 +117,7 @@ initializeForm(initialData);
 useEffect(() => {
 if (mode !== 'edit' || !initialData?.id) {
   setIsPackageSessionLocked(false);
+  setLivePackageTrackingId(null);
   return;
 }
 let cancelled = false;
@@ -125,6 +129,7 @@ let cancelled = false;
     .maybeSingle();
   if (cancelled || error || !data) return;
   const currentAmount = Number(data.amount_original ?? data.amount ?? 0);
+  setLivePackageTrackingId(data.package_tracking_id || null);
   setIsPackageSessionLocked(!!data.package_tracking_id && currentAmount === 0);
 })();
 return () => { cancelled = true; };
@@ -599,9 +604,10 @@ patient_type_ids: selectedPatientTypeIds,
 
 // FIX: jangan hardcode null saat edit — itu memutus link paket yang sudah
 // tersimpan (sesi jadi tidak terhitung & muncul lagi di tanggal yang salah).
-// Edit: pertahankan link lama. Add: pakai paket aktif pasien kalau ada.
+// Edit: pertahankan link yang tersimpan di DB sekarang (bukan initialData yang bisa basi).
+// Add: pakai paket aktif pasien kalau ada.
 package_tracking_id: mode === 'edit'
-  ? (initialData?.package_tracking_id ?? null)
+  ? livePackageTrackingId
   : (activePackage?.id ?? null),
 
 
@@ -855,7 +861,7 @@ disabled={isPackageSessionLocked}
 </div>
 {isPackageSessionLocked && (
   <p className="text-xs text-slate-500 col-span-2 -mt-2">
-    Sesi ini memakai kuota paket (Rp 0) sehingga nominal &amp; metode pembayaran dikunci. Kalau ini bukan sesi paket, hubungi admin sistem.
+    Sesi ini memakai kuota paket (Rp 0) sehingga nominal &amp; metode pembayaran dikunci. Kalau pasien batal memakai paket, ajukan “Lepas dari paket” ke owner lewat Detail recap > Pengajuan Perubahan.
   </p>
 )}
 </div>

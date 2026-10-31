@@ -224,6 +224,10 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
     // (bukan dari initialData yang bisa basi) supaya admin tidak bisa lagi
     // salah ketik nominal di sesi yang seharusnya gratis.
     const [isPackageSessionLocked, setIsPackageSessionLocked] = useState(false);
+    // package_tracking_id recap ini yang TERKINI di DB (dibaca saat form edit dibuka).
+    // initialData berasal dari daftar yang bisa basi: kalau paketnya sudah dilepas (mis. lewat
+    // pengajuan "Lepas dari paket"), menyimpan ulang nilai lama akan menautkan paket lagi.
+    const [livePackageTrackingId, setLivePackageTrackingId] = useState(null);
 
     // Split payment: satu recap dibayar dengan lebih dari 1 metode
     // (mis. QRIS 200rb + Cash 50rb untuk tagihan 250rb).
@@ -239,6 +243,7 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
     useEffect(() => {
         if (!isOpen || mode !== 'edit' || !initialData?.id) {
             setIsPackageSessionLocked(false);
+            setLivePackageTrackingId(null);
             return;
         }
         let cancelled = false;
@@ -250,6 +255,7 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
                 .maybeSingle();
             if (cancelled || error || !data) return;
             const currentAmount = Number(data.amount_original ?? data.amount ?? 0);
+            setLivePackageTrackingId(data.package_tracking_id || null);
             setIsPackageSessionLocked(!!data.package_tracking_id && currentAmount === 0);
         })();
         return () => { cancelled = true; };
@@ -1420,12 +1426,13 @@ setFormData({
                 special_type: formData.special_type || null,
                 free_reason: formData.special_type === 'free' ? ((formData.free_reason || '').trim() || null) : null,
                 // FIX: saat edit, pertahankan package_tracking_id ASLI recap ini
-                // (initialData) - jangan pakai selectedPackage, karena itu adalah
+                // sebagaimana tersimpan di DB sekarang (livePackageTrackingId, bukan
+                // initialData yang bisa basi) - jangan pakai selectedPackage, karena itu adalah
                 // paket AKTIF pasien SAAT INI dan bisa berbeda dari paket yang
                 // sebenarnya dipakai waktu recap ini dibuat. Kalau di-mismatch,
                 // hitungan sesi paket lama & baru jadi rusak.
                 package_tracking_id: mode === 'edit'
-                    ? (initialData?.package_tracking_id ?? null)
+                    ? livePackageTrackingId
                     : (selectedPackage?.id ?? null)
             };
             if (sfEdit) {
@@ -1720,7 +1727,7 @@ setFormData({
                                 </div>
                                 {isPackageSessionLocked && (
                                     <p className="text-xs text-slate-500 -mt-1">
-                                        Sesi ini memakai kuota paket (Rp 0) sehingga nominal &amp; metode pembayaran dikunci. Kalau ini bukan sesi paket, hubungi admin sistem.
+                                        Sesi ini memakai kuota paket (Rp 0) sehingga nominal &amp; metode pembayaran dikunci. Kalau pasien batal memakai paket, ajukan “Lepas dari paket” ke owner lewat Detail recap > Pengajuan Perubahan.
                                     </p>
                                 )}
                                 {!isPackageSessionLocked && (
