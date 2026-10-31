@@ -10,7 +10,6 @@ import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { formatDateIndonesian } from '@/lib/dateFormatHelpers';
 import { cn } from '@/lib/utils';
-import ExtendPackageModal from '@/components/shared/ExtendPackageModal';
 import PackageHistoryModal from '@/components/shared/PackageHistoryModal';
 import { Label } from '@/components/ui/label';
 import { ADMIN_NAV_ITEMS } from '@/lib/navItems';
@@ -22,7 +21,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import DashboardLayout from '@/components/DashboardLayout';
-import { updatePackageTrackingStatus } from '@/lib/api';
 import PageHero from '@/components/shared/PageHero';
 
 // Shared Logic Component
@@ -38,9 +36,7 @@ export const PackageRecapsContent = () => {
     const [itemsPerPage, setItemsPerPage] = useState(20);
 
     // Modals
-    const [isExtendModalOpen, setIsExtendModalOpen] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
-    const [isExtending, setIsExtending] = useState(false);
 
     const [selectedPackage, setSelectedPackage] = useState(null);
 
@@ -77,29 +73,6 @@ export const PackageRecapsContent = () => {
     const handleRowClick = (pkg) => {
         setSelectedPackage(pkg);
         setIsHistoryModalOpen(true);
-    };
-
-    const handleExtendClick = (e, pkg) => {
-        e.stopPropagation();
-        setSelectedPackage(pkg);
-        setIsExtendModalOpen(true);
-    };
-
-    const handleConfirmExtend = async (isoDate) => {
-        if (!selectedPackage) return;
-        setIsExtending(true);
-        try {
-            const { error } = await updatePackageTrackingStatus(selectedPackage.id, 'diperpanjang', isoDate);
-            if (error) throw error;
-            toast({ title: "Berhasil", description: "Paket berhasil diperpanjang." });
-            setIsExtendModalOpen(false);
-            fetchPackages();
-        } catch (error) {
-            console.error("Error extending package:", error);
-            toast({ variant: "destructive", title: "Gagal", description: error.message || "Gagal memperpanjang paket." });
-        } finally {
-            setIsExtending(false);
-        }
     };
 
     // Calculate Counts
@@ -438,7 +411,7 @@ export const PackageRecapsContent = () => {
                                         )}
                                     </div>
 
-                                    {/* Baris 3: Tgl Selesai + Aksi */}
+                                    {/* Baris 3: Tgl Selesai */}
                                     <div className="flex flex-col gap-2 border-t border-slate-100 pt-2">
                                         <div className="flex items-center gap-1.5 text-xs text-slate-500 whitespace-nowrap overflow-hidden">
                                             <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
@@ -446,13 +419,6 @@ export const PackageRecapsContent = () => {
                                                 ? <span className="text-orange-600 font-semibold">{formatDateIndonesian(pkg.extended_until)}</span>
                                                 : (pkg.end_date ? formatDateIndonesian(pkg.end_date) : '-')
                                             }</span>
-                                        </div>
-                                        <div className="flex gap-1.5 justify-end" onClick={(e) => e.stopPropagation()}>
-                                            {pkg.status === 'expired' && (
-                                                <Button size="sm" variant="outline" className="h-7 text-xs border-orange-200 text-orange-700 whitespace-nowrap shrink-0" onClick={(e) => handleExtendClick(e, pkg)}>
-                                                    Perpanjang
-                                                </Button>
-                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -518,13 +484,6 @@ export const PackageRecapsContent = () => {
             {filteredAndSortedPackages.length > 0 && <PaginationControls />}
 
             {/* Modals */}
-
-            <ExtendPackageModal
-                open={isExtendModalOpen}
-                onOpenChange={setIsExtendModalOpen}
-                onExtend={handleConfirmExtend}
-                isLoading={isExtending}
-            />
 
             <PackageHistoryModal
                 isOpen={isHistoryModalOpen}
