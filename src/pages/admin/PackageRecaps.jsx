@@ -474,15 +474,14 @@ export const PackageRecapsContent = () => {
                                 <th className="px-4 py-3 text-center">Tgl Selesai</th>
                                 <th className="px-4 py-3 text-center">Sisa Hari</th>
                                 <th className="px-4 py-3 text-center">Status</th>
-                                <th className="px-4 py-3 text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {isLoading ? (
-                                <tr><td colSpan={9} className="p-8 text-center text-slate-500"><Loader2 className="animate-spin w-6 h-6 mx-auto mb-2" />Memuat data...</td></tr>
+                                <tr><td colSpan={8} className="p-8 text-center text-slate-500"><Loader2 className="animate-spin w-6 h-6 mx-auto mb-2" />Memuat data...</td></tr>
                             ) : paginatedPackages.length === 0 ? (
                                 <tr>
-                                    <td colSpan={9} className="p-8 text-center text-slate-500">Tidak ada data paket.</td>
+                                    <td colSpan={8} className="p-8 text-center text-slate-500">Tidak ada data paket.</td>
                                 </tr>
                             ) : (
                                 paginatedPackages.map((pkg) => {
@@ -506,15 +505,6 @@ export const PackageRecapsContent = () => {
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-center">{getStatusBadge(pkg.status)}</td>
-                                            <td className="px-4 py-3 text-center">
-                                                <div className="flex justify-center gap-2">
-                                                    {pkg.status === 'expired' && (
-                                                        <Button size="sm" variant="outline" className="h-7 text-xs border-orange-200 text-orange-700 hover:bg-orange-50" onClick={(e) => handleExtendClick(e, pkg)}>
-                                                            Perpanjang
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </td>
                                         </tr>
                                     );
                                 })
