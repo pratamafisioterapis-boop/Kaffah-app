@@ -506,8 +506,13 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
         onSent?.();
       } else if (rpcResult?.error) {
         throw new Error(rpcResult.error);
-      } else if (!rpcResult?.status) {
-        throw new Error('Belum ada respons dari Watzap. Cek WhatsApp pasien atau kirim manual.');
+      } else if (rpcResult?.pending || !rpcResult?.status) {
+        // Permintaan sudah diteruskan ke Watzap tetapi balasannya belum datang. Bukan kegagalan:
+        // jangan tandai merah; status dibiarkan agar tidak menyesatkan, staf diminta memeriksa.
+        toast({
+          title: "Menunggu respons Watzap",
+          description: `Permintaan sudah dikirim ke ${rawPhone} tetapi Watzap belum membalas. Cek WhatsApp pasien sebelum mengirim ulang agar tidak terkirim dobel.`,
+        });
       } else {
         throw new Error(body?.message || String(rpcResult.content || 'Gagal mengirim invoice otomatis').slice(0, 200));
       }
