@@ -15,6 +15,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Trash2, CalendarDays, Clock, Pencil, Loader2, CalendarCheck } from 'lucide-react';
 import { WAIVER_REASON_LABEL } from '@/lib/leaveRequestUtils';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 
@@ -40,6 +42,9 @@ const parseReason = (reason) => {
 
 const TherapistTimeOffList = ({ therapist, refreshTrigger }) => {
   const { toast } = useToast();
+  const { role, userDetails } = useAuth();
+  // Klinik Kaffah: admin hanya melihat riwayat cuti (tanpa edit/hapus).
+  const hideActions = role === 'admin' && userDetails?.clinic_id === KAFFAH_CLINIC_ID;
   const [loading, setLoading] = useState(false);
   const [timeOffs, setTimeOffs] = useState([]);
   const [extraShifts, setExtraShifts] = useState([]);
@@ -182,6 +187,7 @@ const TherapistTimeOffList = ({ therapist, refreshTrigger }) => {
                            </div>
                         </div>
                         
+                        {!hideActions && (
                         <div className="flex items-center">
                         <Button 
                            variant="ghost" 
@@ -200,6 +206,7 @@ const TherapistTimeOffList = ({ therapist, refreshTrigger }) => {
                            <Trash2 className="w-4 h-4" />
                         </Button>
                         </div>
+                        )}
                      </CardContent>
                   </Card>
                );
