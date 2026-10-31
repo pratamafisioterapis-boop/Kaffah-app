@@ -43,38 +43,41 @@ export const registerPushNotifications = async (userId) => {
 
     const deviceId = getDeviceId();
 
-    // Hapus token milik user LAIN yang kebetulan pakai device_id sama
-    // (device di-pakai gantian akun tanpa clear storage) supaya push
-    // tidak nyasar/dobel ke device ini
-    await supabase
-      .from("fcm_tokens")
-      .delete()
-      .eq("device_id", deviceId)
-      .neq("user_id", userId);
+    // Pendaftaran lewat fungsi SQL register_fcm_token (SECURITY DEFINER): satu perangkat /
+    // satu token hanya terikat ke satu pengguna. Pembersihan token milik pengguna LAIN
+    // (perangkat dipakai gantian akun, atau token FCM identik setelah reinstall PWA) tidak
+    // bisa lagi dilakukan klien karena RLS fcm_tokens hanya mengizinkan baris milik sendiri.
+    let { error } = await supabase.rpc("register_fcm_token", {
+      p_device_id: deviceId,
+      p_token: token,
+    });
 
-    // Hapus baris lain manapun yang kebetulan sudah pakai TOKEN FCM yang sama
-    // (browser bisa mengembalikan token identik walau device_id beda, mis.
-    // setelah reinstall PWA / clear storage) — supaya 1 token cuma terikat
-    // ke 1 user dan notifikasi tidak bocor ke akun/klinik lain
-    await supabase
-      .from("fcm_tokens")
-      .delete()
-      .eq("token", token)
-      .neq("user_id", userId);
+    // Cadangan bila fungsi SQL belum terpasang di database (migrasi RLS tahap 1 belum dijalankan).
+    if (error && (error.code === "PGRST202" || error.code === "42883")) {
+      await supabase
+        .from("fcm_tokens")
+        .delete()
+        .eq("device_id", deviceId)
+        .neq("user_id", userId);
 
-    const { error } = await supabase
-  .from("fcm_tokens")
-  .upsert(
-    {
-      user_id: userId,
-      device_id: deviceId,
-      token,
-      updated_at: new Date().toISOString(),
-    },
-    {
-      onConflict: "user_id,device_id",
+      await supabase
+        .from("fcm_tokens")
+        .delete()
+        .eq("token", token)
+        .neq("user_id", userId);
+
+      ({ error } = await supabase
+        .from("fcm_tokens")
+        .upsert(
+          {
+            user_id: userId,
+            device_id: deviceId,
+            token,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id,device_id" }
+        ));
     }
-  );
 
     if (error) {
       console.error("FCM DB ERROR:", error);
