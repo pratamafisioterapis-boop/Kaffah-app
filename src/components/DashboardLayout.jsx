@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { getWaInboxProvider } from '@/lib/waCloud';
 import { supabase } from '@/lib/customSupabaseClient';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -146,14 +145,6 @@ useEffect(() => {
   const [scrolled, setScrolled] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({});
   const [menuSearchQuery, setMenuSearchQuery] = useState('');
-  // Menu WhatsApp Inbox hanya untuk klinik yang inbox-nya diaktifkan (mis. Kaffah).
-  const [waInboxOn, setWaInboxOn] = useState(false);
-  useEffect(() => {
-    if (!['owner', 'admin'].includes(role)) return;
-    let alive = true;
-    getWaInboxProvider().then((p) => { if (alive) setWaInboxOn(!!p); });
-    return () => { alive = false; };
-  }, [role, userDetails?.clinic_id]);
 const isPWA =
   window.matchMedia('(display-mode: standalone)').matches ||
   window.navigator.standalone === true;
@@ -176,19 +167,9 @@ const isPWA =
   const processNavItems = (items) => {
    if (!items) return [];
 
-   // Menu WhatsApp Inbox disisipkan SEBELUM cabang PWA di bawah: di PWA menu
-   // dipakai apa adanya, sehingga penyisipan di dalam blok owner/admin tidak
-   // pernah berjalan dan menu ini tidak muncul di aplikasi terpasang.
-   const inboxPath = role === 'owner' ? '/owner/wa-inbox' : '/admin/wa-inbox';
-   const withInbox = (list) => {
-     if (!waInboxOn || !['owner', 'admin'].includes(role)) return list;
-     const has = list.some((i) => i.path === inboxPath || (i.submenu || []).some((sub) => sub.path === inboxPath));
-     return has ? list : [...list, { label: 'WhatsApp Inbox', path: inboxPath, icon: 'MessageSquare' }];
-   };
-
    // PWA: gunakan menu apa adanya
    if (isPWA) {
-      return withInbox(items);
+      return items;
    }
 
    let newItems = [...items];
@@ -215,8 +196,6 @@ const isPWA =
             newItems.push({ label: 'Follow Up Management', path: followUpPath, icon: 'MessageSquare' });
          }
      }
-
-     newItems = withInbox(newItems);
 
      newItems = newItems.map(item => {
         if (item.label === 'Accounting') return { ...item, label: 'Accounting System' };
@@ -274,7 +253,7 @@ const isPWA =
         return isNavItemDisabled(item.label, role, disabledFeatures) ? null : item;
       })
       .filter(Boolean);
-  }, [navItems, role, clinicInfo, clinicFeaturesLoaded, userDetails?.clinic_id, waInboxOn]);
+  }, [navItems, role, clinicInfo, clinicFeaturesLoaded, userDetails?.clinic_id]);
 
   const displayedNavItems = useMemo(() => {
     if (role !== 'owner' || !menuSearchQuery.trim()) return finalNavItems;
