@@ -17,7 +17,6 @@ const OwnerPresentationPage = React.lazy(lazyRetry(() => import('@/pages/owner/O
 const DatabasePatients = React.lazy(lazyRetry(() => import('@/pages/owner/DatabasePatients'), 'DatabasePatients'));
 const PhysiotherapistManagementPage = React.lazy(lazyRetry(() => import('@/pages/PhysiotherapistManagementPage'), 'PhysiotherapistManagementPage'));
 const MedicalRecordsPage = React.lazy(lazyRetry(() => import('@/pages/MedicalRecordsPage'), 'MedicalRecordsPage'));
-const OwnerWhatsAppInboxPage = React.lazy(lazyRetry(() => import('@/components/admin/WhatsAppInboxPage'), 'OwnerWhatsAppInboxPage'));
 const OwnerFollowUpManagementPage = React.lazy(lazyRetry(() => import('@/components/admin/FollowUpManagementPage'), 'OwnerFollowUpManagementPage'));
 
 // Components
@@ -544,7 +543,6 @@ const OwnerDashboard = () => {
         <Route path="/physiotherapist-management" element={<PhysiotherapistManagementPage />} />
         <Route path="/medical-records" element={<MedicalRecordsPage />} />
         <Route path="/follow-up-management" element={<OwnerFollowUpManagementPage />} />
-        <Route path="/wa-inbox" element={<OwnerWhatsAppInboxPage />} />
 
         {/* Reached only from the "Evaluasi Harian" tab's "Isi SOAP" button
             for a patient the owner (as therapist) actually handles — not
