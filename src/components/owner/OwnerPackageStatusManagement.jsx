@@ -45,7 +45,6 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { formatPackageData, downloadCSV } from '@/lib/utils';
 import { format, isBefore, startOfDay, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
-import EditPackageStatusModal from '@/components/admin/EditPackageStatusModal';
 import { confirmAction } from '@/lib/confirmAction';
 
 const OwnerPackageStatusManagement = () => {
@@ -57,14 +56,11 @@ const OwnerPackageStatusManagement = () => {
   const [selectedIds, setSelectedIds] = useState([]);
   
   // Modal States
-  const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   
   // Bulk Action States
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
-  const [bulkStatusOpen, setBulkStatusOpen] = useState(false);
-  const [bulkStatusValue, setBulkStatusValue] = useState('aktif');
   const [processingBulk, setProcessingBulk] = useState(false);
 
   const fetchData = async () => {
@@ -196,28 +192,6 @@ const OwnerPackageStatusManagement = () => {
     }
   };
 
-  const handleBulkStatusUpdate = async () => {
-    if (!selectedIds.length) return;
-
-    setProcessingBulk(true);
-    try {
-        const { error } = await supabase
-            .from('package_tracking')
-            .update({ status: bulkStatusValue, updated_at: new Date().toISOString() })
-            .in('id', selectedIds);
-
-        if (error) throw error;
-
-        toast({ title: "Success", description: "Updated status for selected packages." });
-        fetchData();
-        setBulkStatusOpen(false);
-    } catch (error) {
-        toast({ variant: "destructive", title: "Update Failed", description: error.message });
-    } finally {
-        setProcessingBulk(false);
-    }
-  };
-
   const handleExport = () => {
     const exportData = filteredPackages.map(p => ({
         'Patient Name': p.patient?.full_name,
@@ -290,15 +264,6 @@ const OwnerPackageStatusManagement = () => {
             <div className="flex gap-2">
                 <Button 
                     size="sm" 
-                    variant="secondary" 
-                    className="text-slate-900"
-                    onClick={() => setBulkStatusOpen(true)}
-                >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Ubah Status
-                </Button>
-                <Button 
-                    size="sm" 
                     variant="destructive" 
                     onClick={() => setBulkDeleteDialogOpen(true)}
                 >
@@ -355,9 +320,6 @@ const OwnerPackageStatusManagement = () => {
                       <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                       <DropdownMenuItem onClick={() => { setSelectedPackage(pkg); setDetailModalOpen(true); }}>
                         <Eye className="mr-2 h-4 w-4" /> Detail
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => { setSelectedPackage(pkg); setEditModalOpen(true); }}>
-                        <Edit className="mr-2 h-4 w-4" /> Edit Status
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
@@ -514,9 +476,6 @@ const OwnerPackageStatusManagement = () => {
                                         <DropdownMenuItem onClick={() => { setSelectedPackage(pkg); setDetailModalOpen(true); }}>
                                             <Eye className="mr-2 h-4 w-4" /> Detail
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => { setSelectedPackage(pkg); setEditModalOpen(true); }}>
-                                            <Edit className="mr-2 h-4 w-4" /> Edit Status
-                                        </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem 
                                             className="text-red-600 focus:text-red-600"
@@ -534,14 +493,6 @@ const OwnerPackageStatusManagement = () => {
           </TableBody>
         </Table>
       </div>
-
-      {/* Edit Status Modal */}
-      <EditPackageStatusModal 
-        isOpen={editModalOpen}
-        onClose={() => setEditModalOpen(false)}
-        packageData={selectedPackage}
-        onSuccess={fetchData}
-      />
 
       {/* View Detail Modal */}
       <Dialog open={detailModalOpen} onOpenChange={setDetailModalOpen}>
@@ -609,37 +560,6 @@ const OwnerPackageStatusManagement = () => {
                 <Button variant="ghost" onClick={() => setBulkDeleteDialogOpen(false)}>Batal</Button>
                 <Button variant="destructive" onClick={() => handleDelete(selectedIds)} disabled={processingBulk}>
                     {processingBulk ? "Menghapus..." : "Ya, Hapus Semua"}
-                </Button>
-            </DialogFooter>
-         </DialogContent>
-      </Dialog>
-
-       {/* Bulk Status Dialog */}
-       <Dialog open={bulkStatusOpen} onOpenChange={setBulkStatusOpen}>
-         <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Update Status Massal</DialogTitle>
-                <DialogDescription>
-                    Pilih status baru untuk {selectedIds.length} paket yang dipilih.
-                </DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-                <Select value={bulkStatusValue} onValueChange={setBulkStatusValue}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Pilih status..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="aktif">Aktif</SelectItem>
-                        <SelectItem value="selesai">Selesai</SelectItem>
-                        <SelectItem value="expired">Expired</SelectItem>
-                        <SelectItem value="diperpanjang">Diperpanjang</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            <DialogFooter>
-                <Button variant="ghost" onClick={() => setBulkStatusOpen(false)}>Batal</Button>
-                <Button onClick={handleBulkStatusUpdate} disabled={processingBulk}>
-                    {processingBulk ? "Menyimpan..." : "Simpan Perubahan"}
                 </Button>
             </DialogFooter>
          </DialogContent>
