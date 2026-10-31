@@ -542,11 +542,23 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
 const handleSendManualWA = async () => {
   setIsSendingManualWA(true);
 
+  // Buka tab SEKARANG, sinkron dengan klik. Menyiapkan PDF (generate + upload) bisa memakan beberapa
+  // detik; window.open setelah itu bukan lagi gestur pengguna, sehingga diblokir atau, di aplikasi
+  // terpasang (PWA), membuat jendela memuat ulang ke splash screen. Tab ini diarahkan ke WhatsApp
+  // setelah semuanya siap.
+  const waWin = window.open('', '_blank');
+  if (waWin) {
+    try {
+      waWin.document.write('<p style="font-family:sans-serif;padding:24px">Menyiapkan kwitansi...</p>');
+    } catch (_) { /* lintas-origin: abaikan */ }
+  }
+
   try {
 
     const rawPhone = getPatientPhone();
 
     if (!rawPhone) {
+      waWin?.close();
       toast({
         variant: "destructive",
         title: "Nomor Tidak Ditemukan",
@@ -605,6 +617,14 @@ const handleSendManualWA = async () => {
     const formattedPhone =
       rawPhone.replace(/^0/, '62');
 
+    const waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+    if (waWin && !waWin.closed) {
+      waWin.location.href = waUrl;
+    } else {
+      window.open(waUrl, '_blank');
+    }
+
+    // Catat status SETELAH WhatsApp dibuka agar tidak menunda pembukaannya.
     if (!isOneOff) {
       await supabase
         .from('daily_recaps')
@@ -615,14 +635,11 @@ const handleSendManualWA = async () => {
         .eq('id', data.id);
     }
 
-    window.open(
-      `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`,
-      '_blank'
-    );
-
     onSent?.();
 
   } catch (err) {
+
+    waWin?.close();
 
     toast({
       variant: "destructive",
