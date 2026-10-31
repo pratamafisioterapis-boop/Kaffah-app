@@ -1,4 +1,4 @@
--- send_invoice_whatsapp: tunggu respons Watzap sampai ~15 detik (dulu tetap 3 detik).
+-- send_invoice_whatsapp: tunggu respons Watzap sampai ~6 detik (dulu tetap 3 detik).
 --
 -- Balasan Watzap untuk kirim PDF kadang >3 detik (mis. 3,5 detik). Dengan pg_sleep(3) respons masih
 -- kosong, aplikasi mengira gagal dan menampilkan badge merah padahal PDF sampai. Sekarang polling
@@ -48,8 +48,8 @@ BEGIN
         )
     ) INTO v_request_id;
 
-    -- Tunggu respons, maks ~15 detik (30 x 0,5 detik).
-    WHILE i < 30 LOOP
+    -- Tunggu respons, maks ~6 detik (12 x 0,5 detik; batas statement_timeout role authenticated = 8 detik).
+    WHILE i < 12 LOOP
         PERFORM pg_sleep(0.5);
         i := i + 1;
         SELECT * INTO v_response FROM net._http_response WHERE id = v_request_id;
