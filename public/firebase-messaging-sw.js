@@ -71,26 +71,26 @@ messaging.onBackgroundMessage(async (payload) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const url =
-    event.notification?.data?.url || "/";
+  const rawUrl = event.notification?.data?.url || "/";
+  const targetUrl = new URL(rawUrl, self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({
       type: "window",
       includeUncontrolled: true
-    }).then((clientList) => {
-
+    }).then(async (clientList) => {
       for (const client of clientList) {
-
-        if ("focus" in client) {
-
-          client.navigate(url);
-
-          return client.focus();
+        if (!("focus" in client)) continue;
+        try {
+          // navigate() bisa gagal untuk client yang tidak dikontrol SW;
+          // kalau gagal, lanjut buka jendela baru ke halaman tujuan.
+          const navigated = await client.navigate(targetUrl);
+          return (navigated || client).focus();
+        } catch (_e) {
+          // fallthrough ke openWindow
         }
       }
-
-      return clients.openWindow(url);
+      return clients.openWindow(targetUrl);
     })
   );
 });

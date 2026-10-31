@@ -92,6 +92,21 @@ if (userData?.clinic_id) {
 // pakai itu. Kalau tidak, fallback ke default lama berbasis appointment.
 let targetUrl = body.url || "/";
 
+// Khusus owner: push yang berisi permintaan persetujuan harus selalu membuka
+// halaman persetujuan terkait, walau pengirim lupa/menimpa url dengan halaman
+// umum (mis. "/owner" atau kosong). Url spesifik dari pengirim tetap dipakai.
+if (userData?.role === "owner") {
+  const text = `${body.title || ""} ${body.body || ""}`.toLowerCase();
+  const isApprovalRequest =
+    /menunggu persetujuan|pengajuan|permintaan persetujuan/.test(text);
+  const isGenericUrl = !body.url || body.url === "/" || body.url === "/owner" || body.url === "/owner/dashboard";
+  if (isApprovalRequest && isGenericUrl) {
+    if (/template/.test(text)) targetUrl = "/owner/settings?tab=subjective_template";
+    else if (/izin|cuti|tukar|shift|jadwal/.test(text)) targetUrl = "/owner/physiotherapist-management?tab=timeoff";
+    else targetUrl = "/owner/overrides";
+  }
+}
+
 if (!body.url) {
   if (userData?.role === "owner") {
     targetUrl = `/owner/appointments?date=${body.appointment_date}`;
