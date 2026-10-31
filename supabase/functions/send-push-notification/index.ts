@@ -107,7 +107,7 @@ if (userData?.role === "owner") {
   }
 }
 
-if (!body.url) {
+if (!body.url && targetUrl === "/") {
   if (userData?.role === "owner") {
     targetUrl = `/owner/appointments?date=${body.appointment_date}`;
   }
