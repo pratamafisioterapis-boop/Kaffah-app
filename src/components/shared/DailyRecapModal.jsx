@@ -1720,7 +1720,7 @@ setFormData({
                                 </div>
                                 {isPackageSessionLocked && (
                                     <p className="text-xs text-slate-500 -mt-1">
-                                        Sesi ini memakai kuota paket (Rp 0) sehingga nominal &amp; metode pembayaran dikunci. Kalau ini bukan sesi paket, hubungi admin sistem.
+                                        Sesi ini memakai kuota paket (Rp 0) sehingga nominal &amp; metode pembayaran dikunci. Kalau pasien batal memakai paket, ajukan "Lepas dari paket" ke owner lewat Detail recap > Pengajuan Perubahan.
                                     </p>
                                 )}
                                 {!isPackageSessionLocked && (

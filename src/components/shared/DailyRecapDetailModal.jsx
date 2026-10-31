@@ -94,6 +94,8 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
     // Ubah paket (REGULER -> paket) setelah invoice terbit; hanya sesi yang belum tertaut paket.
     const showPackageChange = invoiceLocked && !recap?.package_tracking_id && recap?.special_type !== 'free';
     const showDiscountRequest = invoiceLocked || !!quote?.homecare;
+    // Lepas dari paket: sesi tertaut kuota paket (Rp 0) tapi pasien memutuskan bayar reguler.
+    const showPackageRelease = !!recap?.package_tracking_id && !recap?.is_package_purchase && Number(recap?.amount_original ?? recap?.amount ?? 0) === 0 && recap?.special_type !== 'free';
 
     const loadVitals = React.useCallback(async () => {
         if (!recap?.id) return;
@@ -442,6 +444,11 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                                     {showPackageChange && (
                                         <DropdownMenuItem onSelect={() => openOverride({ kind: 'package_change', withPackage: true, description: 'Invoice sudah terbit. Pilih paket yang diambil pasien. Setelah disetujui owner, diskon/reward dilepas (paket tidak boleh diskon), nominal dihitung ulang dari harga paket, dan paket pasien dibuat. Invoice perlu diterbitkan ulang.' })}>
                                             Pengajuan ubah paket
+                                        </DropdownMenuItem>
+                                    )}
+                                    {showPackageRelease && (
+                                        <DropdownMenuItem onSelect={() => openOverride({ kind: 'package_release', description: 'Sesi ini memakai kuota paket (Rp 0) sehingga nominal & metode pembayaran terkunci. Pakai ini bila pasien batal memakai paket (termasuk paket milik orang lain) dan akan bayar reguler. Setelah disetujui owner, sesi dilepas dari paket dan kuota paket kembali; lalu isi nominal & metode pembayaran lewat Edit Data.' })}>
+                                            Pengajuan lepas dari paket
                                         </DropdownMenuItem>
                                     )}
                                     {!quote?.soap_done && quote?.needs_soap && !invoiceLocked && (
