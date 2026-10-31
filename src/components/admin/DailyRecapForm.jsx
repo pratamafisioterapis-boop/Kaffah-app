@@ -23,6 +23,9 @@ import ExtendPackageModal from './ExtendPackageModal';
 import { cn, splitPatientTypeCombo } from '@/lib/utils';
 import { createDailyRecap, updateDailyRecap } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
+import SoapOverrideDialog from '@/components/shared/SoapOverrideDialog';
 
 // Helper functions for Package Type resolution
 const isUUID = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
@@ -73,6 +76,8 @@ const [isSubmitting, setIsSubmitting] = useState(false);
 const [showDatePicker, setShowDatePicker] = useState(false);
 const [packageInfo, setPackageInfo] = useState(null);
 const [showExtendModal, setShowExtendModal] = useState(false);
+const [overrideDialog, setOverrideDialog] = useState(null);
+const { userDetails } = useAuth();
 // Terkunci kalau recap ini SUDAH tertaut ke paket dengan nominal Rp 0 (sesi
 // pakai kuota paket, bukan transaksi pembelian) - dicek langsung ke DB (bukan
 // dari initialData yang bisa basi) supaya tidak kejadian lagi kasus salah
@@ -519,6 +524,17 @@ if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }));
 
 const handleExtendPackage = async (newDateIso) => {
 if (!packageInfo) return;
+if (userDetails?.clinic_id === KAFFAH_CLINIC_ID) {
+// Kaffah: perpanjangan masa aktif paket wajib disetujui owner.
+setShowExtendModal(false);
+setOverrideDialog({
+kind: 'package_extend',
+packageId: packageInfo.id,
+payload: { new_end_date: String(newDateIso).slice(0, 10) },
+description: `Perpanjang masa aktif paket sampai ${String(newDateIso).slice(0, 10)}. Berlaku setelah disetujui owner.`,
+});
+return;
+}
 try {
 const { error } = await supabase
 .from('package_tracking')
@@ -950,6 +966,15 @@ isOpen={showExtendModal}
 onClose={() => setShowExtendModal(false)}
 packageInfo={packageInfo}
 onExtend={handleExtendPackage}
+/>
+<SoapOverrideDialog
+open={!!overrideDialog}
+onOpenChange={(v) => { if (!v) setOverrideDialog(null); }}
+kind={overrideDialog?.kind}
+packageId={overrideDialog?.packageId ?? null}
+payload={overrideDialog?.payload || {}}
+description={overrideDialog?.description}
+onDone={() => fetchPatientPackageInfo(formData.patient_id)}
 />
 </div>
 );

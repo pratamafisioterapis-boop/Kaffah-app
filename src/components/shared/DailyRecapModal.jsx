@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import PackageInfoCard from './PackageInfoCard';
 import RecapInvoiceItems, { itemsNetTotal } from './RecapInvoiceItems';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import ExtendPackageModal from './ExtendPackageModal';
 import { supabase } from '@/lib/customSupabaseClient';
 import { 
@@ -1209,8 +1210,8 @@ setFormData({
 
     const handleExtendPackage = async (newEndDate) => {
         if (!selectedPackage) return;
-        if (sfActive) {
-            // Perpanjangan masa aktif paket wajib disetujui owner.
+        if (sfActive || userDetails?.clinic_id === KAFFAH_CLINIC_ID) {
+            // Perpanjangan masa aktif paket wajib disetujui owner (selalu untuk Kaffah).
             setShowExtendModal(false);
             setOverrideDialog({
                 kind: 'package_extend',
