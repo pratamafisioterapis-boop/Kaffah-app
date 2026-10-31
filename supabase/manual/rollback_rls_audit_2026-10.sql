@@ -6,6 +6,8 @@
 -- URUTAN: (1) hapus policy BARU dari Tahap 1-3 (bagian A), (2) buat ulang policy LAMA
 -- (bagian B). Aman dijalankan dalam satu transaksi.
 --
+-- Catatan: kolom patients_booking_online.clinic_id (migrasi 20261031030000) sengaja DIBIARKAN saat rollback.
+--
 -- TIDAK bisa dipulihkan lewat skrip ini: baris `bablast_api_key` di system_settings
 -- (sengaja dihapus atas permintaan pemilik karena tidak dipakai lagi).
 
@@ -21,6 +23,7 @@ DROP POLICY IF EXISTS fcm_tokens_insert ON public.fcm_tokens;
 DROP POLICY IF EXISTS fcm_tokens_update ON public.fcm_tokens;
 DROP POLICY IF EXISTS fcm_tokens_delete ON public.fcm_tokens;
 DROP POLICY IF EXISTS patients_booking_online_staff_read ON public.patients_booking_online;
+DROP POLICY IF EXISTS patients_booking_online_public_insert ON public.patients_booking_online;
 DROP POLICY IF EXISTS general_settings_read ON public.general_settings;
 DROP POLICY IF EXISTS general_settings_write_super ON public.general_settings;
 DROP POLICY IF EXISTS appointment_settings_write_super ON public.appointment_settings;
@@ -138,6 +141,9 @@ CREATE POLICY admin_owner_select_patient_info_options ON public.patient_info_opt
 CREATE POLICY clinic_isolated_patient_info_options ON public.patient_info_options AS PERMISSIVE FOR ALL TO PUBLIC
   USING (((( SELECT get_my_role() AS get_my_role) = 'super_admin'::text) OR (clinic_id = ( SELECT get_my_clinic_id() AS get_my_clinic_id))))
   WITH CHECK (((( SELECT get_my_role() AS get_my_role) = 'super_admin'::text) OR (clinic_id = ( SELECT get_my_clinic_id() AS get_my_clinic_id))));
+DROP POLICY IF EXISTS public_insert_booking_online ON public.patients_booking_online;
+CREATE POLICY public_insert_booking_online ON public.patients_booking_online AS PERMISSIVE FOR INSERT TO PUBLIC
+  WITH CHECK (true);
 CREATE POLICY "Allow authenticated users to read patients_booking_online" ON public.patients_booking_online AS PERMISSIVE FOR SELECT TO PUBLIC
   USING ((( SELECT auth.role() AS role) = 'authenticated'::text));
 CREATE POLICY "Owners and admins can manage payroll" ON public.payroll_records AS PERMISSIVE FOR ALL TO PUBLIC

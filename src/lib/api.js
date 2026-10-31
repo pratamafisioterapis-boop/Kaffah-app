@@ -1118,9 +1118,13 @@ export const getClinicLogo = async () => {
   }, 'getClinicLogo', { retry: true });
 };
 
-export const createOnlinePatient = async (patientData) => {
+export const createOnlinePatient = async (patientData, clinicIdOverride = null) => {
   return safeQuery(async () => {
-    return await supabase.from('patients_booking_online').insert([patientData]).select().single();
+    // clinic_id wajib (RLS menolak baris tanpa klinik). Tanpa .select(): pengunjung anonim tidak
+    // punya izin baca, sehingga RETURNING akan ditolak RLS walau insert-nya sendiri diizinkan.
+    const clinic_id = patientData?.clinic_id || clinicIdOverride || PUBLIC_CLINIC_ID;
+    const { error } = await supabase.from('patients_booking_online').insert([{ ...patientData, clinic_id }]);
+    return { data: null, error };
   }, 'createOnlinePatient');
 };
 
