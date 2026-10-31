@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, X, Clock } from 'lucide-react';
+import { Check, X, Clock, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const TONES = {
@@ -8,7 +8,14 @@ const TONES = {
     Icon: Check,
     icon: 'text-emerald-600',
     title:
-      'Terkirim. Status berdasarkan respons API — bukan konfirmasi pasien menerima. Jika pasien 24 jam terakhir tidak WA klinik, pesan bisa gagal masuk walau status ini hijau.',
+      'Terkirim. Status berdasarkan respons API — bukan konfirmasi pasien menerima. Dikirim hanya saat pasien membalas WA klinik dalam 24 jam; catatan lama (sebelum pengecekan 24 jam) bisa saja tidak sampai.',
+  },
+  manual: {
+    label: 'Perlu kirim manual',
+    Icon: AlertTriangle,
+    icon: 'text-orange-500',
+    title:
+      'Tidak dikirim otomatis: pasien belum membalas WA klinik dalam 24 jam, sehingga PDF tidak akan sampai. Kirim manual lewat link.',
   },
   failed: {
     label: 'Gagal dikirim',
@@ -25,7 +32,9 @@ const TONES = {
 };
 
 const getTone = (status) =>
-  status === 'gagal' ? TONES.failed : status ? TONES.sent : TONES.pending;
+  status === 'gagal' ? TONES.failed
+    : status === 'perlu_manual' ? TONES.manual
+    : status ? TONES.sent : TONES.pending;
 
 /**
  * Tombol Invoice dengan penanda status pengiriman WhatsApp (ikon kecil

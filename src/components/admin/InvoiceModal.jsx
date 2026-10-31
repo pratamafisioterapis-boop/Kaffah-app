@@ -416,6 +416,25 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
         return;
       }
 
+      // 1b. Cek jendela 24 jam. PDF lewat jalur non-resmi Watzap tidak punya status pengiriman, dan
+      //     Meta menolak diam-diam bila pasien tidak membalas dalam 24 jam, jadi jangan kirim percuma.
+      const { data: win } = await supabase.rpc('invoice_wa_window', { p_phone: rawPhone });
+      if (win?.checkable && !win.open) {
+        if (!isOneOff) {
+          await supabase
+            .from('daily_recaps')
+            .update({ invoice_wa_status: 'perlu_manual', invoice_wa_sent_at: new Date().toISOString() })
+            .eq('id', data.id);
+        }
+        toast({
+          variant: "destructive",
+          title: "Tidak dikirim: di luar 24 jam",
+          description: "Pasien belum membalas WhatsApp klinik dalam 24 jam terakhir, jadi PDF tidak akan sampai. Gunakan tombol kirim manual (lewat link).",
+        });
+        onSent?.();
+        return;
+      }
+
       // 2. Gunakan invoice_url yang sudah ada, atau generate + upload baru
       let fileUrl = isOneOff ? null : (data?.invoice_url || detailData?.invoice_url || null);
 
@@ -462,13 +481,13 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
 
       if (rpcError) throw new Error(rpcError.message);
       // 6. Cek response dari Wablas
-      const status = rpcResult?.status;
+      // Sukses hanya bila HTTP 200 DAN isi balasan Watzap menyatakan status 200. Sebelumnya adanya
+      // request_id saja dianggap sukses, sehingga respons kosong/ditolak tetap berbadge hijau.
+      let body = null;
+      try { body = typeof rpcResult?.content === 'string' ? JSON.parse(rpcResult.content) : rpcResult?.content; } catch { /* bukan JSON */ }
+      const accepted = Number(rpcResult?.status) === 200 && String(body?.status) === '200';
 
-      if (
-  status === 200 ||
-  status === '200' ||
-  rpcResult?.request_id
-) {
+      if (accepted) {
         if (!isOneOff) {
           await supabase
             .from('daily_recaps')
@@ -481,17 +500,16 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
 
         toast({
           title: "✅ Invoice Terkirim",
-          description: `Invoice PDF berhasil dikirim via WhatsApp ke ${rawPhone}. Catatan: status berdasarkan respons API, bukan konfirmasi pasien menerima pesan.`,
+          description: `Invoice PDF diterima Watzap untuk dikirim ke ${rawPhone}. Catatan: status berdasarkan respons API, bukan konfirmasi pasien menerima pesan.`,
         });
 
         onSent?.();
       } else if (rpcResult?.error) {
         throw new Error(rpcResult.error);
+      } else if (!rpcResult?.status) {
+        throw new Error('Belum ada respons dari Watzap. Cek WhatsApp pasien atau kirim manual.');
       } else {
-        throw new Error(
-  rpcResult?.content ||
-  'Gagal mengirim invoice otomatis'
-);
+        throw new Error(body?.message || String(rpcResult.content || 'Gagal mengirim invoice otomatis').slice(0, 200));
       }
 
     } catch (err) {

@@ -147,7 +147,7 @@ export const validateDailyRecapForm = (data) => {
 const recapPriority = (r) => {
     if (r.end_time) {
         const invoiceNotNeeded = parseFloat(r.amount || 0) === 0;
-        const invoiceDone = r.invoice_wa_status && r.invoice_wa_status !== 'gagal';
+        const invoiceDone = r.invoice_wa_status && !['gagal', 'perlu_manual'].includes(r.invoice_wa_status);
         return invoiceNotNeeded || invoiceDone ? 3 : 0;
     }
     return r.start_time ? 1 : 2;
