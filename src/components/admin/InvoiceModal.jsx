@@ -469,7 +469,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
 
       // 5. Panggil SQL function send_invoice_whatsapp via RPC
       // → Request ke Wablas dilakukan dari DATABASE bukan browser → bebas CORS
-      const { data: rpcResult, error: rpcError } = await supabase.rpc(
+      let { data: rpcResult, error: rpcError } = await supabase.rpc(
         'send_invoice_whatsapp',
         {
           p_phone:       rawPhone,
@@ -480,6 +480,17 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       );
 
       if (rpcError) throw new Error(rpcError.message);
+
+      // Balasan Watzap kadang lebih lambat dari batas tunggu fungsi database (~6 dtk). Permintaan sudah
+      // terkirim, jadi tunggu balasannya (maks ~30 dtk) agar status tetap tercatat, bukan dibiarkan kosong.
+      if (rpcResult?.pending && rpcResult?.request_id) {
+        toast({ title: "Menunggu respons Watzap...", description: "Watzap membalas lebih lambat dari biasanya." });
+        for (let attempt = 0; attempt < 10 && rpcResult?.pending; attempt += 1) {
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+          const { data: polled } = await supabase.rpc('invoice_wa_poll', { p_request_id: rpcResult.request_id });
+          if (polled?.done) rpcResult = { ...polled, request_id: rpcResult.request_id };
+        }
+      }
       // 6. Cek response dari Wablas
       // Sukses hanya bila HTTP 200 DAN isi balasan Watzap menyatakan status 200. Sebelumnya adanya
       // request_id saja dianggap sukses, sehingga respons kosong/ditolak tetap berbadge hijau.
