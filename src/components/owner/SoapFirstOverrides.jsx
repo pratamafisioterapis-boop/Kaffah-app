@@ -331,6 +331,74 @@ const SoapAudit = () => {
   );
 };
 
+const SOAP_FIELDS = [['subjective', 'Subjective'], ['objective', 'Objective'], ['assessment', 'Assessment'], ['plan', 'Plan']];
+
+// Revisi SOAP oleh terapis langsung berlaku (tanpa persetujuan); owner cukup diberi tahu
+// dan bisa melihat isi sebelum/sesudah di sini.
+const SoapRevisions = () => {
+  const [rows, setRows] = useState([]);
+  const [patients, setPatients] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [openId, setOpenId] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from('soap_revisions').select('*').order('created_at', { ascending: false }).limit(100);
+      const list = data || [];
+      const ids = [...new Set(list.map((r) => r.medical_record_id).filter(Boolean))];
+      const names = {};
+      if (ids.length) {
+        const { data: recs } = await supabase.from('medical_records').select('id, patient_id').in('id', ids);
+        const pids = [...new Set((recs || []).map((m) => m.patient_id).filter(Boolean))];
+        const { data: pats } = pids.length ? await supabase.from('patients').select('id, full_name').in('id', pids) : { data: [] };
+        const pmap = Object.fromEntries((pats || []).map((x) => [x.id, x.full_name]));
+        (recs || []).forEach((m) => { names[m.id] = pmap[m.patient_id] || null; });
+      }
+      if (cancelled) return;
+      setRows(list);
+      setPatients(names);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (loading) return <div className="py-8 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-slate-400" /></div>;
+  if (rows.length === 0) return <p className="text-sm text-slate-500 py-6 text-center">Belum ada revisi SOAP.</p>;
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-slate-500">Revisi SOAP oleh terapis langsung berlaku dan tidak perlu persetujuan. Daftar ini untuk memantau perubahannya.</p>
+      {rows.map((r) => {
+        const open = openId === r.id;
+        return (
+          <div key={r.id} className="rounded-app border bg-white p-3 space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold text-slate-900">{patients[r.medical_record_id] || 'Pasien'}</span>
+              <span className="text-xs text-slate-500">oleh {r.revised_by_name || '-'}</span>
+              <span className="text-xs text-slate-500 ml-auto">{fmtDateTime(r.created_at)}</span>
+            </div>
+            <div className="text-sm text-slate-800">“{r.reason}”</div>
+            <Button size="sm" variant="outline" className="h-8" onClick={() => setOpenId(open ? null : r.id)}>
+              {open ? <ChevronUp className="h-4 w-4 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}Sebelum &amp; sesudah
+            </Button>
+            {open && (
+              <div className="space-y-2">
+                {SOAP_FIELDS.filter(([k]) => (r.old_values?.[k] || '') !== (r.new_values?.[k] || '')).map(([k, label]) => (
+                  <div key={k} className="grid gap-2 sm:grid-cols-2 text-xs">
+                    <div className="rounded-app-sm bg-red-50 p-2"><div className="font-semibold text-red-700 mb-1">{label} (sebelum)</div><div className="whitespace-pre-wrap text-slate-700">{r.old_values?.[k] || '-'}</div></div>
+                    <div className="rounded-app-sm bg-emerald-50 p-2"><div className="font-semibold text-emerald-700 mb-1">{label} (sesudah)</div><div className="whitespace-pre-wrap text-slate-700">{r.new_values?.[k] || '-'}</div></div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 const SoapFirstOverrides = () => (
   <div className="space-y-4">
     <div>
@@ -338,13 +406,15 @@ const SoapFirstOverrides = () => (
       <p className="text-sm text-slate-500">Setujui pengecualian dari admin dan audit SOAP yang menentukan insentif terapis.</p>
     </div>
     <UnpaidSessionsCard />
-    <Tabs defaultValue="queue">
+    <Tabs defaultValue={['queue', 'audit', 'revisions'].includes(new URLSearchParams(window.location.search).get('tab')) ? new URLSearchParams(window.location.search).get('tab') : 'queue'}>
       <TabsList>
         <TabsTrigger value="queue">Pengajuan</TabsTrigger>
         <TabsTrigger value="audit">Audit SOAP</TabsTrigger>
+        <TabsTrigger value="revisions">Revisi SOAP</TabsTrigger>
       </TabsList>
       <TabsContent value="queue" className="mt-4"><OverrideQueue /></TabsContent>
       <TabsContent value="audit" className="mt-4"><SoapAudit /></TabsContent>
+      <TabsContent value="revisions" className="mt-4"><SoapRevisions /></TabsContent>
     </Tabs>
   </div>
 );
