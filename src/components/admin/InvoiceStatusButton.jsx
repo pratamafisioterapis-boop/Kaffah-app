@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, X, Clock, AlertTriangle } from 'lucide-react';
+import { Check, X, Clock, AlertTriangle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const TONES = {
@@ -9,6 +9,12 @@ const TONES = {
     icon: 'text-emerald-600',
     title:
       'Terkirim. Status berdasarkan respons API — bukan konfirmasi pasien menerima. Dikirim hanya saat pasien membalas WA klinik dalam 24 jam; catatan lama (sebelum pengecekan 24 jam) bisa saja tidak sampai.',
+  },
+  sending: {
+    label: 'Sedang dikirim',
+    Icon: Loader2,
+    icon: 'text-blue-500 animate-spin',
+    title: 'Sedang dikirim ke Watzap. Status akan diperbarui otomatis dalam beberapa detik.',
   },
   manual: {
     label: 'Perlu kirim manual',
@@ -34,6 +40,7 @@ const TONES = {
 const getTone = (status) =>
   status === 'gagal' ? TONES.failed
     : status === 'perlu_manual' ? TONES.manual
+    : status === 'mengirim' ? TONES.sending
     : status ? TONES.sent : TONES.pending;
 
 /**
