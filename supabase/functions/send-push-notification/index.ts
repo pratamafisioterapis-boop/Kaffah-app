@@ -113,7 +113,7 @@ if (userData?.role === "owner") {
 // tidak ada. Arahkan ke halaman yang benar-benar menampilkan datanya.
 if (userData?.role === "owner") {
   const t = String(body.title || "").toLowerCase();
-  if (t.startsWith("soap direvisi")) targetUrl = "/owner/medical-records";
+  if (t.startsWith("soap direvisi")) targetUrl = "/owner/overrides?tab=revisions";
   else if (t.startsWith("pasien free dicatat")) targetUrl = "/owner/daily-recap";
 }
 
