@@ -17,6 +17,7 @@ export const OVERRIDE_KIND_LABELS = {
   recap_delete: 'Hapus recap & appointment (invoice terbit)',
   package_change: 'Ubah paket (invoice terbit)',
   package_release: 'Lepas dari paket (bayar reguler)',
+  free_patient: 'Pasien FREE (perlu persetujuan)',
 };
 
 export const OVERRIDE_STATUS_LABELS = {

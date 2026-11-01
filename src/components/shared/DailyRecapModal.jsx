@@ -324,6 +324,25 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
         if (isOpen && sfEdit) loadManualOverride(); else setManualOverride(null);
     }, [isOpen, sfEdit, loadManualOverride]);
 
+    // Pasien Free wajib disetujui owner (kecuali yang menyimpan owner sendiri).
+    const [freeOverride, setFreeOverride] = useState(null);
+    const sfIsOwner = ['owner', 'super_admin'].includes(userDetails?.role);
+    const loadFreeOverride = useCallback(async () => {
+        if (!initialData?.id) { setFreeOverride(null); return; }
+        const { data } = await supabase
+            .from('soap_overrides')
+            .select('id, status, decision_note')
+            .eq('recap_id', initialData.id)
+            .eq('kind', 'free_patient')
+            .order('requested_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        setFreeOverride(data || null);
+    }, [initialData?.id]);
+    useEffect(() => {
+        if (isOpen && sfEdit) loadFreeOverride(); else setFreeOverride(null);
+    }, [isOpen, sfEdit, loadFreeOverride]);
+
     useEffect(() => {
         if (!recapMeta) return;
         setFormData(prev => ({ ...prev, special_type: recapMeta.special_type || '', free_reason: recapMeta.free_reason || '' }));
@@ -1328,6 +1347,10 @@ setFormData({
         if (sfEdit && formData.special_type === 'free' && (formData.free_reason || '').trim().length < 3) {
             newErrors.free_reason = "Alasan pasien Free wajib diisi";
         }
+        if (sfEdit && formData.special_type === 'free' && !sfIsOwner && !quote?.invoice_locked && freeOverride?.status !== 'approved') {
+            toast({ variant: "destructive", title: "Pasien Free belum disetujui", description: "Status Free wajib disetujui owner. Ajukan persetujuan lebih dulu." });
+            return;
+        }
         if (sfManualDiscount && sfIsPayment && !quote?.invoice_locked && manualOverride?.status !== 'approved') {
             toast({ variant: "destructive", title: "Diskon belum disetujui", description: `Diskon "${formData.discount_label}" diinput manual dan wajib disetujui owner. Ajukan persetujuan lebih dulu.` });
             return;
@@ -2049,6 +2072,25 @@ setFormData({
                         {errors.free_reason && <p className="text-xs text-red-500">{errors.free_reason}</p>}
                     </div>
                 )}
+                {formData.special_type === 'free' && !sfIsOwner && !sfInvoiceLocked && (
+                    <div className="sm:col-span-2 space-y-2 rounded-app-sm border border-amber-200 bg-amber-50 p-3">
+                        <p className="text-xs text-amber-800">Status Free baru berlaku setelah disetujui owner.</p>
+                        {freeOverride?.status === 'approved' ? (
+                            <p className="text-xs font-semibold text-emerald-700">Disetujui owner. Silakan simpan.</p>
+                        ) : freeOverride?.status === 'pending' ? (
+                            <p className="text-xs font-semibold text-amber-700">Menunggu persetujuan owner.</p>
+                        ) : (
+                            <>
+                                {freeOverride?.status === 'rejected' && <p className="text-xs font-semibold text-red-600">Pengajuan sebelumnya ditolak{freeOverride.decision_note ? `: ${freeOverride.decision_note}` : ''}.</p>}
+                                <Button type="button" size="sm" className="h-8 text-xs" disabled={(formData.free_reason || '').trim().length < 5}
+                                    onClick={() => openOverride({ kind: 'free_patient', payload: {}, description: `Ajukan pasien Free dengan alasan "${(formData.free_reason || '').trim()}". Berlaku setelah disetujui owner.` })}>
+                                    Ajukan persetujuan owner
+                                </Button>
+                                {(formData.free_reason || '').trim().length < 5 && <p className="text-[11px] text-amber-700">Isi alasan Free (minimal 5 karakter) untuk mengajukan.</p>}
+                            </>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     ) : (sfActive && mode === 'add' ? (
@@ -2160,7 +2202,7 @@ setFormData({
                 withAmount={!!overrideDialog?.withAmount}
                 withDiscount={!!overrideDialog?.withDiscount}
                 discountOptions={discountTypeOptions.filter(o => !o.is_referral_reward)}
-                onDone={() => { refreshQuote(); loadRecapMeta(); loadManualOverride(); }}
+                onDone={() => { refreshQuote(); loadRecapMeta(); loadManualOverride(); loadFreeOverride(); }}
             />
 
             {/* Extend Package Modal */}
