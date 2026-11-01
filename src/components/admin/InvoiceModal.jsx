@@ -403,6 +403,9 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
   // → Menghindari CORS error karena request ke Wablas lewat database, bukan browser
   const handleSendWA = async () => {
     setIsSendingWA(true);
+    // Setelah dispatch, status invoice dimiliki SERVER (invoice_wa_sends + cron). Browser tidak lagi
+    // menulis 'terkirim'/'gagal' untuk pengiriman yang sudah diserahkan ke server.
+    let dispatchAttempted = false;
     try {
 
       // 1. Validasi nomor HP
@@ -467,7 +470,54 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
         `*Salam Sehat,*\n` +
         `${clinicName}`;
 
-      // 5. Panggil SQL function send_invoice_whatsapp via RPC
+      // 5a. Rekap harian: serahkan ke server. Server mengirim ke Watzap, mencatat status 'mengirim', lalu
+      //     menetapkan 'terkirim'/'gagal' dari balasan Watzap (browser hanya menanyakan hasilnya).
+      if (!isOneOff) {
+        dispatchAttempted = true;
+        const { data: sent, error: sendErr } = await supabase.rpc('invoice_wa_dispatch', {
+          p_recap_id: data.id,
+          p_phone:    rawPhone,
+          p_caption:  caption,
+          p_file_url: fileUrl,
+          p_filename: fileName,
+        });
+        if (sendErr) throw new Error(sendErr.message);
+        const sendId = sent?.send_id;
+        if (!sendId) throw new Error('Pengiriman tidak tercatat di server.');
+
+        let final = null;
+        for (let i = 0; i < 30 && !final; i += 1) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          try {
+            const { data: rs } = await supabase.rpc('invoice_wa_resolve', { p_send_id: sendId });
+            if (rs?.status && rs.status !== 'mengirim') final = rs;
+          } catch (pollErr) {
+            console.warn('invoice_wa_resolve:', pollErr); // server/cron tetap menyelesaikan
+          }
+        }
+
+        if (final?.status === 'terkirim') {
+          toast({
+            title: "✅ Invoice Terkirim",
+            description: `Invoice PDF diterima Watzap untuk dikirim ke ${rawPhone}. Catatan: status berdasarkan respons API, bukan konfirmasi pasien menerima pesan.`,
+          });
+        } else if (final?.status === 'gagal') {
+          toast({
+            variant: "destructive",
+            title: "Gagal Kirim WA",
+            description: final.detail || "Watzap menolak pengiriman invoice.",
+          });
+        } else {
+          toast({
+            title: "Masih diproses",
+            description: "Watzap belum membalas. Status badge akan diperbarui otomatis; cek WhatsApp pasien sebelum mengirim ulang agar tidak terkirim dobel.",
+          });
+        }
+        onSent?.();
+        return;
+      }
+
+      // 5. Panggil SQL function send_invoice_whatsapp via RPC (hanya untuk invoice sekali kirim / one-off)
       // → Request ke Wablas dilakukan dari DATABASE bukan browser → bebas CORS
       let { data: rpcResult, error: rpcError } = await supabase.rpc(
         'send_invoice_whatsapp',
@@ -531,7 +581,9 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     } catch (err) {
       console.error("handleSendWA error:", err);
 
-      if (!isOneOff) {
+      // Bila sudah diserahkan ke server (dispatch), jangan menulis 'gagal' dari browser: permintaan mungkin
+      // sudah diproses walau balasan ke browser terputus; server/cron yang menetapkan status akhirnya.
+      if (!isOneOff && !dispatchAttempted) {
         await supabase
           .from('daily_recaps')
           .update({
