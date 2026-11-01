@@ -107,6 +107,16 @@ if (userData?.role === "owner") {
   }
 }
 
+// Notifikasi informasi (bukan permintaan persetujuan) dari trigger SOAP-first
+// punya url yang salah/tidak relevan: "SOAP direvisi" bukan pengajuan sehingga
+// halaman Pengajuan selalu kosong, dan "Pasien FREE dicatat" menunjuk rute yang
+// tidak ada. Arahkan ke halaman yang benar-benar menampilkan datanya.
+if (userData?.role === "owner") {
+  const t = String(body.title || "").toLowerCase();
+  if (t.startsWith("soap direvisi")) targetUrl = "/owner/medical-records";
+  else if (t.startsWith("pasien free dicatat")) targetUrl = "/owner/daily-recap";
+}
+
 if (!body.url && targetUrl === "/") {
   if (userData?.role === "owner") {
     targetUrl = `/owner/appointments?date=${body.appointment_date}`;
