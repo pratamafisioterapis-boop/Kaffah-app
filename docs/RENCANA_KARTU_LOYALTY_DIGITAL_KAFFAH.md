@@ -6,6 +6,69 @@ pengganti kartu stamp fisik.
 
 ---
 
+## 0. REVISI v2 (arahan owner): "Misi Kaffah" dengan reward diskon 100%
+
+Arahan owner menggantikan skema stamp/tier di bagian 2 sebagai **mekanisme reward
+utama**. Berlaku untuk **semua pasien, termasuk pasien lama**.
+
+**Reward: diskon 100%** (gratis) bila pasien menuntaskan 3 misi:
+
+| # | Misi | Cara verifikasi |
+|---|---|---|
+| 1 | Review Google Bisnis Kaffah | Pasien klik tombol menuju halaman review Google, lalu unggah **tangkapan layar** review; admin memverifikasi (centang) |
+| 2 | Follow Instagram Kaffah | Pasien klik tombol menuju profil IG, unggah **tangkapan layar** "Mengikuti"; admin memverifikasi |
+| 3 | Rekomendasi ke >3 orang (4 orang atau lebih) | Kode referral unik per pasien. Terhitung bila orang yang dirujuk **mendaftar & hadir sesi pertama** (otomatis dari server). Hitungan "3 dari 4" tampil di kartu |
+
+Kartu di portal menjadi **checklist 3 misi + progres**; saat ketiganya selesai,
+muncul **voucher diskon 100%** dengan kode sekali pakai yang divalidasi admin di
+kasir/resepsionis.
+
+### Dampak ke rancangan teknis
+- Tabel diganti/disederhanakan: `loyalty_missions` (per pasien: tipe misi, status
+  `belum | menunggu_verifikasi | disetujui | ditolak`, bukti upload, verified_by,
+  verified_at), `loyalty_referrals` (pengajak, yang diajak, status sesi pertama),
+  `loyalty_vouchers` (kode, nilai 100%, status, kedaluwarsa, dipakai di recap/paket mana).
+  Skema stamp/ledger di 3.1 menjadi **opsional (fase lanjut)**.
+- Bukti tangkapan layar disimpan di Supabase Storage (bucket privat), hanya bisa
+  dibuka staf Kaffah.
+- Antrean verifikasi di halaman admin: lihat bukti, setujui/tolak + alasan.
+- Pasien lama: kartu tersedia di portal mereka yang sudah ada; broadcast
+  WhatsApp "Dapatkan sesi gratis, selesaikan 3 misi" untuk mengajak.
+- Voucher dipakai di alur pembayaran/invoice yang ada (`discount` di recap), tercatat
+  sebagai kategori promo khusus agar muncul di `PromoDiscountWidget` dan laporan
+  akuntansi (tidak "hilang" dari pembukuan).
+
+### Hal yang HARUS diputuskan / diwaspadai
+1. **Cakupan "100%"**: gratis apa? Usul: **1 sesi terapi** (nilai jelas), bukan
+   paket penuh. Diskon 100% paket dengan syarat semudah ini rawan merugi:
+   4 rujukan baru justru menjadi biaya akuisisi yang masuk akal untuk 1 sesi.
+2. **Aturan Google (penting)**: Google melarang imbalan atas ulasan, apalagi
+   dipersyaratkan **bintang 5**. Ulasan yang terdeteksi diberi insentif/disaring
+   dapat dihapus, dan profil bisnis bisa kena penalti atau ditangguhkan, yang
+   merugikan SEO Kaffah. **Usul pengaman**: syaratnya "memberi ulasan jujur
+   (rating apa pun)", bukan harus bintang 5; atau ulasan dijadikan misi
+   opsional bukan syarat reward. Mohon owner memilih.
+3. **Instagram**: imbalan atas follow diperbolehkan, tapi verifikasi hanya
+   lewat tangkapan layar (IG tidak menyediakan API untuk memeriksa follower).
+   Risiko: bukti palsu. Mitigasi: admin cek manual + pasien bisa unfollow
+   belakangan (tidak bisa dicegah).
+4. **Referral**: hitung hanya orang **berbeda, belum pernah jadi pasien**, dan
+   benar-benar hadir sesi pertama, supaya tidak bisa dimanipulasi dengan
+   mendaftarkan akun kosong. Satu nomor HP hanya bisa dirujuk sekali.
+5. **Batas biaya**: kuota voucher per bulan yang bisa diatur owner, dan satu
+   voucher per pasien (atau per 12 bulan).
+6. **Iklan kesehatan**: gunakan frasa "program apresiasi pasien", bukan
+   menjanjikan terapi gratis secara agresif.
+
+### Fase revisi
+| Fase | Isi | Perkiraan |
+|---|---|---|
+| 1 | Tabel misi/referral/voucher, tab "Misi" di portal, unggah bukti, antrean verifikasi admin | 3-4 hari |
+| 2 | Kode referral + hitung otomatis sesi pertama, voucher + validasi kasir + masuk laporan promo | 3-4 hari |
+| 3 | Broadcast WhatsApp ke pasien lama, dashboard owner (misi selesai, voucher keluar, biaya vs pasien baru) | 2-3 hari |
+
+---
+
 ## 1. Bisa di-adopt? Ya, dan Kaffah lebih diuntungkan dari bisnis biasa
 
 Kartu stamp di kafe/ayam goreng hanya mengejar **repeat order**. Di fisioterapi
