@@ -4,7 +4,7 @@ import { Calendar, XCircle, Clock, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/customSupabaseClient';
 import { startOfDay, endOfDay } from 'date-fns';
-import { getCachedClinicId } from '@/lib/api';
+import { getCachedClinicId, getSlotsByDate } from '@/lib/api';
 
 const OverviewCard = ({ title, value, icon: Icon, colorClass, loading }) => (
   <Card className="shadow-sm [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200 border-slate-200">
@@ -74,10 +74,7 @@ const TodaysOverviewWidget = () => {
           .lte('appointment_date', todayEnd)
           .ilike('status', '%cancelled%'),
         // 3. Total Slot Kosong Hari Ini - Menggunakan Function Database
-        supabase.rpc('get_available_slots_with_status_by_date', {
-          p_date: new Date().toISOString().split('T')[0],
-          p_clinic_id: clinicId,
-        }),
+        getSlotsByDate(new Date().toISOString().split('T')[0], clinicId),
       ]);
 
       if (appError) throw appError;

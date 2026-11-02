@@ -5,6 +5,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { TrendingUp } from 'lucide-react';
 import FinanceTile, { TileLoading } from '@/components/owner/finance/FinanceTile';
 import { getCachedClinicId } from '@/lib/api';
+import { createRealtimeRefresh } from '@/lib/realtimeRefresh';
 
 const TrendSessionChart = ({ className }) => {
   const [data, setData] = useState([]);
@@ -67,6 +68,7 @@ const TrendSessionChart = ({ className }) => {
     };
 
     fetchSessionTrend();
+    const onChange = createRealtimeRefresh(fetchSessionTrend);
 
     // Subscribe to realtime changes for live updates
     const channel = supabase
@@ -74,13 +76,12 @@ const TrendSessionChart = ({ className }) => {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'daily_recaps' },
-        () => {
-          fetchSessionTrend();
-        }
+        onChange
       )
       .subscribe();
 
     return () => {
+      onChange.cancel();
       supabase.removeChannel(channel);
     };
   }, []);

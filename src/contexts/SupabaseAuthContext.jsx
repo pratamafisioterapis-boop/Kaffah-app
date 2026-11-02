@@ -6,6 +6,7 @@ import {
 } from '@/lib/pushNotifications';
 import { useToast } from '@/components/ui/use-toast';
 import { normalizeRole } from '@/lib/roles';
+import { seedClinicIdCache } from '@/lib/api';
 import { initLightLoadMode, refreshLightLoadMode, isLightLoadModeEnabled } from '@/lib/lightLoadMode';
 
 const AuthContext = createContext(undefined);
@@ -161,13 +162,16 @@ export const AuthProvider = ({ children }) => {
       if (currentUser && currentUser.id) {
         console.log("[AuthContext] Session handled successfully for user:", currentUser.id);
         const details = await fetchUserDetails(currentUser.id);
+        seedClinicIdCache(currentUser.id, details?.clinic_id);
         // Admin-only display mode: work out the trimmed view before the
         // dashboards mount, so they never flash the real numbers first.
         await withTimeout(
           initLightLoadMode({ userId: currentUser.id, role: details?.role, clinicId: details?.clinic_id }),
           8000
         ).catch(() => {});
-        setUserDetails(details);
+        // Event SIGNED_IN ikut terpicu saat tab kembali aktif; jangan ganti objek bila isinya sama
+        // supaya seluruh halaman tidak render ulang dan query ikut dimuat ulang.
+        setUserDetails((prev) => (prev && details && JSON.stringify(prev) === JSON.stringify(details) ? prev : details));
 
       } else {
         console.error("[AuthContext] Critical: Session exists but user ID is missing");

@@ -39,7 +39,7 @@ const AdminAccountSettings = React.lazy(lazyRetry(() => import('@/components/adm
 const AttendanceManagement = React.lazy(lazyRetry(() => import('@/pages/admin/AttendanceManagement'), 'AttendanceManagement'));
 import { ADMIN_NAV_ITEMS } from '@/lib/navItems';
 import { isLightLoadModeEnabled } from '@/lib/lightLoadMode';
-import { getCachedClinicId } from '@/lib/api';
+import { getCachedClinicId, getSlotsByDate } from '@/lib/api';
 import PageHero from '@/components/shared/PageHero';
 import HeroClock from '@/components/shared/HeroClock';
 import { lazyRetry } from '@/lib/lazyRetry';
@@ -119,10 +119,7 @@ const loadSlots = async () => {
     { data: slotsData, error: slotError },
     { data: filledAppointments, error: filledError },
   ] = await Promise.all([
-    supabase.rpc('get_available_slots_with_status_by_date', {
-      p_date: today,
-      p_clinic_id: clinicId
-    }),
+    getSlotsByDate(today, clinicId),
     // SLOT TERISI = JUMLAH APPOINTMENT (REAL PASIEN)
     supabase
       .from('appointments')

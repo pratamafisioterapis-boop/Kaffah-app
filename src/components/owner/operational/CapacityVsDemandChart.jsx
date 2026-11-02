@@ -18,7 +18,8 @@ import { RefreshCw, AlertCircle, ChevronLeft, ChevronRight, BarChart3 } from 'lu
 import { cn } from '@/lib/utils';
 import FinanceTile, { TileLoading } from '@/components/owner/finance/FinanceTile';
 import SegControl from '@/components/owner/finance/SegControl';
-import { getCachedClinicId } from '@/lib/api';
+import { getCachedClinicId, getSlotsByDate } from '@/lib/api';
+import { createRealtimeRefresh } from '@/lib/realtimeRefresh';
 
 const CapacityVsDemandChart = ({ className }) => {
   const [data, setData] = useState([]);
@@ -61,10 +62,7 @@ const CapacityVsDemandChart = ({ className }) => {
       // Fetch all days in parallel (monthly view can span ~30 days)
       const slotResults = await Promise.all(
         days.map((day) =>
-          supabase.rpc('get_available_slots_with_status_by_date', {
-            p_date: format(day, 'yyyy-MM-dd'),
-            p_clinic_id: currentClinicId,
-          })
+          getSlotsByDate(format(day, 'yyyy-MM-dd'), currentClinicId)
         )
       );
 
@@ -131,16 +129,18 @@ const CapacityVsDemandChart = ({ className }) => {
 
   useEffect(() => {
     fetchData();
+    const onChange = createRealtimeRefresh(fetchData);
 
     // Subscribe to changes
     const channel = supabase
       .channel(`capacity-demand-updates-${view}-${format(anchorDate, 'yyyy-MM-dd')}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, () => fetchData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'therapist_schedules' }, () => fetchData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'therapist_time_off' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, onChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'therapist_schedules' }, onChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'therapist_time_off' }, onChange)
       .subscribe();
 
     return () => {
+      onChange.cancel();
       supabase.removeChannel(channel);
     };
   }, [view, anchorDate]);

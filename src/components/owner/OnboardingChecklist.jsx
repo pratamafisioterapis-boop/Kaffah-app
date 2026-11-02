@@ -120,6 +120,9 @@ const OnboardingChecklist = () => {
     const load = async () => {
       if (!userDetails?.clinic_id || !user?.id) return;
       const clinicId = userDetails.clinic_id;
+      // Bukan data kritis: beri jalan dulu ke data dashboard yang sedang dimuat.
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+      if (!active) return;
 
       const [
         { data: clinic },
@@ -164,7 +167,7 @@ const OnboardingChecklist = () => {
     };
     load();
     return () => { active = false; };
-  }, [user, userDetails]);
+  }, [user?.id, userDetails?.clinic_id]);
 
   if (loading) return null;
 

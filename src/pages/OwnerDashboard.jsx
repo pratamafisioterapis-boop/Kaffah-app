@@ -58,7 +58,9 @@ const ClinicalDocuments = React.lazy(lazyRetry(() => import('@/pages/admin/Clini
 const MedicalRecordForm = React.lazy(lazyRetry(() => import('@/components/therapist/MedicalRecordForm'), 'MedicalRecordForm'));
 
 // API
-import { fetchTotalSessions, fetchTotalPatients, fetchTotalPackages, fetchTodaySessions, fetchOngoingSessions, fetchCompletedSessions, fetchCancelledAppointments, fetchActiveTherapists, fetchEmptySlots, fetchTodayNewPatients, fetchTodayReturningPatients, fetchAllTherapists, fetchTodaySessionsByTherapist, getClinicTherapistsSoapLockStatus, getCachedClinicId, getPhysiotherapistByUserId } from '@/lib/api';
+import { fetchTotalSessions, fetchTotalPatients, fetchTotalPackages, fetchTodaySessions, fetchOngoingSessions, fetchCompletedSessions, fetchCancelledAppointments, fetchActiveTherapists, fetchEmptySlots, fetchTodayNewPatients, fetchTodayReturningPatients, fetchAllTherapists, fetchTodaySessionsByTherapist, getClinicTherapistsSoapLockStatus, getCachedClinicId, getPhysiotherapistByUserId, getSlotsByDate } from '@/lib/api';
+import { createRealtimeRefresh } from '@/lib/realtimeRefresh';
+import LazyMount from '@/components/shared/LazyMount';
 import { getTherapistsPatientMetrics } from '@/lib/therapistDataUtils';
 import PageHero from '@/components/shared/PageHero';
 import HeroClock from '@/components/shared/HeroClock';
@@ -236,10 +238,7 @@ const currentUserRow = { clinic_id: await getCachedClinicId(currentUserId) };
 // 🔥 Gunakan RPC yang sama persis dengan halaman Appointments
 // agar konsisten (tabel therapist_schedules tidak memperhitungkan
 // override/pengecualian jadwal untuk tanggal spesifik)
-const { data: rpcData } = await supabase.rpc(
-  'get_available_slots_with_status_by_date',
-  { p_date: today, p_clinic_id: currentUserRow?.clinic_id }
-);
+const { data: rpcData } = await getSlotsByDate(today, currentUserRow?.clinic_id);
 
 let slotCountMap = {};
 (rpcData || []).forEach(slot => {
@@ -299,11 +298,6 @@ setTherapists(enrichedTherapists);
   // yang sama dengan Booking Calendar, agar kedua tempat menampilkan angka yang konsisten
   // (periode per-terapis, clamp ke hari ini, dan grace period 60 menit setelah sesi selesai).
   const loadUnfilledSoapCounts = useCallback(async () => {
-    if (!therapists.length) {
-      setUnfilledSoapCounts({});
-      setIsLoadingSoap(false);
-      return;
-    }
     setIsLoadingSoap(true);
     try {
       const { data, error } = await getClinicTherapistsSoapLockStatus();
@@ -316,7 +310,7 @@ setTherapists(enrichedTherapists);
     } finally {
       setIsLoadingSoap(false);
     }
-  }, [therapists]);
+  }, []);
 
   // Pasien unik & pasien kembali per terapis, mengikuti filter tanggal (dateRange) di dashboard ini
   const loadPatientMetrics = useCallback(async () => {
@@ -356,24 +350,17 @@ setTherapists(enrichedTherapists);
   // Real-time Subscription. Perubahan appointment sering datang beruntun
   // (mis. jadwal digeser massal), jadi refresh digabung dalam satu jeda 1,5 detik.
   useEffect(() => {
-    let refreshTimer;
+    const onChange = createRealtimeRefresh(() => {
+      loadKPIData(false); // Silent refresh
+      loadTherapistData(); // Update therapist stats too
+    });
     const channel = supabase
       .channel('dashboard-appointments')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'appointments' },
-        () => {
-          clearTimeout(refreshTimer);
-          refreshTimer = setTimeout(() => {
-            loadKPIData(false); // Silent refresh
-            loadTherapistData(); // Update therapist stats too
-          }, 1500);
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, onChange)
       .subscribe();
 
     return () => {
-      clearTimeout(refreshTimer);
+      onChange.cancel();
       supabase.removeChannel(channel);
     };
   }, [loadKPIData, loadTherapistData]);
@@ -457,14 +444,14 @@ setTherapists(enrichedTherapists);
                 dateRange={dateRange}
               />
 
-              <TrendSessionChart className="col-span-2 md:col-span-2 lg:col-span-3" />
-              <CapacityVsDemandChart className="col-span-2 md:col-span-2 lg:col-span-3" />
-              <SessionTimelinessChart dateRange={dateRange} className="col-span-2 md:col-span-2 lg:col-span-3" />
-              <BulletChartTargetVsRealization dateRange={dateRange} className="col-span-2 md:col-span-2 lg:col-span-3" />
-              <ServiceDistributionChart dateRange={dateRange} className="col-span-2 md:col-span-2 lg:col-span-2" />
-              <PatientSourceChart dateRange={dateRange} className="col-span-2 md:col-span-2 lg:col-span-2" />
-              <PromoUsageWidget dateRange={dateRange} className="col-span-2 md:col-span-4 lg:col-span-2" />
-              <SoapViolationWidget dateRange={dateRange} className="col-span-2 md:col-span-4 lg:col-span-6" />
+              <LazyMount className="col-span-2 md:col-span-2 lg:col-span-3"><TrendSessionChart className="h-full" /></LazyMount>
+              <LazyMount className="col-span-2 md:col-span-2 lg:col-span-3"><CapacityVsDemandChart className="h-full" /></LazyMount>
+              <LazyMount className="col-span-2 md:col-span-2 lg:col-span-3"><SessionTimelinessChart dateRange={dateRange} className="h-full" /></LazyMount>
+              <LazyMount className="col-span-2 md:col-span-2 lg:col-span-3"><BulletChartTargetVsRealization dateRange={dateRange} className="h-full" /></LazyMount>
+              <LazyMount className="col-span-2 md:col-span-2 lg:col-span-2"><ServiceDistributionChart dateRange={dateRange} className="h-full" /></LazyMount>
+              <LazyMount className="col-span-2 md:col-span-2 lg:col-span-2"><PatientSourceChart dateRange={dateRange} className="h-full" /></LazyMount>
+              <LazyMount className="col-span-2 md:col-span-4 lg:col-span-2"><PromoUsageWidget dateRange={dateRange} className="h-full" /></LazyMount>
+              <LazyMount className="col-span-2 md:col-span-4 lg:col-span-6"><SoapViolationWidget dateRange={dateRange} className="h-full" /></LazyMount>
             </div>
           </TabsContent>
 

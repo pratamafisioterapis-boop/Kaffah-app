@@ -105,6 +105,38 @@ export const getCachedClinicId = async (userId) => {
   return promise;
 };
 
+// Auth context already loads the user's row, so it seeds the clinic id here and
+// the first data query does not need its own `users` round trip.
+export const seedClinicIdCache = (userId, clinicId) => {
+  if (!userId || !clinicId) return;
+  clinicIdCache = { userId, clinicId, promise: null };
+};
+
+// get_available_slots_with_status_by_date is heavy and the dashboard asked for
+// the same day from 3+ widgets (and once per day in the capacity chart). Share
+// one in-flight request and keep the result for a short while. Realtime refresh
+// paths call invalidateSlotsCache() first so they never read stale slots.
+const SLOTS_TTL_MS = 20000;
+const slotsCache = new Map();
+export const invalidateSlotsCache = () => slotsCache.clear();
+export const getKnownClinicId = () => clinicIdCache.clinicId || null;
+export const getSlotsByDate = (date, clinicId) => {
+  const key = `${clinicId}|${date}`;
+  const hit = slotsCache.get(key);
+  if (hit && Date.now() - hit.at < SLOTS_TTL_MS) return hit.promise;
+  const promise = Promise.resolve(
+    supabase.rpc('get_available_slots_with_status_by_date', { p_date: date, p_clinic_id: clinicId })
+  ).then((res) => {
+    if (res?.error) slotsCache.delete(key);
+    return res;
+  }, (err) => {
+    slotsCache.delete(key);
+    throw err;
+  });
+  slotsCache.set(key, { at: Date.now(), promise });
+  return promise;
+};
+
 const getTodayWITA = () => {
   const now = new Date();
 
@@ -7992,10 +8024,7 @@ export const fetchEmptySlots = async () => {
     const userId = sessionData?.session?.user?.id;
     const userRow = { clinic_id: await getCachedClinicId(userId) };
 
-    const { data, error } = await supabase.rpc(
-      'get_available_slots_with_status_by_date',
-      { p_date: today, p_clinic_id: userRow?.clinic_id }
-    );
+    const { data, error } = await getSlotsByDate(today, userRow?.clinic_id);
 
     if (error) return { error };
 
