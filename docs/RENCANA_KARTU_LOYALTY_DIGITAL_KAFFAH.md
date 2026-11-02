@@ -38,6 +38,13 @@ kasir/resepsionis.
   sebagai kategori promo khusus agar muncul di `PromoDiscountWidget` dan laporan
   akuntansi (tidak "hilang" dari pembukuan).
 
+### Keputusan owner (update)
+- Misi Google: **ulasan jujur, rating apa pun** (tidak mensyaratkan bintang 5).
+- Misi tambahan: **unggah story Instagram + tag Kaffah** (`ig_story_tag`), diverifikasi lewat tangkapan layar.
+- **Fase 1 sudah dikodekan** (migrasi `20261102100000_kaffah_misi_loyalty.sql`, Edge Function
+  `portal-loyalty-proof`, tab "Misi" di portal, halaman staf `/admin/misi-kaffah` & `/owner/misi-kaffah`).
+  Belum diterapkan ke produksi: migrasi + deploy fungsi + isi tautan lalu aktifkan dari halaman Misi Kaffah.
+
 ### Hal yang HARUS diputuskan / diwaspadai
 1. **Cakupan "100%"**: gratis apa? Usul: **1 sesi terapi** (nilai jelas), bukan
    paket penuh. Diskon 100% paket dengan syarat semudah ini rawan merugi:

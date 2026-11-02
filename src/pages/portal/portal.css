@@ -122,7 +122,7 @@
 .pp .jr-foot span:last-child{text-align:right}
 .pp .jr-foot b{color:var(--warm);font-size:var(--fs-sm)}
 /* navigasi */
-.pp .nav{flex:none;display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(8px + env(safe-area-inset-bottom,0px))}
+.pp .nav{flex:none;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(8px + env(safe-area-inset-bottom,0px))}
 .pp .nav button{border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:var(--fs-xs);color:var(--muted);padding:6px 0;min-height:58px;position:relative;font-weight:600}
 .pp .nav-ic{display:grid;place-items:center;width:52px;height:30px;border-radius:12px;transition:background .25s var(--ease)}
 .pp .nav button[aria-selected="true"]{color:var(--brand);font-weight:700}

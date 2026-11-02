@@ -53,6 +53,8 @@ const InventoryStockPage = React.lazy(lazyRetry(() => import('@/pages/owner/Inve
 const InventoryTakeOutPage = React.lazy(lazyRetry(() => import('@/pages/admin/InventoryTakeOut'), 'InventoryTakeOutPage'));
 const FollowUpManagementPage = React.lazy(lazyRetry(() => import('@/pages/admin/FollowUpManagementPage'), 'FollowUpManagementPage'));
 const ClinaraPatientsOwner = React.lazy(lazyRetry(() => import('@/pages/owner/ClinaraPatients'), 'ClinaraPatientsOwner'));
+const MisiKaffahOwner = React.lazy(lazyRetry(() => import('@/pages/owner/MisiKaffah'), 'MisiKaffahOwner'));
+const MisiKaffahAdmin = React.lazy(lazyRetry(() => import('@/pages/admin/MisiKaffah'), 'MisiKaffahAdmin'));
 const ClinaraPatientsAdmin = React.lazy(lazyRetry(() => import('@/pages/admin/ClinaraPatients'), 'ClinaraPatientsAdmin'));
 const PatientPortalPage = React.lazy(lazyRetry(() => import('@/pages/portal/PatientPortalPage'), 'PatientPortalPage'));
 const PatientFeedbackPage = React.lazy(lazyRetry(() => import('@/pages/PatientFeedbackPage'), 'PatientFeedbackPage'));
@@ -443,6 +445,24 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={['owner', 'super_admin']}>
                       <ClinaraPatientsOwner />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/owner/misi-kaffah"
+                  element={
+                    <ProtectedRoute allowedRoles={['owner', 'super_admin']}>
+                      <MisiKaffahOwner />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/admin/misi-kaffah"
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <MisiKaffahAdmin />
                     </ProtectedRoute>
                   }
                 />

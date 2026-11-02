@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import { Home, TrendingUp, PlayCircle, ClipboardList, MessageCircle, Send, Check, Play, CalendarPlus, CalendarCheck, ChevronLeft, Activity, Ban, AlertTriangle, Flame, Snowflake, Lock } from 'lucide-react';
+import { Home, TrendingUp, PlayCircle, ClipboardList, MessageCircle, Send, Check, Play, CalendarPlus, CalendarCheck, ChevronLeft, Activity, Ban, AlertTriangle, Flame, Snowflake, Lock, Gift } from 'lucide-react';
+import MissionsTab from './MissionsTab';
 import { formatOnsetAgo } from '@/lib/onsetHelpers';
 import { portalApi, loadSession, saveSession, clearSession, loadDraft, saveDraft } from '@/lib/patientPortal';
 import './portal.css';
@@ -15,6 +16,7 @@ const TABS = [
   ['home', 'Beranda', Home], ['prog', 'Progres', TrendingUp], ['lat', 'Latihan', PlayCircle],
   ['fb', 'Keluhan', ClipboardList], ['chat', 'Chat', MessageCircle],
 ];
+const MISSION_TAB = ['misi', 'Misi', Gift];
 const DAYS = ['S', 'S', 'R', 'K', 'J', 'S', 'M'];
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGU', 'SEP', 'OKT', 'NOV', 'DES'];
 const TAGS = ['Nyeri saat berjalan', 'Kaku pagi hari', 'Bengkak', 'Nyeri naik tangga', 'Terasa lemah', 'Sulit tidur'];
@@ -917,6 +919,7 @@ const PatientPortalPage = () => {
   const [goals, setGoals] = useState([]);
   const [program, setProgram] = useState([]);
   const [history, setHistory] = useState([]);
+  const [loyalty, setLoyalty] = useState(null);
   const [toast, setToast] = useState('');
   const [attempt, setAttempt] = useState(0);
 
@@ -982,6 +985,15 @@ const PatientPortalPage = () => {
     if (tab === 'home') refreshHome(session);
     return undefined;
   }, [tab, phase, session, backToGate, refreshHome]);
+  // Misi Kaffah: hanya tampil bila klinik mengaktifkan program (portal_loyalty_get -> enabled).
+  const refreshLoyalty = useCallback(async () => {
+    if (!session) return;
+    try { setLoyalty(await portalApi.loyalty(session)); }
+    catch (e) { if (e.sessionInvalid) backToGate('Sesi Anda berakhir.'); }
+  }, [session, backToGate]);
+  useEffect(() => {
+    if (phase === 'app' && session) refreshLoyalty();
+  }, [phase, session, tab, refreshLoyalty]);
   useEffect(() => {
     if (phase !== 'app' || !session) return undefined;
     const t = setInterval(() => refreshHome(session), 30000);
@@ -1049,10 +1061,11 @@ const PatientPortalPage = () => {
           {tab === 'lat' && <ProgramTab session={session} items={program} therapist={home?.therapist} onToggle={toggleExercise} />}
           {tab === 'fb' && <FeedbackTab token={token} history={history} onSubmit={submitFeedback} />}
           {tab === 'book' && <BookingTab token={token} session={session} onBack={() => setTab('home')} onBooked={() => { refreshHome(session); setTab('home'); }} onUnauthorized={onUnauthorizedBook} />}
+          {tab === 'misi' && loyalty?.enabled && <MissionsTab session={session} loyalty={loyalty} onChanged={refreshLoyalty} onUnauthorized={() => backToGate('Sesi Anda berakhir.')} flash={flash} />}
           {tab === 'chat' && <ChatTab token={token} session={session} therapist={home?.therapist} clinicName={home?.clinic?.name} onUnauthorized={() => backToGate('Sesi Anda berakhir.')} />}
         </div>
         <nav className="nav" role="tablist" aria-label="Menu">
-          {TABS.map(([k, label, Icon]) => (
+          {(loyalty?.enabled ? [...TABS, MISSION_TAB] : TABS).map(([k, label, Icon]) => (
             <button key={k} role="tab" aria-selected={tab === k || (k === 'home' && tab === 'book')} onClick={() => setTab(k)}>
               <span className="nav-ic"><Icon size={22} strokeWidth={2} aria-hidden="true" /></span><span>{label}</span>
               {k === 'chat' && home?.unread_messages > 0 && tab !== 'chat' && <span className="badge">{home.unread_messages}</span>}

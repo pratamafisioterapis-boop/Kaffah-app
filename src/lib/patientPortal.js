@@ -169,6 +169,31 @@ const call = async (fn, args) => {
   return data;
 };
 
+// Tangkapan layar HP bisa beberapa MB; kecilkan ke maksimal 1280px sisi terpanjang (JPEG) sebelum diunggah.
+const shrinkImage = (file) => new Promise((resolve, reject) => {
+  if (!file || !/^image\//.test(file.type)) { reject(new Error('Pilih file gambar (JPG atau PNG).')); return; }
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    URL.revokeObjectURL(url);
+    const scale = Math.min(1, 1280 / Math.max(img.width, img.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(img.width * scale);
+    canvas.height = Math.round(img.height * scale);
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Gambar tidak bisa diproses.'))), 'image/jpeg', 0.82);
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Gambar tidak bisa dibaca. Coba tangkapan layar lain.')); };
+  img.src = url;
+});
+
+const blobToBase64 = (blob) => new Promise((resolve, reject) => {
+  const r = new FileReader();
+  r.onload = () => resolve(String(r.result).split(',')[1] || '');
+  r.onerror = () => reject(new Error('Gambar tidak bisa dibaca.'));
+  r.readAsDataURL(blob);
+});
+
 export const portalApi = {
   branding: (token) => call('portal_get_branding', { p_token: token }),
   verify: (token, birthDate) => call('portal_verify', { p_token: token, p_birth_date: birthDate }),
@@ -200,6 +225,22 @@ export const portalApi = {
   listFeedback: (session) => call('portal_list_feedback', { p_session: session }),
   listMessages: (session) => call('portal_list_messages', { p_session: session }),
   sendMessage: (session, body) => call('portal_send_message', { p_session: session, p_body: body }),
+  // Misi Kaffah (loyalty). { enabled:false } bila program klinik tidak aktif.
+  loyalty: (session) => call('portal_loyalty_get', { p_session: session }),
+  // Bukti misi dikirim lewat Edge Function (pasien tidak login, jadi tidak bisa menulis ke storage langsung).
+  loyaltyProof: async (session, missionType, file) => {
+    const blob = await shrinkImage(file);
+    const image_base64 = await blobToBase64(blob);
+    const { data, error } = await supabase.functions.invoke('portal-loyalty-proof', {
+      body: { session, mission_type: missionType, content_type: blob.type, image_base64 },
+    });
+    if (error || !data?.ok) {
+      const err = new Error(data?.error || 'Gagal mengirim bukti. Coba lagi.');
+      err.sessionInvalid = !!data?.session_invalid || error?.context?.status === 401;
+      throw err;
+    }
+    return true;
+  },
   // Booking jadwal: terapis terakhir lebih dulu, slot kosong 14 hari, lalu pesan slot.
   bookingOptions: (session) => call('portal_get_booking_options', { p_session: session }),
   bookingSlots: (session, days = 14) => call('portal_get_booking_slots', { p_session: session, p_days: days }),

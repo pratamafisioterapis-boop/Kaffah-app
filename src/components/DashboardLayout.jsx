@@ -8,7 +8,7 @@ import {
   User, Clock, Menu, ChevronRight, Bell, Search, LayoutDashboard,
   FileText, Package, ClipboardList, Database, DollarSign, ChevronDown,
   MessageSquare, Plus, Boxes, Wallet, FileSearch, FileSpreadsheet, ShieldCheck, Award,
-  UploadCloud, UserCog, MonitorPlay, BookOpen, Star, Crown, Eye, Smartphone
+  UploadCloud, UserCog, MonitorPlay, BookOpen, Star, Crown, Eye, Smartphone, Gift
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
@@ -21,6 +21,7 @@ import { isLightLoadModeEnabled, LIGHT_LOAD_ALLOWED_PATHS } from '@/lib/lightLoa
 import DashboardTopbar from '@/components/DashboardTopbar';
 import TherapistShell from '@/components/therapist/TherapistShell';
 import { preloadHeroImages } from '@/lib/preloadHeroImages';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 
 // Icon Mapping
 const iconMap = {
@@ -37,6 +38,7 @@ const iconMap = {
   Database,
   DollarSign,
   MessageSquare,
+  Gift,
   Smartphone,
   Star,
   Boxes,
@@ -189,6 +191,12 @@ const isPWA =
     : null;
          if (!hasPath(packagePath)) {
              newItems.push({ label: 'Package Recaps', path: packagePath, icon: 'Package' });
+         }
+
+         // Misi Kaffah (loyalty): khusus klinik Kaffah.
+         if (userDetails?.clinic_id === KAFFAH_CLINIC_ID) {
+            const misiPath = role === 'owner' ? '/owner/misi-kaffah' : '/admin/misi-kaffah';
+            if (!hasPath(misiPath)) newItems.push({ label: 'Misi Kaffah', path: misiPath, icon: 'Gift' });
          }
 
          const followUpPath = '/admin/follow-up-management';
