@@ -174,7 +174,7 @@ const handleExportExcel = (mode = 'accrual') => {
   const combinedExpenses = [
     ...data.ownerExpenses.map(item => ({
       tanggal: formatDate(item.date),
-      deskripsi: item.description || '-',
+      nama: item.description || '-',
       bank: item.bank_accounts?.bank_name || '-',
       metode_pembayaran: item.payment_method || '-',
       jumlah: Number(item.amount) || 0
@@ -182,7 +182,7 @@ const handleExportExcel = (mode = 'accrual') => {
 
     ...data.adminExpenses.map(item => ({
       tanggal: formatDate(item.transaction_date || item.date),
-      deskripsi: item.description || '-',
+      nama: item.description || '-',
       bank: item.bank_accounts?.bank_name || '-',
       metode_pembayaran: item.payment_method || '-',
       jumlah: Number(item.amount) || 0
