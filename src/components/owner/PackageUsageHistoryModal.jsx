@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { getPackageUsageHistory } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
+import DateRangePicker from '@/components/ui/date-range-picker';
 import {
   Table,
   TableBody,
@@ -104,22 +105,14 @@ const PackageUsageHistoryModal = ({ isOpen, onClose, packageData }) => {
             </div>
             
             <div className="space-y-1">
-               <span className="text-xs font-medium text-slate-500">Tanggal Mulai</span>
-               <Input
-                type="date"
-                value={dateRange.start}
-                onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                className="h-9"
-              />
-            </div>
-            
-            <div className="space-y-1">
-               <span className="text-xs font-medium text-slate-500">Tanggal Akhir</span>
-               <Input
-                type="date"
-                value={dateRange.end}
-                onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                className="h-9"
+               <span className="text-xs font-medium text-slate-500">Rentang Tanggal</span>
+               <DateRangePicker
+                variant="field"
+                align="start"
+                clearable
+                className="h-9 text-xs w-52"
+                value={{ startDate: dateRange.start, endDate: dateRange.end }}
+                onChange={(r) => setDateRange({ start: r.startDate, end: r.endDate })}
               />
             </div>
 

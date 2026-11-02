@@ -63,6 +63,7 @@ import { getTherapistsPatientMetrics } from '@/lib/therapistDataUtils';
 import PageHero from '@/components/shared/PageHero';
 import HeroClock from '@/components/shared/HeroClock';
 import PageSkeleton from '@/components/shared/PageSkeleton';
+import DateRangePicker from '@/components/ui/date-range-picker';
 const BSIMutasiReconciliation = React.lazy(() =>
   import('@/pages/owner/BSIMutasiReconciliation').catch(err => ({
     default: () => (
@@ -406,28 +407,7 @@ setTherapists(enrichedTherapists);
 
         {/* ── Periode Toolbar ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
-          <div role="group" aria-labelledby="owner-period-label" className="flex items-center gap-2 bg-white border border-app-border rounded-app-sm px-3 py-1.5 w-full sm:w-auto shadow-sm focus-within:ring-2 focus-within:ring-app-accent-bright/40">
-            <span id="owner-period-label" className="text-app-accent text-xs font-bold uppercase tracking-wider shrink-0">Periode</span>
-            <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
-              <input
-                type="date"
-                aria-label="Tanggal mulai periode"
-                value={rangeInput.startDate}
-                max={rangeInput.endDate || undefined}
-                onChange={(e) => setRangeInput((prev) => ({ ...prev, startDate: e.target.value }))}
-                className="text-xs border-0 outline-none text-app-ink font-medium bg-transparent w-full sm:w-auto"
-              />
-              <span className="text-app-muted shrink-0" aria-hidden="true">–</span>
-              <input
-                type="date"
-                aria-label="Tanggal akhir periode"
-                value={rangeInput.endDate}
-                min={rangeInput.startDate || undefined}
-                onChange={(e) => setRangeInput((prev) => ({ ...prev, endDate: e.target.value }))}
-                className="text-xs border-0 outline-none text-app-ink font-medium bg-transparent w-full sm:w-auto"
-              />
-            </div>
-          </div>
+          <DateRangePicker value={rangeInput} onChange={setRangeInput} className="w-full sm:w-auto" />
         </div>
 
         {/* ── Tabs ── */}

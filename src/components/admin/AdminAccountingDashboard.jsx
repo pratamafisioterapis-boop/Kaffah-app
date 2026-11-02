@@ -17,6 +17,7 @@ import AdminIncomeEditModal from './accounting/AdminIncomeEditModal';
 import AdminIncomeDeleteConfirmationModal from './accounting/AdminIncomeDeleteConfirmationModal';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import PageHero from '@/components/shared/PageHero';
+import DateRangePicker from '@/components/ui/date-range-picker';
 
 const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => {
   const { clinicName } = useAuth();
@@ -155,23 +156,8 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
 
       {!isPWA && (
       <div className="flex justify-end">
-        <div className="flex items-center gap-2 bg-white border border-app-border shadow-sm p-1.5 rounded-app">
-          <div className="px-2 text-app-accent">
-            <Calendar className="w-4 h-4" />
-          </div>
-          <input
-            type="date"
-            className="bg-transparent border-none text-sm font-medium focus:ring-0 text-app-ink w-32"
-            value={dateRange.startDate}
-            onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-          />
-          <span className="text-app-border">|</span>
-          <input
-            type="date"
-            className="bg-transparent border-none text-sm font-medium focus:ring-0 text-app-ink w-32"
-            value={dateRange.endDate}
-            onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-          />
+        <div className="flex items-center gap-2">
+          <DateRangePicker value={dateRange} onChange={setDateRange} />
           <Button onClick={fetchData} size="sm" className="bg-app-accent hover:bg-app-accent-hover text-white rounded-app-sm h-8">
             <Filter className="w-3.5 h-3.5 mr-1.5" /> Filter
           </Button>
@@ -182,20 +168,7 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
       {/* Filter compact khusus PWA */}
       {isPWA && (
         <div className="flex items-center gap-2 bg-white p-3 rounded-app border border-slate-200 shadow-sm">
-          <Calendar className="w-4 h-4 text-slate-500 shrink-0" />
-          <input
-            type="date"
-            className="flex-1 text-xs px-2 py-1.5 rounded-app-sm border border-slate-200 text-slate-700"
-            value={dateRange.startDate}
-            onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-          />
-          <span className="text-slate-300">–</span>
-          <input
-            type="date"
-            className="flex-1 text-xs px-2 py-1.5 rounded-app-sm border border-slate-200 text-slate-700"
-            value={dateRange.endDate}
-            onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-          />
+          <DateRangePicker variant="field" align="start" value={dateRange} onChange={setDateRange} className="flex-1 min-w-0 h-9" />
           <Button aria-label="Filter" onClick={fetchData} size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-app-sm h-8 shrink-0">
             <Filter className="w-3.5 h-3.5" />
           </Button>

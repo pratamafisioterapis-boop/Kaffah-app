@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/table';
 import UnfilledMedicalRecords from '@/components/shared/UnfilledMedicalRecords';
 import MissingRecapsCard from '@/components/shared/MissingRecapsCard';
+import DateRangePicker from '@/components/ui/date-range-picker';
 
 // --- Components ---
 const MetricCard = ({ title, value, subtitle, icon: Icon, color, loading, additionalInfo }) => (
@@ -204,31 +205,7 @@ const OwnerOperationalMetrics = () => {
         </div>
         
         <div className="w-full md:w-auto">
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-    <Input
-      type="date"
-      value={dateRange.startDate}
-      onChange={(e) =>
-        setDateRange(prev => ({
-          ...prev,
-          startDate: e.target.value
-        }))
-      }
-      className="w-full"
-    />
-
-    <Input
-      type="date"
-      value={dateRange.endDate}
-      onChange={(e) =>
-        setDateRange(prev => ({
-          ...prev,
-          endDate: e.target.value
-        }))
-      }
-      className="w-full"
-    />
-  </div>
+  <DateRangePicker variant="field" value={dateRange} onChange={setDateRange} className="w-full md:w-auto" />
 </div>
 </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

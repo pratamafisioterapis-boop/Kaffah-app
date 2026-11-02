@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarRange, ChevronDown, Check } from 'lucide-react';
+import { CalendarRange, Check } from 'lucide-react';
 import {
-  format, startOfMonth, endOfMonth, subMonths, subDays, startOfYear, isSameDay, differenceInCalendarDays,
+  format, startOfMonth, endOfMonth, subMonths, subDays, startOfYear, differenceInCalendarDays,
 } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { Calendar } from '@/components/ui/calendar';
@@ -25,7 +25,7 @@ const buildPresets = () => {
   const today = new Date();
   const lastMonth = subMonths(today, 1);
   return [
-    { label: 'Tgl 1 – Hari Ini', hint: 'Default', getRange: () => toDateRange(startOfMonth(today), today) },
+    { label: 'Tgl 1 – Hari Ini', getRange: () => toDateRange(startOfMonth(today), today) },
     { label: 'Hari Ini', getRange: () => toDateRange(today, today) },
     { label: '7 Hari Terakhir', getRange: () => toDateRange(subDays(today, 6), today) },
     { label: '30 Hari Terakhir', getRange: () => toDateRange(subDays(today, 29), today) },
@@ -35,26 +35,32 @@ const buildPresets = () => {
   ];
 };
 
-const useIsWide = () => {
-  const query = '(min-width: 768px)';
-  const get = () => (typeof window !== 'undefined' && window.matchMedia ? window.matchMedia(query).matches : true);
-  const [wide, setWide] = useState(get);
-  useEffect(() => {
-    if (!window.matchMedia) return undefined;
-    const mq = window.matchMedia(query);
-    const onChange = () => setWide(mq.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-  return wide;
+// Gaya tombol pemicu. `toolbar` = bar "PERIODE" di dashboard, `field` = pengganti
+// <Input type="date"> di form/filter, `dark` = untuk latar gelap.
+const TRIGGER_VARIANTS = {
+  toolbar: 'rounded-app-sm border border-app-border bg-white px-3 py-1.5 text-xs shadow-sm text-app-ink hover:border-app-accent/50',
+  field: 'h-10 rounded-md border border-input bg-white px-3 text-sm text-slate-800 hover:border-app-accent/50',
+  dark: 'h-10 rounded-md border border-white/10 bg-white/[0.06] px-3 text-sm text-white hover:bg-white/10',
 };
 
-// Date-range picker dengan preset cepat. value/onChange memakai bentuk
-// { startDate, endDate } (yyyy-MM-dd) mengikuti konvensi `dateRange`.
-const DateRangePicker = ({ value, onChange, className, align = 'start' }) => {
+const fmtShort = (s) => (s ? format(parseDay(s), 'dd/MM/yyyy') : '--/--/----');
+
+// Pemilih rentang tanggal dengan pilihan cepat di kiri dan satu bulan di kanan.
+// value/onChange memakai bentuk { startDate, endDate } (yyyy-MM-dd).
+const DateRangePicker = ({
+  value,
+  onChange,
+  className,
+  align = 'end',
+  variant = 'toolbar',
+  label = 'Periode',
+  maxDate,
+  minDate,
+  disabled = false,
+  clearable = false,
+}) => {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(undefined);
-  const wide = useIsWide();
   const presets = useMemo(buildPresets, [open]);
 
   const from = parseDay(value?.startDate);
@@ -85,46 +91,45 @@ const DateRangePicker = ({ value, onChange, className, align = 'start' }) => {
     setOpen(false);
   };
 
-  const fmt = (d, withYear = true) => format(d, withYear ? 'd MMM yyyy' : 'd MMM', { locale: id });
-  const label = from && to
-    ? (isSameDay(from, to) ? fmt(from) : `${fmt(from, from.getFullYear() !== to.getFullYear())} – ${fmt(to)}`)
-    : 'Pilih periode';
   const dayCount = from && to ? differenceInCalendarDays(to, from) + 1 : null;
+  const isToolbar = variant === 'toolbar';
+
+  const disabledDays = [];
+  if (minDate) disabledDays.push({ before: parseDay(minDate) });
+  if (maxDate) disabledDays.push({ after: parseDay(maxDate) });
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           type="button"
+          disabled={disabled}
           aria-label="Pilih rentang tanggal"
           className={cn(
-            'group inline-flex items-center gap-3 rounded-[14px] border border-slate-200 bg-white px-3.5 py-2 text-left shadow-sm transition-[border-color,box-shadow] hover:border-emerald-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 data-[state=open]:border-emerald-400 data-[state=open]:ring-2 data-[state=open]:ring-emerald-500/20',
+            'group inline-flex items-center gap-2 text-left font-medium transition-[border-color,box-shadow] focus:outline-none focus-visible:ring-2 focus-visible:ring-app-accent/40 data-[state=open]:border-app-accent data-[state=open]:ring-2 data-[state=open]:ring-app-accent/20 disabled:cursor-not-allowed disabled:opacity-50',
+            TRIGGER_VARIANTS[variant] || TRIGGER_VARIANTS.toolbar,
             className,
           )}
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-emerald-50 text-emerald-600">
-            <CalendarRange className="h-[18px] w-[18px]" />
+          {isToolbar && label ? (
+            <span className="shrink-0 text-xs font-bold uppercase tracking-wider text-app-accent">{label}</span>
+          ) : (
+            <CalendarRange className="h-4 w-4 shrink-0 text-app-accent" />
+          )}
+          <span className="min-w-0 flex-1 truncate tabular-nums">
+            {from || to ? `${fmtShort(value?.startDate)} – ${fmtShort(value?.endDate)}` : 'Pilih periode'}
           </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Periode</span>
-            <span className="block truncate text-[13px] font-semibold text-slate-800">{label}</span>
-          </span>
-          {dayCount ? (
-            <span className="hidden shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500 sm:inline">
-              {dayCount} hari
-            </span>
-          ) : null}
-          <ChevronDown className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-data-[state=open]:rotate-180" />
+          {isToolbar && <CalendarRange className="h-4 w-4 shrink-0 text-app-accent" />}
         </button>
       </PopoverTrigger>
       <PopoverContent
         align={align}
         sideOffset={8}
-        className="w-auto max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border-slate-200 p-0 shadow-xl"
+        className="w-auto max-w-[calc(100vw-1rem)] overflow-hidden rounded-2xl border-app-border bg-white p-0 text-app-ink shadow-xl"
       >
         <div className="flex flex-col md:flex-row">
-          <div className="flex gap-1.5 overflow-x-auto border-b border-slate-100 bg-slate-50/70 p-2.5 [scrollbar-width:none] md:w-48 md:flex-col md:gap-1 md:overflow-visible md:border-b-0 md:border-r md:p-3 [&::-webkit-scrollbar]:hidden">
-            <p className="mb-1 hidden px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 md:block">Pilihan cepat</p>
+          <div className="flex gap-1.5 overflow-x-auto border-b border-app-border bg-slate-50/70 p-2.5 [scrollbar-width:none] md:w-44 md:flex-col md:gap-1 md:overflow-visible md:border-b-0 md:border-r md:bg-transparent md:p-3 [&::-webkit-scrollbar]:hidden">
+            <p className="mb-1 hidden px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 md:block">Cepat</p>
             {presets.map((preset) => {
               const isActive = activePreset?.label === preset.label;
               return (
@@ -133,8 +138,8 @@ const DateRangePicker = ({ value, onChange, className, align = 'start' }) => {
                   type="button"
                   onClick={() => handlePreset(preset)}
                   className={cn(
-                    'flex shrink-0 items-center justify-between gap-2 whitespace-nowrap rounded-lg px-3 py-1.5 text-left text-[13px] font-medium transition-colors',
-                    isActive ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-slate-900',
+                    'flex shrink-0 items-center justify-between gap-2 whitespace-nowrap rounded-[10px] px-3 py-2 text-left text-[13px] font-semibold transition-colors',
+                    isActive ? 'bg-app-soft text-app-accent' : 'text-app-ink hover:bg-slate-100',
                   )}
                 >
                   {preset.label}
@@ -149,20 +154,34 @@ const DateRangePicker = ({ value, onChange, className, align = 'start' }) => {
               defaultMonth={from}
               selected={selected}
               onSelect={handleSelect}
-              numberOfMonths={wide ? 2 : 1}
+              numberOfMonths={1}
               locale={id}
               weekStartsOn={1}
+              disabled={disabledDays.length ? disabledDays : undefined}
               classNames={{
-                head_cell: 'text-slate-400 rounded-md w-9 h-9 font-medium text-[0.75rem]',
-                day_selected: 'bg-emerald-600 text-white hover:bg-emerald-600 hover:text-white focus:bg-emerald-600 focus:text-white',
-                day_range_middle: 'aria-selected:bg-emerald-50 aria-selected:text-emerald-800',
-                day_today: 'ring-1 ring-inset ring-emerald-400 text-emerald-700 font-semibold',
-                cell: 'h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-emerald-50 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20',
+                caption_label: 'text-[14.5px] font-bold',
+                head_cell: 'text-slate-400 w-9 h-9 font-bold uppercase text-[0.68rem] tracking-wide',
+                nav_button: 'h-8 w-8 rounded-[10px] border border-app-border bg-white p-0 opacity-100 hover:bg-app-soft inline-flex items-center justify-center',
+                cell: 'h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-app-soft [&:has(.day-range-start)]:rounded-l-full [&:has(.day-range-end)]:rounded-r-full [&:has([aria-selected].day-outside)]:bg-app-soft/50 focus-within:relative focus-within:z-20',
+                day: 'h-9 w-9 p-0 font-medium rounded-full text-[13px] hover:bg-app-soft hover:text-app-accent aria-selected:opacity-100 inline-flex items-center justify-center',
+                day_range_start: 'day-range-start',
+                day_range_end: 'day-range-end',
+                day_selected: 'bg-app-accent text-white shadow-sm hover:bg-app-accent hover:text-white focus:bg-app-accent focus:text-white',
+                day_range_middle: 'rounded-none aria-selected:bg-app-soft aria-selected:text-app-accent',
+                day_today: 'font-bold text-app-accent ring-1 ring-inset ring-amber-400',
               }}
             />
-            <div className="flex items-center justify-between gap-3 border-t border-slate-100 px-4 py-2.5 text-xs text-slate-500">
+            <div className="flex items-center justify-between gap-3 border-t border-app-border px-4 py-2.5 text-xs text-slate-500">
               <span>{draft?.from && !draft.to ? 'Pilih tanggal akhir…' : 'Klik tanggal awal, lalu tanggal akhir'}</span>
-              {dayCount ? <span className="font-semibold text-slate-700">{dayCount} hari</span> : null}
+              {clearable && (from || to) && !draft ? (
+                <button
+                  type="button"
+                  onClick={() => { onChange({ startDate: '', endDate: '' }); setOpen(false); }}
+                  className="font-semibold text-app-accent hover:underline"
+                >
+                  Hapus filter
+                </button>
+              ) : dayCount && !draft ? <span className="font-bold text-app-ink">{dayCount} hari</span> : null}
             </div>
           </div>
         </div>
