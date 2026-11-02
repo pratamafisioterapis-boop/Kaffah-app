@@ -320,7 +320,7 @@ await Promise.all([loadSlots(), loadStats()]);
         {/* ── Periode Toolbar ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-            <DateRangePicker value={rangeInput} onChange={setRangeInput} className="w-full sm:w-auto" />
+            <DateRangePicker align="end" value={rangeInput} onChange={setRangeInput} className="w-full sm:w-auto" />
           </div>
         </div>
 

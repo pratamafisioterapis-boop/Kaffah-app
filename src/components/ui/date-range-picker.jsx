@@ -51,7 +51,7 @@ const DateRangePicker = ({
   value,
   onChange,
   className,
-  align = 'end',
+  align = 'start',
   variant = 'toolbar',
   label = 'Periode',
   maxDate,
