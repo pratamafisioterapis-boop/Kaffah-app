@@ -150,7 +150,7 @@ export const generateAccountingReportPDF = (data, { dateRange, clinicName = '', 
   const incomeColumns = [
     { header: 'Tanggal', render: (row) => formatDate(row.date || row.transaction_date) },
     { header: 'Kategori', render: (row) => row.category || '-' },
-    { header: 'Nama', render: (row) => row.description || '-' },
+    { header: 'Deskripsi', render: (row) => row.description || '-' },
     bankCol,
     amountCol(),
   ];
