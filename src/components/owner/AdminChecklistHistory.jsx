@@ -5,6 +5,7 @@ import { format, subDays } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import DateRangePicker from '@/components/ui/date-range-picker';
 
 const formatDateLabel = (dateStr) => {
   try {
@@ -84,21 +85,13 @@ const AdminChecklistHistory = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-6">
-            <Input
-              type="date"
-              value={startDate}
-              max={endDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full sm:w-[160px] bg-white/[0.06] border-white/10 text-white [color-scheme:dark]"
-            />
-            <span className="text-slate-500 text-sm hidden sm:block">—</span>
-            <Input
-              type="date"
-              value={endDate}
-              min={startDate}
-              max={format(new Date(), 'yyyy-MM-dd')}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full sm:w-[160px] bg-white/[0.06] border-white/10 text-white [color-scheme:dark]"
+            <DateRangePicker
+              variant="dark"
+              align="start"
+              maxDate={format(new Date(), 'yyyy-MM-dd')}
+              className="w-full sm:w-auto"
+              value={{ startDate, endDate }}
+              onChange={(r) => { setStartDate(r.startDate); setEndDate(r.endDate); }}
             />
           </div>
 

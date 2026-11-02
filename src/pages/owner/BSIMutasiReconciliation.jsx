@@ -18,6 +18,7 @@ import {
 } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { confirmAction } from '@/lib/confirmAction';
+import DateRangePicker from '@/components/ui/date-range-picker';
 
 // --- Helpers ----------------------------------------------------------------
 
@@ -2646,12 +2647,14 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
             <CardContent className="pt-5">
               <div className="flex flex-wrap items-end gap-3">
                 <div>
-                  <label className="text-xs text-slate-500 block mb-1">Dari tanggal</label>
-                  <input type="date" value={recapAuditRange.start} onChange={e => setRecapAuditRange(prev => ({ ...prev, start: e.target.value }))} className="h-10 px-3 rounded-md border border-input bg-white text-sm outline-none" />
-                </div>
-                <div>
-                  <label className="text-xs text-slate-500 block mb-1">Sampai tanggal</label>
-                  <input type="date" value={recapAuditRange.end} onChange={e => setRecapAuditRange(prev => ({ ...prev, end: e.target.value }))} className="h-10 px-3 rounded-md border border-input bg-white text-sm outline-none" />
+                  <label className="text-xs text-slate-500 block mb-1">Rentang tanggal</label>
+                  <DateRangePicker
+                    variant="field"
+                    align="start"
+                    className="w-full sm:w-64"
+                    value={{ startDate: recapAuditRange.start, endDate: recapAuditRange.end }}
+                    onChange={(r) => setRecapAuditRange(prev => ({ ...prev, start: r.startDate, end: r.endDate }))}
+                  />
                 </div>
                 <Button onClick={runRecapAudit} disabled={recapAuditLoading} className="bg-app-accent hover:bg-app-accent-hover text-white gap-2">
                   {recapAuditLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}

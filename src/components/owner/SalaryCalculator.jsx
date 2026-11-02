@@ -22,6 +22,7 @@ import FinanceTile from '@/components/owner/finance/FinanceTile';
 import HomecareTimeAudit from '@/components/owner/HomecareTimeAudit';
 import { Pill } from '@/components/owner/finance/TxList';
 import { fmtShort, fmtRp } from '@/components/owner/finance/financeTheme';
+import DateRangePicker from '@/components/ui/date-range-picker';
 
 const SalaryCalculator = ({ dateRange, setDateRange }) => {
   useEffect(() => {
@@ -455,22 +456,12 @@ const SalaryCalculator = ({ dateRange, setDateRange }) => {
 
         {!useAutoPeriod && (
           <div className="flex flex-wrap items-center gap-2 mt-3">
-            <input
-              type="date"
-              value={dateRange?.startDate || ''}
-              onChange={e => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-              className="h-10 text-sm border border-slate-200 rounded-[10px] px-3 outline-none bg-slate-50 flex-1 min-w-[130px]"
-              style={{ colorScheme: 'light' }}
-              aria-label="Tanggal mulai"
-            />
-            <span className="text-slate-300">–</span>
-            <input
-              type="date"
-              value={dateRange?.endDate || ''}
-              onChange={e => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-              className="h-10 text-sm border border-slate-200 rounded-[10px] px-3 outline-none bg-slate-50 flex-1 min-w-[130px]"
-              style={{ colorScheme: 'light' }}
-              aria-label="Tanggal selesai"
+            <DateRangePicker
+              variant="field"
+              align="start"
+              className="flex-1 min-w-[200px] bg-slate-50 rounded-[10px]"
+              value={{ startDate: dateRange?.startDate || '', endDate: dateRange?.endDate || '' }}
+              onChange={(r) => setDateRange(prev => ({ ...prev, ...r }))}
             />
             <button
               type="button"

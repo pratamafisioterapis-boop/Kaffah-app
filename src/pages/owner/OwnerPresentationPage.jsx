@@ -74,7 +74,7 @@ const OwnerPresentationPage = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <DateRangePicker value={dateRange} onChange={setDateRange} className="bg-white/10 border-white/10 text-white hover:bg-white/20 hover:text-white" />
+              <DateRangePicker variant="dark" value={dateRange} onChange={setDateRange} />
               <Button variant="outline" size="icon" className="bg-white/10 border-white/10 text-white hover:bg-white/20 shrink-0" onClick={refetch} title="Muat ulang data">
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               </Button>

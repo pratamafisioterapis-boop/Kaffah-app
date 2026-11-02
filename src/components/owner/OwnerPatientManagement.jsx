@@ -28,6 +28,7 @@ import PatientList from '@/components/admin/patients/PatientList';
 import PatientDialog from '@/components/admin/PatientDialog';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { confirmAction } from '@/lib/confirmAction';
+import DateRangePicker from '@/components/ui/date-range-picker';
 
 const OwnerPatientManagement = () => {
   const { toast } = useToast();
@@ -258,19 +259,13 @@ const OwnerPatientManagement = () => {
           
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Dari Tanggal (Daftar)</label>
-              <Input
-                type="date"
-                value={deleteDateRange.startDate}
-                onChange={(e) => setDeleteDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Sampai Tanggal (Daftar)</label>
-              <Input
-                type="date"
-                value={deleteDateRange.endDate}
-                onChange={(e) => setDeleteDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+              <label className="text-sm font-medium">Rentang Tanggal</label>
+              <DateRangePicker
+                variant="field"
+                align="start"
+                className="w-full"
+                value={deleteDateRange}
+                onChange={(r) => setDeleteDateRange(r)}
               />
             </div>
           </div>

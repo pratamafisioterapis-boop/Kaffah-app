@@ -23,6 +23,7 @@ import {
   recalculateAllAttendanceRecords,
   getPhysiotherapists,
 } from '@/lib/api';
+import DateRangePicker from '@/components/ui/date-range-picker';
 
 // Falls back to the calendar month while therapist period settings are
 // still loading; replaced by the clinic's most common therapist period
@@ -275,13 +276,15 @@ const AttendanceManagement = () => {
               <ChevronLeft className="w-4 h-4" /> Periode Sebelumnya
             </Button>
           </div>
-          <div>
-            <Label className="text-xs">Dari Tanggal</Label>
-            <Input type="date" value={startDate} onChange={(e) => handleStartDateChange(e.target.value)} />
-          </div>
-          <div>
-            <Label className="text-xs">Sampai Tanggal</Label>
-            <Input type="date" value={endDate} onChange={(e) => handleEndDateChange(e.target.value)} />
+          <div className="col-span-2">
+            <Label className="text-xs">Rentang Tanggal</Label>
+            <DateRangePicker
+              variant="field"
+              align="start"
+              className="w-full"
+              value={{ startDate, endDate }}
+              onChange={(r) => { handleStartDateChange(r.startDate); handleEndDateChange(r.endDate); }}
+            />
           </div>
           <div>
             <Label className="text-xs">Departemen</Label>
