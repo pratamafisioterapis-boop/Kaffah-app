@@ -407,7 +407,7 @@ setTherapists(enrichedTherapists);
 
         {/* ── Periode Toolbar ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
-          <DateRangePicker value={rangeInput} onChange={setRangeInput} className="w-full sm:w-auto" />
+          <DateRangePicker align="end" value={rangeInput} onChange={setRangeInput} className="w-full sm:w-auto" />
         </div>
 
         {/* ── Tabs ── */}
