@@ -35,6 +35,12 @@ const C = {
   tint: '#eef4fa',
 };
 
+// Lebar kolom SESSION + RATE = satu garis sumbu: kotak "Treated by" dan blok total memakai
+// lebar yang sama, jadi tepi kiri/kanannya sejajar dengan kolom tabel di atasnya.
+const COL_SESSION = 150;
+const COL_RATE = 120;
+const AXIS_WIDTH = COL_SESSION + COL_RATE;
+
 const sectionLabel = { fontSize: '10.5px', fontWeight: 600, letterSpacing: '0.12em', color: C.blue };
 const th = { fontSize: '10.5px', fontWeight: 600, letterSpacing: '0.1em', color: C.muted, padding: '0 0 10px', borderBottom: `2px solid ${C.navy}` };
 
@@ -144,13 +150,13 @@ const InvoiceTemplateModern = forwardRef(({ data }, ref) => {
       <div style={{ height: '1px', background: C.line, margin: '22px 0 28px' }} />
 
       {/* PASIEN + TERAPIS */}
-      <div style={{ display: 'flex', gap: '48px' }}>
+      <div style={{ display: 'flex', gap: '24px' }}>
         <div style={{ flex: 1 }}>
           <div style={sectionLabel}>BILLED TO</div>
           <div style={{ fontSize: '15px', fontWeight: 600, marginTop: '8px' }}>{patientName}</div>
           {patientLine && <div style={{ fontSize: '12.5px', lineHeight: 1.7, color: C.body, marginTop: '4px' }}>{patientLine}</div>}
         </div>
-        <div style={{ flex: 1 }}>
+        <div style={{ width: `${AXIS_WIDTH}px`, flex: 'none' }}>
           <div style={sectionLabel}>TREATED BY</div>
           <div style={{ fontSize: '15px', fontWeight: 600, marginTop: '8px' }}>{therapistName}</div>
           <div style={{ fontSize: '12.5px', lineHeight: 1.7, color: C.body, marginTop: '4px' }}>Physiotherapist</div>
@@ -163,8 +169,8 @@ const InvoiceTemplateModern = forwardRef(({ data }, ref) => {
           <tr>
             <th style={{ ...th, textAlign: 'left', width: '70px' }}>CODE</th>
             <th style={{ ...th, textAlign: 'left' }}>DESCRIPTION</th>
-            <th style={{ ...th, textAlign: 'left', width: '150px' }}>SESSION</th>
-            <th style={{ ...th, textAlign: 'right', width: '120px' }}>RATE</th>
+            <th style={{ ...th, textAlign: 'left', width: `${COL_SESSION}px` }}>SESSION</th>
+            <th style={{ ...th, textAlign: 'right', width: `${COL_RATE}px` }}><span style={{ marginRight: '-0.1em' }}>RATE</span></th>
           </tr>
         </thead>
         <tbody>
@@ -221,14 +227,14 @@ const InvoiceTemplateModern = forwardRef(({ data }, ref) => {
           </div>
         </div>
 
-        <div style={{ width: '300px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', padding: '6px 16px', color: C.body }}>
+        <div style={{ width: `${AXIS_WIDTH}px`, flex: 'none' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', padding: '6px 0', color: C.body }}>
             <span>Subtotal</span><span>{formatCurrency(data?.amount_original || data?.amount)}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', padding: '6px 16px', color: C.body }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', padding: '6px 0', color: C.body }}>
             <span>Discount</span><span>{discountText}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '15px', fontWeight: 700, color: C.navy, background: C.tint, borderRadius: '8px', padding: '14px 16px', marginTop: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '15px', fontWeight: 700, color: C.navy, background: C.tint, borderRadius: '8px', padding: '14px 16px', margin: '8px -16px 0' }}>
             <span>Balance Paid</span><span>{formatCurrency(data?.amount)}</span>
           </div>
         </div>
