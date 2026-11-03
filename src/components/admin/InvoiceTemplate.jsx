@@ -51,8 +51,11 @@ const therapistName = data?.therapist_name ?? '-';
   // Mode Cashier berlaku untuk invoice yang terbit sejak invoice_signer_from; invoice lama
   // (invoice_created_at lebih awal) tetap memakai tanda tangan Physiotherapist.
   const signerFrom = data?.clinic?.invoice_signer_from ? new Date(data.clinic.invoice_signer_from) : null;
-  const invoiceIssuedAt = data?.invoice_created_at ? new Date(data.invoice_created_at) : null;
-  const issuedBeforeSignerFrom = !!(signerFrom && invoiceIssuedAt && invoiceIssuedAt < signerFrom);
+  // Recap lama (sebelum 18 Okt 2026) tidak punya invoice_created_at, jadi pakai tanggal
+  // pembuatan recap; bila keduanya tidak ada, anggap invoice lama (jangan diubah).
+  const issuedSource = data?.invoice_created_at || data?.created_at;
+  const invoiceIssuedAt = issuedSource ? new Date(issuedSource) : null;
+  const issuedBeforeSignerFrom = !!(signerFrom && (!invoiceIssuedAt || invoiceIssuedAt < signerFrom));
   const adminSigner = data?.clinic?.invoice_signer === 'admin' && !issuedBeforeSignerFrom;
   const showPatientSignature = data?.clinic?.invoice_show_patient_signature !== false;
   const adminName = data?.admin_signer_name || data?.clinic?.invoice_admin_name || '';
