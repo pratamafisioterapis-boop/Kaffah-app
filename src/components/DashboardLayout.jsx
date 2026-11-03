@@ -484,9 +484,13 @@ const isPWA =
         <div className="flex items-center gap-3 p-3 bg-white rounded-app border border-app-border mb-3">
           <div className="flex-shrink-0 relative">
             <img
-              src={`https://api.dicebear.com/7.x/initials/svg?seed=${typeof userName === 'string' ? userName : 'User'}&backgroundColor=1677D2`}
+              src={userDetails?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(userName)}&backgroundColor=1677D2`}
               alt="Avatar"
-              className="h-10 w-10 rounded-full bg-app-soft border-2 border-white shadow-sm" loading="lazy" decoding="async" />
+              onError={(e) => {
+                const fallback = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(userName)}&backgroundColor=1677D2`;
+                if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
+              }}
+              className="h-10 w-10 rounded-full bg-app-soft border-2 border-white shadow-sm object-cover" loading="lazy" decoding="async" />
           </div>
           <div className="overflow-hidden min-w-0">
             <p className="text-sm font-semibold text-app-ink break-words sm:truncate">
