@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
   User, Mail, Phone, Lock, Trash2, Edit2, 
@@ -24,7 +24,16 @@ const AdminManager = () => {
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [clinicId, setClinicId] = useState(null);
-  
+  const [statusFilter, setStatusFilter] = useState('active'); // active | inactive | all
+
+  // Active admins first, then inactive; filtered by status (default: active)
+  const visibleAdmins = useMemo(() => {
+    const isInactive = (a) => a.is_active === false;
+    return admins
+      .filter((a) => statusFilter === 'all' || (statusFilter === 'inactive' ? isInactive(a) : !isInactive(a)))
+      .sort((a, b) => Number(isInactive(a)) - Number(isInactive(b)));
+  }, [admins, statusFilter]);
+
   // Dialog State
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -261,11 +270,27 @@ const AdminManager = () => {
         </Button>
       </div>
 
+      <div className="flex items-center gap-2">
+        <label htmlFor="admin-status-filter" className="text-sm font-medium text-slate-600">Status</label>
+        <select
+          id="admin-status-filter"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-app-accent"
+        >
+          <option value="active">Aktif</option>
+          <option value="inactive">Nonaktif</option>
+          <option value="all">Semua</option>
+        </select>
+      </div>
+
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className="animate-spin" /></div>
+      ) : visibleAdmins.length === 0 ? (
+        <p className="text-center text-sm text-slate-500 py-12">Tidak ada admin pada filter ini.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {admins.map((admin) => (
+          {visibleAdmins.map((admin) => (
             <motion.div 
               key={admin.id}
               initial={{ opacity: 0, scale: 0.95 }}
