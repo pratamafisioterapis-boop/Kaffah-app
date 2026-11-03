@@ -32,6 +32,7 @@ import {
   getAppointments,
   getPhysiotherapistByUserId,
   getAvailableSlots,
+  updateAppointment,
   getPatientByPhone,
   getClinicTherapistsSoapLockStatus
 } from '@/lib/api';
@@ -41,6 +42,13 @@ import SlotBookingForm from './booking/SlotBookingForm';
 import ManualBookingForm from './booking/ManualBookingForm';
 import BookedSlotDetailModal from './booking/BookedSlotDetailModal';
 import ScheduleTemplateModal from './booking/ScheduleTemplateModal';
+import { useAppointmentDrag } from './booking/useAppointmentDrag';
+import {
+  DragGhost,
+  DayDropStrip,
+  RescheduleConfirmDialog,
+  RescheduleSlotPickerDialog
+} from './booking/RescheduleDragUI';
 import WeeklyScheduleView from '@/components/owner/WeeklyScheduleView';
 
 const AdminAppointmentBooking = () => {
@@ -304,6 +312,80 @@ const formattedDateFull = date
 
   const closeModal = () => setActiveModal(null);
 
+  // ---- Drag & drop reschedule ----
+  const [pendingMove, setPendingMove] = useState(null); // { app, to: { dateKey, therapistId, time } }
+  const [slotPicker, setSlotPicker] = useState(null); // { app, dateKey }
+  const [movingSaving, setMovingSaving] = useState(false);
+
+  const requestMove = (app, to) => {
+    const sameSlot =
+      format(new Date(app.appointment_date), 'yyyy-MM-dd') === to.dateKey &&
+      app.therapist_id === to.therapistId &&
+      format(new Date(app.appointment_date), 'HH:mm') === to.time;
+    if (sameSlot) return;
+    setSlotPicker(null);
+    setPendingMove({ app, to });
+  };
+
+  const { dragApp, onAppointmentPointerDown, setGhostNode } = useAppointmentDrag({
+    enabled: viewMode === 'day' && !activeModal && !pendingMove && !slotPicker && !showHistoryModal,
+    onDropOnSlot: (app, slot) =>
+      requestMove(app, {
+        dateKey: format(dateRef.current, 'yyyy-MM-dd'),
+        therapistId: slot.therapistId,
+        time: slot.time
+      }),
+    onDropOnDay: (app, dateKey) => setSlotPicker({ app, dateKey })
+  });
+
+  const confirmMove = async () => {
+    if (!pendingMove) return;
+    const { app, to } = pendingMove;
+    setMovingSaving(true);
+    try {
+      // Slot bisa terambil orang lain sejak kartu dilepas; cek ulang sebelum menyimpan.
+      const { data: slots } = await getAvailableSlots(to.dateKey, to.therapistId);
+      const stillFree = (Array.isArray(slots) ? slots : []).some(
+        (s) => s.status === 'aktif' && String(s.slot_start).slice(0, 5) === to.time
+      );
+      if (!stillFree) {
+        toast({
+          variant: 'destructive',
+          title: 'Slot sudah tidak tersedia',
+          description: 'Slot tujuan baru saja terisi atau ditutup. Pilih slot lain.'
+        });
+        setPendingMove(null);
+        fetchDayData(dateRef.current);
+        return;
+      }
+
+      const { error: updateError } = await updateAppointment(app.id, {
+        appointment_date: new Date(`${to.dateKey}T${to.time}`).toISOString(),
+        therapist_id: to.therapistId,
+        status: 'rescheduled',
+        action_by: user?.id,
+        action_by_name: userDetails?.full_name,
+        action_by_role: userDetails?.role
+      });
+      if (updateError) throw updateError;
+
+      toast({ title: 'Berhasil reschedule', description: 'Appointment dipindahkan.' });
+      setPendingMove(null);
+
+      if (to.dateKey !== format(dateRef.current, 'yyyy-MM-dd')) {
+        const [y, m, d] = to.dateKey.split('-').map(Number);
+        setDate(new Date(y, m - 1, d)); // pindah ke hari tujuan agar hasilnya langsung terlihat
+        setWeekRefreshKey((k) => k + 1);
+      } else {
+        handleSuccess();
+      }
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Gagal reschedule', description: err?.message });
+    } finally {
+      setMovingSaving(false);
+    }
+  };
+
   const handleSuccess = () => {
     setTimeout(() => fetchDayData(date), 200);
     setWeekRefreshKey((k) => k + 1);
@@ -374,7 +456,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
     <div className="w-full px-4 md:px-6 xl:px-8 2xl:px-12 space-y-6 pb-12">
 
       {/* HEADER */}
-<div className="bg-white rounded-app shadow-sm border border-slate-100 p-4 sm:p-6 sticky top-2 sm:top-4 z-20 overflow-hidden space-y-4">
+<div data-drag-header className="bg-white rounded-app shadow-sm border border-slate-100 p-4 sm:p-6 sticky top-2 sm:top-4 z-20 overflow-hidden space-y-4">
 
   {/* TITLE */}
   <div>
@@ -561,6 +643,11 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
       <ClipboardList className="h-4 w-4" />
     </Button>
   </div>
+
+  {/* Strip hari: muncul hanya saat kartu appointment sedang diseret */}
+  {dragApp && viewMode === 'day' && (
+    <DayDropStrip originDate={dragApp.appointment_date} viewDate={date} />
+  )}
 </div>
 
       {/* ERROR */}
@@ -666,11 +753,39 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
                 onManualBooking={(t) => setActiveModal({ type: 'manual', data: { therapist: t } })}
                 onAppointmentClick={(app) => setActiveModal({ type: 'detail', data: app })}
                 onPatientClick={handleViewHistory}
+                onAppointmentPointerDown={onAppointmentPointerDown}
+                dragActive={!!dragApp}
+                dragAppId={dragApp?.id || null}
               />
             );
           })}
         </div>
       )}
+
+      <DragGhost
+        app={dragApp}
+        therapistName={
+          dragApp
+            ? dragApp.therapist?.name || therapists.find((t) => t.id === dragApp.therapist_id)?.name || ''
+            : ''
+        }
+        setNode={setGhostNode}
+      />
+
+      <RescheduleSlotPickerDialog
+        picker={slotPicker}
+        therapists={therapists}
+        onPick={(app, to) => requestMove(app, to)}
+        onClose={() => setSlotPicker(null)}
+      />
+
+      <RescheduleConfirmDialog
+        pending={pendingMove}
+        therapists={therapists}
+        saving={movingSaving}
+        onConfirm={confirmMove}
+        onCancel={() => setPendingMove(null)}
+      />
 
       <Dialog open={!!activeModal} onOpenChange={(open) => !open && closeModal()}>
         <DialogContent className="w-full max-w-xl bg-white p-6 rounded-app-lg max-h-[90vh] overflow-y-auto">
