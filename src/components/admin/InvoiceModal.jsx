@@ -290,7 +290,10 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     const element = componentRef.current;
     if (!element) throw new Error("Element invoice tidak ditemukan");
 
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Cukup tunggu font siap + satu frame render. (Dulu jeda tetap 500 ms; html2canvas memuat
+    // gambar sendiri, jadi tidak perlu menunggu gambar di sini.)
+    if (document.fonts?.ready) await document.fonts.ready;
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
     const canvas = await html2canvas(element, {
       scale: 2,
@@ -302,7 +305,9 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       windowWidth: 794,
     });
 
-    const imgData   = canvas.toDataURL('image/png');
+    // JPEG, bukan PNG: jsPDF memproses ulang PNG piksel demi piksel (~2 detik atau lebih untuk
+    // halaman A4 beresolusi 2x), sedangkan JPEG langsung disisipkan (~0,02 detik).
+    const imgData   = canvas.toDataURL('image/jpeg', 0.95);
     const pdfWidth  = 210;
     const pdfHeight = 297;
 
@@ -317,7 +322,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     const pdfImgH     = (imgProps.height * pdfWidth) / imgProps.width;
     const finalHeight = Math.min(pdfImgH, pdfHeight);
 
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalHeight);
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, finalHeight);
     return pdf;
   };
 
@@ -422,10 +427,13 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
   const handleDownloadPDF = async () => {
     setIsGenerating(true);
     try {
-      const pdf           = await generatePDF();
       const invoiceNumber = getInvoiceNumber();
 
-      if (!isOneOff) await saveInvoiceRecord(invoiceNumber);
+      // Pembuatan PDF dan penyimpanan data invoice berjalan bersamaan (dulu berurutan).
+      const [pdf] = await Promise.all([
+        generatePDF(),
+        isOneOff ? Promise.resolve() : saveInvoiceRecord(invoiceNumber),
+      ]);
 
       const rawDate = data?.recap_date || new Date().toISOString().split('T')[0];
       const [yr, mo, dy] = rawDate.split('-');
