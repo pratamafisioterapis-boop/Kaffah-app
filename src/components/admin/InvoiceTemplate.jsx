@@ -218,6 +218,7 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
             <tr>
               <td style={tdCenter}>
   {
+    data?.tiered_line ? data.tiered_line.code :
     data?.service_type === 'Musculoskeletal Treatment' ? 'A17' :
     data?.service_type === 'Cardiorespiratory Physiotherapy' ? 'B29' :
     data?.service_type === 'Sport Injury Treatment' ? 'C34' :
@@ -226,9 +227,9 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
     'X00'
   }
 </td>
-              <td style={tdCenter}>{data?.service_type || '-'}</td>
+              <td style={tdCenter}>{data?.tiered_line ? data.tiered_line.description : (data?.service_type || '-')}</td>
               <td style={tdCenter}>
-  {data?.package_type || data?.service_type || '-'}
+  {data?.tiered_line ? data.tiered_line.session : (data?.package_type || data?.service_type || '-')}
 </td>
               <td style={tdCenter}>{formatCurrency(data?.amount_original || data?.amount)}</td>
             </tr>
