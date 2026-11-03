@@ -97,6 +97,8 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     templateData.patients = { ...(templateData.patients || {}), full_name: oneOffTrimmed };
     if (templateData.patient) templateData.patient = { ...templateData.patient, full_name: oneOffTrimmed };
   }
+  // Prop `data` bisa membawa receipt_number kosong yang menimpa nomor dari database.
+  if (canOneOffName && detailData?.receipt_number) templateData.receipt_number = detailData.receipt_number;
   if (!templateData.receipt_number && !templateData.invoice_number) {
     const rm = data?.patients?.medical_record_number || data?.patient?.medical_record_number || data?.medical_record_number || 'RM00000';
     templateData.invoice_number = `INV/KFF/${data?.recap_date || new Date().toISOString().split('T')[0]}/${rm}`;
@@ -170,6 +172,14 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     if (error || !recap) {
       console.error("Error fetching recap:", error);
       return;
+    }
+
+    // Kaffah: nomor kwitansi dibuat database (KFF/XI/2026/0042), satu nomor tetap per recap.
+    // Recap yang sudah punya nomor (termasuk format lama INV/KFF/...) tidak diubah.
+    if (recap.clinic_id === KAFFAH_CLINIC_ID && !recap.receipt_number) {
+      const { data: assigned, error: assignErr } = await supabase.rpc('assign_kaffah_receipt_number', { p_recap_id: recap.id });
+      if (assignErr) console.error('Gagal membuat nomor kwitansi:', assignErr);
+      else if (assigned) recap.receipt_number = assigned;
     }
 
     // Kasir = admin yang pertama kali menyimpan rekap (cashier_id, diisi sekali).
@@ -303,6 +313,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
 
   // ── Helper: Invoice Number ────────────────────────────────────────────────
   const getInvoiceNumber = () => {
+    if (canOneOffName && detailData?.receipt_number) return detailData.receipt_number;
     const rm      = getMedicalRecordNumber();
     const dateStr = data?.recap_date || new Date().toISOString().split('T')[0];
     return `INV/KFF/${dateStr}/${rm}`;
