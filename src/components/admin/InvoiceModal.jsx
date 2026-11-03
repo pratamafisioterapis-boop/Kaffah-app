@@ -18,6 +18,7 @@ import { getInvoiceSettings, getWaApiSettings } from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { stripSignatureBackground } from '@/lib/signatureImage';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
+import { kaffahServiceLine, kaffahSessionLabel } from '@/lib/kaffahInvoiceLine';
 
 // Ukuran acuan A4 (210mm x 297mm) dalam px @96dpi — dipakai untuk menghitung
 // skala preview di layar sempit. Generasi PDF/print tetap memakai elemen asli
@@ -221,7 +222,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
         if (physio.clinic_id) {
           const { data: clinic } = await supabase
             .from('clinics')
-            .select('id, name, address, phone, email, logo_url, invoice_signer, invoice_signer_from, invoice_admin_name, invoice_admin_signature_url, invoice_show_patient_signature, invoice_template')
+            .select('id, name, address, phone, email, logo_url, invoice_signer, invoice_signer_from, invoice_desc_style, invoice_desc_from, invoice_admin_name, invoice_admin_signature_url, invoice_show_patient_signature, invoice_template')
             .eq('id', physio.clinic_id)
             .single();
           if (clinic) clinicData = clinic;
@@ -242,8 +243,36 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       }
     }
 
+    // Kaffah: deskripsi layanan bertingkat (Essential/Advanced/Recovery, "N-Session Package"),
+    // hanya untuk invoice yang terbit sejak invoice_desc_from; invoice lama tidak berubah.
+    let tieredLine = null;
+    if (clinicData?.invoice_desc_style === 'tiered') {
+      const from = clinicData.invoice_desc_from ? new Date(clinicData.invoice_desc_from) : null;
+      const issued = recap.invoice_created_at ? new Date(recap.invoice_created_at) : null;
+      if (!(from && issued && issued < from)) {
+        const ids = [recap.patient_type, recap.package_type].filter(Boolean);
+        const labels = {};
+        if (ids.length) {
+          const { data: opts } = await supabase.from('operational_options').select('id, label').in('id', ids.filter((v) => /^[0-9a-f-]{36}$/i.test(v)));
+          (opts || []).forEach((o) => { labels[o.id] = o.label; });
+        }
+        let totalSessions = null;
+        if (recap.package_tracking_id) {
+          const { data: pt } = await supabase.from('package_tracking').select('total_sessions').eq('id', recap.package_tracking_id).maybeSingle();
+          totalSessions = pt?.total_sessions || null;
+        }
+        const service = kaffahServiceLine(labels[recap.patient_type] || recap.patient_type);
+        tieredLine = {
+          code: service.code,
+          description: service.description,
+          session: kaffahSessionLabel(labels[recap.package_type] || recap.package_type, totalSessions),
+        };
+      }
+    }
+
     setDetailData({
       ...recap,
+      tiered_line: tieredLine,
       slot_end_at: slotEnd,
       therapist_name: physioData?.name || recap.therapist_name || '-',
       signature_url:  physioData?.signature_url || null,
