@@ -6,6 +6,7 @@ import { TrendingUp } from 'lucide-react';
 import FinanceTile, { TileLoading } from '@/components/owner/finance/FinanceTile';
 import { getCachedClinicId } from '@/lib/api';
 import { createRealtimeRefresh } from '@/lib/realtimeRefresh';
+import { isLightLoadModeEnabled } from '@/lib/lightLoadMode';
 
 const TrendSessionChart = ({ className }) => {
   const [data, setData] = useState([]);
@@ -26,19 +27,36 @@ const TrendSessionChart = ({ className }) => {
         const startDateStr = format(startDate, 'yyyy-MM-dd');
         const endDateStr = format(endDate, 'yyyy-MM-dd');
 
-        const { data: sessionData } = await supabase.auth.getSession();
-        const currentUserId = sessionData?.session?.user?.id;
-        const currentUserRow = { clinic_id: await getCachedClinicId(currentUserId) };
+        // Jalur cepat: hitung per hari di database. Mode Beban Ringan menyaring
+        // baris di browser, jadi tetap memakai jalur lama.
+        let countByDay = null;
+        if (!isLightLoadModeEnabled()) {
+          const { data: rows, error: rpcError } = await supabase.rpc('get_recap_counts_by_day', {
+            p_start: startDateStr,
+            p_end: endDateStr,
+          });
+          if (!rpcError && Array.isArray(rows)) {
+            countByDay = {};
+            rows.forEach(r => { countByDay[String(r.recap_day).slice(0, 10)] = Number(r.total) || 0; });
+          }
+        }
 
-        // Fetch daily recaps for this range
-        const { data: recaps, error: fetchError } = await supabase
-          .from('daily_recaps')
-          .select('recap_date')
-          .eq('clinic_id', currentUserRow?.clinic_id)
-          .gte('recap_date', startDateStr)
-          .lte('recap_date', endDateStr);
+        let recaps = [];
+        if (!countByDay) {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const currentUserId = sessionData?.session?.user?.id;
+          const currentUserRow = { clinic_id: await getCachedClinicId(currentUserId) };
 
-        if (fetchError) throw fetchError;
+          const { data: recapRows, error: fetchError } = await supabase
+            .from('daily_recaps')
+            .select('recap_date')
+            .eq('clinic_id', currentUserRow?.clinic_id)
+            .gte('recap_date', startDateStr)
+            .lte('recap_date', endDateStr);
+
+          if (fetchError) throw fetchError;
+          recaps = recapRows || [];
+        }
 
         // Generate all days in the interval to ensure 0s are represented
         const daysInterval = eachDayOfInterval({ start: startDate, end: endDate });
@@ -47,9 +65,9 @@ const TrendSessionChart = ({ className }) => {
         const chartData = daysInterval.map(day => {
           // Count sessions for this specific day
           // Ensure we compare dates correctly (ignoring time)
-          const count = recaps.filter(recap => 
-            isSameDay(new Date(recap.recap_date), day)
-          ).length;
+          const count = countByDay
+            ? (countByDay[format(day, 'yyyy-MM-dd')] || 0)
+            : recaps.filter(recap => isSameDay(new Date(recap.recap_date), day)).length;
 
           return {
             date: format(day, 'eee', { locale: id }), // Sen, Sel, Rab, etc.

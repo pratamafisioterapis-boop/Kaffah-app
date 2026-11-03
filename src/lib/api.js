@@ -1,3 +1,4 @@
+import { isLightLoadModeEnabled } from '@/lib/lightLoadMode';
 import { sanitizeSearchTerm } from '@/lib/safeFilter';
 import { supabase } from '@/lib/customSupabaseClient';
 import {
@@ -2134,7 +2135,22 @@ export const getDailyRecaps = async ({
 
 export const getDailyRecapsTotalAmount = async ({ startDate, endDate, search = '', therapistId = null, paymentMethod = null }) => {
   return safeQuery(async () => {
-    
+    // Jalur cepat: jumlahkan di database (jalur lama terpotong di 1000 baris).
+    // Mode Beban Ringan menyaring baris di browser, jadi memakai jalur lama.
+    if (!isLightLoadModeEnabled()) {
+      const { data: total, error: rpcError } = await supabase.rpc('get_daily_recaps_total_amount', {
+        p_start: startDate || null,
+        p_end: endDate || null,
+        p_therapist_id: therapistId || null,
+        p_payment_method: paymentMethod || null,
+        p_search: search && search.trim() ? search : null,
+      });
+      if (!rpcError && total !== null && total !== undefined) {
+        return { data: Number(total) || 0, error: null };
+      }
+      if (rpcError) console.warn('get_daily_recaps_total_amount gagal, memakai jalur lama:', rpcError.message);
+    }
+
     // Total uang masuk: berdasarkan tanggal pembayaran (revenue_date), bukan tanggal terapi.
     let query = supabase.from('daily_recaps').select('amount');
 

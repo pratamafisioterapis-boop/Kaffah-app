@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { getCachedClinicId } from '@/lib/api';
+import { isLightLoadModeEnabled } from '@/lib/lightLoadMode';
 import { cn } from '@/lib/utils';
 import FinanceTile, { TileEmpty, TileLoading } from '@/components/owner/finance/FinanceTile';
 import { Donut } from '@/components/owner/finance/charts';
@@ -27,94 +28,142 @@ const ServiceDistributionChart = ({ dateRange, className }) => {
   // Layanan yang disorot di donut dan daftar.
   const [selected, setSelected] = useState(null);
 
+  const [unclassifiedCount, setUnclassifiedCount] = useState(0);
+  const [loadingUnclassified, setLoadingUnclassified] = useState(false);
+  const knownKeys = new Set(SERVICE_CONFIG.map(s => s.key));
+
+  const buildResult = (countMap, totalCount, unclassifiedTotal) => {
+    const result = SERVICE_CONFIG.map(s => ({
+      ...s,
+      count: countMap[s.key] || 0,
+      pct: totalCount > 0 ? Math.round(((countMap[s.key] || 0) / totalCount) * 100) : 0
+    })).filter(s => s.count > 0).sort((a, b) => b.count - a.count);
+
+    if (unclassifiedTotal > 0) {
+      result.push({
+        key: 'Tidak Terklasifikasi',
+        short: 'Lainnya',
+        color: '#94a3b8',
+        bg: 'bg-slate-100',
+        text: 'text-slate-500',
+        count: unclassifiedTotal,
+        pct: totalCount > 0 ? Math.round((unclassifiedTotal / totalCount) * 100) : 0
+      });
+    }
+    return result;
+  };
+
+  // Daftar sesi tanpa jenis layanan valid (hanya dibutuhkan saat modal dibuka).
+  const fetchRecapRows = async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const userRow = { clinic_id: await getCachedClinicId(userId) };
+
+    let query = supabase
+      .from('daily_recaps')
+      .select(`
+        id,
+        service_type,
+        recap_date,
+        guest_name,
+        therapist_name,
+        patients!patient_id(id, full_name, medical_record_number),
+        actual_patients:patients!actual_patient_id(id, full_name, medical_record_number)
+      `)
+      .eq('clinic_id', userRow?.clinic_id);
+
+    if (dateRange?.startDate) query = query.gte('recap_date', dateRange.startDate);
+    if (dateRange?.endDate) query = query.lte('recap_date', dateRange.endDate);
+
+    const { data: recaps, error } = await query;
+    if (error) throw error;
+    return recaps || [];
+  };
+
+  const toUnclassifiedList = (recaps) => recaps
+    .filter(r => !(r.service_type && knownKeys.has(r.service_type)))
+    .map(r => {
+      const patient = r.actual_patients || r.patients;
+      return {
+        id: r.id,
+        patientName: patient?.full_name || r.guest_name || 'Tanpa Nama',
+        medicalRecordNumber: patient?.medical_record_number || null,
+        therapistName: r.therapist_name || '-',
+        recapDate: r.recap_date || null,
+        serviceTypeRaw: r.service_type || null,
+      };
+    })
+    .sort((a, b) => (b.recapDate || '').localeCompare(a.recapDate || ''));
+
   useEffect(() => {
+    let active = true;
     const fetchData = async () => {
       setLoading(true);
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const userId = sessionData?.session?.user?.id;
-        const userRow = { clinic_id: await getCachedClinicId(userId) };
-
-        let query = supabase
-          .from('daily_recaps')
-          .select(`
-            id,
-            service_type,
-            recap_date,
-            guest_name,
-            therapist_name,
-            patients!patient_id(id, full_name, medical_record_number),
-            actual_patients:patients!actual_patient_id(id, full_name, medical_record_number)
-          `)
-          .eq('clinic_id', userRow?.clinic_id);
-
-        if (dateRange?.startDate) query = query.gte('recap_date', dateRange.startDate);
-        if (dateRange?.endDate) query = query.lte('recap_date', dateRange.endDate);
-
-        const { data: recaps, error } = await query;
-
-        if (error) throw error;
-
-        const totalCount = (recaps || []).length;
-        setTotal(totalCount);
-
-        const knownKeys = new Set(SERVICE_CONFIG.map(s => s.key));
-        const countMap = {};
-        const unclassifiedList = [];
-        (recaps || []).forEach(r => {
-          if (r.service_type && knownKeys.has(r.service_type)) {
-            countMap[r.service_type] = (countMap[r.service_type] || 0) + 1;
-          } else {
-            const patient = r.actual_patients || r.patients;
-            unclassifiedList.push({
-              id: r.id,
-              patientName: patient?.full_name || r.guest_name || 'Tanpa Nama',
-              medicalRecordNumber: patient?.medical_record_number || null,
-              therapistName: r.therapist_name || '-',
-              recapDate: r.recap_date || null,
-              serviceTypeRaw: r.service_type || null,
-            });
-          }
-        });
-
-        setUnclassifiedRecaps(
-          unclassifiedList.sort((a, b) => (b.recapDate || '').localeCompare(a.recapDate || ''))
-        );
-
-        const result = SERVICE_CONFIG.map(s => ({
-          ...s,
-          count: countMap[s.key] || 0,
-          pct: totalCount > 0 ? Math.round(((countMap[s.key] || 0) / totalCount) * 100) : 0
-        })).filter(s => s.count > 0).sort((a, b) => b.count - a.count);
-
-        if (unclassifiedList.length > 0) {
-          result.push({
-            key: 'Tidak Terklasifikasi',
-            short: 'Lainnya',
-            color: '#94a3b8',
-            bg: 'bg-slate-100',
-            text: 'text-slate-500',
-            count: unclassifiedList.length,
-            pct: totalCount > 0 ? Math.round((unclassifiedList.length / totalCount) * 100) : 0
+        // Jalur cepat: hitung di database (satu baris per jenis layanan).
+        // Mode Beban Ringan menyaring baris di browser, jadi memakai jalur lama.
+        if (!isLightLoadModeEnabled()) {
+          const { data: rows, error: rpcError } = await supabase.rpc('get_service_type_counts', {
+            p_start: dateRange?.startDate || null,
+            p_end: dateRange?.endDate || null,
           });
+          if (!rpcError && Array.isArray(rows)) {
+            const countMap = {};
+            let totalCount = 0;
+            let unclassifiedTotal = 0;
+            rows.forEach(r => {
+              const n = Number(r.total) || 0;
+              totalCount += n;
+              if (r.service_type && knownKeys.has(r.service_type)) countMap[r.service_type] = (countMap[r.service_type] || 0) + n;
+              else unclassifiedTotal += n;
+            });
+            if (!active) return;
+            setTotal(totalCount);
+            setUnclassifiedRecaps([]);
+            setUnclassifiedCount(unclassifiedTotal);
+            setData(buildResult(countMap, totalCount, unclassifiedTotal));
+            return;
+          }
+          if (rpcError) console.warn('get_service_type_counts gagal, memakai jalur lama:', rpcError.message);
         }
 
-        setData(result);
+        const recaps = await fetchRecapRows();
+        const countMap = {};
+        recaps.forEach(r => {
+          if (r.service_type && knownKeys.has(r.service_type)) countMap[r.service_type] = (countMap[r.service_type] || 0) + 1;
+        });
+        const unclassifiedList = toUnclassifiedList(recaps);
+        if (!active) return;
+        setTotal(recaps.length);
+        setUnclassifiedRecaps(unclassifiedList);
+        setUnclassifiedCount(unclassifiedList.length);
+        setData(buildResult(countMap, recaps.length, unclassifiedList.length));
       } catch (err) {
         console.error('ServiceDistributionChart error:', err);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
 
     fetchData();
+    return () => { active = false; };
   }, [dateRange]);
 
   const donutItems = data.map(s => ({ key: s.key, value: s.count, color: s.color }));
   const current = data.find(s => s.key === selected);
 
-  const handleSelect = (key) => {
-    if (key === 'Tidak Terklasifikasi' && unclassifiedRecaps.length > 0) {
+  const handleSelect = async (key) => {
+    if (key === 'Tidak Terklasifikasi' && unclassifiedCount > 0) {
+      if (unclassifiedRecaps.length === 0) {
+        setLoadingUnclassified(true);
+        try {
+          setUnclassifiedRecaps(toUnclassifiedList(await fetchRecapRows()));
+        } catch (err) {
+          console.error('Gagal memuat sesi belum terklasifikasi:', err);
+        } finally {
+          setLoadingUnclassified(false);
+        }
+      }
       setShowUnclassifiedModal(true);
       return;
     }
@@ -140,7 +189,7 @@ const ServiceDistributionChart = ({ dateRange, className }) => {
           <div className="grid gap-0.5">
             {data.map((s) => {
               const isUnclassified = s.key === 'Tidak Terklasifikasi';
-              const isClickable = isUnclassified && unclassifiedRecaps.length > 0;
+              const isClickable = isUnclassified && unclassifiedCount > 0;
               return (
                 <button
                   key={s.key}
@@ -190,7 +239,7 @@ const ServiceDistributionChart = ({ dateRange, className }) => {
                 Sesi Belum Terklasifikasi
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                {unclassifiedRecaps.length} sesi pada periode ini belum diisi tipe layanannya dengan benar.
+                {unclassifiedCount} sesi pada periode ini belum diisi tipe layanannya dengan benar.
               </DialogDescription>
               <DialogClose className="absolute right-4 top-4 before:absolute before:-inset-2 before:content-[''] rounded-full p-1 text-slate-500 hover:bg-slate-200/70 hover:text-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-300">
                 <X className="w-4 h-4" />

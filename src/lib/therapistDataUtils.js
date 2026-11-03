@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/customSupabaseClient';
 import { format } from 'date-fns';
+import { isLightLoadModeEnabled } from '@/lib/lightLoadMode';
 
 /**
  * Fetches all unique patients associated with a therapist based on daily_recaps history.
@@ -324,6 +325,27 @@ export const getTherapistsPatientMetrics = async (therapistIds, startDate = null
   }
 
   try {
+    // Jalur cepat: hitung di database. Mode Beban Ringan menyaring baris di
+    // browser, jadi memakai jalur lama; kegagalan RPC juga jatuh ke jalur lama.
+    if (!isLightLoadModeEnabled()) {
+      const { data: rows, error: rpcError } = await supabase.rpc('get_therapist_patient_metrics', {
+        p_therapist_ids: therapistIds,
+        p_start: startDate || null,
+        p_end: endDate || null,
+      });
+      if (!rpcError && Array.isArray(rows)) {
+        const fast = {};
+        rows.forEach(r => {
+          fast[r.therapist_id] = {
+            uniquePatients: Number(r.unique_patients) || 0,
+            returningPatients: Number(r.returning_patients) || 0,
+          };
+        });
+        return { data: fast, error: null };
+      }
+      if (rpcError) console.warn('get_therapist_patient_metrics gagal, memakai jalur lama:', rpcError.message);
+    }
+
     // Supabase/PostgREST membatasi unbounded select ke ~1000 baris; klinik
     // dengan banyak terapis & rentang tanggal panjang bisa gampang melewati
     // itu, jadi dipaginasi eksplisit alih-alih ambil sekali saja.
