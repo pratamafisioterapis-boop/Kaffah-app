@@ -4,7 +4,7 @@ import { OWNER_NAV_ITEMS } from '@/lib/navItems';
 import PatientPortalInboxContent from '@/components/shared/PatientPortalInbox';
 
 const ClinaraPatientsOwner = () => (
-  <DashboardLayout role="owner" navItems={OWNER_NAV_ITEMS}>
+  <DashboardLayout role="owner" userName="Owner" navItems={OWNER_NAV_ITEMS}>
     <PatientPortalInboxContent />
   </DashboardLayout>
 );

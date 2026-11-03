@@ -4,7 +4,7 @@ import { FeedbackManagementContent } from '@/pages/FeedbackManagementPage';
 import { OWNER_NAV_ITEMS } from '@/lib/navItems';
 
 const FeedbackManagementOwner = () => (
-  <DashboardLayout role="owner" navItems={OWNER_NAV_ITEMS}>
+  <DashboardLayout role="owner" userName="Owner" navItems={OWNER_NAV_ITEMS}>
     <FeedbackManagementContent />
   </DashboardLayout>
 );

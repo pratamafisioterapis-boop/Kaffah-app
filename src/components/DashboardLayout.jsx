@@ -80,7 +80,10 @@ const writeClinicInfoCache = (clinicId, data) => {
   try { window.localStorage.setItem(CLINIC_INFO_CACHE_KEY, JSON.stringify({ clinicId, data })); } catch { /* mode privat: abaikan */ }
 };
 
-const DashboardLayout = ({ children, navItems = [], role, userName, topSlot = null }) => {
+const ROLE_DEFAULT_NAMES = { owner: 'Owner', admin: 'Admin', therapist: 'Terapis', super_admin: 'Super Admin' };
+
+const DashboardLayout = ({ children, navItems = [], role, userName: userNameProp, topSlot = null }) => {
+  const userName = typeof userNameProp === 'string' && userNameProp ? userNameProp : (ROLE_DEFAULT_NAMES[role] || 'User');
   const [currentTime, setCurrentTime] = useState(new Date());
 
 useEffect(() => {
