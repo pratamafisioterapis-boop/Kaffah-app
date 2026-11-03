@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 const OwnerPackageRecap = React.lazy(lazyRetry(() => import('@/pages/owner/PackageRecaps'), 'OwnerPackageRecap'));
 const AdminCheckTransaksi = React.lazy(lazyRetry(() => import('@/pages/admin/AdminCheckTransaksi'), 'AdminCheckTransaksi'));
+const AdminQrisReconciliation = React.lazy(lazyRetry(() => import('@/pages/admin/AdminQrisReconciliation'), 'AdminQrisReconciliation'));
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
@@ -703,6 +704,7 @@ return (
         {/* Accounting Route */}
         <Route path="/accounting" element={<AdminAccountingDashboard />} />
         <Route path="/check-transaksi" element={<AdminCheckTransaksi />} />
+        <Route path="/qris-reconciliation" element={<AdminQrisReconciliation />} />
         <Route path="/attendance" element={<AttendanceManagement />} />
         <Route path="/settings" element={<AdminAccountSettings />} />
 
