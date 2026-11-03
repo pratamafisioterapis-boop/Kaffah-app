@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Printer, Download, X, Loader2, Send } from "lucide-react";
 import InvoiceTemplate from './InvoiceTemplate';
 import InvoiceTemplateKwitansi from './InvoiceTemplateKwitansi';
+import InvoiceTemplateModern from './InvoiceTemplateModern';
 import { useToast } from "@/components/ui/use-toast";
 import { getInvoiceSettings, getWaApiSettings } from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -106,7 +107,8 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
   }
   const isPreviewLoading = loadingSettings || loadingDetail;
   const useKwitansi = templateData.clinic?.invoice_template === 'kwitansi';
-  const TemplateComponent = useKwitansi ? InvoiceTemplateKwitansi : InvoiceTemplate;
+  const useModern = !!templateData.use_modern_layout;
+  const TemplateComponent = useModern ? InvoiceTemplateModern : (useKwitansi ? InvoiceTemplateKwitansi : InvoiceTemplate);
 
   // ── Skala preview agar invoice A4 tetap utuh terlihat di layar sempit (PWA/mobile) ──
   useEffect(() => {
@@ -222,7 +224,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
         if (physio.clinic_id) {
           const { data: clinic } = await supabase
             .from('clinics')
-            .select('id, name, address, phone, email, logo_url, invoice_signer, invoice_signer_from, invoice_desc_style, invoice_desc_from, invoice_admin_name, invoice_admin_signature_url, invoice_show_patient_signature, invoice_template')
+            .select('id, name, address, phone, email, logo_url, invoice_signer, invoice_signer_from, invoice_desc_style, invoice_desc_from, invoice_layout, invoice_layout_from, stamp_url, invoice_admin_name, invoice_admin_signature_url, invoice_show_patient_signature, invoice_template')
             .eq('id', physio.clinic_id)
             .single();
           if (clinic) clinicData = clinic;
@@ -272,8 +274,19 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       }
     }
 
+    // Kaffah: desain kwitansi "Minimal Bersih" (InvoiceTemplateModern), hanya untuk invoice yang
+    // terbit sejak invoice_layout_from; invoice lama tetap memakai desain lama.
+    let useModernLayout = false;
+    if (clinicData?.invoice_layout === 'modern') {
+      const from = clinicData.invoice_layout_from ? new Date(clinicData.invoice_layout_from) : null;
+      const issuedSource = recap.invoice_created_at || recap.created_at;
+      const issued = issuedSource ? new Date(issuedSource) : null;
+      useModernLayout = !(from && (!issued || issued < from));
+    }
+
     setDetailData({
       ...recap,
+      use_modern_layout: useModernLayout,
       tiered_line: tieredLine,
       slot_end_at: slotEnd,
       therapist_name: physioData?.name || recap.therapist_name || '-',
