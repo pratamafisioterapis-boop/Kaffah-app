@@ -14,7 +14,7 @@ import PageHero from '@/components/shared/PageHero';
 import { validatePassword, PASSWORD_HINT } from '@/lib/passwordPolicy';
 
 const AdminAccountSettings = () => {
-  const { user, userDetails, clinicName } = useAuth();
+  const { user, userDetails, clinicName, updateUserDetails } = useAuth();
   const { toast } = useToast();
 
   const [email, setEmail] = useState('');
@@ -107,6 +107,7 @@ const AdminAccountSettings = () => {
       const { error: updateError } = await supabase.from('users').update({ avatar_url: pub.publicUrl }).eq('id', user.id);
       if (updateError) throw updateError;
       setAvatarUrl(pub.publicUrl);
+      updateUserDetails?.({ avatar_url: pub.publicUrl });
       toast({ title: 'Foto splash screen diperbarui' });
     } catch (err) {
       toast({ variant: 'destructive', title: 'Gagal upload foto', description: err.message });

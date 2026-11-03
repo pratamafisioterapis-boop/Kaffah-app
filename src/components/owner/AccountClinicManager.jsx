@@ -10,7 +10,7 @@ import { prepareImageForUpload } from '@/lib/imageUpload';
 import { validatePassword, PASSWORD_HINT } from '@/lib/passwordPolicy';
 
 const AccountClinicManager = ({ hideOwnerIdentity = false }) => {
-  const { user, userDetails } = useAuth();
+  const { user, userDetails, updateUserDetails } = useAuth();
   const { toast } = useToast();
 
   const [email, setEmail] = useState('');
@@ -136,6 +136,7 @@ const AccountClinicManager = ({ hideOwnerIdentity = false }) => {
       const { error: updateError } = await supabase.from('users').update({ avatar_url: pub.publicUrl }).eq('id', user.id);
       if (updateError) throw updateError;
       setAvatarUrl(pub.publicUrl);
+      updateUserDetails?.({ avatar_url: pub.publicUrl });
       toast({ title: 'Foto splash screen diperbarui' });
     } catch (err) {
       toast({ variant: 'destructive', title: 'Gagal upload foto', description: err.message });

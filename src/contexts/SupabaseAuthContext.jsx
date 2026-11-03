@@ -535,6 +535,11 @@ export const AuthProvider = ({ children }) => {
     return () => clearTimeout(t);
   }, [isSwitching, user?.id, userDetails?.id]);
 
+  // Perbarui sebagian data profil di memori (mis. avatar_url) tanpa reload.
+  const updateUserDetails = useCallback((patch) => {
+    setUserDetails((prev) => (prev ? { ...prev, ...patch } : prev));
+  }, []);
+
   const role = useMemo(() => {
     return normalizeRole(userDetails?.role || user?.user_metadata?.role) || 'guest';
   }, [userDetails, user]);
@@ -578,6 +583,7 @@ export const AuthProvider = ({ children }) => {
     user,
     session,
     userDetails,
+    updateUserDetails,
     clinicName,
     role,
     loading,
@@ -591,7 +597,7 @@ export const AuthProvider = ({ children }) => {
     isImpersonating,
     isSwitching,
     impersonationOrigin,
-  }), [user, session, userDetails, clinicName, role, loading, isOnline, signUp, signIn, signOut, refreshSession, impersonateUser, stopImpersonation, isImpersonating, isSwitching, impersonationOrigin]);
+  }), [user, session, userDetails, updateUserDetails, clinicName, role, loading, isOnline, signUp, signIn, signOut, refreshSession, impersonateUser, stopImpersonation, isImpersonating, isSwitching, impersonationOrigin]);
   
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
