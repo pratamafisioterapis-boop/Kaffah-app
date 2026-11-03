@@ -248,8 +248,10 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     let tieredLine = null;
     if (clinicData?.invoice_desc_style === 'tiered') {
       const from = clinicData.invoice_desc_from ? new Date(clinicData.invoice_desc_from) : null;
-      const issued = recap.invoice_created_at ? new Date(recap.invoice_created_at) : null;
-      if (!(from && issued && issued < from)) {
+      // Recap lama tidak punya invoice_created_at -> pakai created_at; tidak diketahui = invoice lama.
+      const issuedSource = recap.invoice_created_at || recap.created_at;
+      const issued = issuedSource ? new Date(issuedSource) : null;
+      if (!(from && (!issued || issued < from))) {
         const ids = [recap.patient_type, recap.package_type].filter(Boolean);
         const labels = {};
         if (ids.length) {
