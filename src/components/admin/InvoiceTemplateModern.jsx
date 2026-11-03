@@ -115,8 +115,8 @@ const InvoiceTemplateModern = forwardRef(({ data }, ref) => {
     >
       {/* KOP KLINIK */}
       <div style={{ display: 'flex', gap: '22px', alignItems: 'center' }}>
-        <img src={clinic.logo_url || '/clinara-logo.png'} alt="logo" style={{ width: '148px', height: 'auto', display: 'block' }} />
-        <div style={{ width: '1px', height: '94px', background: '#d5dde7' }} />
+        <img src={clinic.logo_url || '/clinara-logo.png'} alt="logo" style={{ width: '128px', height: 'auto', display: 'block' }} />
+        <div style={{ width: '1px', height: '84px', background: '#d5dde7' }} />
         <div>
           <div style={{ fontSize: '23px', fontWeight: 700, letterSpacing: '0.1em', color: C.navy, lineHeight: 1.2 }}>
             {(clinic.name || '').toUpperCase()}
