@@ -81,6 +81,7 @@ export const ADMIN_NAV_ITEMS = [
     submenu: [
       { label: 'Accounting System', path: '/admin/accounting', icon: 'DollarSign' },
       { label: 'Check Transaksi', path: '/admin/check-transaksi', icon: 'FileSearch' },
+      { label: 'Rekonsiliasi QRIS', path: '/admin/qris-reconciliation', icon: 'QrCode', clinicOnly: KAFFAH_CLINIC_ID },
     ],
   },
   { label: 'Setup Akun', path: '/admin/settings', icon: 'Settings' },
