@@ -6,7 +6,7 @@ import { OWNER_NAV_ITEMS } from '@/lib/navItems';
 // Owner Wrapper
 const PackageRecapsOwner = () => {
     return (
-        <DashboardLayout role="owner" navItems={OWNER_NAV_ITEMS}>
+        <DashboardLayout role="owner" userName="Owner" navItems={OWNER_NAV_ITEMS}>
             <PackageRecapsContent />
         </DashboardLayout>
     );
