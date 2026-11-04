@@ -112,7 +112,9 @@ const AdminQrisReconciliation = () => {
       const creatorIsAdmin = ['admin', 'clinic_admin'].includes(staff[r.created_by]?.role);
       const vitalBy = vitalByRecap[r.id];
       const vitalIsAdmin = ['admin', 'clinic_admin'].includes(staff[vitalBy]?.role);
-      const cashierId = r.cashier_id || (creatorIsAdmin ? r.created_by : null) || (vitalIsAdmin ? vitalBy : null);
+      // Urutan: kasir tercatat -> admin yang mengisi TTV (yang melayani pasien) -> pembuat recap bila admin.
+      // Recap sering dibuat lebih awal oleh admin lain, jadi pembuat recap bukan penanda kasir yang andal.
+      const cashierId = r.cashier_id || (vitalIsAdmin ? vitalBy : null) || (creatorIsAdmin ? r.created_by : null);
       const payAt = r.end_time || r.start_time || r.created_at;
       return {
         recapId: r.id,
