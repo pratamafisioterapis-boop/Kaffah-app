@@ -1826,6 +1826,21 @@ setFormData({
         <>
                                 <div className="space-y-3 bg-slate-50 p-3 rounded-app-sm border">
                                     <Label className="font-semibold">Diskon (Opsional)</Label>
+                                    {ownerPending && !quote?.invoice_locked && (() => {
+                                        const m = ownerPending.owner_discount_mode;
+                                        const v = Number(ownerPending.owner_discount_value) || 0;
+                                        const b = sfBaseAmount;
+                                        let disc = null;
+                                        if (b) disc = m === 'percentage' ? Math.round(b * Math.min(v, 100) / 100) : m === 'nominal' ? Math.min(v, b) : Math.max(b - v, 0);
+                                        const rp = (n) => `Rp ${Math.round(n).toLocaleString('id-ID')}`;
+                                        return (
+                                            <p className="text-xs rounded-md border border-amber-200 bg-amber-50 p-2 text-amber-900">
+                                                <b>Diskon Owner terjadwal:</b> {m === 'percentage' ? `${v}%` : m === 'nominal' ? `potongan ${rp(v)}` : `dibayar ${rp(v)}`}
+                                                {disc != null ? <> — pasien membayar <b>{rp(b - disc)}</b> (diskon {rp(disc)})</> : null}.
+                                                Diterapkan otomatis setelah invoice dibuat (tombol Simpan); nominal di atas masih harga awal.
+                                            </p>
+                                        );
+                                    })()}
                                     {discountBlockedByPackage && (
                                         <p className="text-xs text-amber-700">Paket dengan lebih dari 1 sesi tidak boleh mendapat diskon.</p>
                                     )}
@@ -2018,6 +2033,15 @@ setFormData({
     const sfInvoiceLocked = !!quote?.invoice_locked;
     const sfTherapistName = therapists.find(t => t.value === formData.therapist_id)?.label || 'terapis';
     const sfNeedHomecareTime = !!quote?.error && quote.error.includes('Pilih homecare');
+
+    // Diskon owner yang dijadwalkan dari kartu appointment (Kaffah): berlaku otomatis saat invoice terbit.
+    const [ownerPending, setOwnerPending] = useState(null);
+    useEffect(() => {
+        const apptId = recapMeta?.appointment_id;
+        if (!apptId || !isOpen) { setOwnerPending(null); return; }
+        supabase.from('appointments').select('owner_discount_mode, owner_discount_value').eq('id', apptId).maybeSingle()
+            .then(({ data }) => setOwnerPending(data?.owner_discount_mode ? data : null));
+    }, [recapMeta?.appointment_id, isOpen]);
 
     const [homecareTimeLocal, setHomecareTimeLocal] = useState('');
     useEffect(() => {
