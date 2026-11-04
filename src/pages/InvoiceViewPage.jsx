@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+// eslint-disable-next-line import/no-unresolved
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Download, ExternalLink, Loader2, AlertTriangle } from 'lucide-react';
 
@@ -56,12 +58,8 @@ const InvoiceViewPage = () => {
 
     (async () => {
       try {
-        const [pdfjsLib, worker] = await Promise.all([
-          import('pdfjs-dist'),
-          // eslint-disable-next-line import/no-unresolved
-          import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
-        ]);
-        pdfjsLib.GlobalWorkerOptions.workerSrc = worker.default;
+        const pdfjsLib = await import('pdfjs-dist');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
         const res = await fetch(invoiceUrl);
         if (!res.ok) throw new Error('fetch');

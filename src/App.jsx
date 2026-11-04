@@ -18,6 +18,9 @@ import KonversiDokterProtectedRoute from '@/components/KonversiDokterProtectedRo
 import PemilihRelawanProtectedRoute from '@/components/PemilihRelawanProtectedRoute';
 import PemilihDpcProtectedRoute from '@/components/PemilihDpcProtectedRoute';
 import { lazyRetry } from '@/lib/lazyRetry';
+// Halaman publik untuk pasien (tautan WhatsApp, browser apa pun): diimpor statis agar tidak
+// bergantung pada pengambilan chunk lazy yang bisa gagal di browser tertentu.
+import InvoiceViewPage from '@/pages/InvoiceViewPage';
 import { isStaleChunkError, reloadForStaleChunk, hardRefresh, consumeSkipSplash } from '@/lib/staleChunk';
 
 // Read once at load: true when this page is an automatic reload (new deploy
@@ -37,7 +40,6 @@ const RegisterClinicPage = React.lazy(lazyRetry(() => import('@/pages/RegisterCl
 const ForgotPasswordPage = React.lazy(lazyRetry(() => import('@/pages/ForgotPasswordPage'), 'ForgotPasswordPage'));
 const ResetPasswordPage = React.lazy(lazyRetry(() => import('@/pages/ResetPasswordPage'), 'ResetPasswordPage'));
 const SmartBookingPage = React.lazy(lazyRetry(() => import('@/pages/SmartBookingPage'), 'SmartBookingPage'));
-const InvoiceViewPage = React.lazy(lazyRetry(() => import('@/pages/InvoiceViewPage'), 'InvoiceViewPage'));
 const PricingPage = React.lazy(lazyRetry(() => import('@/pages/PricingPage'), 'PricingPage'));
 const AboutPage = React.lazy(lazyRetry(() => import('@/pages/AboutPage'), 'AboutPage'));
 const TeamPage = React.lazy(lazyRetry(() => import('@/pages/TeamPage'), 'TeamPage'));
