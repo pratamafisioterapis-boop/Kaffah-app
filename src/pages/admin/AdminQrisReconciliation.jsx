@@ -170,7 +170,25 @@ const AdminQrisReconciliation = () => {
         ? await supabase.from('qris_report_transactions').select('rrn').eq('clinic_id', clinicId).in('rrn', rrns)
         : { data: [] };
       const existingRrn = new Set((existing || []).map((e) => e.rrn));
-      const fresh = parsed.transactions.filter((t) => !t.rrn || !existingRrn.has(t.rrn));
+
+      // Transaksi tanpa RRN (mis. dari PDF versi lain) dideteksi lewat kunci cadangan
+      // tanggal+jam+nominal+nama+issuer, supaya PDF yang tumpang tindih tidak menggandakan transaksi.
+      const keyOf = (d, tm, amt, nm, iss) => [d, String(tm || '').slice(0, 5), Math.round(Number(amt)), String(nm || '').trim().toUpperCase(), String(iss || '').trim().toUpperCase()].join('|');
+      const noRrn = parsed.transactions.filter((t) => !t.rrn);
+      const existingKeys = new Set();
+      if (noRrn.length) {
+        const dates = [...new Set(noRrn.map((t) => t.dateStr))];
+        const { data: sameDay } = await supabase.from('qris_report_transactions')
+          .select('trx_date, trx_time, amount, customer_name, issuer').eq('clinic_id', clinicId).in('trx_date', dates);
+        (sameDay || []).forEach((e) => existingKeys.add(keyOf(e.trx_date, e.trx_time, e.amount, e.customer_name, e.issuer)));
+      }
+      const seenInFile = new Set();
+      const fresh = parsed.transactions.filter((t) => {
+        if (t.rrn) return !existingRrn.has(t.rrn);
+        const k = keyOf(t.dateStr, t.timeStr, t.amount, t.customerName, t.issuer);
+        if (existingKeys.has(k) && !seenInFile.has(k)) { seenInFile.add(k); return false; }
+        return true;
+      });
 
       if (fresh.length) {
         const generatedAt = parseGeneratedAt(fileName);
