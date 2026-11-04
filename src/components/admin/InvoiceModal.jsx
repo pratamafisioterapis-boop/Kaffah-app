@@ -25,9 +25,9 @@ import { kaffahServiceLine, kaffahSessionLabel } from '@/lib/kaffahInvoiceLine';
 // skala preview di layar sempit. Generasi PDF/print tetap memakai elemen asli
 // (lihat componentRef) sehingga hasil rasterisasi tidak terpengaruh skala tampilan.
 const INVOICE_BASE_WIDTH  = 794;
-// PDF desain baru yang dibuat sebelum waktu ini memakai pengukuran huruf html2canvas yang salah
-// (teks turun dari posisinya di preview). Dibuat ulang diam-diam saat invoice dibuka.
-const PDF_RENDER_FIXED_AT = new Date('2026-11-04T08:05:00Z');
+// PDF desain baru yang dibuat sebelum waktu ini memakai tampilan lama (teks turun / stempel terlalu atas)
+// dan dibuat ulang diam-diam saat invoice dibuka. Naikkan waktu ini bila tampilan PDF diubah lagi.
+const PDF_RENDER_FIXED_AT = new Date('2026-11-04T11:45:00Z');
 const INVOICE_BASE_HEIGHT = Math.round(794 * 297 / 210);
 
 const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
