@@ -36,6 +36,17 @@ const PDF_CASHIER_FIXED_AT = new Date('2026-11-04T23:30:00Z');
 const PDF_CASHIER_FIXED_FROM_DATE = '2026-11-04';
 const INVOICE_BASE_HEIGHT = Math.round(794 * 297 / 210);
 
+// Kalimat pembuka pesan WA: "hari ini" hanya bila kwitansi memang untuk hari ini (WIB);
+// bila kwitansi tanggal lain, tampilkan tanggalnya, mis. "tanggal 3 November 2026".
+const receiptDayPhrase = (recapDate) => {
+  const todayWib = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date());
+  if (!recapDate || recapDate === todayWib) return 'hari ini';
+  const d = new Date(`${recapDate}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return 'hari ini';
+  const tgl = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+  return `tanggal ${tgl}`;
+};
+
 const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
   const { userDetails } = useAuth();
   const [detailData, setDetailData]       = useState(null);
@@ -662,7 +673,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       // 4. Siapkan pesan caption
       const clinicName = detailData?.clinic?.name || '';
       const caption =
-        `Berikut *Kwitansi Terapi* hari ini.\n\n` +
+        `Berikut *Kwitansi Terapi* ${receiptDayPhrase(data?.recap_date)}.\n\n` +
         `Terima kasih telah mempercayakan pemulihan di *${clinicName}*.\n` +
         `Semoga lekas membaik dan sehat selalu.\n\n` +
         `*Salam Sehat,*\n` +
@@ -818,7 +829,7 @@ const handleSendManualWA = async () => {
   const clinicName = detailData?.clinic?.name || '';
   const invoiceLink = `${window.location.origin}/i/${data.id}`;
   const message =
-    `Berikut *Kwitansi Terapi* hari ini.\n\n` +
+    `Berikut *Kwitansi Terapi* ${receiptDayPhrase(data?.recap_date)}.\n\n` +
     `Terima kasih telah mempercayakan pemulihan di *${clinicName}*.\n` +
     `Semoga lekas membaik dan sehat selalu.\n\n` +
     (isOneOff ? '' : `Lihat/unduh kwitansi:\n${invoiceLink}\n\n`) +
