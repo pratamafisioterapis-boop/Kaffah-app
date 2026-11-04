@@ -25,6 +25,9 @@ import { kaffahServiceLine, kaffahSessionLabel } from '@/lib/kaffahInvoiceLine';
 // skala preview di layar sempit. Generasi PDF/print tetap memakai elemen asli
 // (lihat componentRef) sehingga hasil rasterisasi tidak terpengaruh skala tampilan.
 const INVOICE_BASE_WIDTH  = 794;
+// PDF desain baru yang dibuat sebelum waktu ini memakai pengukuran huruf html2canvas yang salah
+// (teks turun dari posisinya di preview). Dibuat ulang diam-diam saat invoice dibuka.
+const PDF_RENDER_FIXED_AT = new Date('2026-11-04T08:05:00Z');
 const INVOICE_BASE_HEIGHT = Math.round(794 * 297 / 210);
 
 const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
@@ -286,8 +289,22 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       useModernLayout = !(from && (!issued || issued < from));
     }
 
+    // Kapan PDF tersimpan dibuat (untuk memperbarui PDF lama yang tampilannya keliru).
+    let pdfGeneratedAt = null;
+    if (useModernLayout && recap.invoice_url) {
+      const { data: rec } = await supabase
+        .from('invoice_records')
+        .select('generated_at')
+        .eq('daily_recap_id', recap.id)
+        .order('generated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      pdfGeneratedAt = rec?.generated_at || null;
+    }
+
     setDetailData({
       ...recap,
+      pdf_generated_at: pdfGeneratedAt,
       use_modern_layout: useModernLayout,
       tiered_line: tieredLine,
       slot_end_at: slotEnd,
@@ -394,13 +411,13 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
 
   // ── Helper: Upload PDF ke Supabase Storage → return public URL ───────────
   // FIX: fileName diterima sebagai parameter, bukan hardcode inv_${data.id}.pdf
-  const uploadPDF = async (pdf, fileName, { persist = true } = {}) => {
+  const uploadPDF = async (pdf, fileName, { persist = true, cacheControl } = {}) => {
     const blob = pdf.output('blob');
 
     const { error: uploadError } = await supabase
       .storage
       .from('invoices')
-      .upload(fileName, blob, { contentType: 'application/pdf', upsert: true });
+      .upload(fileName, blob, { contentType: 'application/pdf', upsert: true, ...(cacheControl ? { cacheControl } : {}) });
 
     if (uploadError) throw new Error(`Upload gagal: ${uploadError.message}`);
 
@@ -450,6 +467,43 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       }]);
     }
   };
+
+  // ── Perbarui PDF tersimpan yang tampilannya keliru ────────────────────────
+  // PDF desain baru yang dibuat sebelum PDF_RENDER_FIXED_AT dibuat ulang ke berkas yang sama
+  // (URL/tautan tetap). Hanya tampilan; nomor, nominal, dan data invoice tidak diubah.
+  const pdfRefreshedRef = useRef(new Set());
+  const pdfRefreshBusyRef = useRef(false);
+  useEffect(() => {
+    if (!isOpen || isPreviewLoading || isOneOff || !useModern) return undefined;
+    const url = detailData?.invoice_url;
+    const generatedAt = detailData?.pdf_generated_at;
+    const recapId = detailData?.id;
+    if (!url || !generatedAt || !recapId) return undefined;
+    if (new Date(generatedAt) >= PDF_RENDER_FIXED_AT) return undefined;
+    if (pdfRefreshedRef.current.has(recapId) || pdfRefreshBusyRef.current) return undefined;
+    const match = url.match(/\/object\/public\/invoices\/([^?]+)/);
+    if (!match) return undefined;
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      if (cancelled || !componentRef.current) return;
+      pdfRefreshBusyRef.current = true;
+      try {
+        const pdf = await generatePDF();
+        if (cancelled) return;
+        await uploadPDF(pdf, decodeURIComponent(match[1]), { persist: false, cacheControl: '60' });
+        await supabase.from('invoice_records').update({ generated_at: new Date().toISOString() }).eq('daily_recap_id', recapId);
+        pdfRefreshedRef.current.add(recapId);
+        toast({ title: 'PDF invoice diperbarui', description: 'Tampilan PDF tersimpan sudah disesuaikan dengan preview.' });
+      } catch (err) {
+        console.error('Gagal memperbarui PDF tersimpan:', err);
+      } finally {
+        pdfRefreshBusyRef.current = false;
+      }
+    }, 900);
+    return () => { cancelled = true; clearTimeout(timer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, isPreviewLoading, isOneOff, useModern, detailData?.id, detailData?.invoice_url, detailData?.pdf_generated_at]);
 
   // ── Download PDF ──────────────────────────────────────────────────────────
   const handleDownloadPDF = async () => {
