@@ -12,12 +12,20 @@ const InvoiceViewPage = () => {
   useEffect(() => {
     let cancelled = false;
 
+    // Kirim Manual membuka WhatsApp lebih dulu sementara PDF masih diunggah, jadi bila link dibuka
+    // sangat cepat, coba ulang beberapa kali (maks ~15 detik) sebelum menyatakan tidak ditemukan.
     const fetchInvoice = async () => {
-      const { data, error } = await supabase
-        .rpc('get_public_invoice_url', { p_recap_id: recapId })
-        .maybeSingle();
-
-      if (cancelled) return;
+      let data = null;
+      let error = null;
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        ({ data, error } = await supabase
+          .rpc('get_public_invoice_url', { p_recap_id: recapId })
+          .maybeSingle());
+        if (cancelled) return;
+        if (data?.invoice_url) break;
+        if (attempt < 5) await new Promise((resolve) => setTimeout(resolve, 3000));
+        if (cancelled) return;
+      }
 
       if (error || !data?.invoice_url) {
         setStatus('error');

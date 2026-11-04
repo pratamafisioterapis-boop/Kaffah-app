@@ -666,92 +666,53 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     }
   };
 const handleSendManualWA = async () => {
-  setIsSendingManualWA(true);
-
-  // Buka tab SEKARANG, sinkron dengan klik. Menyiapkan PDF (generate + upload) bisa memakan beberapa
-  // detik; window.open setelah itu bukan lagi gestur pengguna, sehingga diblokir atau, di aplikasi
-  // terpasang (PWA), membuat jendela memuat ulang ke splash screen. Tab ini diarahkan ke WhatsApp
-  // setelah semuanya siap.
-  const waWin = window.open('', '_blank');
-  if (waWin) {
-    try {
-      waWin.document.write('<p style="font-family:sans-serif;padding:24px">Menyiapkan kwitansi...</p>');
-    } catch (_) { /* lintas-origin: abaikan */ }
+  const rawPhone = getPatientPhone();
+  if (!rawPhone) {
+    toast({
+      variant: "destructive",
+      title: "Nomor Tidak Ditemukan",
+      description: "Nomor telepon pasien tidak tersedia.",
+    });
+    return;
   }
 
+  const rawDate = data?.recap_date || new Date().toISOString().split('T')[0];
+  const [yr, mo, dy] = rawDate.split('-');
+  const fileName = `Kwitansi_${getPatientNameSlug()}_${dy}-${mo}-${yr.slice(2)}.pdf`;
+
+  const clinicName = detailData?.clinic?.name || '';
+  const invoiceLink = `${window.location.origin}/i/${data.id}`;
+  const message =
+    `Berikut *Kwitansi Terapi* hari ini.\n\n` +
+    `Terima kasih telah mempercayakan pemulihan di *${clinicName}*.\n` +
+    `Semoga lekas membaik dan sehat selalu.\n\n` +
+    (isOneOff ? '' : `Lihat/unduh kwitansi:\n${invoiceLink}\n\n`) +
+    `*Salam Sehat,*\n` +
+    `${clinicName}`;
+  const waUrl = `https://wa.me/${rawPhone.replace(/^0/, '62')}?text=${encodeURIComponent(message)}`;
+
+  // Pesan hanya butuh link /i/:id, yang sudah diketahui dari id rekap, jadi WhatsApp dibuka SEKARANG,
+  // sinkron dengan klik (tidak diblokir popup blocker dan tidak memuat ulang PWA ke splash screen).
+  // PDF disiapkan sesudahnya; petugas masih perlu menekan Kirim di WhatsApp, dan halaman /i/:id
+  // mencoba ulang beberapa detik bila PDF belum selesai diunggah. (Dulu WhatsApp baru dibuka setelah
+  // generate + upload + simpan selesai berurutan, beberapa detik pada klik pertama.)
+  window.open(waUrl, '_blank');
+
+  setIsSendingManualWA(true);
   try {
-
-    const rawPhone = getPatientPhone();
-
-    if (!rawPhone) {
-      waWin?.close();
-      toast({
-        variant: "destructive",
-        title: "Nomor Tidak Ditemukan",
-        description: "Nomor telepon pasien tidak tersedia.",
-      });
-      return;
-    }
-
-    let fileUrl =
-      data?.invoice_url ||
-      detailData?.invoice_url ||
-      null;
-
-    const rawDate =
-      data?.recap_date ||
-      new Date().toISOString().split('T')[0];
-
-    const [yr, mo, dy] = rawDate.split('-');
-
-    const dateFormatted =
-      `${dy}-${mo}-${yr.slice(2)}`;
-
-    const fileName =
-      `Kwitansi_${getPatientNameSlug()}_${dateFormatted}.pdf`;
-
     if (isOneOff) {
       // Link /i/:id menampilkan invoice asli (tersimpan), jadi untuk kirim sekali
       // PDF diunduh dan admin melampirkannya sendiri di chat WhatsApp.
       const pdf = await generatePDF();
       pdf.save(fileName);
-    } else if (!fileUrl) {
-
-      const pdf = await generatePDF();
-
-      fileUrl = await uploadPDF(
-        pdf,
-        fileName
-      );
-
-      await saveInvoiceRecord(
-        getInvoiceNumber()
-      );
-    }
-
-    const clinicName = detailData?.clinic?.name || '';
-    const invoiceLink = `${window.location.origin}/i/${data.id}`;
-
-    const message =
-      `Berikut *Kwitansi Terapi* hari ini.\n\n` +
-      `Terima kasih telah mempercayakan pemulihan di *${clinicName}*.\n` +
-      `Semoga lekas membaik dan sehat selalu.\n\n` +
-      (isOneOff ? '' : `Lihat/unduh kwitansi:\n${invoiceLink}\n\n`) +
-      `*Salam Sehat,*\n` +
-      `${clinicName}`;
-
-    const formattedPhone =
-      rawPhone.replace(/^0/, '62');
-
-    const waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
-    if (waWin && !waWin.closed) {
-      waWin.location.href = waUrl;
     } else {
-      window.open(waUrl, '_blank');
-    }
+      const hasPdf = !!(data?.invoice_url || detailData?.invoice_url);
+      if (!hasPdf) {
+        // Pembuatan PDF dan penyimpanan data invoice berjalan bersamaan (sama seperti Download PDF).
+        const [pdf] = await Promise.all([generatePDF(), saveInvoiceRecord(getInvoiceNumber())]);
+        await uploadPDF(pdf, fileName);
+      }
 
-    // Catat status SETELAH WhatsApp dibuka agar tidak menunda pembukaannya.
-    if (!isOneOff) {
       await supabase
         .from('daily_recaps')
         .update({
@@ -762,17 +723,12 @@ const handleSendManualWA = async () => {
     }
 
     onSent?.();
-
   } catch (err) {
-
-    waWin?.close();
-
     toast({
       variant: "destructive",
-      title: "Gagal",
-      description: err.message
+      title: "Kwitansi belum siap",
+      description: `${err.message}. Link di WhatsApp belum bisa dibuka pasien; klik Kirim Manual lagi sebelum mengirim.`,
     });
-
   } finally {
     setIsSendingManualWA(false);
   }
