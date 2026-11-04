@@ -5,6 +5,23 @@ import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { supabase } from '@/lib/customSupabaseClient';
 import { ArrowLeft, Download, Eye, Loader2, AlertTriangle } from 'lucide-react';
 
+// Gerak masuk halaman pilihan: lingkaran muncul membesar, teks naik, lembar putih bergeser dari bawah,
+// lalu tombol menyusul. Dimatikan otomatis bila perangkat meminta "kurangi animasi".
+const INTRO_CSS = `
+.kw-intro .kw-badge{animation:kw-pop .7s cubic-bezier(.34,1.56,.64,1) both}
+.kw-intro .kw-eyebrow{animation:kw-rise .5s cubic-bezier(.22,1,.36,1) .35s both}
+.kw-intro .kw-title{animation:kw-rise .55s cubic-bezier(.22,1,.36,1) .45s both}
+.kw-intro .kw-sheet{animation:kw-sheet .7s cubic-bezier(.22,1,.36,1) .3s both}
+.kw-intro .kw-item{animation:kw-rise .5s cubic-bezier(.22,1,.36,1) both}
+.kw-intro .kw-item:nth-child(1){animation-delay:.1s}
+.kw-intro .kw-item:nth-child(2){animation-delay:.2s}
+.kw-intro .kw-item:nth-child(3){animation-delay:.3s}
+@keyframes kw-pop{from{transform:scale(.55);opacity:0}to{transform:none;opacity:1}}
+@keyframes kw-rise{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+@keyframes kw-sheet{from{transform:translateY(100%)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){.kw-intro *{animation:none!important}}
+`;
+
 const InvoiceViewPage = () => {
   const { recapId } = useParams();
   const [status, setStatus] = useState('loading'); // loading | ready | error
@@ -13,6 +30,7 @@ const InvoiceViewPage = () => {
   const [view, setView] = useState('choose'); // choose | preview
   const [preview, setPreview] = useState('idle'); // idle | loading | ready | failed
   const [downloading, setDownloading] = useState(false);
+  const introPlayed = useRef(false); // gerak masuk hanya di kunjungan pertama, bukan saat Kembali dari pratinjau
   const pagesRef = useRef(null);
   const blobRef = useRef(null);
 
@@ -171,18 +189,19 @@ const InvoiceViewPage = () => {
   }
 
   return (
-    <main className="min-h-[100dvh] bg-[#0a3d70] text-white flex flex-col">
+    <main className={`min-h-[100dvh] bg-[#0a3d70] text-white flex flex-col overflow-hidden ${introPlayed.current ? '' : 'kw-intro'}`}>
+      <style>{INTRO_CSS}</style>
       <section className="flex-1 flex flex-col items-center justify-center gap-3.5 px-6 pt-10 pb-4 text-center">
-        <div className="grid aspect-square w-[48%] max-w-[210px] place-items-center rounded-full bg-white ring-[9px] ring-white/10">
+        <div className="kw-badge grid aspect-square w-[48%] max-w-[210px] place-items-center rounded-full bg-white ring-[9px] ring-white/10">
           <img src="/kaffah-logo.png" alt="Kaffah Physiotherapy" className="w-[66%] h-auto" />
         </div>
-        <p className="mt-2 text-xs font-medium uppercase tracking-[0.16em] text-[#9fd5f3]">
+        <p className="kw-eyebrow mt-2 text-xs font-medium uppercase tracking-[0.16em] text-[#9fd5f3]">
           {clinicName || 'Kaffah Physiotherapy'}
         </p>
-        <h1 className="text-3xl font-bold leading-tight tracking-tight">Kwitansi terapi</h1>
+        <h1 className="kw-title text-3xl font-bold leading-tight tracking-tight">Kwitansi terapi</h1>
       </section>
 
-      <section className="rounded-t-[28px] bg-white px-4 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-slate-800">
+      <section className="kw-sheet rounded-t-[28px] bg-white px-4 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-slate-800">
         <div className="mx-auto w-full max-w-md">
           {status === 'loading' && (
             <div className="flex items-center justify-center gap-3 py-8 text-slate-600" role="status">
@@ -202,14 +221,14 @@ const InvoiceViewPage = () => {
 
           {status === 'ready' && (
             <div className="flex flex-col gap-3">
-              <p className="mb-1 text-center text-base leading-relaxed text-slate-600">
+              <p className="kw-item mb-1 text-center text-base leading-relaxed text-slate-600">
                 Kwitansi Anda sudah siap. Pilih untuk melihat pratinjau atau langsung mengunduhnya.
               </p>
-              <button type="button" onClick={() => setView('preview')} className={btnNavy}>
+              <button type="button" onClick={() => { introPlayed.current = true; setView('preview'); }} className={`kw-item ${btnNavy}`}>
                 <Eye className="w-5 h-5" />
                 Lihat pratinjau
               </button>
-              <button type="button" onClick={handleDownload} disabled={downloading} className={btnSoft}>
+              <button type="button" onClick={handleDownload} disabled={downloading} className={`kw-item ${btnSoft}`}>
                 <Download className="w-5 h-5" />
                 {downloadLabel}
               </button>
