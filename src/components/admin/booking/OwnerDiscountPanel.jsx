@@ -144,7 +144,7 @@ const OwnerDiscountPanel = ({ appointment, onChanged }) => {
           onClick={() => submit(mode, mode === 'percentage' ? pctInput : num)}>
           {saving && <Loader2 className="w-4 h-4 animate-spin mr-1" />} Terapkan
         </Button>
-        {(hasDiscount || pending) && (
+        {(hasDiscount || (!invoiced && pending)) && (
           <Button size="sm" variant="outline" disabled={saving} onClick={() => submit('clear', null)}>
             Hapus diskon
           </Button>
