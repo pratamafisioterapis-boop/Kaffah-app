@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { confirmAction } from '@/lib/confirmAction';
 import { parseQrisReportPdf } from '@/utils/bsiQrisReportParser';
-import { autoMatchQris, qrisPortionOfRecap } from '@/utils/qrisMatcher';
+import { autoMatchQris, qrisPortionOfRecap, rankCandidates } from '@/utils/qrisMatcher';
 
 // Catatan: komentar ini hanya untuk mengubah hash aset build (bukan perubahan fungsi).
 const formatRp = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
@@ -408,24 +408,53 @@ const AdminQrisReconciliation = () => {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Perlu dicek</h2>
           {view.unmatchedTrx.map((t) => {
-            const cands = view.freeRows.filter((p) => Math.round(p.amount) === Math.round(t.amount));
+            const sameAmount = view.freeRows.filter((p) => Math.round(p.amount) === Math.round(t.amount));
+            const cands = rankCandidates(t, sameAmount);
+            const others = view.freeRows.filter((p) => !sameAmount.includes(p));
+            const hintOf = (c) => {
+              const parts = [];
+              if (c.name > 0) parts.push('nama mirip');
+              if (Number.isFinite(c.gap) && c.gap <= 60) parts.push(`selisih ${c.gap} mnt`);
+              return parts.join(' · ');
+            };
             return (
               <div key={t.id} className="rounded-xl border border-red-200 bg-white p-3 shadow-sm">
-                <div className="flex flex-wrap justify-between gap-1 text-sm">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-between gap-0.5 text-sm">
                   <div><b>{formatRp(t.amount)}</b> masuk di bank, belum ada pasiennya</div>
-                  <div className="text-slate-500">{t.customer_name} · {t.issuer} · {t.trx_time}</div>
+                  <div className="text-slate-500 break-words">{t.customer_name} · {t.issuer} · {t.trx_time}</div>
                 </div>
-                <div className="mt-2 flex flex-wrap gap-2 items-center">
+                <div className="mt-2 space-y-2">
                   {cands.length === 0
-                    ? <span className="text-xs text-slate-500">Tidak ada pembayaran QRIS bernominal sama di Daily Recap. Cek apakah pasien salah dicatat cash/transfer, atau recap belum diisi.</span>
+                    ? <p className="text-xs text-slate-500">Tidak ada pembayaran QRIS bernominal sama di Daily Recap. Cek apakah pasien salah dicatat cash/transfer, atau recap belum diisi.</p>
                     : <>
-                        <span className="text-xs text-slate-500">Ini pembayaran siapa?</span>
-                        {cands.map((p) => (
-                          <Button key={p.recapId} size="sm" variant="outline" onClick={() => setMatch(t.id, p.recapId)} className="gap-1">
-                            <Link2 className="w-3.5 h-3.5" /> {p.name} <span className="text-slate-400">· {p.cashierName}</span>
-                          </Button>
-                        ))}
+                        <p className="text-xs text-slate-500">Ini pembayaran siapa? (diurutkan dari yang paling mirip nama dan jam akhir sesinya)</p>
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
+                          {cands.map((c, i) => (
+                            <Button key={c.p.recapId} size="sm" variant="outline" onClick={() => setMatch(t.id, c.p.recapId)} className="gap-1.5 h-auto min-h-9 py-1.5 justify-start text-left whitespace-normal">
+                              <Link2 className="w-3.5 h-3.5 shrink-0" />
+                              <span className="min-w-0">
+                                <span className="block break-words">{c.p.name}{i === 0 && hintOf(c) ? <span className="ml-1 text-emerald-600 text-xs">· {hintOf(c)}</span> : null}</span>
+                                <span className="block text-xs text-slate-400 break-words">{c.p.cashierName}{i !== 0 && hintOf(c) ? ` · ${hintOf(c)}` : ''}</span>
+                              </span>
+                            </Button>
+                          ))}
+                        </div>
                       </>}
+                  {others.length > 0 && (
+                    <select
+                      className="w-full sm:w-auto text-sm border border-slate-300 rounded-md bg-white px-2 py-2 text-slate-600"
+                      value=""
+                      aria-label="Pilih pasien lain secara manual"
+                      onChange={async (e) => {
+                        const p = others.find((o) => o.recapId === e.target.value);
+                        if (!p) return;
+                        if (await confirmAction(`Nominal bank ${formatRp(t.amount)} berbeda dengan recap ${p.name} (${formatRp(p.amount)}). Tetap cocokkan?`)) setMatch(t.id, p.recapId);
+                      }}
+                    >
+                      <option value="">Pilih pasien lain…</option>
+                      {others.map((p) => <option key={p.recapId} value={p.recapId}>{p.name} · {formatRp(p.amount)} · {p.cashierName}</option>)}
+                    </select>
+                  )}
                 </div>
               </div>
             );

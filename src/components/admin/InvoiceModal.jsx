@@ -194,18 +194,28 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     // Data lama yang belum punya cashier_id memakai created_by hanya jika rolenya admin;
     // jika masih kosong, diklaim oleh admin yang pertama kali membukanya.
     const isAdminRole = (r) => r === 'admin';
-    let creatorId = recap.cashier_id || recap.created_by || null;
-    let creator = null;
-    if (creatorId) {
-      const { data: c } = await supabase.from('users').select('full_name, signature_url, role').eq('id', creatorId).maybeSingle();
+    const lookupCashier = async (id) => {
+      if (!id) return null;
+      const { data: c } = await supabase.from('users').select('full_name, signature_url, role').eq('id', id).maybeSingle();
       // RLS users hanya mengizinkan admin/owner membaca user lain, jadi admin
       // (Praxis) yang membuka invoice rekannya mendapat hasil kosong; RPC hanya
       // mengembalikan admin satu klinik.
-      if (c && isAdminRole(c.role)) creator = c;
-      else if (!c) {
-        const { data: rows } = await supabase.rpc('get_invoice_cashier', { p_user_id: creatorId });
-        creator = rows?.[0] || null;
+      if (c && isAdminRole(c.role)) return c;
+      if (!c) {
+        const { data: rows } = await supabase.rpc('get_invoice_cashier', { p_user_id: id });
+        return rows?.[0] || null;
       }
+      return null;
+    };
+    // Urutan kasir: cashier_id -> admin yang mengisi TTV (yang melayani pasien) -> pembuat rekap bila admin.
+    // Rekap sering dibuat lebih awal oleh admin lain, jadi pembuat rekap bukan penanda kasir yang andal.
+    let creator = null;
+    if (recap.cashier_id) {
+      creator = await lookupCashier(recap.cashier_id);
+    } else {
+      const { data: vital } = await supabase.from('recap_vital_signs')
+        .select('recorded_by').eq('recap_id', recap.id).not('recorded_by', 'is', null).order('created_at').limit(1).maybeSingle();
+      creator = (await lookupCashier(vital?.recorded_by)) || (await lookupCashier(recap.created_by));
     }
     if (!creator && !recap.cashier_id && userDetails?.id && isAdminRole(userDetails.role)) {
       const { error: claimErr } = await supabase
