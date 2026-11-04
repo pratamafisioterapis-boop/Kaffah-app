@@ -68,6 +68,22 @@ const InvoiceViewPage = () => {
     return () => { cancelled = true; };
   }, [recapId]);
 
+  // Halaman pilihan statis seperti aplikasi native: dokumen tidak bisa digeser/ditarik.
+  // Pratinjau tetap bisa digulir karena isinya dokumen yang panjang.
+  useEffect(() => {
+    if (view === 'preview' && status === 'ready') return undefined;
+    const html = document.documentElement;
+    const { body } = document;
+    const prev = [html.style.overflow, html.style.overscrollBehavior, body.style.overflow, body.style.overscrollBehavior];
+    html.style.overflow = 'hidden';
+    html.style.overscrollBehavior = 'none';
+    body.style.overflow = 'hidden';
+    body.style.overscrollBehavior = 'none';
+    return () => {
+      [html.style.overflow, html.style.overscrollBehavior, body.style.overflow, body.style.overscrollBehavior] = prev;
+    };
+  }, [view, status]);
+
   const loadBlob = async () => {
     if (blobRef.current) return blobRef.current;
     const res = await fetch(invoiceUrl);
@@ -194,7 +210,7 @@ const InvoiceViewPage = () => {
 
   return (
     <main
-      className={`min-h-[100dvh] bg-[#0a3d70] text-white flex flex-col overflow-hidden ${introPlayed.current ? '' : 'kw-intro'}`}
+      className={`fixed inset-0 bg-[#0a3d70] text-white flex flex-col overflow-hidden touch-none select-none overscroll-none [-webkit-tap-highlight-color:transparent] ${introPlayed.current ? '' : 'kw-intro'}`}
       style={baseSize}
     >
       <style>{INTRO_CSS}</style>
