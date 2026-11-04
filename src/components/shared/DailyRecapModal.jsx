@@ -275,6 +275,15 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
     const sfEdit = sfActive && mode === 'edit' && !!initialData?.id;
     const sfDateLocked = sfEdit;
     const { quote, refresh: refreshQuote } = useRecapQuote(initialData?.id, formData.package_type, isOpen && sfEdit);
+    // Diskon owner yang dijadwalkan dari kartu appointment (Kaffah): berlaku otomatis saat invoice terbit.
+    const [ownerPending, setOwnerPending] = useState(null);
+    useEffect(() => {
+        const apptId = (recapMeta?.appointment_id || initialData?.appointment_id);
+        if (!apptId || !isOpen) { setOwnerPending(null); return; }
+        supabase.from('appointments').select('owner_discount_mode, owner_discount_value').eq('id', apptId).maybeSingle()
+            .then(({ data }) => setOwnerPending(data?.owner_discount_mode ? data : null));
+    }, [recapMeta?.appointment_id, initialData?.appointment_id, isOpen]);
+
 
     // Kaffah: paket dengan sesi > 1 tidak boleh ada diskon.
     const selectedPackageOpt = packageOptions.find(p => (formData.package_type_id && p.value === formData.package_type_id) || (formData.package_type && p.label === formData.package_type));
@@ -1312,6 +1321,14 @@ setFormData({
                 dv = 0;
             }
         }
+        // Diskon owner terjadwal (Kaffah): dipakai bila tidak ada diskon lain; rumus sama dengan server.
+        if (ownerPending && !(dType && dType !== 'none' && dv > 0) && !discountBlockedByPackage && !formData.referral_reward_id) {
+            const ov = Number(ownerPending.owner_discount_value) || 0;
+            const m = ownerPending.owner_discount_mode;
+            if (m === 'percentage' && ov > 0) return Math.max(Math.round(sfBaseAmount - sfBaseAmount * Math.min(ov, 100) / 100), 0);
+            if (m === 'nominal' && ov > 0) return Math.max(Math.round(sfBaseAmount - Math.min(ov, sfBaseAmount)), 0);
+            if (m === 'final' && ov >= 0 && ov < sfBaseAmount) return Math.round(ov);
+        }
         if (dType === 'percentage' && dv > 0) return Math.max(Math.round((sfBaseAmount - sfBaseAmount * Math.min(dv, 100) / 100) / 1000) * 1000, 0);
         if (dType === 'nominal' && dv > 0) return Math.max(Math.round(sfBaseAmount - Math.min(dv, sfBaseAmount)), 0);
         return sfBaseAmount;
@@ -1837,7 +1854,7 @@ setFormData({
                                             <p className="text-xs rounded-md border border-amber-200 bg-amber-50 p-2 text-amber-900">
                                                 <b>Diskon Owner terjadwal:</b> {m === 'percentage' ? `${v}%` : m === 'nominal' ? `potongan ${rp(v)}` : `dibayar ${rp(v)}`}
                                                 {disc != null ? <> — pasien membayar <b>{rp(b - disc)}</b> (diskon {rp(disc)})</> : null}.
-                                                Diterapkan otomatis setelah invoice dibuat (tombol Simpan); nominal di atas masih harga awal.
+                                                Sudah dihitung pada Nominal di atas dan dikunci saat invoice dibuat (tombol Simpan).
                                             </p>
                                         );
                                     })()}
@@ -2033,15 +2050,6 @@ setFormData({
     const sfInvoiceLocked = !!quote?.invoice_locked;
     const sfTherapistName = therapists.find(t => t.value === formData.therapist_id)?.label || 'terapis';
     const sfNeedHomecareTime = !!quote?.error && quote.error.includes('Pilih homecare');
-
-    // Diskon owner yang dijadwalkan dari kartu appointment (Kaffah): berlaku otomatis saat invoice terbit.
-    const [ownerPending, setOwnerPending] = useState(null);
-    useEffect(() => {
-        const apptId = recapMeta?.appointment_id;
-        if (!apptId || !isOpen) { setOwnerPending(null); return; }
-        supabase.from('appointments').select('owner_discount_mode, owner_discount_value').eq('id', apptId).maybeSingle()
-            .then(({ data }) => setOwnerPending(data?.owner_discount_mode ? data : null));
-    }, [recapMeta?.appointment_id, isOpen]);
 
     const [homecareTimeLocal, setHomecareTimeLocal] = useState('');
     useEffect(() => {
