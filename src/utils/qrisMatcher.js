@@ -1,4 +1,10 @@
 // Pencocokan transaksi di laporan QRIS bank dengan pembayaran QRIS di daily_recaps.
+//
+// Syarat wajib : tanggal sama + nominal sama persis.
+// Petunjuk     : (1) kemiripan nama pelanggan bank dengan nama pasien,
+//                (2) kedekatan jam transaksi bank dengan jam AKHIR sesi/slot pasien.
+// Bila petunjuk tidak cukup jelas, transaksi dibiarkan "belum cocok" agar admin memilih
+// manual — lebih baik tidak menebak daripada salah mencocokkan uang.
 
 const norm = (s) =>
   String(s || '')
@@ -7,17 +13,60 @@ const norm = (s) =>
     .split(/\s+/)
     .filter((t) => t.length > 1);
 
+// Gelar/sapaan tidak ikut dihitung sebagai bagian nama.
+const STOP = new Set(['DR', 'DRG', 'BPK', 'IBU', 'MR', 'MRS', 'MS', 'BAPAK', 'SDR', 'SDRI', 'NY', 'TN', 'AN', 'PT', 'CV']);
+
+const editDistance = (a, b) => {
+  if (Math.abs(a.length - b.length) > 1) return 2;
+  const dp = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j += 1) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i += 1) {
+    for (let j = 1; j <= b.length; j += 1) {
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+  }
+  return dp[a.length][b.length];
+};
+
+// Dua token dianggap sama bila persis sama, salah satu singkatan dari yang lain (>=3 huruf,
+// mis. "MUH" ~ "MUHAMMAD", "DAN" ~ "DANISH"), atau beda satu huruf pada kata panjang.
+const sameToken = (x, y) => {
+  if (x === y) return true;
+  const [s, l] = x.length <= y.length ? [x, y] : [y, x];
+  if (s.length >= 3 && l.startsWith(s)) return true;
+  return s.length >= 5 && l.length >= 5 && editDistance(x, y) <= 1;
+};
+
 // Berapa token nama yang sama (pelanggan e-wallet/bank belum tentu sama dengan nama pasien,
-// mis. dibayar oleh keluarga, jadi ini hanya dipakai sebagai petunjuk, bukan syarat).
+// mis. dibayar oleh keluarga, jadi ini hanya petunjuk, bukan syarat).
 export const nameOverlap = (a, b) => {
-  const A = new Set(norm(a));
-  const B = norm(b);
-  return B.filter((t) => A.has(t)).length;
+  const A = norm(a).filter((t) => !STOP.has(t));
+  const B = norm(b).filter((t) => !STOP.has(t));
+  const used = new Set();
+  let n = 0;
+  B.forEach((tb) => {
+    const i = A.findIndex((ta, idx) => !used.has(idx) && sameToken(ta, tb));
+    if (i >= 0) { used.add(i); n += 1; }
+  });
+  return n;
 };
 
 const minutesOf = (hhmm) => {
   const m = String(hhmm || '').match(/(\d{1,2}):(\d{2})/);
   return m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : null;
+};
+
+// Jam akhir sesi pasien (menit sejak 00:00). Dipakai payAt (akhir sesi, cadangan: mulai/dibuat).
+const endMinutesOf = (p) => {
+  if (p.payAt instanceof Date && !Number.isNaN(p.payAt.getTime())) return p.payAt.getHours() * 60 + p.payAt.getMinutes();
+  return minutesOf(p.endTime) ?? minutesOf(p.time);
+};
+
+// Selisih menit antara jam transaksi bank dan jam akhir sesi (Infinity bila salah satunya tidak ada).
+export const timeGap = (t, p) => {
+  const a = minutesOf(t.trx_time);
+  const b = endMinutesOf(p);
+  return a != null && b != null ? Math.abs(a - b) : Infinity;
 };
 
 // Pembayaran QRIS dari satu recap: bila ada split, jumlahkan split QRIS saja
@@ -33,15 +82,28 @@ export const qrisPortionOfRecap = (recap, isQrisMethod) => {
   return isQrisMethod(recap.payment_method) ? Number(recap.amount || 0) : 0;
 };
 
+const NEAR_MIN = 180; // pasien bisa bayar lebih awal atau jauh setelah slot: dianggap "dekat" bila selisih <= 3 jam
+const CLEAR_MARGIN = 10; // pemenang harus unggul >= 10 menit dari runner-up
+
+// Skor satu pasangan transaksi–pembayaran.
+export const scorePair = (t, p) => ({ name: nameOverlap(t.customer_name, p.name), gap: timeGap(t, p) });
+
+// Urutkan kandidat (nama mirip dulu, lalu jam terdekat). Dipakai juga untuk saran di tampilan manual.
+export const rankCandidates = (t, portions) =>
+  portions
+    .map((p) => ({ p, ...scorePair(t, p) }))
+    .sort((a, b) => b.name - a.name || a.gap - b.gap);
+
+// Apakah `a` jelas lebih baik dari `b` untuk transaksi yang sama?
+const clearlyBetter = (a, b) => {
+  if (a.name !== b.name) return a.name > b.name;
+  return a.gap <= NEAR_MIN && a.gap + CLEAR_MARGIN <= b.gap;
+};
+
 /**
  * @param transactions [{ id, trx_date, trx_time, amount, customer_name }] yang belum dicocokkan
- * @param portions     [{ recapId, date, amount, name, time }] pembayaran QRIS di recap yang belum terpakai
+ * @param portions     [{ recapId, date, amount, name, time, payAt }] pembayaran QRIS di recap yang belum terpakai
  * @returns { matches: [{ transactionId, recapId }], ambiguous: Set<transactionId> }
- *
- * Aturan: tanggal sama + nominal sama persis. Bila lebih dari satu kandidat, dipilih yang
- * namanya cocok; jika tidak ada petunjuk nama, dipilih yang jam-nya terdekat hanya kalau
- * kandidat tunggal terbaik. Selebihnya dibiarkan "ambigu" untuk dipilih admin manual —
- * lebih baik tidak menebak daripada salah mencocokkan uang.
  */
 export const autoMatchQris = (transactions, portions) => {
   const taken = new Set();
@@ -51,8 +113,6 @@ export const autoMatchQris = (transactions, portions) => {
     `${a.trx_date} ${a.trx_time || ''}`.localeCompare(`${b.trx_date} ${b.trx_time || ''}`)
   );
 
-  // Putaran 1: transaksi dengan tepat satu kandidat (tidak ambigu) dikunci dulu,
-  // sehingga kandidat ganda di putaran 2 makin sedikit.
   const candidatesOf = (t) =>
     portions.filter(
       (p) => !taken.has(p.recapId) && p.date === t.trx_date && Math.round(p.amount) === Math.round(t.amount)
@@ -65,49 +125,43 @@ export const autoMatchQris = (transactions, portions) => {
     for (const t of ordered) {
       if (!pending.has(t.id)) continue;
       const cands = candidatesOf(t);
+      if (cands.length === 0) continue;
+
+      // Transaksi lain (belum cocok) dengan nominal & tanggal sama ikut berebut kandidat.
+      const rivals = [...pending.values()].filter(
+        (o) => o.id !== t.id && o.trx_date === t.trx_date && Math.round(o.amount) === Math.round(t.amount)
+      );
+
+      let pick = null;
       if (cands.length === 1) {
-        // Satu kandidat, tapi pastikan transaksi lain dengan nominal sama tidak berebut kandidat ini.
-        const rivals = [...pending.values()].filter(
-          (o) => o.id !== t.id && o.trx_date === t.trx_date && Math.round(o.amount) === Math.round(t.amount)
-        );
+        pick = cands[0];
         if (rivals.length > 0) {
-          const best = [t, ...rivals].sort(
-            (a, b) => nameOverlap(b.customer_name, cands[0].name) - nameOverlap(a.customer_name, cands[0].name)
-          );
-          const top = nameOverlap(best[0].customer_name, cands[0].name);
-          const second = nameOverlap(best[1].customer_name, cands[0].name);
-          if (!(top > second)) continue; // berebut tanpa petunjuk -> ambigu
-          if (best[0].id !== t.id) continue; // bukan giliran transaksi ini
+          // Satu pembayaran diperebutkan beberapa transaksi: hanya cocok bila transaksi ini jelas yang terbaik.
+          const mine = scorePair(t, pick);
+          const beatsAll = rivals.every((o) => clearlyBetter(mine, scorePair(o, pick)));
+          if (!beatsAll) pick = null;
         }
-        matches.push({ transactionId: t.id, recapId: cands[0].recapId });
-        taken.add(cands[0].recapId);
+      } else {
+        const [first, second] = rankCandidates(t, cands);
+        if (clearlyBetter(first, second)) {
+          pick = first.p;
+          // Jangan ambil bila transaksi saingan lebih pantas untuk pembayaran ini.
+          const mine = scorePair(t, pick);
+          if (rivals.some((o) => clearlyBetter(scorePair(o, pick), mine))) pick = null;
+        }
+      }
+
+      if (pick) {
+        matches.push({ transactionId: t.id, recapId: pick.recapId });
+        taken.add(pick.recapId);
         pending.delete(t.id);
         progress = true;
-      } else if (cands.length > 1) {
-        const scored = cands
-          .map((c) => ({
-            c,
-            name: nameOverlap(t.customer_name, c.name),
-            gap:
-              minutesOf(t.trx_time) != null && minutesOf(c.time) != null
-                ? Math.abs(minutesOf(t.trx_time) - minutesOf(c.time))
-                : Infinity,
-          }))
-          .sort((a, b) => b.name - a.name || a.gap - b.gap);
-        const [first, second] = scored;
-        const clearByName = first.name > 0 && first.name > second.name;
-        if (clearByName) {
-          matches.push({ transactionId: t.id, recapId: first.c.recapId });
-          taken.add(first.c.recapId);
-          pending.delete(t.id);
-          progress = true;
-        }
       }
     }
   }
 
   for (const t of pending.values()) {
-    if (candidatesOf(t).length > 1) ambiguous.add(t.id);
+    if (candidatesOf(t).length > 0) ambiguous.add(t.id);
   }
   return { matches, ambiguous };
 };
