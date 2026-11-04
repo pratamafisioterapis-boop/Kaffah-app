@@ -250,7 +250,7 @@ const InvoiceTemplateModern = forwardRef(({ data }, ref) => {
               src={clinic.stamp_url}
               alt="stamp"
              
-              style={{ position: 'absolute', right: '-44px', top: '-38px', width: '128px', height: 'auto', transform: 'rotate(-10deg)', opacity: 0.9 }}
+              style={{ position: 'absolute', right: '-30px', top: '-28px', width: '100px', height: 'auto', transform: 'rotate(-10deg)', opacity: 0.9 }}
             />
           )}
           <div style={signLabel}>CASHIER</div>
