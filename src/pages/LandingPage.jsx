@@ -1,16 +1,17 @@
 import React, { useEffect, Suspense } from 'react';
 import PageSEO from '@/components/seo/PageSEO';
-const Navbar = React.lazy(() => import('@/components/landing/Navbar'));
-const HeroSection = React.lazy(() => import('@/components/landing/HeroSection'));
-const AboutSection = React.lazy(() => import('@/components/landing/AboutSection'));
-const ServicesSection = React.lazy(() => import('@/components/landing/ServicesSection'));
-const AdvantagesSection = React.lazy(() => import('@/components/landing/AdvantagesSection'));
-const TherapistsSection = React.lazy(() => import('@/components/landing/TherapistsSection'));
-const TestimonialsSection = React.lazy(() => import('@/components/landing/TestimonialsSection'));
-const LocationSection = React.lazy(() => import('@/components/landing/LocationSection'));
-const PricingTeaser = React.lazy(() => import('@/components/landing/PricingTeaser'));
-const CTASection = React.lazy(() => import('@/components/landing/CTASection'));
-const Footer = React.lazy(() => import('@/components/landing/Footer'));
+import { lazyRetry } from '@/lib/lazyRetry';
+const Navbar = React.lazy(lazyRetry(() => import('@/components/landing/Navbar'), 'Navbar'));
+const HeroSection = React.lazy(lazyRetry(() => import('@/components/landing/HeroSection'), 'HeroSection'));
+const AboutSection = React.lazy(lazyRetry(() => import('@/components/landing/AboutSection'), 'AboutSection'));
+const ServicesSection = React.lazy(lazyRetry(() => import('@/components/landing/ServicesSection'), 'ServicesSection'));
+const AdvantagesSection = React.lazy(lazyRetry(() => import('@/components/landing/AdvantagesSection'), 'AdvantagesSection'));
+const TherapistsSection = React.lazy(lazyRetry(() => import('@/components/landing/TherapistsSection'), 'TherapistsSection'));
+const TestimonialsSection = React.lazy(lazyRetry(() => import('@/components/landing/TestimonialsSection'), 'TestimonialsSection'));
+const LocationSection = React.lazy(lazyRetry(() => import('@/components/landing/LocationSection'), 'LocationSection'));
+const PricingTeaser = React.lazy(lazyRetry(() => import('@/components/landing/PricingTeaser'), 'PricingTeaser'));
+const CTASection = React.lazy(lazyRetry(() => import('@/components/landing/CTASection'), 'CTASection'));
+const Footer = React.lazy(lazyRetry(() => import('@/components/landing/Footer'), 'Footer'));
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 // Wrap sections in ErrorBoundary so one failed section doesn't kill the whole page

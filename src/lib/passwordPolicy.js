@@ -4,7 +4,7 @@
 // Login tidak divalidasi di sini, supaya password lama tetap bisa masuk.
 
 export const PASSWORD_MIN_LENGTH = 8;
-export const PASSWORD_HINT = `min. ${PASSWORD_MIN_LENGTH} karakter, huruf & angka`;
+export const PASSWORD_HINT = `min. ${PASSWORD_MIN_LENGTH} karakter`;
 
 const COMMON_PASSWORDS = new Set([
   '12345678', '123456789', '1234567890', '123123123', '11111111', '00000000',
@@ -32,53 +32,11 @@ function isTooPredictable(password) {
 export function getPasswordError(password) {
   const pw = password || '';
   if (pw.length < PASSWORD_MIN_LENGTH) return `Password minimal ${PASSWORD_MIN_LENGTH} karakter.`;
-  if (!/[A-Za-z]/.test(pw) || !/[0-9]/.test(pw)) return 'Password harus mengandung huruf dan angka.';
   if (isTooPredictable(pw)) return 'Password terlalu mudah ditebak. Gunakan kombinasi yang lebih unik.';
   return null;
 }
 
-async function sha1Hex(text) {
-  const data = new TextEncoder().encode(text);
-  const digest = await crypto.subtle.digest('SHA-1', data);
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
-}
-
-/**
- * Cek ke HaveIBeenPwned (Pwned Passwords, model k-anonymity): hanya 5 karakter
- * pertama dari hash SHA-1 yang dikirim, password asli tidak pernah keluar dari
- * perangkat. Jika layanan tidak terjangkau, hasilnya dianggap lolos (fail-open)
- * agar user tidak terkunci.
- */
-export async function isPasswordLeaked(password) {
-  try {
-    if (!globalThis.crypto?.subtle) return false;
-    const hash = await sha1Hex(password);
-    const prefix = hash.slice(0, 5);
-    const suffix = hash.slice(5);
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 4000);
-    const res = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`, {
-      headers: { 'Add-Padding': 'true' },
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-    if (!res.ok) return false;
-    const body = await res.text();
-    return body.split('\n').some((line) => {
-      const [candidate, count] = line.trim().split(':');
-      return candidate === suffix && parseInt(count, 10) > 0;
-    });
-  } catch {
-    return false;
-  }
-}
-
-/** Validasi lengkap (lokal + cek kebocoran). Mengembalikan pesan error atau null. */
+/** Validasi password (hanya aturan lokal, tanpa cek kebocoran). Mengembalikan pesan error atau null. */
 export async function validatePassword(password) {
-  const localError = getPasswordError(password);
-  if (localError) return localError;
-  if (await isPasswordLeaked(password)) {
-    return 'Password ini pernah bocor di internet. Gunakan password lain yang belum pernah dipakai di tempat lain.';
-  }
-  return null;
+  return getPasswordError(password);
 }
