@@ -87,7 +87,7 @@ const WhatsAppAutomationSetup = () => {
   const navItems = OWNER_NAV_ITEMS;
 
   return (
-    <DashboardLayout role="owner" navItems={navItems}>
+    <DashboardLayout role="owner" userName="Owner" navItems={navItems}>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>

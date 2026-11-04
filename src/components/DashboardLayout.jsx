@@ -8,7 +8,7 @@ import {
   User, Clock, Menu, ChevronRight, Bell, Search, LayoutDashboard,
   FileText, Package, ClipboardList, Database, DollarSign, ChevronDown,
   MessageSquare, Plus, Boxes, Wallet, FileSearch, FileSpreadsheet, ShieldCheck, Award,
-  UploadCloud, UserCog, MonitorPlay, BookOpen, Star, Crown, Eye, Smartphone
+  UploadCloud, UserCog, MonitorPlay, ImagePlus, BookOpen, Star, Crown, Eye, Smartphone, QrCode
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
@@ -42,12 +42,14 @@ const iconMap = {
   Boxes,
   Wallet,
   FileSearch,
+  QrCode,
   FileSpreadsheet,
   Award,
   UploadCloud,
   UserCog,
   ShieldCheck,
   MonitorPlay,
+  ImagePlus,
   Clock,
   BookOpen,
   Crown,
@@ -80,7 +82,10 @@ const writeClinicInfoCache = (clinicId, data) => {
   try { window.localStorage.setItem(CLINIC_INFO_CACHE_KEY, JSON.stringify({ clinicId, data })); } catch { /* mode privat: abaikan */ }
 };
 
-const DashboardLayout = ({ children, navItems = [], role, userName, topSlot = null }) => {
+const ROLE_DEFAULT_NAMES = { owner: 'Owner', admin: 'Admin', therapist: 'Terapis', super_admin: 'Super Admin' };
+
+const DashboardLayout = ({ children, navItems = [], role, userName: userNameProp, topSlot = null }) => {
+  const userName = typeof userNameProp === 'string' && userNameProp ? userNameProp : (ROLE_DEFAULT_NAMES[role] || 'User');
   const [currentTime, setCurrentTime] = useState(new Date());
 
 useEffect(() => {
@@ -481,9 +486,13 @@ const isPWA =
         <div className="flex items-center gap-3 p-3 bg-white rounded-app border border-app-border mb-3">
           <div className="flex-shrink-0 relative">
             <img
-              src={`https://api.dicebear.com/7.x/initials/svg?seed=${typeof userName === 'string' ? userName : 'User'}&backgroundColor=1677D2`}
+              src={userDetails?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(userName)}&backgroundColor=1677D2`}
               alt="Avatar"
-              className="h-10 w-10 rounded-full bg-app-soft border-2 border-white shadow-sm" loading="lazy" decoding="async" />
+              onError={(e) => {
+                const fallback = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(userName)}&backgroundColor=1677D2`;
+                if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
+              }}
+              className="h-10 w-10 rounded-full bg-app-soft border-2 border-white shadow-sm object-cover" loading="lazy" decoding="async" />
           </div>
           <div className="overflow-hidden min-w-0">
             <p className="text-sm font-semibold text-app-ink break-words sm:truncate">

@@ -13,11 +13,13 @@ import { Input } from "@/components/ui/input";
 import { Printer, Download, X, Loader2, Send } from "lucide-react";
 import InvoiceTemplate from './InvoiceTemplate';
 import InvoiceTemplateKwitansi from './InvoiceTemplateKwitansi';
+import InvoiceTemplateModern from './InvoiceTemplateModern';
 import { useToast } from "@/components/ui/use-toast";
 import { getInvoiceSettings, getWaApiSettings } from '@/lib/api';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { stripSignatureBackground } from '@/lib/signatureImage';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
+import { kaffahServiceLine, kaffahSessionLabel } from '@/lib/kaffahInvoiceLine';
 
 // Ukuran acuan A4 (210mm x 297mm) dalam px @96dpi — dipakai untuk menghitung
 // skala preview di layar sempit. Generasi PDF/print tetap memakai elemen asli
@@ -97,13 +99,16 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     templateData.patients = { ...(templateData.patients || {}), full_name: oneOffTrimmed };
     if (templateData.patient) templateData.patient = { ...templateData.patient, full_name: oneOffTrimmed };
   }
+  // Prop `data` bisa membawa receipt_number kosong yang menimpa nomor dari database.
+  if (canOneOffName && detailData?.receipt_number) templateData.receipt_number = detailData.receipt_number;
   if (!templateData.receipt_number && !templateData.invoice_number) {
     const rm = data?.patients?.medical_record_number || data?.patient?.medical_record_number || data?.medical_record_number || 'RM00000';
     templateData.invoice_number = `INV/KFF/${data?.recap_date || new Date().toISOString().split('T')[0]}/${rm}`;
   }
   const isPreviewLoading = loadingSettings || loadingDetail;
   const useKwitansi = templateData.clinic?.invoice_template === 'kwitansi';
-  const TemplateComponent = useKwitansi ? InvoiceTemplateKwitansi : InvoiceTemplate;
+  const useModern = !!templateData.use_modern_layout;
+  const TemplateComponent = useModern ? InvoiceTemplateModern : (useKwitansi ? InvoiceTemplateKwitansi : InvoiceTemplate);
 
   // ── Skala preview agar invoice A4 tetap utuh terlihat di layar sempit (PWA/mobile) ──
   useEffect(() => {
@@ -172,6 +177,14 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       return;
     }
 
+    // Kaffah: nomor kwitansi dibuat database (KFF/XI/2026/0042), satu nomor tetap per recap.
+    // Recap yang sudah punya nomor (termasuk format lama INV/KFF/...) tidak diubah.
+    if (recap.clinic_id === KAFFAH_CLINIC_ID && !recap.receipt_number) {
+      const { data: assigned, error: assignErr } = await supabase.rpc('assign_kaffah_receipt_number', { p_recap_id: recap.id });
+      if (assignErr) console.error('Gagal membuat nomor kwitansi:', assignErr);
+      else if (assigned) recap.receipt_number = assigned;
+    }
+
     // Kasir = admin yang pertama kali menyimpan rekap (cashier_id, diisi sekali).
     // Data lama yang belum punya cashier_id memakai created_by hanya jika rolenya admin;
     // jika masih kosong, diklaim oleh admin yang pertama kali membukanya.
@@ -211,7 +224,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
         if (physio.clinic_id) {
           const { data: clinic } = await supabase
             .from('clinics')
-            .select('id, name, address, phone, email, logo_url, invoice_signer, invoice_admin_name, invoice_admin_signature_url, invoice_show_patient_signature, invoice_template')
+            .select('id, name, address, phone, email, logo_url, invoice_signer, invoice_signer_from, invoice_desc_style, invoice_desc_from, invoice_layout, invoice_layout_from, stamp_url, invoice_admin_name, invoice_admin_signature_url, invoice_show_patient_signature, invoice_template')
             .eq('id', physio.clinic_id)
             .single();
           if (clinic) clinicData = clinic;
@@ -232,8 +245,49 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       }
     }
 
+    // Kaffah: deskripsi layanan bertingkat (Essential/Advanced/Recovery, "N-Session Package"),
+    // hanya untuk invoice yang terbit sejak invoice_desc_from; invoice lama tidak berubah.
+    let tieredLine = null;
+    if (clinicData?.invoice_desc_style === 'tiered') {
+      const from = clinicData.invoice_desc_from ? new Date(clinicData.invoice_desc_from) : null;
+      // Recap lama tidak punya invoice_created_at -> pakai created_at; tidak diketahui = invoice lama.
+      const issuedSource = recap.invoice_created_at || recap.created_at;
+      const issued = issuedSource ? new Date(issuedSource) : null;
+      if (!(from && (!issued || issued < from))) {
+        const ids = [recap.patient_type, recap.package_type].filter(Boolean);
+        const labels = {};
+        if (ids.length) {
+          const { data: opts } = await supabase.from('operational_options').select('id, label').in('id', ids.filter((v) => /^[0-9a-f-]{36}$/i.test(v)));
+          (opts || []).forEach((o) => { labels[o.id] = o.label; });
+        }
+        let totalSessions = null;
+        if (recap.package_tracking_id) {
+          const { data: pt } = await supabase.from('package_tracking').select('total_sessions').eq('id', recap.package_tracking_id).maybeSingle();
+          totalSessions = pt?.total_sessions || null;
+        }
+        const service = kaffahServiceLine(labels[recap.patient_type] || recap.patient_type);
+        tieredLine = {
+          code: service.code,
+          description: service.description,
+          session: kaffahSessionLabel(labels[recap.package_type] || recap.package_type, totalSessions),
+        };
+      }
+    }
+
+    // Kaffah: desain kwitansi "Minimal Bersih" (InvoiceTemplateModern), hanya untuk invoice yang
+    // terbit sejak invoice_layout_from; invoice lama tetap memakai desain lama.
+    let useModernLayout = false;
+    if (clinicData?.invoice_layout === 'modern') {
+      const from = clinicData.invoice_layout_from ? new Date(clinicData.invoice_layout_from) : null;
+      const issuedSource = recap.invoice_created_at || recap.created_at;
+      const issued = issuedSource ? new Date(issuedSource) : null;
+      useModernLayout = !(from && (!issued || issued < from));
+    }
+
     setDetailData({
       ...recap,
+      use_modern_layout: useModernLayout,
+      tiered_line: tieredLine,
       slot_end_at: slotEnd,
       therapist_name: physioData?.name || recap.therapist_name || '-',
       signature_url:  physioData?.signature_url || null,
@@ -249,7 +303,10 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     const element = componentRef.current;
     if (!element) throw new Error("Element invoice tidak ditemukan");
 
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Cukup tunggu font siap + satu frame render. (Dulu jeda tetap 500 ms; html2canvas memuat
+    // gambar sendiri, jadi tidak perlu menunggu gambar di sini.)
+    if (document.fonts?.ready) await document.fonts.ready;
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
     const canvas = await html2canvas(element, {
       scale: 2,
@@ -261,7 +318,9 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       windowWidth: 794,
     });
 
-    const imgData   = canvas.toDataURL('image/png');
+    // JPEG, bukan PNG: jsPDF memproses ulang PNG piksel demi piksel (~2 detik atau lebih untuk
+    // halaman A4 beresolusi 2x), sedangkan JPEG langsung disisipkan (~0,02 detik).
+    const imgData   = canvas.toDataURL('image/jpeg', 0.95);
     const pdfWidth  = 210;
     const pdfHeight = 297;
 
@@ -276,7 +335,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     const pdfImgH     = (imgProps.height * pdfWidth) / imgProps.width;
     const finalHeight = Math.min(pdfImgH, pdfHeight);
 
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalHeight);
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, finalHeight);
     return pdf;
   };
 
@@ -303,6 +362,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
 
   // ── Helper: Invoice Number ────────────────────────────────────────────────
   const getInvoiceNumber = () => {
+    if (canOneOffName && detailData?.receipt_number) return detailData.receipt_number;
     const rm      = getMedicalRecordNumber();
     const dateStr = data?.recap_date || new Date().toISOString().split('T')[0];
     return `INV/KFF/${dateStr}/${rm}`;
@@ -380,10 +440,13 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
   const handleDownloadPDF = async () => {
     setIsGenerating(true);
     try {
-      const pdf           = await generatePDF();
       const invoiceNumber = getInvoiceNumber();
 
-      if (!isOneOff) await saveInvoiceRecord(invoiceNumber);
+      // Pembuatan PDF dan penyimpanan data invoice berjalan bersamaan (dulu berurutan).
+      const [pdf] = await Promise.all([
+        generatePDF(),
+        isOneOff ? Promise.resolve() : saveInvoiceRecord(invoiceNumber),
+      ]);
 
       const rawDate = data?.recap_date || new Date().toISOString().split('T')[0];
       const [yr, mo, dy] = rawDate.split('-');

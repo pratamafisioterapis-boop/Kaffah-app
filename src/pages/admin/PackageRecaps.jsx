@@ -498,7 +498,7 @@ export const PackageRecapsContent = () => {
 // Admin Wrapper
 const PackageRecapsAdmin = () => {
     return (
-        <DashboardLayout role="admin" navItems={ADMIN_NAV_ITEMS}>
+        <DashboardLayout role="admin" userName="Admin" navItems={ADMIN_NAV_ITEMS}>
             <PackageRecapsContent />
         </DashboardLayout>
     );

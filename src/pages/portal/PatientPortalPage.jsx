@@ -531,6 +531,7 @@ const ProgressTab = ({ data, goals, complaint }) => {
 const useVideoUrls = (session, items) => {
   const [urls, setUrls] = useState({});
   const [posters, setPosters] = useState({});
+  const [images, setImages] = useState({});
   const asked = useRef(new Set());
   const load = useCallback((id, force = false) => {
     if (!force && asked.current.has(id)) return;
@@ -540,24 +541,26 @@ const useVideoUrls = (session, items) => {
       .catch(() => setUrls((p) => ({ ...p, [id]: null })));
   }, [session]);
   useEffect(() => {
-    const ids = items.filter((i) => i.has_video && !asked.current.has(i.exercise_id)).map((i) => i.exercise_id);
+    const ids = items.filter((i) => (i.has_video || i.has_illustration) && !asked.current.has(i.exercise_id)).map((i) => i.exercise_id);
     if (ids.length === 0) return;
     ids.forEach((id) => asked.current.add(id));
     portalApi.videoUrls(session, ids)
       .then((res) => {
         setUrls((p) => ({ ...p, ...Object.fromEntries(ids.map((id) => [id, res[id]?.url ?? null])) }));
+        setImages((p) => ({ ...p, ...Object.fromEntries(ids.map((id) => [id, res[id]?.image ?? null])) }));
         setPosters((p) => ({ ...p, ...Object.fromEntries(ids.map((id) => [id, res[id]?.poster ?? null])) }));
       })
       // Fungsi lama tanpa mode daftar: ambil satu per satu seperti sebelumnya.
       .catch(() => ids.forEach((id) => load(id, true)));
   }, [items, session, load]);
-  return [urls, load, posters];
+  return [urls, load, posters, images];
 };
 
 const markReady = (e) => e.currentTarget.classList.add('ready');
 
-const Thumb = ({ item, url, poster }) => (
+const Thumb = ({ item, url, poster, image }) => (
   <span className={`thumb${item.has_video ? '' : ' no-video'}`} aria-hidden="true">
+    {!item.has_video && image && <img src={image} alt="" decoding="async" onLoad={markReady} />}
     {item.has_video && (poster
       ? <img src={poster} alt="" decoding="async" onLoad={markReady} />
       // Belum ada sampul: ambil satu bingkai dari videonya (lebih lambat).
@@ -571,7 +574,7 @@ const RING = 2 * Math.PI * 34;
 const ProgramTab = ({ session, items, therapist, onToggle }) => {
   const [openId, setOpenId] = useState(null);
   const [busyId, setBusyId] = useState(null);
-  const [urls, loadUrl, posters] = useVideoUrls(session, items);
+  const [urls, loadUrl, posters, images] = useVideoUrls(session, items);
   const doneCount = items.filter((i) => i.done_today).length;
   const left = items.length - doneCount;
   const pct = items.length ? doneCount / items.length : 0;
@@ -605,7 +608,7 @@ const ProgramTab = ({ session, items, therapist, onToggle }) => {
             <div className={`ex${e.done_today ? ' is-done' : ''}`} key={e.exercise_id}>
               <div className="ex-r">
                 <button className="ex-open" onClick={() => setOpenId(open ? null : e.exercise_id)} aria-expanded={open}>
-                  <Thumb item={e} url={url} poster={posters[e.exercise_id]} />
+                  <Thumb item={e} url={url} poster={posters[e.exercise_id]} image={images[e.exercise_id]} />
                   <span className="sp"><b className="ex-title">{e.title}</b><span className="muted small">{e.dose}</span></span>
                 </button>
                 <button className={`ck${e.done_today ? ' on' : ''}`} onClick={() => toggle(e)} disabled={busyId === e.exercise_id} aria-pressed={!!e.done_today} aria-label={`Tandai ${e.title} selesai`}>
@@ -620,6 +623,9 @@ const ProgramTab = ({ session, items, therapist, onToggle }) => {
                         : url === null ? <span>Video belum bisa diputar. Ikuti langkah di bawah ini.</span>
                         : <span>Memuat video...</span>}
                     </div>
+                  )}
+                  {!e.has_video && images[e.exercise_id] && (
+                    <img className="illus" src={images[e.exercise_id]} alt={`Ilustrasi ${e.title}`} decoding="async" />
                   )}
                   {e.how_to && (steps ? <ol className="steps">{steps.map((x, i) => <li key={i}>{x}</li>)}</ol> : <p>{e.how_to}</p>)}
                   {e.progression && <><div className="k ok">Jika sudah terasa ringan</div><p>{e.progression}</p></>}

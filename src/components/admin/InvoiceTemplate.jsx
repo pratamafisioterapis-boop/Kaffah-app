@@ -48,7 +48,15 @@ const therapistName = data?.therapist_name ?? '-';
     [24, '8px'], [32, '7px'], [Infinity, '6.5px'],
   ]);
 
-  const adminSigner = data?.clinic?.invoice_signer === 'admin';
+  // Mode Cashier berlaku untuk invoice yang terbit sejak invoice_signer_from; invoice lama
+  // (invoice_created_at lebih awal) tetap memakai tanda tangan Physiotherapist.
+  const signerFrom = data?.clinic?.invoice_signer_from ? new Date(data.clinic.invoice_signer_from) : null;
+  // Recap lama (sebelum 18 Okt 2026) tidak punya invoice_created_at, jadi pakai tanggal
+  // pembuatan recap; bila keduanya tidak ada, anggap invoice lama (jangan diubah).
+  const issuedSource = data?.invoice_created_at || data?.created_at;
+  const invoiceIssuedAt = issuedSource ? new Date(issuedSource) : null;
+  const issuedBeforeSignerFrom = !!(signerFrom && (!invoiceIssuedAt || invoiceIssuedAt < signerFrom));
+  const adminSigner = data?.clinic?.invoice_signer === 'admin' && !issuedBeforeSignerFrom;
   const showPatientSignature = data?.clinic?.invoice_show_patient_signature !== false;
   const adminName = data?.admin_signer_name || data?.clinic?.invoice_admin_name || '';
   const adminSignatureUrl = data?.admin_signer_signature_url || data?.clinic?.invoice_admin_signature_url || '';
@@ -213,6 +221,7 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
             <tr>
               <td style={tdCenter}>
   {
+    data?.tiered_line ? data.tiered_line.code :
     data?.service_type === 'Musculoskeletal Treatment' ? 'A17' :
     data?.service_type === 'Cardiorespiratory Physiotherapy' ? 'B29' :
     data?.service_type === 'Sport Injury Treatment' ? 'C34' :
@@ -221,9 +230,9 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
     'X00'
   }
 </td>
-              <td style={tdCenter}>{data?.service_type || '-'}</td>
+              <td style={tdCenter}>{data?.tiered_line ? data.tiered_line.description : (data?.service_type || '-')}</td>
               <td style={tdCenter}>
-  {data?.package_type || data?.service_type || '-'}
+  {data?.tiered_line ? data.tiered_line.session : (data?.package_type || data?.service_type || '-')}
 </td>
               <td style={tdCenter}>{formatCurrency(data?.amount_original || data?.amount)}</td>
             </tr>

@@ -119,8 +119,7 @@ const handleExportExcel = (mode = 'accrual') => {
   const combinedIncome = [
     ...data.ownerIncome.map(item => ({
       tanggal: formatDate(item.date),
-      deskripsi: item.description || '-',
-      nama: '-',
+      nama: item.description || '-',
       paket: '-',
       bank: item.bank_accounts?.bank_name || '-',
       metode_pembayaran: item.payment_method || '-',
@@ -129,8 +128,7 @@ const handleExportExcel = (mode = 'accrual') => {
 
     ...data.adminIncome.map(item => ({
       tanggal: formatDate(item.transaction_date || item.date),
-      deskripsi: item.description || '-',
-      nama: '-',
+      nama: item.description || '-',
       paket: '-',
       bank: item.bank_accounts?.bank_name || '-',
       metode_pembayaran: item.payment_method || '-',
@@ -152,7 +150,6 @@ const handleExportExcel = (mode = 'accrual') => {
 
       return {
         tanggal: formatDate(item.date),
-        deskripsi: '-',
         nama: item.patient_name || '-',
         paket,
         bank: '-',

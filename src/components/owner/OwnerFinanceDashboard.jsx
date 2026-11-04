@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2, RefreshCw, Wallet, TrendingDown, TrendingUp, CreditCard, FileBarChart, ShieldCheck, Briefcase, Calculator, Package, CheckCircle2, Trash2, Repeat } from 'lucide-react';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format } from 'date-fns';
+import DateRangePicker, { getDefaultDateRange } from '@/components/ui/date-range-picker';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getAdminExpenses, getAdminIncome, deleteAdminExpense, deleteAdminIncome, getOwnerExpenditures, getOwnerIncome, getOwnerReceivables, getBankAccounts, deleteOwnerExpenditure, deleteOwnerIncome, deleteOwnerReceivable, updateOwnerReceivable, autoPostFixedCosts } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
@@ -139,10 +140,8 @@ const OwnerFinanceDashboard = () => {
   const [activeAdminTab, setActiveAdminTab] = useState('expenses');
 
   // Shared Date Range State (Top Level)
-  const [dateRange, setDateRange] = useState({
-    startDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-    endDate: format(endOfMonth(new Date()), 'yyyy-MM-dd')
-  });
+  // Default: tanggal 1 bulan ini s/d hari ini.
+  const [dateRange, setDateRange] = useState(getDefaultDateRange);
 
   // State for Data
   const [ownerData, setOwnerData] = useState({
@@ -301,32 +300,19 @@ const OwnerFinanceDashboard = () => {
       {/* Hero Banner */}
       <PageHero image="/hero/clinara-accounting-hero.webp" title="Accounting" highlight="System" description="Kelola keuangan, analitik & laporan klinik." />
 
-      {!isPWA && (
-        <div className="flex justify-end">
-          <div className="flex items-center gap-2 bg-white border border-slate-100 shadow-sm rounded-[14px] px-3 py-2">
-            <span className="text-app-accent text-xs font-bold uppercase tracking-wider shrink-0">Periode</span>
-            <input
-              type="date"
-              value={dateRange.startDate}
-              onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-              className="text-xs bg-transparent border-0 outline-none text-app-ink font-medium w-[110px]"
-            />
-            <span className="text-slate-300 shrink-0">–</span>
-            <input
-              type="date"
-              value={dateRange.endDate}
-              onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-              className="text-xs bg-transparent border-0 outline-none text-app-ink font-medium w-[110px]"
-            />
-            <button
-              onClick={() => { fetchOwnerData(); fetchAdminData(); }}
-              className="w-9 h-9 rounded-[10px] bg-slate-50 border border-slate-100 flex items-center justify-center hover:bg-slate-100 transition-colors text-slate-500 hover:text-app-accent shrink-0"
-              title="Refresh"
-              aria-label="Muat ulang"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
-          </div>
+      {/* Filter periode: tampil di semua view (desktop, mobile, PWA) */}
+      {activeTab !== 'package_funds' && (
+        <div className="flex flex-wrap items-center gap-2">
+          <DateRangePicker value={dateRange} onChange={setDateRange} className="w-full sm:w-auto" />
+          <button
+            type="button"
+            onClick={() => setDateRange((r) => ({ ...r }))}
+            className="w-11 h-11 rounded-[14px] bg-white border border-slate-200 shadow-sm flex items-center justify-center hover:bg-slate-50 transition-colors text-slate-500 hover:text-app-accent shrink-0"
+            title="Muat ulang"
+            aria-label="Muat ulang"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
         </div>
       )}
 

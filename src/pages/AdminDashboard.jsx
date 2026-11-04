@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 const OwnerPackageRecap = React.lazy(lazyRetry(() => import('@/pages/owner/PackageRecaps'), 'OwnerPackageRecap'));
 const AdminCheckTransaksi = React.lazy(lazyRetry(() => import('@/pages/admin/AdminCheckTransaksi'), 'AdminCheckTransaksi'));
+const AdminQrisReconciliation = React.lazy(lazyRetry(() => import('@/pages/admin/AdminQrisReconciliation'), 'AdminQrisReconciliation'));
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
@@ -44,6 +45,7 @@ import PageHero from '@/components/shared/PageHero';
 import HeroClock from '@/components/shared/HeroClock';
 import { lazyRetry } from '@/lib/lazyRetry';
 import PageSkeleton from '@/components/shared/PageSkeleton';
+import DateRangePicker from '@/components/ui/date-range-picker';
 const AdminDashboardHome = () => {
   const location = useLocation();
   const { clinicName } = useAuth();
@@ -319,28 +321,7 @@ await Promise.all([loadSlots(), loadStats()]);
         {/* ── Periode Toolbar ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-            <div role="group" aria-labelledby="admin-period-label" className="flex items-center gap-2 bg-white border border-app-border rounded-app-sm px-3 py-1.5 w-full sm:w-auto shadow-sm focus-within:ring-2 focus-within:ring-app-accent/40">
-              <span id="admin-period-label" className="text-app-accent text-xs font-bold uppercase tracking-wider shrink-0">Periode</span>
-              <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
-                <input
-                  type="date"
-                  aria-label="Tanggal mulai periode"
-                  value={rangeInput.startDate}
-                  max={rangeInput.endDate || undefined}
-                  onChange={(e) => setRangeInput((prev) => ({ ...prev, startDate: e.target.value }))}
-                  className="text-xs border-0 outline-none text-app-ink font-medium bg-transparent w-full sm:w-auto"
-                />
-                <span className="text-app-muted shrink-0" aria-hidden="true">–</span>
-                <input
-                  type="date"
-                  aria-label="Tanggal akhir periode"
-                  value={rangeInput.endDate}
-                  min={rangeInput.startDate || undefined}
-                  onChange={(e) => setRangeInput((prev) => ({ ...prev, endDate: e.target.value }))}
-                  className="text-xs border-0 outline-none text-app-ink font-medium bg-transparent w-full sm:w-auto"
-                />
-              </div>
-            </div>
+            <DateRangePicker align="end" value={rangeInput} onChange={setRangeInput} className="w-full sm:w-auto" />
           </div>
         </div>
 
@@ -723,6 +704,7 @@ return (
         {/* Accounting Route */}
         <Route path="/accounting" element={<AdminAccountingDashboard />} />
         <Route path="/check-transaksi" element={<AdminCheckTransaksi />} />
+        <Route path="/qris-reconciliation" element={<AdminQrisReconciliation />} />
         <Route path="/attendance" element={<AttendanceManagement />} />
         <Route path="/settings" element={<AdminAccountSettings />} />
 

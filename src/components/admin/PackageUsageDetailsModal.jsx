@@ -12,6 +12,7 @@ import { getPackageUsageHistory } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
+import DateRangePicker from '@/components/ui/date-range-picker';
 
 const PackageUsageDetailsModal = ({ isOpen, onClose, packageId }) => {
   const [loading, setLoading] = useState(false);
@@ -109,21 +110,14 @@ const PackageUsageDetailsModal = ({ isOpen, onClose, packageId }) => {
                     </div>
                  </div>
                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-slate-500">Tanggal Mulai</label>
-                    <Input 
-                        type="date" 
-                        className="h-9 w-32 text-xs bg-white" 
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                    />
-                 </div>
-                 <div className="space-y-1">
-                    <label className="text-xs font-medium text-slate-500">Tanggal Akhir</label>
-                    <Input 
-                        type="date" 
-                        className="h-9 w-32 text-xs bg-white" 
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
+                    <label className="text-xs font-medium text-slate-500">Rentang Tanggal</label>
+                    <DateRangePicker
+                        variant="field"
+                        align="start"
+                        clearable
+                        className="h-9 text-xs w-52"
+                        value={{ startDate, endDate }}
+                        onChange={(r) => { setStartDate(r.startDate); setEndDate(r.endDate); }}
                     />
                  </div>
                  <Button size="sm" onClick={handleRefresh} className="h-9 bg-app-accent hover:bg-app-accent-hover">

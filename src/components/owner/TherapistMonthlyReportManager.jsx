@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { FileBarChart2, Loader2, Download } from 'lucide-react';
+import DateRangePicker from '@/components/ui/date-range-picker';
 
 const TherapistMonthlyReportManager = () => {
   const { toast } = useToast();
@@ -82,20 +83,14 @@ const TherapistMonthlyReportManager = () => {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label>Periode Mulai</Label>
-            <Input
-              type="date"
-              value={period.startDate}
-              onChange={(e) => setPeriod((p) => ({ ...p, startDate: e.target.value }))}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Periode Akhir</Label>
-            <Input
-              type="date"
-              value={period.endDate}
-              onChange={(e) => setPeriod((p) => ({ ...p, endDate: e.target.value }))}
+          <div className="space-y-2 sm:col-span-2">
+            <Label>Periode Laporan</Label>
+            <DateRangePicker
+              variant="field"
+              align="start"
+              className="w-full"
+              value={period}
+              onChange={(r) => setPeriod((p) => ({ ...p, ...r }))}
             />
           </div>
         </div>
