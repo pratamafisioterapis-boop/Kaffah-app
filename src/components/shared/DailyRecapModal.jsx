@@ -1742,6 +1742,9 @@ setFormData({
                                         <Label className="block whitespace-nowrap">Nominal (Rp)</Label>
                                         <Input type="number" value={sfEdit && sfFinalAmount != null ? sfFinalAmount : (formData.amount ?? '')} onChange={e => handleChange('amount', e.target.value)} placeholder="0" disabled={sfActive || isPackageSessionLocked || (isKwitansi && invoiceItems.length > 0)}/>
                                         {sfEdit && sfFinalAmount == null && quote?.error && <p className="text-[11px] text-red-600">{quote.error}</p>}
+                                        {sfEdit && quote?.nebulizer_base_applied && (
+                                            <p className="text-[11px] text-slate-500">Memakai harga dasar nebulizer (diagnosa tunggal + tindakan nebulizer).</p>
+                                        )}
                                         {sfEdit && (Number(quote?.nebulizer_mask) > 0 || Number(quote?.nebulizer_drug) > 0) && (
                                             <p className="text-[11px] text-slate-500">
                                                 Termasuk nebulizer dari klinik:{' '}
