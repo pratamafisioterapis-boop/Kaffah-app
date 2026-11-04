@@ -582,6 +582,44 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, isPreviewLoading, isOneOff, useModern, detailData?.id, detailData?.invoice_url, detailData?.pdf_generated_at, detailData?.revenue_date]);
 
+  // ── Pulihkan invoice_url yang gagal tersimpan ─────────────────────────────
+  // Kirim Manual membuka WhatsApp lebih dulu, lalu menyiapkan PDF di latar. Di HP, aplikasi yang
+  // dibuang ke latar bisa dibekukan tepat setelah PDF terunggah dan sebelum invoice_url disimpan:
+  // berkasnya ada di Storage tetapi tautan /i/:id menampilkan "tidak ditemukan". Saat kwitansi
+  // dibuka lagi, bila invoice sudah pernah dibuat namun invoice_url kosong dan berkasnya ada di
+  // Storage, simpan URL-nya (tidak membuat ulang apa pun).
+  const urlHealedRef = useRef(new Set());
+  useEffect(() => {
+    if (!isOpen || isPreviewLoading || isOneOff) return undefined;
+    const recapId = detailData?.id;
+    const rawDate = data?.recap_date;
+    if (!recapId || detailData?.invoice_url || !rawDate) return undefined;
+    if (urlHealedRef.current.has(recapId)) return undefined;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: rec } = await supabase
+          .from('invoice_records').select('id').eq('daily_recap_id', recapId).limit(1).maybeSingle();
+        if (!rec || cancelled) return;
+        const [yr, mo, dy] = rawDate.split('-');
+        const expectedName = `Kwitansi_${getPatientNameSlug()}_${dy}-${mo}-${yr.slice(2)}.pdf`;
+        const { data: files } = await supabase.storage.from('invoices').list('', { search: expectedName, limit: 5 });
+        if (cancelled || !files?.some((f) => f.name === expectedName)) return;
+        const { data: pub } = supabase.storage.from('invoices').getPublicUrl(expectedName);
+        const { error } = await supabase
+          .from('daily_recaps').update({ invoice_url: pub.publicUrl }).eq('id', recapId).is('invoice_url', null);
+        if (!error && !cancelled) setDetailData((prev) => (prev ? { ...prev, invoice_url: pub.publicUrl } : prev));
+      } catch (err) {
+        console.error('Gagal memulihkan invoice_url:', err);
+      } finally {
+        if (!cancelled) urlHealedRef.current.add(recapId);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, isPreviewLoading, isOneOff, detailData?.id, detailData?.invoice_url]);
+
   // ── Download PDF ──────────────────────────────────────────────────────────
   const handleDownloadPDF = async () => {
     setIsGenerating(true);
