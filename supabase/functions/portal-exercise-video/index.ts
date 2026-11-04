@@ -4,11 +4,13 @@
 // ada. Baru setelah itu dibuat tautan bertanda tangan 1 jam ke bucket privat exercise-videos.
 // Mode daftar (exercise_ids) mengembalikan tautan video + gambar sampul semua latihan dalam satu
 // panggilan, supaya halaman Latihan tidak memanggil fungsi ini sekali per kartu.
+// Foto ilustrasi (latihan tanpa video) dikembalikan sebagai items[kode].image dari bucket exercise-illustrations.
 // Sampul disimpan di posters/<kode>.jpg (dibuat saat Super Admin mengunggah video).
 // Skema: supabase/manual/9_portal_pasien_clinara.sql
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const BUCKET = "exercise-videos";
+const ILLUSTRATION_BUCKET = "exercise-illustrations";
 const TTL = 3600;
 const MAX_IDS = 50;
 
@@ -41,26 +43,37 @@ Deno.serve(async (req: Request) => {
       const ids = [...new Set(exercise_ids)].slice(0, MAX_IDS);
       if (!ids.every(validId)) return json({ error: "Permintaan tidak valid" }, 400);
 
-      const paths = await Promise.all(ids.map(async (id) => {
-        const { data, error } = await admin.rpc("portal_video_path", { p_session: session, p_exercise_id: id });
+      // Tiap latihan bisa punya video (+ sampul) dan/atau foto ilustrasi. Keduanya dicek terhadap program pasien.
+      const rpcPath = async (fn: string, id: string) => {
+        const { data, error } = await admin.rpc(fn, { p_session: session, p_exercise_id: id });
         return error || !data ? null : (data as string);
-      }));
-      const allowed = ids.filter((_, i) => paths[i]);
-      const items: Record<string, { url: string | null; poster: string | null }> = {};
-      if (allowed.length === 0) return json({ items });
-
-      const videoPaths = paths.filter(Boolean) as string[];
-      const [videos, posters] = await Promise.all([
-        storage.createSignedUrls(videoPaths, TTL),
-        storage.createSignedUrls(allowed.map(posterPath), TTL),
+      };
+      const [vPaths, iPaths] = await Promise.all([
+        Promise.all(ids.map((id) => rpcPath("portal_video_path", id))),
+        Promise.all(ids.map((id) => rpcPath("portal_illustration_path", id))),
       ]);
-      allowed.forEach((id, i) => {
-        const v = videos.data?.[i];
-        const p = posters.data?.[i];
-        items[id] = {
-          url: v && !v.error && v.signedUrl ? v.signedUrl : null,
-          poster: p && !p.error && p.signedUrl ? p.signedUrl : null,
-        };
+      type Item = { url: string | null; poster: string | null; image: string | null };
+      const items: Record<string, Item> = {};
+      const withVideo = ids.filter((_, i) => vPaths[i]);
+      const withImage = ids.filter((_, i) => iPaths[i]);
+      ids.forEach((id, i) => { if (vPaths[i] || iPaths[i]) items[id] = { url: null, poster: null, image: null }; });
+      if (Object.keys(items).length === 0) return json({ items });
+
+      const illusStorage = admin.storage.from(ILLUSTRATION_BUCKET);
+      const [videos, posters, images] = await Promise.all([
+        withVideo.length ? storage.createSignedUrls(withVideo.map((id) => vPaths[ids.indexOf(id)] as string), TTL) : null,
+        withVideo.length ? storage.createSignedUrls(withVideo.map(posterPath), TTL) : null,
+        withImage.length ? illusStorage.createSignedUrls(withImage.map((id) => iPaths[ids.indexOf(id)] as string), TTL) : null,
+      ]);
+      withVideo.forEach((id, i) => {
+        const v = videos?.data?.[i];
+        const p = posters?.data?.[i];
+        items[id].url = v && !v.error && v.signedUrl ? v.signedUrl : null;
+        items[id].poster = p && !p.error && p.signedUrl ? p.signedUrl : null;
+      });
+      withImage.forEach((id, i) => {
+        const m = images?.data?.[i];
+        items[id].image = m && !m.error && m.signedUrl ? m.signedUrl : null;
       });
       return json({ items });
     }
