@@ -15,6 +15,7 @@ import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { confirmAction } from '@/lib/confirmAction';
 import { parseQrisReportPdf } from '@/utils/bsiQrisReportParser';
 import { autoMatchQris, qrisPortionOfRecap, rankCandidates } from '@/utils/qrisMatcher';
+import { fetchRecapHandlerEvents } from '@/lib/recapCashier';
 
 // Catatan: komentar ini hanya untuk mengubah hash aset build (bukan perubahan fungsi).
 const formatRp = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
@@ -89,17 +90,12 @@ const AdminQrisReconciliation = () => {
       const { data: pts } = await supabase.from('patients').select('id, full_name').in('id', patientIds).eq('clinic_id', clinicId);
       (pts || []).forEach((p) => { patientMap[p.id] = p.full_name; });
     }
-    // Cadangan penanggung jawab: admin yang mengisi TTV recap (bila recap dibuat owner/non-admin).
-    const vitalByRecap = {};
+    // Kasir sebenarnya = admin yang mengisi TTV atau mengubah pembayaran recap (bukan sekadar pembuat booking).
     const recapIds = (recaps || []).map((r) => r.id);
-    if (recapIds.length) {
-      const { data: vitals } = await supabase.from('recap_vital_signs')
-        .select('recap_id, recorded_by, created_at').in('recap_id', recapIds).not('recorded_by', 'is', null).order('created_at');
-      (vitals || []).forEach((v) => { if (!vitalByRecap[v.recap_id]) vitalByRecap[v.recap_id] = v.recorded_by; });
-    }
+    const handlerEvents = await fetchRecapHandlerEvents(supabase, recapIds);
     const staffIds = [...new Set([
       ...(recaps || []).flatMap((r) => [r.cashier_id, r.created_by]),
-      ...Object.values(vitalByRecap),
+      ...Object.values(handlerEvents).flat().map((e) => e.userId),
     ].filter(Boolean))];
     const staff = {};
     if (staffIds.length) {
@@ -108,13 +104,10 @@ const AdminQrisReconciliation = () => {
     }
 
     return (recaps || []).map((r) => {
-      // Penanggung jawab = kasir (admin yang pertama kali menyimpan rekap); data lama pakai pembuat bila rolenya admin.
-      const creatorIsAdmin = ['admin', 'clinic_admin'].includes(staff[r.created_by]?.role);
-      const vitalBy = vitalByRecap[r.id];
-      const vitalIsAdmin = ['admin', 'clinic_admin'].includes(staff[vitalBy]?.role);
-      // Urutan: kasir tercatat -> admin yang mengisi TTV (yang melayani pasien) -> pembuat recap bila admin.
-      // Recap sering dibuat lebih awal oleh admin lain, jadi pembuat recap bukan penanda kasir yang andal.
-      const cashierId = r.cashier_id || (vitalIsAdmin ? vitalBy : null) || (creatorIsAdmin ? r.created_by : null);
+      // Urutan: kasir tercatat -> admin pertama yang mengisi TTV/mengubah pembayaran -> pembuat recap bila admin.
+      const isAdmin = (id) => ['admin', 'clinic_admin'].includes(staff[id]?.role);
+      const handler = (handlerEvents[r.id] || []).find((e) => isAdmin(e.userId))?.userId || null;
+      const cashierId = r.cashier_id || handler || (isAdmin(r.created_by) ? r.created_by : null);
       const payAt = r.end_time || r.start_time || r.created_at;
       return {
         recapId: r.id,

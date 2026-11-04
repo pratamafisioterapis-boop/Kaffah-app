@@ -20,6 +20,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { stripSignatureBackground } from '@/lib/signatureImage';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { kaffahServiceLine, kaffahSessionLabel } from '@/lib/kaffahInvoiceLine';
+import { fetchRecapHandlerEvents } from '@/lib/recapCashier';
 
 // Ukuran acuan A4 (210mm x 297mm) dalam px @96dpi — dipakai untuk menghitung
 // skala preview di layar sempit. Generasi PDF/print tetap memakai elemen asli
@@ -212,15 +213,18 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       }
       return null;
     };
-    // Urutan kasir: cashier_id -> admin yang mengisi TTV (yang melayani pasien) -> pembuat rekap bila admin.
+    // Urutan kasir: cashier_id -> admin pertama yang mengisi TTV/mengubah pembayaran -> pembuat rekap bila admin.
     // Rekap sering dibuat lebih awal oleh admin lain, jadi pembuat rekap bukan penanda kasir yang andal.
     let creator = null;
     if (recap.cashier_id) {
       creator = await lookupCashier(recap.cashier_id);
     } else {
-      const { data: vital } = await supabase.from('recap_vital_signs')
-        .select('recorded_by').eq('recap_id', recap.id).not('recorded_by', 'is', null).order('created_at').limit(1).maybeSingle();
-      creator = (await lookupCashier(vital?.recorded_by)) || (await lookupCashier(recap.created_by));
+      const events = (await fetchRecapHandlerEvents(supabase, [recap.id]))[recap.id] || [];
+      for (const e of events) {
+        creator = await lookupCashier(e.userId);
+        if (creator) break;
+      }
+      if (!creator) creator = await lookupCashier(recap.created_by);
     }
     if (!creator && !recap.cashier_id && userDetails?.id && isAdminRole(userDetails.role)) {
       const { error: claimErr } = await supabase
