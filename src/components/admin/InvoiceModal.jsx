@@ -28,7 +28,7 @@ import { fetchRecapHandlerEvents } from '@/lib/recapCashier';
 const INVOICE_BASE_WIDTH  = 794;
 // PDF desain baru yang dibuat sebelum waktu ini memakai tampilan lama (teks turun / stempel terlalu atas)
 // dan dibuat ulang diam-diam saat invoice dibuka. Naikkan waktu ini bila tampilan PDF diubah lagi.
-const PDF_RENDER_FIXED_AT = new Date('2026-11-04T11:45:00Z');
+const PDF_RENDER_FIXED_AT = new Date('2026-11-04T23:50:00Z');
 // Kasir di kwitansi kini diambil dari admin pengisi TTV (bukan pembuat rekap). PDF tersimpan
 // untuk rekap tanggal 4 Nov 2026 ke atas yang dibuat sebelum waktu ini dibuat ulang sekali
 // (berkas dan tautan sama) saat invoice dibuka admin, supaya nama/tanda tangan kasir ikut benar.
