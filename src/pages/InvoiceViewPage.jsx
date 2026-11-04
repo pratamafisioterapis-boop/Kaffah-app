@@ -3,14 +3,16 @@ import { useParams } from 'react-router-dom';
 // eslint-disable-next-line import/no-unresolved
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Download, ExternalLink, Loader2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Download, Eye, Loader2, AlertTriangle } from 'lucide-react';
 
 const InvoiceViewPage = () => {
   const { recapId } = useParams();
   const [status, setStatus] = useState('loading'); // loading | ready | error
   const [invoiceUrl, setInvoiceUrl] = useState(null);
   const [clinicName, setClinicName] = useState('');
+  const [view, setView] = useState('choose'); // choose | preview
   const [preview, setPreview] = useState('idle'); // idle | loading | ready | failed
+  const [downloading, setDownloading] = useState(false);
   const pagesRef = useRef(null);
   const blobRef = useRef(null);
 
@@ -48,10 +50,18 @@ const InvoiceViewPage = () => {
     return () => { cancelled = true; };
   }, [recapId]);
 
-  // Pratinjau di halaman: PDF digambar ke canvas lewat pdf.js (viewer PDF bawaan browser
-  // ponsel sering gagal menampilkan PDF di dalam halaman). Bila gagal, tombol buka tetap ada.
+  const loadBlob = async () => {
+    if (blobRef.current) return blobRef.current;
+    const res = await fetch(invoiceUrl);
+    if (!res.ok) throw new Error('fetch');
+    blobRef.current = new Blob([await res.arrayBuffer()], { type: 'application/pdf' });
+    return blobRef.current;
+  };
+
+  // Pratinjau hanya dimuat saat pasien memilihnya: PDF digambar ke canvas lewat pdf.js
+  // (viewer PDF bawaan browser ponsel sering gagal di dalam halaman).
   useEffect(() => {
-    if (status !== 'ready' || !invoiceUrl) return undefined;
+    if (view !== 'preview' || !invoiceUrl) return undefined;
     let cancelled = false;
     let pdfDoc = null;
     setPreview('loading');
@@ -60,13 +70,9 @@ const InvoiceViewPage = () => {
       try {
         const pdfjsLib = await import('pdfjs-dist');
         pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-
-        const res = await fetch(invoiceUrl);
-        if (!res.ok) throw new Error('fetch');
-        const buffer = await res.arrayBuffer();
+        const blob = await loadBlob();
         if (cancelled) return;
-        blobRef.current = new Blob([buffer], { type: 'application/pdf' });
-        pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+        pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
         if (cancelled || !pagesRef.current) return;
 
         const container = pagesRef.current;
@@ -84,8 +90,8 @@ const InvoiceViewPage = () => {
           canvas.height = Math.floor(viewport.height * ratio);
           canvas.style.width = `${viewport.width}px`;
           canvas.style.height = `${viewport.height}px`;
-          canvas.className = 'block bg-white border border-stone-200';
-          if (n > 1) canvas.style.marginTop = '12px';
+          canvas.className = 'block bg-white';
+          if (n > 1) canvas.style.marginTop = '8px';
           container.appendChild(canvas);
           await page.render({
             canvasContext: canvas.getContext('2d'),
@@ -103,26 +109,70 @@ const InvoiceViewPage = () => {
       cancelled = true;
       pdfDoc?.destroy();
     };
-  }, [status, invoiceUrl]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, invoiceUrl]);
 
-  const handleDownload = (e) => {
-    if (!blobRef.current) return; // biarkan tautan terbuka di tab baru
-    e.preventDefault();
-    const href = URL.createObjectURL(blobRef.current);
-    const a = document.createElement('a');
-    a.href = href;
-    a.download = 'Kwitansi-Kaffah-Physiotherapy.pdf';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(href), 10000);
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const blob = await loadBlob();
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = href;
+      a.download = 'Kwitansi-Kaffah-Physiotherapy.pdf';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(href), 10000);
+    } catch {
+      window.open(invoiceUrl, '_blank', 'noopener,noreferrer'); // cadangan bila unduhan langsung gagal
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const btn = 'flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900';
+  const btnPrimary = `${btn} bg-stone-900 text-white hover:bg-stone-800 active:bg-stone-950 disabled:opacity-60`;
+  const btnSecondary = `${btn} border border-stone-400 text-stone-900 hover:bg-stone-200`;
+  const downloadLabel = downloading ? 'Menyiapkan…' : 'Unduh PDF';
+
+  // Mode pratinjau: hanya dokumen, tanpa header.
+  if (status === 'ready' && view === 'preview') {
+    return (
+      <main className="min-h-screen bg-stone-200">
+        <div className="mx-auto max-w-xl px-2 pt-2 pb-24">
+          {preview === 'loading' && (
+            <div className="flex items-center justify-center gap-3 py-24 text-stone-600" role="status">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <p className="text-sm">Memuat pratinjau…</p>
+            </div>
+          )}
+          {preview === 'failed' && (
+            <p className="px-3 py-16 text-center text-sm leading-relaxed text-stone-600">
+              Pratinjau tidak dapat ditampilkan di perangkat ini. Silakan buka atau unduh kwitansi.
+            </p>
+          )}
+          <div ref={pagesRef} className={preview === 'failed' ? 'hidden' : ''} />
+        </div>
+        <div className="fixed inset-x-0 bottom-0 border-t border-stone-300 bg-stone-100/95 backdrop-blur px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="mx-auto flex max-w-xl gap-3">
+            <button type="button" onClick={() => setView('choose')} className={`${btnSecondary} flex-1`}>
+              <ArrowLeft className="w-4 h-4" />
+              Kembali
+            </button>
+            <button type="button" onClick={handleDownload} disabled={downloading} className={`${btnPrimary} flex-1`}>
+              <Download className="w-4 h-4" />
+              {downloadLabel}
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <main className="min-h-screen bg-stone-100 flex flex-col items-center">
-      <div className="w-full max-w-xl px-5 pt-8 pb-28">
+    <main className="min-h-screen bg-stone-100 flex flex-col items-center justify-center px-5 py-10">
+      <div className="w-full max-w-sm">
         <header className="flex items-center gap-3">
           <img src="/kaffah-logo.png" alt="Kaffah Physiotherapy" className="h-11 w-11 object-contain" />
           <div>
@@ -152,46 +202,23 @@ const InvoiceViewPage = () => {
 
           {status === 'ready' && (
             <>
-              {preview === 'loading' && (
-                <div className="flex items-center gap-3 py-10 justify-center text-stone-600" role="status">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <p className="text-sm">Memuat pratinjau…</p>
-                </div>
-              )}
-              {preview === 'failed' && (
-                <p className="text-sm leading-relaxed text-stone-600">
-                  Pratinjau tidak dapat ditampilkan di perangkat ini. Silakan buka atau unduh kwitansi melalui tombol di bawah.
-                </p>
-              )}
-              <div ref={pagesRef} className={preview === 'failed' ? 'hidden' : ''} />
+              <p className="text-sm leading-relaxed text-stone-600">
+                Kwitansi Anda sudah siap. Pilih untuk melihat pratinjau atau langsung mengunduhnya.
+              </p>
+              <div className="mt-5 flex flex-col gap-3">
+                <button type="button" onClick={() => setView('preview')} className={btnSecondary}>
+                  <Eye className="w-4 h-4" />
+                  Lihat pratinjau
+                </button>
+                <button type="button" onClick={handleDownload} disabled={downloading} className={btnPrimary}>
+                  <Download className="w-4 h-4" />
+                  {downloadLabel}
+                </button>
+              </div>
             </>
           )}
         </div>
       </div>
-
-      {status === 'ready' && (
-        <div className="fixed inset-x-0 bottom-0 border-t border-stone-300 bg-stone-100/95 backdrop-blur px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <div className="mx-auto flex max-w-xl gap-3">
-            <a
-              href={invoiceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`${btn} flex-1 border border-stone-400 text-stone-900 hover:bg-stone-200`}
-            >
-              <ExternalLink className="w-4 h-4" />
-              Buka
-            </a>
-            <a
-              href={invoiceUrl}
-              onClick={handleDownload}
-              className={`${btn} flex-1 bg-stone-900 text-white hover:bg-stone-800 active:bg-stone-950`}
-            >
-              <Download className="w-4 h-4" />
-              Unduh PDF
-            </a>
-          </div>
-        </div>
-      )}
     </main>
   );
 };
