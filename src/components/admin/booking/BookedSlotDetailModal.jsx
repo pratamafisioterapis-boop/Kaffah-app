@@ -20,6 +20,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { formatTimeIndonesia } from '@/lib/utils';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import PrepayPackagePanel from '@/components/admin/PrepayPackagePanel';
+import OwnerDiscountPanel from '@/components/admin/booking/OwnerDiscountPanel';
 
 const BookedSlotDetailModal = ({ 
   appointment, 
@@ -333,6 +334,7 @@ useEffect(() => {
         </div>
 
         <PrepayPackagePanel appointment={appointment} onChanged={onSuccess} />
+        <OwnerDiscountPanel appointment={appointment} onChanged={onSuccess} />
       </div>
 
 
