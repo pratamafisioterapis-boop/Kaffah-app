@@ -414,7 +414,7 @@ const AdminQrisReconciliation = () => {
             const hintOf = (c) => {
               const parts = [];
               if (c.name > 0) parts.push('nama mirip');
-              if (Number.isFinite(c.gap) && c.gap <= 60) parts.push(`selisih ${c.gap} mnt`);
+              if (Number.isFinite(c.gap) && c.gap <= 180) parts.push(`selisih ${c.gap} mnt`);
               return parts.join(' · ');
             };
             return (

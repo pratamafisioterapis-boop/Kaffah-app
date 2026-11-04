@@ -82,8 +82,8 @@ export const qrisPortionOfRecap = (recap, isQrisMethod) => {
   return isQrisMethod(recap.payment_method) ? Number(recap.amount || 0) : 0;
 };
 
-const NEAR_MIN = 60; // jam dianggap "dekat" bila selisih <= 60 menit
-const CLEAR_MARGIN = 15; // pemenang harus unggul >= 15 menit dari runner-up
+const NEAR_MIN = 180; // pasien bisa bayar lebih awal atau jauh setelah slot: dianggap "dekat" bila selisih <= 3 jam
+const CLEAR_MARGIN = 10; // pemenang harus unggul >= 10 menit dari runner-up
 
 // Skor satu pasangan transaksi–pembayaran.
 export const scorePair = (t, p) => ({ name: nameOverlap(t.customer_name, p.name), gap: timeGap(t, p) });
