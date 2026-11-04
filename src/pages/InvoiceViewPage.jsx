@@ -131,37 +131,37 @@ const InvoiceViewPage = () => {
     }
   };
 
-  const btn = 'flex items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900';
-  const btnPrimary = `${btn} bg-stone-900 text-white hover:bg-stone-800 active:bg-stone-950 disabled:opacity-60`;
-  const btnSecondary = `${btn} border border-stone-400 text-stone-900 hover:bg-stone-200`;
+  const btn = 'flex w-full items-center justify-center gap-2.5 rounded-2xl min-h-[58px] px-4 text-base font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0a3d70] disabled:opacity-60';
+  const btnNavy = `${btn} bg-[#0a3d70] text-white active:bg-[#072c52]`;
+  const btnSoft = `${btn} bg-[#e6f1f9] text-[#0a3d70] active:bg-[#d4e6f3]`;
   const downloadLabel = downloading ? 'Menyiapkan…' : 'Unduh PDF';
 
   // Mode pratinjau: hanya dokumen, tanpa header.
   if (status === 'ready' && view === 'preview') {
     return (
-      <main className="min-h-screen bg-stone-200">
-        <div className="mx-auto max-w-xl px-2 pt-2 pb-24">
+      <main className="min-h-[100dvh] bg-[#e4ecf2]">
+        <div className="mx-auto max-w-xl px-2 pt-2 pb-28">
           {preview === 'loading' && (
-            <div className="flex items-center justify-center gap-3 py-24 text-stone-600" role="status">
-              <Loader2 className="w-4 h-4 animate-spin" />
+            <div className="flex items-center justify-center gap-3 py-24 text-slate-600" role="status">
+              <Loader2 className="w-5 h-5 animate-spin" />
               <p className="text-sm">Memuat pratinjau…</p>
             </div>
           )}
           {preview === 'failed' && (
-            <p className="px-3 py-16 text-center text-sm leading-relaxed text-stone-600">
-              Pratinjau tidak dapat ditampilkan di perangkat ini. Silakan buka atau unduh kwitansi.
+            <p className="px-3 py-16 text-center text-sm leading-relaxed text-slate-600">
+              Pratinjau tidak dapat ditampilkan di perangkat ini. Silakan unduh kwitansi.
             </p>
           )}
           <div ref={pagesRef} className={preview === 'failed' ? 'hidden' : ''} />
         </div>
-        <div className="fixed inset-x-0 bottom-0 border-t border-stone-300 bg-stone-100/95 backdrop-blur px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="fixed inset-x-0 bottom-0 bg-[#0a3d70] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div className="mx-auto flex max-w-xl gap-3">
-            <button type="button" onClick={() => setView('choose')} className={`${btnSecondary} flex-1`}>
-              <ArrowLeft className="w-4 h-4" />
+            <button type="button" onClick={() => setView('choose')} className={`${btn} bg-white/15 text-white active:bg-white/25`}>
+              <ArrowLeft className="w-5 h-5" />
               Kembali
             </button>
-            <button type="button" onClick={handleDownload} disabled={downloading} className={`${btnPrimary} flex-1`}>
-              <Download className="w-4 h-4" />
+            <button type="button" onClick={handleDownload} disabled={downloading} className={`${btn} bg-white text-[#0a3d70] active:bg-slate-200`}>
+              <Download className="w-5 h-5" />
               {downloadLabel}
             </button>
           </div>
@@ -171,54 +171,52 @@ const InvoiceViewPage = () => {
   }
 
   return (
-    <main className="min-h-screen bg-stone-100 flex flex-col items-center justify-center px-5 py-10">
-      <div className="w-full max-w-sm">
-        <header className="flex items-center gap-3">
-          <img src="/kaffah-logo.png" alt="Kaffah Physiotherapy" className="h-11 w-11 object-contain" />
-          <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-stone-500">
-              {clinicName || 'Kaffah Physiotherapy'}
-            </p>
-            <h1 className="text-xl font-semibold leading-tight text-stone-900">Kwitansi terapi</h1>
-          </div>
-        </header>
+    <main className="min-h-[100dvh] bg-[#0a3d70] text-white flex flex-col">
+      <section className="flex-1 flex flex-col items-center justify-center gap-3.5 px-6 pt-10 pb-4 text-center">
+        <div className="grid aspect-square w-[48%] max-w-[210px] place-items-center rounded-full bg-white ring-[9px] ring-white/10">
+          <img src="/kaffah-logo.png" alt="Kaffah Physiotherapy" className="w-[66%] h-auto" />
+        </div>
+        <p className="mt-2 text-xs font-medium uppercase tracking-[0.16em] text-[#9fd5f3]">
+          {clinicName || 'Kaffah Physiotherapy'}
+        </p>
+        <h1 className="text-3xl font-bold leading-tight tracking-tight">Kwitansi terapi</h1>
+      </section>
 
-        <div className="mt-5 border-t border-stone-900 pt-5">
+      <section className="rounded-t-[28px] bg-white px-4 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-slate-800">
+        <div className="mx-auto w-full max-w-md">
           {status === 'loading' && (
-            <div className="flex items-center gap-3 text-stone-600" role="status">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <p className="text-sm">Menyiapkan kwitansi Anda…</p>
+            <div className="flex items-center justify-center gap-3 py-8 text-slate-600" role="status">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <p className="text-base">Menyiapkan kwitansi Anda…</p>
             </div>
           )}
 
           {status === 'error' && (
-            <div className="flex items-start gap-3 text-stone-700" role="alert">
-              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-red-700" />
-              <p className="text-sm leading-relaxed">
+            <div className="flex items-start gap-3 py-4 text-slate-700" role="alert">
+              <AlertTriangle className="w-5 h-5 mt-0.5 shrink-0 text-red-700" />
+              <p className="text-base leading-relaxed">
                 Kwitansi tidak ditemukan atau tautan sudah tidak berlaku. Hubungi klinik untuk meminta tautan baru.
               </p>
             </div>
           )}
 
           {status === 'ready' && (
-            <>
-              <p className="text-sm leading-relaxed text-stone-600">
+            <div className="flex flex-col gap-3">
+              <p className="mb-1 text-center text-base leading-relaxed text-slate-600">
                 Kwitansi Anda sudah siap. Pilih untuk melihat pratinjau atau langsung mengunduhnya.
               </p>
-              <div className="mt-5 flex flex-col gap-3">
-                <button type="button" onClick={() => setView('preview')} className={btnSecondary}>
-                  <Eye className="w-4 h-4" />
-                  Lihat pratinjau
-                </button>
-                <button type="button" onClick={handleDownload} disabled={downloading} className={btnPrimary}>
-                  <Download className="w-4 h-4" />
-                  {downloadLabel}
-                </button>
-              </div>
-            </>
+              <button type="button" onClick={() => setView('preview')} className={btnNavy}>
+                <Eye className="w-5 h-5" />
+                Lihat pratinjau
+              </button>
+              <button type="button" onClick={handleDownload} disabled={downloading} className={btnSoft}>
+                <Download className="w-5 h-5" />
+                {downloadLabel}
+              </button>
+            </div>
           )}
         </div>
-      </div>
+      </section>
     </main>
   );
 };
