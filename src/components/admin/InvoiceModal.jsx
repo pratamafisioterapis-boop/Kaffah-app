@@ -28,7 +28,7 @@ import { fetchRecapHandlerEvents } from '@/lib/recapCashier';
 const INVOICE_BASE_WIDTH  = 794;
 // PDF desain baru yang dibuat sebelum waktu ini memakai tampilan lama (teks turun / stempel terlalu atas)
 // dan dibuat ulang diam-diam saat invoice dibuka. Naikkan waktu ini bila tampilan PDF diubah lagi.
-const PDF_RENDER_FIXED_AT = new Date('2026-11-04T23:50:00Z');
+const PDF_RENDER_FIXED_AT = new Date('2026-11-05T00:15:00Z');
 // Kasir di kwitansi kini diambil dari admin pengisi TTV (bukan pembuat rekap). PDF tersimpan
 // untuk rekap tanggal 4 Nov 2026 ke atas yang dibuat sebelum waktu ini dibuat ulang sekali
 // (berkas dan tautan sama) saat invoice dibuka admin, supaya nama/tanda tangan kasir ikut benar.
@@ -387,8 +387,37 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     const finalHeight = Math.min(pdfImgH, pdfHeight);
 
     pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, finalHeight);
+    // Simpan kanvas untuk gambar pratinjau tautan WhatsApp (lihat buildPreviewBlob / uploadPDF).
+    pdf.__previewCanvas = canvas;
     return pdf;
   };
+
+  // ── Helper: gambar pratinjau tautan (1200x630) ─────────────────────────────
+  // WhatsApp/Telegram menampilkan og:image sebagai kartu lebar. Halaman A4 ditaruh utuh di tengah
+  // latar biru muda supaya terlihat jelas sebagai kwitansi, bukan potongan atasnya saja.
+  const buildPreviewBlob = (pageCanvas) => new Promise((resolve) => {
+    try {
+      const W = 1200;
+      const H = 630;
+      const card = document.createElement('canvas');
+      card.width = W;
+      card.height = H;
+      const ctx = card.getContext('2d');
+      ctx.fillStyle = '#e4ecf2';
+      ctx.fillRect(0, 0, W, H);
+      const margin = 28;
+      const ph = H - margin * 2;
+      const pw = Math.round((pageCanvas.width * ph) / pageCanvas.height);
+      const x = Math.round((W - pw) / 2);
+      ctx.shadowColor = 'rgba(10, 61, 112, 0.25)';
+      ctx.shadowBlur = 24;
+      ctx.shadowOffsetY = 6;
+      ctx.drawImage(pageCanvas, x, margin, pw, ph);
+      card.toBlob((blob) => resolve(blob), 'image/jpeg', 0.85);
+    } catch {
+      resolve(null);
+    }
+  });
 
   // ── Helper: Medical Record Number ────────────────────────────────────────
   // FIX: medical_record_number ada di data.patients (hasil join di getDailyRecaps)
@@ -439,6 +468,23 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       .upload(fileName, blob, { contentType: 'application/pdf', upsert: true, ...(cacheControl ? { cacheControl } : {}) });
 
     if (uploadError) throw new Error(`Upload gagal: ${uploadError.message}`);
+
+    // Gambar pratinjau tautan disimpan di samping PDF (nama sama, .jpg). Gagal di sini tidak
+    // boleh menggagalkan pengiriman kwitansi, jadi hanya dicatat.
+    if (pdf.__previewCanvas && /\.pdf$/i.test(fileName) && !fileName.startsWith('oneoff/')) {
+      try {
+        const previewBlob = await buildPreviewBlob(pdf.__previewCanvas);
+        if (previewBlob) {
+          await supabase.storage.from('invoices').upload(
+            fileName.replace(/\.pdf$/i, '.jpg'),
+            previewBlob,
+            { contentType: 'image/jpeg', upsert: true, ...(cacheControl ? { cacheControl } : {}) },
+          );
+        }
+      } catch (previewError) {
+        console.error('Gagal mengunggah gambar pratinjau tautan:', previewError);
+      }
+    }
 
     const { data: publicUrlData } = supabase
       .storage

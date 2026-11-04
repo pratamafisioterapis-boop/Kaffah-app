@@ -1,6 +1,17 @@
 {
   "rewrites": [
     {
+      "source": "/i/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|Slackbot|LinkedInBot|Discordbot|Applebot|Googlebot).*"
+        }
+      ],
+      "destination": "/api/invoice-og?id=:id"
+    },
+    {
       "source": "/r/:id([a-z0-9]{6,16})",
       "destination": "https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/invoices/resume-medis/:id.pdf"
     },
