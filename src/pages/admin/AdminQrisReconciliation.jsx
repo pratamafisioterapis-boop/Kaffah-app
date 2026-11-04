@@ -358,7 +358,7 @@ const AdminQrisReconciliation = () => {
         <div className="flex items-center gap-1">
           <Button size="icon" variant="outline" onClick={() => setDate(shiftDate(date, -1))} aria-label="Hari sebelumnya"><ChevronLeft className="w-4 h-4" /></Button>
           <label className="relative cursor-pointer">
-            <span className="block px-3 py-1.5 text-lg font-bold text-slate-900 hover:bg-slate-100 rounded-md">{fmtLong(date)}</span>
+            <span className="block px-2 sm:px-3 py-1.5 text-base sm:text-lg font-bold text-slate-900 hover:bg-slate-100 rounded-md leading-tight">{fmtLong(date)}</span>
             <input type="date" value={date} max={todayStr()} onChange={(e) => e.target.value && setDate(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full" />
           </label>
           <Button size="icon" variant="outline" onClick={() => setDate(shiftDate(date, 1))} disabled={date >= todayStr()} aria-label="Hari berikutnya"><ChevronRight className="w-4 h-4" /></Button>
@@ -447,33 +447,39 @@ const AdminQrisReconciliation = () => {
             const open = openAdmins[g.id] ?? x > 0;
             return (
               <div key={g.id} className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                <button type="button" onClick={() => setOpenAdmins((s) => ({ ...s, [g.id]: !open }))} className="w-full flex items-center justify-between gap-3 p-3 text-left hover:bg-slate-50">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <User className="w-4 h-4 text-slate-400 shrink-0" />
-                    <span className="font-semibold truncate">{g.name}</span>
-                    <span className="text-xs text-slate-500">{g.items.length} pasien QRIS</span>
+                <button type="button" onClick={() => setOpenAdmins((s) => ({ ...s, [g.id]: !open }))} className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 text-left hover:bg-slate-50">
+                  <div className="flex items-start gap-2 min-w-0">
+                    <User className="w-4 h-4 text-slate-400 shrink-0 mt-1" />
+                    <div className="min-w-0">
+                      <div className="font-semibold break-words leading-snug">{g.name}</div>
+                      <div className="text-xs text-slate-500">{g.items.length} pasien QRIS</div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {m > 0 && <Badge className={STATUS.matched.cls}>{m} cocok</Badge>}
-                    {p > 0 && <Badge className={STATUS.pending.cls}>{p} menunggu</Badge>}
-                    {x > 0 && <Badge className={STATUS.missing.cls}>{x} bermasalah</Badge>}
-                    <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+                  <div className="flex items-center justify-between sm:justify-end gap-1.5 pl-6 sm:pl-0">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {m > 0 && <Badge className={STATUS.matched.cls}>{m} cocok</Badge>}
+                      {p > 0 && <Badge className={STATUS.pending.cls}>{p} menunggu</Badge>}
+                      {x > 0 && <Badge className={STATUS.missing.cls}>{x} bermasalah</Badge>}
+                    </div>
+                    <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
                   </div>
                 </button>
                 {open && (
                   <div className="border-t border-slate-100 divide-y divide-slate-100">
                     {g.items.map((r) => (
-                      <div key={r.recapId} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
+                      <div key={r.recapId} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-3 px-3 py-2.5 text-sm">
                         <div className="min-w-0">
-                          <div className="font-medium truncate">{r.name}</div>
-                          <div className="text-xs text-slate-400 truncate">
+                          <div className="font-medium break-words leading-snug">{r.name}</div>
+                          <div className="text-xs text-slate-400 break-words">
                             {r.trx ? `${r.trx.customer_name} · ${r.trx.issuer} · ${r.trx.trx_time}${r.trx.match_method === 'manual' ? ' · manual' : ''}` : (r.time ? `Sesi ${r.time}` : '')}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="font-semibold">{formatRp(r.amount)}</span>
-                          <Badge className={STATUS[r.status].cls}>{STATUS[r.status].label}</Badge>
-                          {r.trx && <Button size="icon" variant="ghost" className="h-7 w-7" title="Lepas pencocokan" onClick={() => setMatch(r.trx.id, null)}><Unlink className="w-3.5 h-3.5" /></Button>}
+                        <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+                          <span className="font-semibold tabular-nums">{formatRp(r.amount)}</span>
+                          <div className="flex items-center gap-1.5">
+                            <Badge className={STATUS[r.status].cls}>{STATUS[r.status].label}</Badge>
+                            {r.trx && <Button size="icon" variant="ghost" className="h-8 w-8" title="Lepas pencocokan" aria-label="Lepas pencocokan" onClick={() => setMatch(r.trx.id, null)}><Unlink className="w-4 h-4" /></Button>}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -491,15 +497,18 @@ const AdminQrisReconciliation = () => {
           <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Riwayat unggahan</h2>
           <div className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100">
             {day.uploads.map((u) => (
-              <div key={u.id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span className="truncate">
-                    <b>{fmtClock(u.created_at)}</b> oleh {day.userNames[u.uploaded_by] || 'admin'} · {u.new_count} transaksi baru
-                    {u.report_generated_at ? <span className="text-slate-400"> · laporan jam {fmtClock(u.report_generated_at)}</span> : null}
-                  </span>
+              <div key={u.id} className="flex items-start justify-between gap-2 px-3 py-2.5 text-sm">
+                <div className="flex items-start gap-2 min-w-0">
+                  <Clock className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <div className="leading-snug"><b>{fmtClock(u.created_at)}</b> oleh {day.userNames[u.uploaded_by] || 'admin'}</div>
+                    <div className="text-xs text-slate-500 break-words">
+                      {u.new_count} transaksi baru
+                      {u.report_generated_at ? <span className="text-slate-400"> · laporan jam {fmtClock(u.report_generated_at)}</span> : null}
+                    </div>
+                  </div>
                 </div>
-                <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500" title="Hapus unggahan ini" onClick={() => deleteUpload(u)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0 text-red-500" title="Hapus unggahan ini" aria-label="Hapus unggahan ini" onClick={() => deleteUpload(u)}><Trash2 className="w-4 h-4" /></Button>
               </div>
             ))}
           </div>
