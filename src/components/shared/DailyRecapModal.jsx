@@ -1742,6 +1742,15 @@ setFormData({
                                         <Label className="block whitespace-nowrap">Nominal (Rp)</Label>
                                         <Input type="number" value={sfEdit && sfFinalAmount != null ? sfFinalAmount : (formData.amount ?? '')} onChange={e => handleChange('amount', e.target.value)} placeholder="0" disabled={sfActive || isPackageSessionLocked || (isKwitansi && invoiceItems.length > 0)}/>
                                         {sfEdit && sfFinalAmount == null && quote?.error && <p className="text-[11px] text-red-600">{quote.error}</p>}
+                                        {sfEdit && (Number(quote?.nebulizer_mask) > 0 || Number(quote?.nebulizer_drug) > 0) && (
+                                            <p className="text-[11px] text-slate-500">
+                                                Termasuk nebulizer dari klinik:{' '}
+                                                {[
+                                                    Number(quote.nebulizer_mask) > 0 && `masker Rp ${Number(quote.nebulizer_mask).toLocaleString('id-ID')}`,
+                                                    Number(quote.nebulizer_drug) > 0 && `obat Rp ${Number(quote.nebulizer_drug).toLocaleString('id-ID')}`,
+                                                ].filter(Boolean).join(' + ')}
+                                            </p>
+                                        )}
                                     </div>
                                     <div className="space-y-1 min-w-0">
                                         <Label className="block whitespace-nowrap">Metode Pembayaran{parseFloat(formData.amount) > 0 && !useSplitPayment && formData.special_type !== 'free' && <span className="text-red-500"> *</span>}</Label>

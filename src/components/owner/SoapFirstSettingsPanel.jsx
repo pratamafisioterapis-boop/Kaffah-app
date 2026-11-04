@@ -55,6 +55,8 @@ const SoapFirstSettingsPanel = () => {
         incentive_grace_minutes: Number(form.incentive_grace_minutes) || 0,
         reminder_after_minutes: Number(form.reminder_after_minutes) || 0,
         two_complaint_package_surcharge: Number(form.two_complaint_package_surcharge) || 0,
+        nebulizer_mask_price: Math.max(Number(form.nebulizer_mask_price) || 0, 0),
+        nebulizer_drug_price: Math.max(Number(form.nebulizer_drug_price) || 0, 0),
         updated_at: new Date().toISOString(),
         updated_by: userDetails?.id || null,
       }).eq('clinic_id', clinicId);
@@ -128,6 +130,16 @@ const SoapFirstSettingsPanel = () => {
             <div className="space-y-1">
               <Label>Tambahan paket 2 keluhan (Rp per sesi)</Label>
               <Input type="number" value={num(form.two_complaint_package_surcharge)} onChange={(e) => setF('two_complaint_package_surcharge', e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Harga masker nebulizer (Rp)</Label>
+              <Input type="number" min="0" value={num(form.nebulizer_mask_price)} onChange={(e) => setF('nebulizer_mask_price', e.target.value)} />
+              <p className="text-[11px] text-slate-500">Otomatis ditambahkan ke nominal Rekap Harian bila terapis memilih masker dari klinik di SOAP.</p>
+            </div>
+            <div className="space-y-1">
+              <Label>Harga obat nebulizer (Rp)</Label>
+              <Input type="number" min="0" value={num(form.nebulizer_drug_price)} onChange={(e) => setF('nebulizer_drug_price', e.target.value)} />
+              <p className="text-[11px] text-slate-500">Otomatis ditambahkan ke nominal Rekap Harian bila terapis memilih obat dari klinik di SOAP.</p>
             </div>
             <div className="space-y-1">
               <Label>Toleransi SOAP setelah slot berakhir (menit)</Label>

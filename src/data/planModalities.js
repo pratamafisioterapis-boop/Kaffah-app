@@ -6,6 +6,9 @@ export const PHASE_TITLES = ['Fase 1 - Awal', 'Fase 2 - Menengah', 'Fase 3 - Lan
 // Pilihan yang harus selalu tersedia walau belum ada di database.
 export const REQUIRED_MANUAL_OPTIONS = ['Dry needling'];
 
+// Modalitas yang memunculkan pilihan perlengkapan (masker & obat dari klinik) dan dibebankan ke Rekap Harian.
+export const NEBULIZER_OPTION = 'Nebulizer';
+
 // Gabungkan latihan beberapa diagnosa per fase (tanpa duplikat, urutan terjaga).
 export const mergePlanPhases = (diagnosisLabels, byDiagnosis) => {
   const phases = [[], [], []];
@@ -28,6 +31,10 @@ export const buildPlanText = (data, phases, lib) => {
   const lines = [];
   if (data.epa?.length) lines.push(`Modalitas elektrofisis: ${data.epa.map((n) => withDose(n, data.dose?.[n])).join(', ')}`);
   if (data.manual?.length) lines.push(`Manual therapy: ${data.manual.map((n) => withDose(n, data.dose?.[n])).join(', ')}`);
+  if (data.epa?.includes(NEBULIZER_OPTION)) {
+    const supplies = [data.nebulizer?.mask && 'masker dari klinik', data.nebulizer?.drug && 'obat nebulizer dari klinik'].filter(Boolean);
+    if (supplies.length) lines.push(`Perlengkapan nebulizer: ${supplies.join(', ')}`);
+  }
   const doseOf = (id) => data.exDose?.[id]?.trim() || lib[id].d;
   const fmt = (id) => (doseOf(id) ? `${lib[id].n} (${doseOf(id)})` : lib[id].n);
   const inPhase = new Set(phases.flat());

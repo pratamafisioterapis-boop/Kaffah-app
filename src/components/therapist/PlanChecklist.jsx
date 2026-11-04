@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { getPlanForDiagnoses, getPlanOptions, getPlanExercisesByIds, searchPlanExercises } from '@/lib/api';
-import { PHASE_TITLES, REQUIRED_MANUAL_OPTIONS, mergePlanPhases, buildPlanText } from '@/data/planModalities';
+import { PHASE_TITLES, REQUIRED_MANUAL_OPTIONS, NEBULIZER_OPTION, mergePlanPhases, buildPlanText } from '@/data/planModalities';
 import GoalTreatment from '@/components/therapist/GoalTreatment';
 
 const VIDEO_BUCKET = 'exercise-videos';
@@ -16,7 +16,7 @@ const VideoTag = ({ has }) => (has
   ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700"><Film className="h-3 w-3" /> Ada video</span>
   : <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500"><VideoOff className="h-3 w-3" /> Belum ada video</span>);
 
-const EMPTY = { epa: [], manual: [], dose: {}, exercises: {}, exDose: {}, notes: '' };
+const EMPTY = { epa: [], manual: [], dose: {}, nebulizer: {}, exercises: {}, exDose: {}, notes: '' };
 
 const PlanCard = ({ title, count, open, onToggleOpen, addLabel = 'Tambah', children, picker }) => (
   <section className="rounded-app-lg border border-slate-200 bg-white">
@@ -44,7 +44,7 @@ const PlanCard = ({ title, count, open, onToggleOpen, addLabel = 'Tambah', child
 
 const EmptyHint = ({ children }) => <p className="rounded-app border border-dashed border-slate-200 px-3 py-3 text-center text-xs text-slate-500">{children}</p>;
 
-const DoseRow = ({ name, dose, placeholder, onDose, onRemove, onInfo, infoOpen, detail, videoTag, onPreview }) => (
+const DoseRow = ({ name, dose, placeholder, onDose, onRemove, onInfo, infoOpen, detail, videoTag, onPreview, extra }) => (
   <div className="rounded-app border border-slate-100 bg-slate-50/60 px-3 py-2">
     <div className="flex flex-wrap items-center gap-2">
       <div className="min-w-0 flex-1 basis-40">
@@ -73,6 +73,7 @@ const DoseRow = ({ name, dose, placeholder, onDose, onRemove, onInfo, infoOpen, 
       </button>
     </div>
     {infoOpen && detail}
+    {extra}
   </div>
 );
 
@@ -212,8 +213,11 @@ const PlanChecklist = ({ diagnosisLabels, value, onChange, goalsEnabled = false,
   const removeItem = (key) => (opt) => {
     const dose = { ...data.dose };
     delete dose[opt];
-    emit({ ...data, [key]: data[key].filter((x) => x !== opt), dose });
+    const next = { ...data, [key]: data[key].filter((x) => x !== opt), dose };
+    if (opt === NEBULIZER_OPTION) next.nebulizer = {};
+    emit(next);
   };
+  const setNebulizer = (field, on) => emit({ ...data, nebulizer: { ...data.nebulizer, [field]: on } });
   const setDose = (name, text) => emit({ ...data, dose: { ...data.dose, [name]: text } });
   const addExercise = (id) => emit({ ...data, exercises: { ...data.exercises, [id]: true } });
   const removeExercise = (id) => {
@@ -248,6 +252,23 @@ const PlanChecklist = ({ diagnosisLabels, value, onChange, goalsEnabled = false,
           placeholder="Dosis, mis. 10 menit / 3x seminggu"
           onDose={(t) => setDose(name, t)}
           onRemove={() => removeItem(key)(name)}
+          extra={key === 'epa' && name === NEBULIZER_OPTION ? (
+            <div className="mt-2 space-y-1.5 border-t border-slate-100 pt-2">
+              <p className="text-xs font-medium text-slate-600">Perlengkapan nebulizer (dari klinik)</p>
+              {[['mask', 'Masker'], ['drug', 'Obat nebulizer']].map(([field, label]) => (
+                <label key={field} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-rose-500"
+                    checked={!!data.nebulizer?.[field]}
+                    onChange={(e) => setNebulizer(field, e.target.checked)}
+                  />
+                  {label} dari klinik
+                </label>
+              ))}
+              <p className="text-[11px] text-slate-500">Biayanya otomatis masuk ke Rekap Harian. Jangan dicentang bila pasien membawa sendiri.</p>
+            </div>
+          ) : undefined}
         />
       ))}
     </PlanCard>
