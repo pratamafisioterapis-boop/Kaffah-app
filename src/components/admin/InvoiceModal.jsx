@@ -20,6 +20,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { stripSignatureBackground } from '@/lib/signatureImage';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { kaffahServiceLine, kaffahSessionLabel } from '@/lib/kaffahInvoiceLine';
+import { fetchRecapHandlerEvents } from '@/lib/recapCashier';
 
 // Ukuran acuan A4 (210mm x 297mm) dalam px @96dpi — dipakai untuk menghitung
 // skala preview di layar sempit. Generasi PDF/print tetap memakai elemen asli
@@ -28,6 +29,11 @@ const INVOICE_BASE_WIDTH  = 794;
 // PDF desain baru yang dibuat sebelum waktu ini memakai tampilan lama (teks turun / stempel terlalu atas)
 // dan dibuat ulang diam-diam saat invoice dibuka. Naikkan waktu ini bila tampilan PDF diubah lagi.
 const PDF_RENDER_FIXED_AT = new Date('2026-11-04T11:45:00Z');
+// Kasir di kwitansi kini diambil dari admin pengisi TTV (bukan pembuat rekap). PDF tersimpan
+// untuk rekap tanggal 4 Nov 2026 ke atas yang dibuat sebelum waktu ini dibuat ulang sekali
+// (berkas dan tautan sama) saat invoice dibuka admin, supaya nama/tanda tangan kasir ikut benar.
+const PDF_CASHIER_FIXED_AT = new Date('2026-11-04T23:30:00Z');
+const PDF_CASHIER_FIXED_FROM_DATE = '2026-11-04';
 const INVOICE_BASE_HEIGHT = Math.round(794 * 297 / 210);
 
 const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
@@ -207,15 +213,18 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       }
       return null;
     };
-    // Urutan kasir: cashier_id -> admin yang mengisi TTV (yang melayani pasien) -> pembuat rekap bila admin.
+    // Urutan kasir: cashier_id -> admin pertama yang mengisi TTV/mengubah pembayaran -> pembuat rekap bila admin.
     // Rekap sering dibuat lebih awal oleh admin lain, jadi pembuat rekap bukan penanda kasir yang andal.
     let creator = null;
     if (recap.cashier_id) {
       creator = await lookupCashier(recap.cashier_id);
     } else {
-      const { data: vital } = await supabase.from('recap_vital_signs')
-        .select('recorded_by').eq('recap_id', recap.id).not('recorded_by', 'is', null).order('created_at').limit(1).maybeSingle();
-      creator = (await lookupCashier(vital?.recorded_by)) || (await lookupCashier(recap.created_by));
+      const events = (await fetchRecapHandlerEvents(supabase, [recap.id]))[recap.id] || [];
+      for (const e of events) {
+        creator = await lookupCashier(e.userId);
+        if (creator) break;
+      }
+      if (!creator) creator = await lookupCashier(recap.created_by);
     }
     if (!creator && !recap.cashier_id && userDetails?.id && isAdminRole(userDetails.role)) {
       const { error: claimErr } = await supabase
@@ -489,7 +498,10 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     const generatedAt = detailData?.pdf_generated_at;
     const recapId = detailData?.id;
     if (!url || !generatedAt || !recapId) return undefined;
-    if (new Date(generatedAt) >= PDF_RENDER_FIXED_AT) return undefined;
+    const needsRenderFix = new Date(generatedAt) < PDF_RENDER_FIXED_AT;
+    const needsCashierFix = new Date(generatedAt) < PDF_CASHIER_FIXED_AT
+      && String(detailData?.revenue_date || '').slice(0, 10) >= PDF_CASHIER_FIXED_FROM_DATE;
+    if (!needsRenderFix && !needsCashierFix) return undefined;
     if (pdfRefreshedRef.current.has(recapId) || pdfRefreshBusyRef.current) return undefined;
     const match = url.match(/\/object\/public\/invoices\/([^?]+)/);
     if (!match) return undefined;
@@ -504,7 +516,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
         await uploadPDF(pdf, decodeURIComponent(match[1]), { persist: false, cacheControl: '60' });
         await supabase.from('invoice_records').update({ generated_at: new Date().toISOString() }).eq('daily_recap_id', recapId);
         pdfRefreshedRef.current.add(recapId);
-        toast({ title: 'PDF invoice diperbarui', description: 'Tampilan PDF tersimpan sudah disesuaikan dengan preview.' });
+        toast({ title: 'PDF invoice diperbarui', description: 'PDF tersimpan sudah disesuaikan dengan preview (termasuk kasir).' });
       } catch (err) {
         console.error('Gagal memperbarui PDF tersimpan:', err);
       } finally {
@@ -513,7 +525,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     }, 900);
     return () => { cancelled = true; clearTimeout(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, isPreviewLoading, isOneOff, useModern, detailData?.id, detailData?.invoice_url, detailData?.pdf_generated_at]);
+  }, [isOpen, isPreviewLoading, isOneOff, useModern, detailData?.id, detailData?.invoice_url, detailData?.pdf_generated_at, detailData?.revenue_date]);
 
   // ── Download PDF ──────────────────────────────────────────────────────────
   const handleDownloadPDF = async () => {
