@@ -94,7 +94,7 @@ const InvoiceTemplateModern = forwardRef(({ data }, ref) => {
 
   const signBlock = { width: '230px', textAlign: 'center', position: 'relative' };
   const signLabel = { fontSize: '10.5px', fontWeight: 600, letterSpacing: '0.12em', color: C.muted };
-  const signSpace = { height: '70px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' };
+  const signSpace = { height: '104px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' };
   const signLine = { height: '1px', background: C.text };
   const signName = { fontSize: '13px', fontWeight: 600, marginTop: '8px', minHeight: '16px' };
 
@@ -255,7 +255,7 @@ const InvoiceTemplateModern = forwardRef(({ data }, ref) => {
           )}
           <div style={signLabel}>CASHIER</div>
           <div style={signSpace}>
-            {cashierSignature && <img src={cashierSignature} alt="signature" style={{ maxWidth: '150px', maxHeight: '64px', width: 'auto', height: 'auto' }} />}
+            {cashierSignature && <img src={cashierSignature} alt="signature" style={{ maxWidth: '215px', maxHeight: '100px', width: 'auto', height: 'auto' }} />}
           </div>
           <div style={signLine} />
           <div style={signName}>{cashierName || 'Cashier'}</div>
