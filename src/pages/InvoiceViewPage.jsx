@@ -149,37 +149,41 @@ const InvoiceViewPage = () => {
     }
   };
 
-  const btn = 'flex w-full items-center justify-center gap-2.5 rounded-2xl min-h-[58px] px-4 text-base font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0a3d70] disabled:opacity-60';
+  // Semua ukuran memakai em dari ukuran dasar yang mengikuti lebar layar, supaya tampilan tetap
+  // proporsional (dan memenuhi layar) di HP dengan lebar layout berbeda, mis. 360px atau 720px.
+  const baseSize = { fontSize: 'clamp(15px, 4vw, 30px)' };
+  const btn = 'flex w-full items-center justify-center gap-[0.6em] rounded-[0.9em] min-h-[3.5em] px-[1em] text-[1.05em] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0a3d70] disabled:opacity-60';
   const btnNavy = `${btn} bg-[#0a3d70] text-white active:bg-[#072c52]`;
   const btnSoft = `${btn} bg-[#e6f1f9] text-[#0a3d70] active:bg-[#d4e6f3]`;
+  const icon = 'w-[1.25em] h-[1.25em] shrink-0';
   const downloadLabel = downloading ? 'Menyiapkan…' : 'Unduh PDF';
 
   // Mode pratinjau: hanya dokumen, tanpa header.
   if (status === 'ready' && view === 'preview') {
     return (
-      <main className="min-h-[100dvh] bg-[#e4ecf2]">
-        <div className="mx-auto max-w-xl px-2 pt-2 pb-28">
+      <main className="min-h-[100dvh] bg-[#e4ecf2]" style={baseSize}>
+        <div className="mx-auto max-w-[48em] px-[0.5em] pt-[0.5em] pb-[7em]">
           {preview === 'loading' && (
-            <div className="flex items-center justify-center gap-3 py-24 text-slate-600" role="status">
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <p className="text-sm">Memuat pratinjau…</p>
+            <div className="flex items-center justify-center gap-[0.75em] py-[6em] text-slate-600" role="status">
+              <Loader2 className={`${icon} animate-spin`} />
+              <p>Memuat pratinjau…</p>
             </div>
           )}
           {preview === 'failed' && (
-            <p className="px-3 py-16 text-center text-sm leading-relaxed text-slate-600">
+            <p className="px-[0.75em] py-[4em] text-center leading-relaxed text-slate-600">
               Pratinjau tidak dapat ditampilkan di perangkat ini. Silakan unduh kwitansi.
             </p>
           )}
           <div ref={pagesRef} className={preview === 'failed' ? 'hidden' : ''} />
         </div>
-        <div className="fixed inset-x-0 bottom-0 bg-[#0a3d70] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <div className="mx-auto flex max-w-xl gap-3">
+        <div className="fixed inset-x-0 bottom-0 bg-[#0a3d70] px-[1em] pt-[0.75em] pb-[max(0.75em,env(safe-area-inset-bottom))]">
+          <div className="mx-auto flex max-w-[48em] gap-[0.75em]">
             <button type="button" onClick={() => setView('choose')} className={`${btn} bg-white/15 text-white active:bg-white/25`}>
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className={icon} />
               Kembali
             </button>
             <button type="button" onClick={handleDownload} disabled={downloading} className={`${btn} bg-white text-[#0a3d70] active:bg-slate-200`}>
-              <Download className="w-5 h-5" />
+              <Download className={icon} />
               {downloadLabel}
             </button>
           </div>
@@ -189,47 +193,50 @@ const InvoiceViewPage = () => {
   }
 
   return (
-    <main className={`min-h-[100dvh] bg-[#0a3d70] text-white flex flex-col overflow-hidden ${introPlayed.current ? '' : 'kw-intro'}`}>
+    <main
+      className={`min-h-[100dvh] bg-[#0a3d70] text-white flex flex-col overflow-hidden ${introPlayed.current ? '' : 'kw-intro'}`}
+      style={baseSize}
+    >
       <style>{INTRO_CSS}</style>
-      <section className="flex-1 flex flex-col items-center justify-center gap-3.5 px-6 pt-10 pb-4 text-center">
-        <div className="kw-badge grid aspect-square w-[48%] max-w-[210px] place-items-center rounded-full bg-white ring-[9px] ring-white/10">
+      <section className="flex-1 flex flex-col items-center justify-center gap-[0.9em] px-[1.5em] pt-[2em] pb-[1em] text-center">
+        <div className="kw-badge grid aspect-square w-[48%] max-w-[13em] place-items-center rounded-full bg-white ring-[0.6em] ring-white/10">
           <img src="/kaffah-logo.png" alt="Kaffah Physiotherapy" className="w-[66%] h-auto" />
         </div>
-        <p className="kw-eyebrow mt-2 text-xs font-medium uppercase tracking-[0.16em] text-[#9fd5f3]">
+        <p className="kw-eyebrow mt-[0.5em] text-[0.78em] font-medium uppercase tracking-[0.16em] text-[#9fd5f3]">
           {clinicName || 'Kaffah Physiotherapy'}
         </p>
-        <h1 className="kw-title text-3xl font-bold leading-tight tracking-tight">Kwitansi terapi</h1>
+        <h1 className="kw-title text-[2.1em] font-bold leading-tight tracking-tight">Kwitansi terapi</h1>
       </section>
 
-      <section className="kw-sheet rounded-t-[28px] bg-white px-4 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-slate-800">
-        <div className="mx-auto w-full max-w-md">
+      <section className="kw-sheet rounded-t-[1.7em] bg-white px-[1em] pt-[1.5em] pb-[max(1.5em,env(safe-area-inset-bottom))] text-slate-800">
+        <div className="mx-auto w-full max-w-[30em]">
           {status === 'loading' && (
-            <div className="flex items-center justify-center gap-3 py-8 text-slate-600" role="status">
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <p className="text-base">Menyiapkan kwitansi Anda…</p>
+            <div className="flex items-center justify-center gap-[0.75em] py-[2em] text-slate-600" role="status">
+              <Loader2 className={`${icon} animate-spin`} />
+              <p>Menyiapkan kwitansi Anda…</p>
             </div>
           )}
 
           {status === 'error' && (
-            <div className="flex items-start gap-3 py-4 text-slate-700" role="alert">
-              <AlertTriangle className="w-5 h-5 mt-0.5 shrink-0 text-red-700" />
-              <p className="text-base leading-relaxed">
+            <div className="flex items-start gap-[0.75em] py-[1em] text-slate-700" role="alert">
+              <AlertTriangle className={`${icon} mt-[0.15em] text-red-700`} />
+              <p className="leading-relaxed">
                 Kwitansi tidak ditemukan atau tautan sudah tidak berlaku. Hubungi klinik untuk meminta tautan baru.
               </p>
             </div>
           )}
 
           {status === 'ready' && (
-            <div className="flex flex-col gap-3">
-              <p className="kw-item mb-1 text-center text-base leading-relaxed text-slate-600">
+            <div className="flex flex-col gap-[0.75em]">
+              <p className="kw-item mb-[0.25em] text-center leading-relaxed text-slate-600">
                 Kwitansi Anda sudah siap. Pilih untuk melihat pratinjau atau langsung mengunduhnya.
               </p>
               <button type="button" onClick={() => { introPlayed.current = true; setView('preview'); }} className={`kw-item ${btnNavy}`}>
-                <Eye className="w-5 h-5" />
+                <Eye className={icon} />
                 Lihat pratinjau
               </button>
               <button type="button" onClick={handleDownload} disabled={downloading} className={`kw-item ${btnSoft}`}>
-                <Download className="w-5 h-5" />
+                <Download className={icon} />
                 {downloadLabel}
               </button>
             </div>
