@@ -21,6 +21,9 @@ const TherapistCard = ({
   onManualBooking,
   onAppointmentClick,
   onPatientClick,
+  onAppointmentPointerDown, // drag & drop reschedule
+  dragActive = false,
+  dragAppId = null,
   date,
   leaveStatus = 'aktif',
   leaveReason = '',
@@ -79,8 +82,11 @@ const TherapistCard = ({
   };
   return (
     <TooltipProvider>
-      <Card className={cn(
+      <Card data-drop-card className={cn(
         "group relative h-full flex flex-col rounded-app-lg overflow-hidden",
+
+        // Kartu terapis yang sedang dibidik saat drag
+        "[&:has([data-drop-over='true'])]:ring-2 [&:has([data-drop-over='true'])]:ring-app-accent",
 
         // 🔥 PREMIUM BASE
         "bg-white/80 backdrop-blur-xl border border-white/40",
@@ -261,6 +267,11 @@ const TherapistCard = ({
                     <button
                       key={`${slot.id || index}`}
                       onClick={() => onSlotClick(slot, therapist)}
+                      data-drop-slot
+                      data-drop-therapist={therapist.id}
+                      data-drop-time={startTime}
+                      data-drop-label={`${startTime} - ${endTime}`}
+                      data-therapist-name={therapist.name}
                       className={cn(
   "w-full text-center px-2 py-2 rounded-app text-xs md:text-sm font-semibold",
 
@@ -278,7 +289,11 @@ const TherapistCard = ({
                         "hover:-translate-y-[1px] active:scale-[0.97]",
 
                         // 🔥 TRANSITION SMOOTH
-                        "transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200"
+                        "transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200",
+
+                        // 🔥 DRAG & DROP: tandai slot yang bisa jadi tujuan
+                        dragActive && "ring-2 ring-emerald-300/80 animate-pulse",
+                        "data-[drop-over=true]:animate-none data-[drop-over=true]:scale-105 data-[drop-over=true]:bg-emerald-600 data-[drop-over=true]:ring-4 data-[drop-over=true]:ring-emerald-300"
                       )}
                     >
                       {startTime} - {endTime}
@@ -341,15 +356,21 @@ const TherapistCard = ({
   ? "bg-red-100 border-red-400 cursor-not-allowed"
 
     : app.is_homecare
-    ? "bg-app-accent/15 border-app-accent-bright cursor-pointer"
+    ? "bg-app-accent/15 border-app-accent-bright cursor-grab active:cursor-grabbing"
 
-    : "bg-white/70 backdrop-blur border-white/40 cursor-pointer",
+    : "bg-white/70 backdrop-blur border-white/40 cursor-grab active:cursor-grabbing",
+
+  // Drag & drop: cegah seleksi teks / menu tekan-lama, tandai kartu sumber
+  !isCancelled && "select-none [-webkit-touch-callout:none]",
+  dragAppId === app.id && "opacity-40 outline-dashed outline-2 -outline-offset-2 outline-app-accent",
+  dragActive && dragAppId !== app.id && !isCancelled && "opacity-70",
 
   "shadow-sm transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-200",
   !isCancelled && "[@media(hover:hover)_and_(pointer:fine)]:hover:shadow-md hover:-translate-y-[1px] hover:bg-white"
 )}
 
 
+                      onPointerDown={isCancelled ? undefined : (e) => onAppointmentPointerDown?.(e, app)}
                       onClick={isCancelled ? undefined : () => onAppointmentClick(app)}
                     >
                       <div className="shrink-0 font-mono text-xs md:text-sm font-semibold text-slate-800 bg-white/80 px-3 py-1.5 rounded-app-sm border border-white/40 shadow-sm">
