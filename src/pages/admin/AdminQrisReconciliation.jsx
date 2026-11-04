@@ -16,6 +16,7 @@ import { confirmAction } from '@/lib/confirmAction';
 import { parseQrisReportPdf } from '@/utils/bsiQrisReportParser';
 import { autoMatchQris, qrisPortionOfRecap } from '@/utils/qrisMatcher';
 
+// Catatan: komentar ini hanya untuk mengubah hash aset build (bukan perubahan fungsi).
 const formatRp = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
 const todayStr = () => format(new Date(), 'yyyy-MM-dd');
 const shiftDate = (d, delta) => format(addDays(parseISO(d), delta), 'yyyy-MM-dd');
