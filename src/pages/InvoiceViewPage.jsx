@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
-import { FileText, Download, Loader2, AlertTriangle } from 'lucide-react';
+import { Download, Loader2, AlertTriangle } from 'lucide-react';
 
 const InvoiceViewPage = () => {
   const { recapId } = useParams();
@@ -44,48 +44,49 @@ const InvoiceViewPage = () => {
   }, [recapId]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-4">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden">
-        <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 px-6 py-8 text-center text-white">
-          <div className="mx-auto w-14 h-14 rounded-full bg-white/15 flex items-center justify-center mb-3">
-            <FileText className="w-7 h-7" />
-          </div>
-          <h1 className="text-lg font-bold">Kwitansi Terapi</h1>
-          {clinicName && <p className="text-indigo-200 text-sm mt-0.5">{clinicName}</p>}
-        </div>
+    <main className="min-h-screen bg-stone-100 px-5 py-10 flex flex-col items-center justify-center">
+      <div className="w-full max-w-sm">
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-stone-500">
+          {clinicName || 'Kaffah Physiotherapy'}
+        </p>
+        <h1 className="mt-1 text-2xl font-semibold text-stone-900">Kwitansi terapi</h1>
 
-        <div className="p-6 text-center">
+        <div className="mt-6 border-t border-stone-900 pt-5">
           {status === 'loading' && (
-            <div className="py-6 flex flex-col items-center gap-3 text-slate-500">
-              <Loader2 className="w-6 h-6 animate-spin" />
-              <p className="text-sm">Menyiapkan kwitansi Anda...</p>
+            <div className="flex items-center gap-3 text-stone-600" role="status">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <p className="text-sm">Menyiapkan kwitansi Anda…</p>
             </div>
           )}
 
           {status === 'error' && (
-            <div className="py-6 flex flex-col items-center gap-3 text-red-500">
-              <AlertTriangle className="w-8 h-8" />
-              <p className="text-sm text-slate-600">Kwitansi tidak ditemukan atau tautan sudah tidak berlaku.</p>
+            <div className="flex items-start gap-3 text-stone-700" role="alert">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-red-700" />
+              <p className="text-sm leading-relaxed">
+                Kwitansi tidak ditemukan atau tautan sudah tidak berlaku. Hubungi klinik untuk meminta tautan baru.
+              </p>
             </div>
           )}
 
           {status === 'ready' && (
-            <div className="space-y-4">
-              <p className="text-sm text-slate-600">Kwitansi Anda sudah siap. Silakan unduh atau lihat dokumennya di bawah ini.</p>
+            <>
+              <p className="text-sm leading-relaxed text-stone-600">
+                Kwitansi Anda sudah siap. Buka untuk melihat, atau simpan sebagai PDF.
+              </p>
               <a
                 href={invoiceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm py-3 rounded-xl transition-colors"
+                className="mt-5 flex items-center justify-center gap-2 w-full rounded-md bg-stone-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-stone-800 active:bg-stone-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
               >
                 <Download className="w-4 h-4" />
-                Buka / Unduh Kwitansi
+                Buka / unduh kwitansi
               </a>
-            </div>
+            </>
           )}
         </div>
       </div>
-    </div>
+    </main>
   );
 };
 
