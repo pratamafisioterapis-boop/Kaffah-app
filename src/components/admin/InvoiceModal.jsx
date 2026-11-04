@@ -179,7 +179,9 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
 
     // Kaffah: nomor kwitansi dibuat database (KFF/XI/2026/0042), satu nomor tetap per recap.
     // Recap yang sudah punya nomor (termasuk format lama INV/KFF/...) tidak diubah.
-    if (recap.clinic_id === KAFFAH_CLINIC_ID && !recap.receipt_number) {
+    // Nomor RCPT/... (diberi otomatis saat recap dibuat) adalah penampung; fungsi database
+    // menggantinya dengan nomor KFF bila invoice belum pernah terbit/diunduh.
+    if (recap.clinic_id === KAFFAH_CLINIC_ID && (!recap.receipt_number || /^RCPT\//.test(recap.receipt_number))) {
       const { data: assigned, error: assignErr } = await supabase.rpc('assign_kaffah_receipt_number', { p_recap_id: recap.id });
       if (assignErr) console.error('Gagal membuat nomor kwitansi:', assignErr);
       else if (assigned) recap.receipt_number = assigned;
@@ -298,6 +300,19 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     });
   };
 
+  // ── Helper: koreksi pengukuran huruf html2canvas ──────────────────────────
+  // html2canvas mengukur garis dasar huruf dengan <img width=1 height=1> di <body>. CSS dasar
+  // Tailwind membuat semua <img> berupa block, sehingga hasil ukurnya salah dan teks di PDF
+  // turun ~6-12px dari posisinya di preview (kotak metode bayar & Balance Paid tidak di tengah).
+  // Hanya dipakai desain baru; desain lama dibiarkan seperti semula.
+  const withFontMetricsFix = async (enabled, fn) => {
+    if (!enabled) return fn();
+    const style = document.createElement('style');
+    style.textContent = 'img[width="1"][height="1"]{display:inline-block !important;vertical-align:baseline !important}';
+    document.head.appendChild(style);
+    try { return await fn(); } finally { style.remove(); }
+  };
+
   // ── Helper: Generate PDF ──────────────────────────────────────────────────
   const generatePDF = async () => {
     const element = componentRef.current;
@@ -308,7 +323,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     if (document.fonts?.ready) await document.fonts.ready;
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-    const canvas = await html2canvas(element, {
+    const canvas = await withFontMetricsFix(useModern, () => html2canvas(element, {
       scale: 2,
       useCORS: true,
       logging: false,
@@ -316,7 +331,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       backgroundColor: '#ffffff',
       width: 794,
       windowWidth: 794,
-    });
+    }));
 
     // JPEG, bukan PNG: jsPDF memproses ulang PNG piksel demi piksel (~2 detik atau lebih untuk
     // halaman A4 beresolusi 2x), sedangkan JPEG langsung disisipkan (~0,02 detik).
@@ -751,7 +766,7 @@ const handleSendManualWA = async () => {
       if (!element) throw new Error('Invoice belum siap dicetak');
 
       await new Promise(resolve => setTimeout(resolve, 300));
-      const canvas = await html2canvas(element, {
+      const canvas = await withFontMetricsFix(useModern, () => html2canvas(element, {
         scale: 2,
         useCORS: true,
         logging: false,
@@ -759,7 +774,7 @@ const handleSendManualWA = async () => {
         backgroundColor: '#ffffff',
         width: 794,
         windowWidth: 794,
-      });
+      }));
       const imgData = canvas.toDataURL('image/png');
       const title = escapeHtml(`Invoice - ${data?.patient_name || 'Patient'}`);
       const html = `<!doctype html>
