@@ -88,7 +88,18 @@ const AdminQrisReconciliation = () => {
       const { data: pts } = await supabase.from('patients').select('id, full_name').in('id', patientIds).eq('clinic_id', clinicId);
       (pts || []).forEach((p) => { patientMap[p.id] = p.full_name; });
     }
-    const staffIds = [...new Set((recaps || []).flatMap((r) => [r.cashier_id, r.created_by]).filter(Boolean))];
+    // Cadangan penanggung jawab: admin yang mengisi TTV recap (bila recap dibuat owner/non-admin).
+    const vitalByRecap = {};
+    const recapIds = (recaps || []).map((r) => r.id);
+    if (recapIds.length) {
+      const { data: vitals } = await supabase.from('recap_vital_signs')
+        .select('recap_id, recorded_by, created_at').in('recap_id', recapIds).not('recorded_by', 'is', null).order('created_at');
+      (vitals || []).forEach((v) => { if (!vitalByRecap[v.recap_id]) vitalByRecap[v.recap_id] = v.recorded_by; });
+    }
+    const staffIds = [...new Set([
+      ...(recaps || []).flatMap((r) => [r.cashier_id, r.created_by]),
+      ...Object.values(vitalByRecap),
+    ].filter(Boolean))];
     const staff = {};
     if (staffIds.length) {
       const { data: us } = await supabase.from('users').select('id, full_name, role').in('id', staffIds);
@@ -98,7 +109,9 @@ const AdminQrisReconciliation = () => {
     return (recaps || []).map((r) => {
       // Penanggung jawab = kasir (admin yang pertama kali menyimpan rekap); data lama pakai pembuat bila rolenya admin.
       const creatorIsAdmin = ['admin', 'clinic_admin'].includes(staff[r.created_by]?.role);
-      const cashierId = r.cashier_id || (creatorIsAdmin ? r.created_by : null);
+      const vitalBy = vitalByRecap[r.id];
+      const vitalIsAdmin = ['admin', 'clinic_admin'].includes(staff[vitalBy]?.role);
+      const cashierId = r.cashier_id || (creatorIsAdmin ? r.created_by : null) || (vitalIsAdmin ? vitalBy : null);
       const payAt = r.end_time || r.start_time || r.created_at;
       return {
         recapId: r.id,
