@@ -17,6 +17,8 @@ const ExerciseIllustrations = ({ therapist }) => {
   const [exercises, setExercises] = useState([]);
   const [illus, setIllus] = useState({});
   const [steps, setSteps] = useState({});
+  const [stepUrls, setStepUrls] = useState({});
+  const [activeStep, setActiveStep] = useState({});
   const [zipPreview, setZipPreview] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(null);
@@ -45,6 +47,13 @@ const ExerciseIllustrations = ({ therapist }) => {
     const stepMap = {};
     for (const entry of st.data || []) (stepMap[entry.exercise_id] ||= []).push(entry);
     setSteps(stepMap);
+    const allSteps = Object.values(stepMap).flat();
+    if (allSteps.length) {
+      const signedSteps = await supabase.storage.from(BUCKET).createSignedUrls(allSteps.map(s => s.storage_path), 3600);
+      const urlMap = {};
+      allSteps.forEach((st, index) => { (urlMap[st.exercise_id] ||= {})[st.step_number] = signedSteps.data?.[index]?.signedUrl || null; });
+      setStepUrls(urlMap);
+    } else setStepUrls({});
 
     const rows = Object.values(map);
     if (rows.length) {
@@ -247,16 +256,26 @@ const ExerciseIllustrations = ({ therapist }) => {
           {shown.map((e) => {
             const r = illus[e.id];
             const busy = busyId === e.id;
+            const stageList = steps[e.id] || [];
+            const stageIndex = Math.min(activeStep[e.id] || 0, Math.max(0, stageList.length - 1));
+            const stage = stageList[stageIndex];
+            const stageUrl = stage ? stepUrls[e.id]?.[stage.step_number] : null;
             return (
               <li key={e.id} className="flex flex-wrap items-center gap-3 p-3">
                 <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
-                  {urls[e.id] ? <img src={urls[e.id]} alt={`Ilustrasi ${e.name}`} className="h-full w-full object-cover" loading="lazy" /> : <ImageOff className="h-5 w-5" />}
+                  {stageUrl || urls[e.id] ? <img src={stageUrl || urls[e.id]} alt={`Ilustrasi ${e.name}`} className="h-full w-full object-cover" loading="lazy" /> : <ImageOff className="h-5 w-5" />}
                 </div>
                 <span className="font-mono text-xs bg-slate-100 text-slate-700 rounded px-2 py-1">{e.id}</span>
                 <div className="min-w-0 flex-1 basis-48">
                   <p className="font-medium text-slate-900 break-words">{e.name}</p>
                   <p className="text-xs text-slate-500">{e.grp}</p>
-                  {steps[e.id]?.length > 0 && <p className="text-xs text-blue-700 mt-1">{steps[e.id].length} gambar tahapan</p>}
+                  {stageList.length > 0 && <div className="mt-1 flex items-center gap-2 text-xs text-blue-700">
+                    <span>Gambar {stageIndex + 1} dari {stageList.length}</span>
+                    {stageList.length > 1 && <>
+                      <button className="rounded border px-2 py-0.5 disabled:opacity-40" disabled={stageIndex === 0} onClick={() => setActiveStep(v => ({ ...v, [e.id]: stageIndex - 1 }))} aria-label={'Gambar sebelumnya untuk ' + e.id}>‹</button>
+                      <button className="rounded border px-2 py-0.5 disabled:opacity-40" disabled={stageIndex === stageList.length - 1} onClick={() => setActiveStep(v => ({ ...v, [e.id]: stageIndex + 1 }))} aria-label={'Gambar berikutnya untuk ' + e.id}>›</button>
+                    </>}
+                  </div>}
                   {r && <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-emerald-700"><CheckCircle2 className="w-3.5 h-3.5" /> Diunggah {r.uploader_name || 'terapis'}</p>}
                 </div>
                 <div className="flex gap-2">
