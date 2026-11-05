@@ -172,6 +172,8 @@ export class AnatomyEngine {
       if (onProgress && ev.total) onProgress(ev.loaded / ev.total);
     });
     const added = [];
+    const duplicates = [];
+    this.seenNames ||= new Set();
     gltf.scene.traverse((o) => {
       if (!o.isMesh) return;
       const raw = this._meshName(o);
@@ -184,6 +186,11 @@ export class AnatomyEngine {
         : ['muscles', 'skeleton'].includes(fileLayer)
           ? this._refineLayer(raw, fileLayer)
           : classifyMeshName(raw, fallback);
+      // Struktur yang sama bisa ada di dua file (mis. arteri di heart.glb dan arteries.glb):
+      // pakai yang pertama dimuat supaya tidak saling menimpa (z-fighting).
+      const dupKey = `${layer}|${raw}`;
+      if (this.seenNames.has(dupKey)) { duplicates.push(o); return; }
+      this.seenNames.add(dupKey);
       const src = Array.isArray(o.material) ? o.material[0] : o.material;
       const hasTexture = !!src?.map;
       let mat;
@@ -217,6 +224,7 @@ export class AnatomyEngine {
       this.entries.set(id, entry);
       added.push(entry);
     });
+    duplicates.forEach((o) => { o.geometry?.dispose(); o.removeFromParent(); });
     this.root.add(gltf.scene);
     this._refreshAll();
     if (!this.framed) { this.frameAll(false); this.framed = true; }

@@ -28,9 +28,12 @@ const VIEWS = [
 ];
 
 const MAX_LIST = 200;
-const BUNDLED_FILES = ['skeleton', 'muscles', 'joints', 'nerves', 'heart'];
+const BUNDLED_FILES = ['skeleton', 'muscles', 'joints', 'nerves', 'nerves-peripheral', 'arteries', 'veins', 'heart'];
 // Lapisan yang dimiliki sebuah file model (nama file = nama lapisan, atau alias seperti heart -> organs).
-const layerOfFile = (key) => (LAYER_BY_KEY[key] ? key : FILE_LAYER_ALIAS[key] || null);
+const layerOfFile = (key) => {
+  const base = key.replace(/-.*$/, ''); // nerves-peripheral.glb -> lapisan nerves
+  return LAYER_BY_KEY[key] ? key : FILE_LAYER_ALIAS[key] || (LAYER_BY_KEY[base] ? base : null);
+};
 
 const Anatomy3DExplorer = () => {
   const { toast } = useToast();
