@@ -69,11 +69,15 @@ def unhide_all(layer_coll):
 def main():
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default="anatomy-glb")
+    ap.add_argument("--out", default="", help="folder hasil; kosong = folder anatomy-glb di samping file .blend")
     ap.add_argument("--decimate", type=float, default=0.5, help="rasio decimate 0–1 (1 = tanpa pengurangan)")
     ap.add_argument("--min-faces", type=int, default=3000, help="hanya decimate mesh di atas jumlah face ini")
     args = ap.parse_args(argv)
+    if not args.out:
+        # Dijalankan dari tab Scripting di Blender (tanpa argumen): simpan di samping file .blend.
+        args.out = bpy.path.abspath("//anatomy-glb") if bpy.data.filepath else os.path.abspath("anatomy-glb")
     os.makedirs(args.out, exist_ok=True)
+    print(f"[anatomy] folder hasil: {args.out}")
 
     unhide_all(bpy.context.view_layer.layer_collection)
     groups = {k: [] for k in LAYERS}
