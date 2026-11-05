@@ -6,7 +6,7 @@ from pathlib import Path
 from PIL import Image
 from pipeline import Worker, save, digest
 
-REVIEW_VERSION='clinical-stages-v3'
+REVIEW_VERSION='clinical-stages-v4-single-target'
 
 class BatchWorker(Worker):
     def __init__(self,args):
@@ -40,7 +40,7 @@ class BatchWorker(Worker):
         previous_reasons=[]
         for attempt in range(1,self.args.attempts+1):
             path=directory/('v3-step-%02d-attempt-%d.jpg'%(number,attempt))
-            review_path=path.with_suffix('.review.json')
+            review_path=path.with_suffix('.review-v4.json')
             if not path.exists():
                 with self.lock:
                     if self.calls>=self.args.max_images:raise RuntimeError('Image call cap reached')
@@ -88,9 +88,19 @@ class BatchWorker(Worker):
                 cached=json.loads(review_path.read_text())
                 if cached.get('signature')==signature and cached.get('sha256')==digest(data):review=cached
             if review is None:
-                inputs=([self.args.reference] if use_reference else [])+[path]
                 with self.plan_slots:
-                    review=self.llm('''Return JSON only. Strict physiotherapy photo quality check. The FINAL input image is the generated photo to evaluate. If another image precedes it, that is only the master reference, NOT the exercise photo. Never attribute reference clothing text to the generated photo. Check exactly THIS stage, do not expect active movement in a neutral start, and do not expect internal muscle contraction to be visible if the plan says it is invisible. Do not invent defects from occluded regions: reject clinically critical ambiguity only. Patient/model role and age must match plan. If master man is a supervisor, compare his likeness, not the child. Check head/mat contact in supine exercises: reject head lifts or crunches unless requested. Check contralateral coordination; reject wrong exercise or equipment, impossible anatomy, exposed/inappropriate demonstration, extra/missing limbs, any text/logos actually visible in the generated photo, collage, or clinically important cropping. For pregnant/pediatric models, identity consistency is only with the intended role and accepted stages, not adult reference face on a child. JSON {"pass":boolean,"identity_consistent":boolean,"pose_correct":boolean,"anatomy_correct":boolean,"single_pose":boolean,"no_text":boolean,"reasons":[],"clinical_uncertainty":string}. Exact requested stage: '''+json.dumps(step)+'. Plan: '+json.dumps(plan)+'. Database how_to: '+str(exercise['how_to'])+'. Caution: '+str(exercise.get('caution')),inputs)
+                    review=self.llm('''Return JSON only. This ONE input photo is the generated physiotherapy photo to evaluate; there is no reference image in this request. Strictly evaluate this single stage. A neutral START must be relaxed; do not require the exercise's active motion in its starting stage. For internal contractions with no visible movement, evaluate supported posture, never demand visible contraction. Check head support, visible anatomy/limbs, clinically appropriate age/model, required equipment, no collage, no visible words or logos, and no clinically important cropping. Do not reject minor changes in framing or camera angle when technique and relevant body parts remain clear. Never invent a logo from generic chair shapes or shirt folds. Mark no_text false ONLY if you can identify actual visible lettering/logo in THIS photo and state its exact location. In supine poses, the occiput and shoulders must rest on support unless the actual instruction calls for a lift; reject crunches/neck curls for dead bug. Assess opposite limb coordination, without confusing left/right from camera view. Reject clinically critical uncertainty, not cosmetic variation. JSON {"pass":boolean,"pose_correct":boolean,"anatomy_correct":boolean,"single_pose":boolean,"no_text":boolean,"reasons":[],"clinical_uncertainty":string}. Requested single stage: '''+json.dumps(step)+'. Plan: '+json.dumps(plan)+'. Database how_to: '+str(exercise['how_to'])+'. Caution: '+str(exercise.get('caution')),[path])
+                    if use_reference and review.get('pass') is True:
+                        identity=self.llm('Return JSON only {"identity_consistent":boolean,"reasons":[]}. Compare ONLY the intended adult man in image1 (master) and image2 (generated). Assess visual likeness of face, bald head, facial hair, skin tone and body proportions without claiming biometric certainty. Ignore clothing logos, camera, exercise pose and background. If adult man is supervising a child, compare the adult supervisor, not the child. The adult should look like the same person. If face is outside a clinically necessary close framing, evaluate only visible skin/body/clothing and do not reject solely because facial identity cannot be observed. Intended role: '+plan.get('reference_role','exercise demonstrator'),[self.args.reference,path])
+                        review['identity_consistent']=identity.get('identity_consistent') is True
+                        if not review['identity_consistent']:review['reasons']+=identity.get('reasons',[])
+                    else:
+                        review['identity_consistent']=not use_reference
+                    if accepted and review.get('pass') is True:
+                        consistency=self.llm('Return JSON only {"consistent":boolean,"reasons":[]}. Compare the exercise patient and any supervising adult in these two images. Are identity, clothing and required equipment consistent across stages? Pose naturally differs according to stage, so do not reject different poses. Reject a clearly different patient or missing required equipment. First is accepted starting stage; second is the new stage.',[accepted[0],path])
+                        if consistency.get('consistent') is not True:
+                            review['pass']=False
+                            review['reasons']+=consistency.get('reasons',[])
                 review.update(sha256=digest(data),signature=signature,model=self.args.review_model)
                 save(review_path,review)
             checks=['pass','identity_consistent','pose_correct','anatomy_correct','single_pose','no_text']

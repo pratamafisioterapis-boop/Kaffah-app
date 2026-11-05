@@ -66,7 +66,7 @@ class Worker:
         content = [{'type': 'input_text', 'text': text}]
         for path in images:
             mime = 'image/png' if Path(path).suffix.lower() == '.png' else 'image/jpeg'
-            content.append({'type': 'input_image', 'image_url': 'data:' + mime + ';base64,' + base64.b64encode(Path(path).read_bytes()).decode()})
+            content.append({'type': 'input_image', 'detail': 'high', 'image_url': 'data:' + mime + ';base64,' + base64.b64encode(Path(path).read_bytes()).decode()})
         response = self.client.responses.create(model=self.args.review_model,
             input=[{'role': 'user', 'content': content}],
             text={'format': {'type': 'json_object'}}, store=False)
