@@ -112,7 +112,15 @@ const Anatomy3DExplorer = () => {
     if (!e) return;
     setLoadState((s) => ({ ...s, [key]: { status: 'loading', progress: 0 } }));
     try {
-      await e.loadModel(url, fileLayer, (p) => setLoadState((s) => ({ ...s, [key]: { status: 'loading', progress: p } })));
+      // Batas waktu supaya pemuatan yang macet (mis. decoder diblokir) tampil sebagai galat, bukan loading selamanya.
+      let timer;
+      const timeout = new Promise((_, rej) => { timer = setTimeout(() => rej(new Error('Waktu pemuatan habis. Periksa koneksi lalu muat ulang halaman.')), 120000); });
+      try {
+        await Promise.race([
+          e.loadModel(url, fileLayer, (p) => setLoadState((s) => ({ ...s, [key]: { status: 'loading', progress: p } }))),
+          timeout,
+        ]);
+      } finally { clearTimeout(timer); }
       setLoadState((s) => ({ ...s, [key]: { status: 'done', progress: 1 } }));
       syncFromEngine();
     } catch (err) {
@@ -326,6 +334,11 @@ const Anatomy3DExplorer = () => {
           )}
           {engineError && (
             <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-white/90">Viewer 3D tidak dapat berjalan: {engineError}</div>
+          )}
+          {Object.values(loadState).some((x) => x.status === 'error') && (
+            <div className="absolute inset-x-3 bottom-3 rounded-app-sm bg-red-600/95 px-3 py-2 text-xs text-white">
+              Sebagian model gagal dimuat: {Object.values(loadState).find((x) => x.status === 'error')?.error}
+            </div>
           )}
           {engineReady && noModelAvailable && !hasModel && !isLoading && (
             <div className="absolute inset-0 flex items-center justify-center p-6">
