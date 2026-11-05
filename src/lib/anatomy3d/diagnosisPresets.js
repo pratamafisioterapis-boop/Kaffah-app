@@ -16,7 +16,7 @@ const NEURO = ['skeleton', 'nerves', 'muscles'];
 export const DIAGNOSIS_PRESETS = [
   // ── Bahu ────────────────────────────────────────────────────────────────
   P('frozen-shoulder', 'Frozen shoulder (Adhesive capsulitis)', ['frozen shoulder', 'adhesive capsulitis', 'kapsulitis'], MSK,
-    ['glenohumeral', 'capsul.*(shoulder|humer)', 'coracohumeral', 'glenoid labrum', 'head of humerus|caput humeri'],
+    ['glenohumeral', 'capsul.*(shoulder|humer)', 'coracohumeral', 'glenoid labrum', 'head of humerus|caput humeri', '\\bhumerus\\b', '\\bscapula\\b', 'subscapularis'],
     'Kapsul sendi bahu (glenohumeral) meradang lalu menebal dan mengerut, sehingga ruang gerak bahu menyempit. Gerakan rotasi luar dan mengangkat lengan paling terbatas.'),
   P('rotator-cuff', 'Rotator cuff syndrome / tear', ['rotator cuff'], MSK,
     ['supraspinatus', 'infraspinatus', 'teres minor', 'subscapularis'],
@@ -68,13 +68,13 @@ export const DIAGNOSIS_PRESETS = [
 
   // ── Leher & kepala ──────────────────────────────────────────────────────
   P('cervicalgia', 'Cervicalgia / Nyeri leher', ['cervicalgia', 'neck pain', 'whiplash', 'postural strain'], MSK,
-    ['cervical vertebra|vertebra cervicalis|atlas|axis', 'trapezius', 'levator scapulae', 'splenius', 'semispinalis'],
+    ['cervical vertebra|vertebra cervicalis|vertebra c[1-7]\\b|\\batlas\\b|\\baxis\\b', 'trapezius', 'levator scapulae', 'splenius', 'semispinalis'],
     'Nyeri leher dari otot (trapezius, levator scapulae, splenius) dan sendi-sendi tulang leher, sering terkait postur atau cedera hentakan.'),
   P('cervical-radiculopathy', 'Cervical radiculopathy / HNP cervical', ['cervical radiculopathy', 'cervical disc', 'degenerative disc disease cervical', 'cervical spondylosis', 'spinal stenosis cervical'], NEURO.concat('joints'),
-    ['cervical vertebra|vertebra cervicalis', 'intervertebral dis[ck]|discus intervertebralis', 'brachial plexus|plexus brachialis', 'c5|c6|c7|spinal nerve'],
+    ['cervical vertebra|vertebra cervicalis|vertebra c[1-7]\\b', 'intervertebral dis[ck]|discus intervertebralis', 'brachial plexus|plexus brachialis', 'c5|c6|c7|spinal nerve'],
     'Bantalan tulang leher menonjol atau tulang leher mengalami pengapuran, menekan akar saraf yang keluar ke lengan. Akibatnya nyeri, kesemutan, atau lemah menjalar ke tangan.'),
   P('cervicogenic-headache', 'Cervicogenic / Tension-type headache', ['headache', 'suboccipital', 'upper cervical'], MSK,
-    ['suboccipital|rectus capitis|obliquus capitis', 'trapezius', 'atlas|axis', 'occipital'],
+    ['suboccipital|rectus capitis|obliquus capitis', 'trapezius', '\\batlas\\b|\\baxis\\b', 'occipital'],
     'Otot suboksipital dan sendi leher atas mengirim nyeri ke kepala bagian belakang dan dahi.'),
   P('upper-cross', 'Upper cross syndrome / Kyphosis postural', ['upper cross', 'kyphosis', 'forward head', 'postural abnormality', 'functional kyphosis'], MSK,
     ['pectoralis', 'trapezius', 'levator scapulae', 'rhomboid', 'serratus anterior', 'sternocleidomastoid', 'longus colli'],
@@ -95,10 +95,10 @@ export const DIAGNOSIS_PRESETS = [
 
   // ── Punggung & panggul ──────────────────────────────────────────────────
   P('lbp', 'Low back pain / Lumbosacral strain', ['low back pain', 'lumbosacral strain', 'stiffness lumbal', 'vertebrogenic', 'mechanical'], MSK,
-    ['lumbar vertebra|vertebra lumbalis', 'erector spinae|longissimus|iliocostalis|multifidus', 'quadratus lumborum', 'sacrum'],
+    ['lumbar vertebra|vertebra lumbalis|vertebra l[1-5]\\b', 'erector spinae|longissimus|iliocostalis|multifidus', 'quadratus lumborum', 'sacrum'],
     'Nyeri punggung bawah dari otot penyangga tulang belakang (erector spinae, multifidus, quadratus lumborum), sendi, dan jaringan di sekitar tulang lumbal.'),
   P('hnp-lumbar', 'HNP / Lumbar disc bulging', ['hernia nucleus pulposus', 'hnp', 'disc bulging', 'degenerative disc disease lumbar', 'nerve root compression', 'post op lumbar'], NEURO.concat('joints'),
-    ['lumbar vertebra|vertebra lumbalis', 'intervertebral dis[ck]|discus intervertebralis', 'nucleus pulposus', 'annulus', 'sciatic nerve|nervus ischiadicus', 'spinal nerve|l4|l5|s1'],
+    ['lumbar vertebra|vertebra lumbalis|vertebra l[1-5]\\b', 'intervertebral dis[ck]|discus intervertebralis', 'nucleus pulposus', 'annulus', 'sciatic nerve|nervus ischiadicus', 'spinal nerve|l4|l5|s1'],
     'Inti bantalan tulang belakang (nucleus pulposus) menonjol keluar lewat robekan annulus, lalu menekan akar saraf. Nyeri bisa menjalar ke bokong dan tungkai (ischialgia).'),
   P('sciatica', 'Ischialgia / Sciatic neuropathy', ['ischialgia', 'sciatic', 'sciatica', 'deep gluteal'], NEURO,
     ['sciatic nerve|nervus ischiadicus', 'piriformis', 'gluteus', 'tibial nerve|common fibular|common peroneal'],
@@ -106,10 +106,10 @@ export const DIAGNOSIS_PRESETS = [
   P('piriformis', 'Piriformis syndrome', ['piriformis'], NEURO, ['piriformis', 'sciatic nerve|nervus ischiadicus', 'gluteus maximus', 'gemell|obturator internus'],
     'Otot piriformis yang tegang atau spasme menekan saraf skiatik di bokong.'),
   P('spondylolisthesis', 'Spondylolisthesis / Spondylolysis', ['spondylolisthesis', 'spondylolysis'], MSK.concat('nerves'),
-    ['l5|fifth lumbar|lumbar vertebra|vertebra lumbalis', 'sacrum', 'intervertebral dis[ck]', 'pars|lamina'],
+    ['vertebra l5|fifth lumbar|lumbar vertebra|vertebra lumbalis', 'sacrum', 'intervertebral dis[ck]', 'pars|lamina'],
     'Ruas tulang lumbal bergeser ke depan terhadap ruas di bawahnya (paling sering L5 terhadap S1), biasanya karena retak pada pars interarticularis.'),
   P('lumbar-stenosis', 'Spinal stenosis lumbal / Spondylosis', ['spinal stenosis lumbar', 'lumbar spondylosis', 'spondyloarthrosis', 'facet joint'], MSK.concat('nerves'),
-    ['lumbar vertebra|vertebra lumbalis', 'zygapophys|facet', 'ligamentum flavum|flaval', 'cauda equina|spinal cord'],
+    ['lumbar vertebra|vertebra lumbalis|vertebra l[1-5]\\b', 'zygapophys|facet', 'ligamentum flavum|flaval', 'cauda equina|spinal cord'],
     'Saluran saraf di tulang lumbal menyempit akibat pengapuran sendi facet, penebalan ligamentum flavum, dan penonjolan diskus, sehingga tungkai cepat lelah atau baal saat berjalan.'),
   P('scoliosis', 'Scoliosis', ['scoliosis', 'lateral pelvic tilt'], MSK, ['vertebra', '\\bribs?\\b|\\bcostae?\\b', 'erector spinae', 'quadratus lumborum', 'pelvis|hip bone'],
     'Tulang belakang melengkung ke samping dan berputar, sehingga bahu, tulang belikat, atau panggul tampak tidak simetris.'),
