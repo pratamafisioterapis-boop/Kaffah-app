@@ -19,6 +19,7 @@ const TherapistRemuneration = React.lazy(lazyRetry(() => import('@/components/th
 const PatientPortalInbox = React.lazy(lazyRetry(() => import('@/components/shared/PatientPortalInbox'), 'PatientPortalInbox'));
 const ExerciseReview = React.lazy(lazyRetry(() => import('@/components/therapist/ExerciseReview'), 'ExerciseReview'));
 const ExerciseIllustrations = React.lazy(lazyRetry(() => import('@/components/therapist/ExerciseIllustrations'), 'ExerciseIllustrations'));
+const Anatomy3DExplorer = React.lazy(lazyRetry(() => import('@/components/therapist/Anatomy3DExplorer'), 'Anatomy3DExplorer'));
 const TherapistDocuments = React.lazy(lazyRetry(() => import('@/components/therapist/TherapistDocuments'), 'TherapistDocuments'));
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -123,6 +124,7 @@ const TherapistDashboard = () => {
     ...(therapistFillsMedicalRecords ? [{ label: 'Rekam Medis', path: '/therapist/medical-records', icon: 'FileText' }] : []),
     ...(canRequestSoapTemplates ? [{ label: 'Template SOAP', path: '/therapist/soap-templates', icon: 'FileText' }] : []),
     ...(canRequestLeave ? [{ label: 'Izin', path: '/therapist/leave', icon: 'Calendar' }] : []),
+    { label: 'Anatomi 3D', path: '/therapist/anatomi-3d', icon: 'Bone' },
     { label: 'Remunerasi', path: '/therapist/remuneration', icon: 'Award' },
     { label: 'Dokumen', path: '/therapist/drive-upload', icon: 'UploadCloud' },
     ...(isReviewExempt(therapistProfile?.name) ? [] : [{ label: 'Review Video Latihan', path: '/therapist/review-latihan', icon: 'MonitorPlay', clinicOnly: KAFFAH_CLINIC_ID }]),
@@ -173,6 +175,7 @@ const TherapistDashboard = () => {
           {canRequestLeave && <Route path="/leave" element={<TherapistLeaveRequests therapist={therapistProfile} />} />}
           {canRequestSoapTemplates && <Route path="/soap-templates" element={<SubjectiveTemplateManager requestMode requesterName={therapistProfile.name} therapistId={therapistProfile.id} />} />}
           <Route path="/patients" element={<TherapistPatients therapist={therapistProfile} />} />
+          <Route path="/anatomi-3d" element={<Anatomy3DExplorer />} />
           <Route path="/remuneration" element={<TherapistRemuneration therapist={therapistProfile} />} />
           <Route path="/drive-upload" element={<TherapistDocuments therapist={therapistProfile} />} />
           {therapistProfile.clinic_id === KAFFAH_CLINIC_ID && !isReviewExempt(therapistProfile.name) && <Route path="/review-latihan" element={<ExerciseReview therapist={therapistProfile} />} />}

@@ -8,7 +8,7 @@ import {
   User, Clock, Menu, ChevronRight, Bell, Search, LayoutDashboard,
   FileText, Package, ClipboardList, Database, DollarSign, ChevronDown,
   MessageSquare, Plus, Boxes, Wallet, FileSearch, FileSpreadsheet, ShieldCheck, Award,
-  UploadCloud, UserCog, MonitorPlay, ImagePlus, BookOpen, Star, Crown, Eye, Smartphone, QrCode
+  UploadCloud, UserCog, MonitorPlay, ImagePlus, Bone, BookOpen, Star, Crown, Eye, Smartphone, QrCode
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
@@ -50,6 +50,7 @@ const iconMap = {
   ShieldCheck,
   MonitorPlay,
   ImagePlus,
+  Bone,
   Clock,
   BookOpen,
   Crown,
