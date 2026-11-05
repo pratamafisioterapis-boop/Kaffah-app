@@ -22,14 +22,17 @@ export const ANATOMY_LAYERS = [
   { key: 'skin', label: 'Kulit', color: '#d7a98c', roughness: 0.6, metalness: 0, clearcoat: 0.1, sheen: 0.4, defaultOn: false, defaultOpacity: 0.35 },
 ];
 
+// File model yang namanya bukan nama lapisan (mis. heart.glb) -> lapisan tempatnya.
+export const FILE_LAYER_ALIAS = { heart: 'organs', organs: 'organs', brain: 'organs' };
+
 export const LAYER_BY_KEY = Object.fromEntries(ANATOMY_LAYERS.map((l) => [l.key, l]));
 
 // Urutan cek penting: "nerve" harus dicek sebelum "muscle" (mis. "musculocutaneous nerve"),
 // dan pembuluh sebelum otot ("muscular branch of artery").
 const RULES = [
-  ['nerves', /\b(nerve|nervus|nervi|plexus|ganglion|spinal cord|medulla spinalis|cauda equina|rootlet|ramus (?:anterior|posterior|ventralis|dorsalis))\b/],
   ['arteries', /\b(artery|arteria|arteriae|aorta|aortic|trunk(?:us)? (?:brachiocephalic|coeliac|celiac))\b/],
   ['veins', /\b(vein|vena|venae|venous|sinus (?:sagittal|transverse|sigmoid)|saphenous)\b/],
+  ['nerves', /\b(nerve|nervus|nervi|plexus|ganglion|spinal cord|medulla spinalis|cauda equina|rootlet|ramus (?:anterior|posterior|ventralis|dorsalis))\b/],
   ['joints', /\b(ligament|ligamentum|ligamenta|cartilage|cartilago|menisc(?:us|i)|labrum|intervertebral dis[ck]|discus|annulus|nucleus pulposus|joint capsule|capsula|bursa|syndesmosis|symphysis|retinacul(?:um|a))\b/],
   ['muscles', /\b(muscle|musculus|musculi|tendon|tendo|aponeuros[ie]s|fascia|diaphragm|rotator cuff|head of .* muscle)\b/],
   ['skin', /\b(skin|cutis|integument)\b/],

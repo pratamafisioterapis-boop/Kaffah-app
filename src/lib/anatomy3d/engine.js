@@ -176,9 +176,14 @@ export class AnatomyEngine {
       if (!o.isMesh) return;
       const raw = this._meshName(o);
       const fallback = fileLayer === 'auto' ? 'skeleton' : fileLayer;
-      const layer = fileLayer === 'auto' || !['muscles', 'skeleton'].includes(fileLayer)
-        ? classifyMeshName(raw, fallback)
-        : this._refineLayer(raw, fileLayer);
+      // File khusus satu sistem (sendi, saraf, arteri, vena, kulit) dipercaya apa adanya.
+      // File tulang/otot hanya memisahkan ligamen & kartilago ke lapisan sendi.
+      // File gabungan/organ (mis. heart.glb) dikelompokkan per nama (arteri/vena di dalamnya).
+      const layer = ['joints', 'nerves', 'arteries', 'veins', 'skin'].includes(fileLayer)
+        ? fileLayer
+        : ['muscles', 'skeleton'].includes(fileLayer)
+          ? this._refineLayer(raw, fileLayer)
+          : classifyMeshName(raw, fallback);
       const src = Array.isArray(o.material) ? o.material[0] : o.material;
       const hasTexture = !!src?.map;
       let mat;

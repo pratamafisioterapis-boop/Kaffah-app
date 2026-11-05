@@ -8,7 +8,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { ANATOMY_BUCKET, ANATOMY_LAYERS, COMBINED_MODEL_FILE, LAYER_BY_KEY } from '@/lib/anatomy3d/layers';
+import { ANATOMY_BUCKET, ANATOMY_LAYERS, COMBINED_MODEL_FILE, FILE_LAYER_ALIAS, LAYER_BY_KEY } from '@/lib/anatomy3d/layers';
 import { DIAGNOSIS_PRESETS, compileTargets } from '@/lib/anatomy3d/diagnosisPresets';
 
 // Menu "Anatomi 3D" di akun terapis: model anatomi manusia utuh (tulang, sendi/ligamen, otot,
@@ -28,7 +28,9 @@ const VIEWS = [
 ];
 
 const MAX_LIST = 200;
-const BUNDLED_LAYERS = ['skeleton', 'muscles'];
+const BUNDLED_FILES = ['skeleton', 'muscles', 'joints', 'nerves', 'heart'];
+// Lapisan yang dimiliki sebuah file model (nama file = nama lapisan, atau alias seperti heart -> organs).
+const layerOfFile = (key) => (LAYER_BY_KEY[key] ? key : FILE_LAYER_ALIAS[key] || null);
 
 const Anatomy3DExplorer = () => {
   const { toast } = useToast();
@@ -44,10 +46,10 @@ const Anatomy3DExplorer = () => {
   // Model bawaan aplikasi (public/models/anatomy). Lapisan dari Supabase menimpa yang bawaan.
   const sources = useMemo(() => {
     if (storageFiles === null) return null;
-    const out = Object.fromEntries(BUNDLED_LAYERS.map((k) => [k, `/models/anatomy/${k}.glb`]));
+    const out = Object.fromEntries(BUNDLED_FILES.map((k) => [k, `/models/anatomy/${k}.glb`]));
     for (const name of storageFiles) {
       const key = name.replace(/\.glb$/i, '');
-      if (key === 'full' || LAYER_BY_KEY[key]) out[key] = supabase.storage.from(ANATOMY_BUCKET).getPublicUrl(name).data.publicUrl;
+      if (key === 'full' || layerOfFile(key)) out[key] = supabase.storage.from(ANATOMY_BUCKET).getPublicUrl(name).data.publicUrl;
     }
     return out;
   }, [storageFiles]);
@@ -117,15 +119,24 @@ const Anatomy3DExplorer = () => {
   }, [syncFromEngine]);
 
   // Muat otomatis: file gabungan, atau lapisan yang aktif secara default.
+  const loadLayerFiles = useCallback((layerKey) => {
+    if (!sources) return;
+    Object.entries(sources).forEach(([file, url]) => {
+      if (layerOfFile(file) === layerKey) loadUrl(file, url, layerKey);
+    });
+  }, [sources, loadUrl]);
+
   useEffect(() => {
     if (!engineReady || !sources) return;
     if (sources.full) { loadUrl('full', sources.full, 'auto'); return; }
-    ANATOMY_LAYERS.filter((l) => l.defaultOn && sources[l.key]).forEach((l) => loadUrl(l.key, sources[l.key], l.key));
-  }, [engineReady, sources, loadUrl]);
+    ANATOMY_LAYERS.filter((l) => l.defaultOn).forEach((l) => loadLayerFiles(l.key));
+  }, [engineReady, sources, loadUrl, loadLayerFiles]);
 
   const ensureLayerLoaded = (key) => {
-    if (!sources || sources.full || loadState[key] || loadState.full || loadState.local) return;
-    if (sources[key]) loadUrl(key, sources[key], key);
+    if (!sources || sources.full || loadState.full || loadState.local) return;
+    Object.entries(sources).forEach(([file, url]) => {
+      if (layerOfFile(file) === key && !loadState[file]) loadUrl(file, url, key);
+    });
   };
 
   const setLayer = (key, patch) => {
@@ -379,8 +390,11 @@ const Anatomy3DExplorer = () => {
               <div className="space-y-2">
                 {ANATOMY_LAYERS.map((l) => {
                   const st = layerUi[l.key];
-                  const ls = loadState[l.key];
-                  const available = !!(sources?.[l.key] || sources?.full || loadState.local);
+                  const layerFiles = Object.keys(loadState).filter((f) => layerOfFile(f) === l.key).map((f) => loadState[f]);
+                  const ls = layerFiles.some((x) => x.status === 'loading')
+                    ? { status: 'loading', progress: layerFiles.reduce((a, x) => a + (x.progress || 0), 0) / layerFiles.length }
+                    : layerFiles.some((x) => x.status === 'error') ? { status: 'error' } : layerFiles[0];
+                  const available = !!(sources && (sources.full || Object.keys(sources).some((f) => layerOfFile(f) === l.key)) || loadState.local);
                   return (
                     <div key={l.key} className="rounded-app-sm border border-app-border p-2.5">
                       <div className="flex items-center gap-2">

@@ -52,7 +52,7 @@ export const DIAGNOSIS_PRESETS = [
     ['ulnar nerve|nervus ulnaris', 'medial epicondyle|epicondylus medialis', 'flexor carpi ulnaris'],
     'Saraf ulnaris tertekan di belakang tonjolan dalam siku. Muncul kesemutan di jari manis dan kelingking serta kelemahan otot kecil tangan.'),
   P('carpal-tunnel', 'Carpal tunnel syndrome', ['carpal tunnel', 'cts'], NEURO,
-    ['median nerve|nervus medianus', 'flexor retinaculum|retinaculum flexorum|transverse carpal', 'flexor digitorum superficialis', 'flexor pollicis longus'],
+    ['median nerve|nervus medianus', 'flexor retinaculum(?! of ankle)|retinaculum flexorum|transverse carpal', 'flexor digitorum superficialis', 'flexor pollicis longus'],
     'Saraf medianus tertekan di dalam terowongan karpal (di bawah ligamen transversum karpal). Gejalanya kesemutan atau baal di ibu jari sampai jari manis, terutama malam hari.'),
   P('de-quervain', 'De Quervain disease', ['de quervain', 'thumb tendonitis'], MSK,
     ['abductor pollicis longus', 'extensor pollicis brevis', '\\bradius\\b', 'styloid'],
