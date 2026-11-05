@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Loader2, Search, MousePointer2, MapPin, RotateCcw, Camera, Maximize2, Minimize2, Eye, EyeOff,
-  Crosshair, Trash2, Layers, Stethoscope, ListTree, Info, FolderOpen, X, AlertTriangle,
+  Crosshair, Trash2, Layers, Stethoscope, ListTree, Info, FolderOpen, X, AlertTriangle, ZoomIn, ZoomOut, Rotate3d,
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { ANATOMY_BUCKET, ANATOMY_LAYERS, COMBINED_MODEL_FILE, FILE_LAYER_ALIAS, LAYER_BY_KEY } from '@/lib/anatomy3d/layers';
 import { DIAGNOSIS_PRESETS, compileTargets } from '@/lib/anatomy3d/diagnosisPresets';
+import { AnatomyLabels, BodyLocator } from './AnatomyOverlays';
 
 // Menu "Anatomi 3D" di akun terapis: model anatomi manusia utuh (tulang, sendi/ligamen, otot,
 // saraf, arteri, vena, organ, kulit) dari data scan open-source, untuk menjelaskan ke pasien
@@ -70,6 +71,10 @@ const Anatomy3DExplorer = () => {
   const [dxQuery, setDxQuery] = useState('');
   const [structQuery, setStructQuery] = useState('');
   const [fullscreen, setFullscreen] = useState(false);
+  const [condition, setCondition] = useState(true); // true = Kondisi (disorot), false = Normal
+  const [autoRotate, setAutoRotate] = useState(false);
+  const [presetContext, setPresetContext] = useState([]);
+  const [locator, setLocator] = useState(null);
 
   // ── Mesin 3D ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -174,6 +179,9 @@ const Anatomy3DExplorer = () => {
       e.applyPreset(null);
       setPreset(null);
       setPresetHits([]);
+      setPresetContext([]);
+      setLocator(null);
+      setCondition(true);
       return;
     }
     p.layers.forEach((k) => ensureLayerLoaded(k));
@@ -181,12 +189,22 @@ const Anatomy3DExplorer = () => {
     setLayerUi((s) => Object.fromEntries(Object.entries(s).map(([k, v]) => [k, { ...v, visible: p.layers.includes(k) }])));
     setPreset(p);
     setPresetHits(hits);
+    setCondition(true);
+    setPresetContext(e.presetContext());
+    setLocator(e.locator(hits.length ? hits.map((h) => h.id) : e.presetContext().map((h) => h.id)));
     panelRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Lapisan yang baru selesai dimuat juga harus ikut disorot oleh preset yang sedang aktif.
   useEffect(() => {
-    if (preset && engineRef.current) setPresetHits(engineRef.current.applyPreset(compileTargets(preset), preset.layers));
+    const e = engineRef.current;
+    if (preset && e) {
+      const hits = e.applyPreset(compileTargets(preset), preset.layers);
+      setPresetHits(hits);
+      setPresetContext(e.presetContext());
+      setLocator(e.locator(hits.length ? hits.map((h) => h.id) : e.presetContext().map((h) => h.id)));
+      e.setCondition(condition);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entries.length]);
 
@@ -239,6 +257,33 @@ const Anatomy3DExplorer = () => {
     return () => document.removeEventListener('fullscreenchange', h);
   }, []);
 
+  // Label di atas model: struktur terdampak (merah, bervariasi antar-lapisan) + tulang patokan.
+  const labels = useMemo(() => {
+    if (!preset) return [];
+    const pick = (list, max) => {
+      const byLayer = new Map();
+      const seen = new Set();
+      for (const h of list) {
+        const k = h.baseName.toLowerCase();
+        if (seen.has(k)) continue;
+        seen.add(k);
+        if (!byLayer.has(h.layer)) byLayer.set(h.layer, []);
+        byLayer.get(h.layer).push(h);
+      }
+      const out = [];
+      const queues = [...byLayer.values()];
+      while (out.length < max && queues.some((q) => q.length)) queues.forEach((q) => { if (q.length && out.length < max) out.push(q.shift()); });
+      return out;
+    };
+    const coreHits = presetHits.filter((h) => h.core);
+    const problem = pick(coreHits.length ? coreHits : presetHits, 4).map((h) => ({ key: `p-${h.id}`, ids: [h.id], text: h.baseName, sub: LAYER_BY_KEY[h.layer]?.label, tone: 'problem' }));
+    const ctx = pick(presetContext, problem.length >= 3 ? 1 : 2).map((h) => ({ key: `c-${h.id}`, ids: [h.id], text: h.baseName, tone: 'context' }));
+    return [...problem, ...ctx];
+  }, [preset, presetHits, presetContext]);
+
+  const changeCondition = (on) => { setCondition(on); engineRef.current?.setCondition(on); };
+  const toggleAutoRotate = () => { setAutoRotate((v) => { engineRef.current?.setAutoRotate(!v); return !v; }); };
+
   const isLoading = Object.values(loadState).some((s) => s.status === 'loading');
   const loadingProgress = (() => {
     const l = Object.values(loadState).filter((s) => s.status === 'loading');
@@ -284,6 +329,15 @@ const Anatomy3DExplorer = () => {
                 <button key={v.key} type="button" onClick={() => engineRef.current?.setView(v.key)} className="rounded-full px-2.5 py-1.5 text-xs font-medium text-white/85 hover:bg-white/15 hover:text-white">{v.label}</button>
               ))}
             </div>
+            <select
+              aria-label="Pilih diagnosa"
+              value={preset?.id || ''}
+              onChange={(e) => applyPreset(DIAGNOSIS_PRESETS.find((p) => p.id === e.target.value) || null)}
+              className="h-9 max-w-[220px] rounded-full bg-black/55 px-3 text-xs font-semibold text-white backdrop-blur focus:outline-none"
+            >
+              <option value="" className="text-slate-900">Pilih diagnosa…</option>
+              {DIAGNOSIS_PRESETS.map((p) => <option key={p.id} value={p.id} className="text-slate-900">{p.name}</option>)}
+            </select>
             <div className="ml-auto flex gap-1.5">
               {[
                 { icon: RotateCcw, label: 'Atur ulang tampilan', onClick: resetAll },
@@ -295,9 +349,38 @@ const Anatomy3DExplorer = () => {
             </div>
           </div>
 
+          {/* Label dengan garis penunjuk */}
+          {engineReady && <AnatomyLabels engine={engineRef.current} labels={labels} active={condition} />}
+
+          {/* Rail kontrol: putar 360°, zoom, lapisan, atur ulang */}
+          <div className="absolute right-3 top-1/2 flex -translate-y-1/2 flex-col gap-1 rounded-2xl bg-black/55 p-1.5 backdrop-blur">
+            {[
+              { icon: Rotate3d, label: autoRotate ? 'Hentikan putaran' : 'Putar 360°', short: 'Putar', on: autoRotate, onClick: toggleAutoRotate },
+              { icon: ZoomIn, label: 'Perbesar', short: 'Zoom +', onClick: () => engineRef.current?.zoomBy(0.7) },
+              { icon: ZoomOut, label: 'Perkecil', short: 'Zoom −', onClick: () => engineRef.current?.zoomBy(1.4) },
+              { icon: Layers, label: 'Atur lapisan', short: 'Lapisan', onClick: () => setTab('lapisan') },
+              { icon: RotateCcw, label: 'Atur ulang', short: 'Reset', onClick: resetAll },
+            ].map(({ icon: I, label, short, on, onClick }) => (
+              <button key={label} type="button" title={label} aria-label={label} aria-pressed={on} onClick={onClick} className={cn('flex w-12 flex-col items-center gap-0.5 rounded-xl py-1.5 text-[9.5px] font-medium', on ? 'bg-blue-600 text-white' : 'text-white/85 hover:bg-white/15 hover:text-white')}>
+                <I className="h-4.5 w-4.5" style={{ width: 18, height: 18 }} />{short}
+              </button>
+            ))}
+          </div>
+
+          {/* Peta lokasi pada tubuh */}
+          {preset && locator && <BodyLocator pos={locator} className="absolute bottom-3 left-3 hidden sm:block" />}
+
+          {/* Normal / Kondisi */}
+          {preset && (
+            <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 rounded-full bg-black/60 p-1 backdrop-blur">
+              <button type="button" onClick={() => changeCondition(false)} className={cn('rounded-full px-5 py-1.5 text-xs font-semibold', !condition ? 'bg-blue-600 text-white' : 'text-white/85 hover:text-white')}>Normal</button>
+              <button type="button" onClick={() => changeCondition(true)} className={cn('rounded-full px-5 py-1.5 text-xs font-semibold', condition ? 'bg-blue-600 text-white' : 'text-white/85 hover:text-white')}>Kondisi</button>
+            </div>
+          )}
+
           {/* Info struktur terpilih */}
           {selected && (
-            <div className="absolute bottom-3 left-3 right-3 mx-auto max-w-md rounded-app-sm bg-white/95 p-3 shadow-xl backdrop-blur sm:right-auto">
+            <div className={cn('absolute left-3 right-3 mx-auto max-w-md rounded-app-sm bg-white/95 p-3 shadow-xl backdrop-blur sm:right-auto', preset ? 'bottom-16 sm:left-[84px]' : 'bottom-3')}>
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold text-slate-900">{selected.name}</p>
@@ -387,6 +470,29 @@ const Anatomy3DExplorer = () => {
                         ))}
                       </div>
                     )}
+                  </div>
+                )}
+                {preset && (
+                  <div className="rounded-app-sm border border-app-border p-2.5">
+                    <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-app-muted">Komponen anatomi</p>
+                    <div className="space-y-1">
+                      {ANATOMY_LAYERS.filter((l) => preset.layers.includes(l.key)).map((l) => (
+                        <div key={l.key} className="flex items-center gap-2 text-sm">
+                          <span className="h-3 w-3 shrink-0 rounded-full ring-1 ring-black/10" style={{ background: l.color }} />
+                          <span className="flex-1">{l.label}</span>
+                          <button type="button" aria-label={layerUi[l.key]?.visible ? `Sembunyikan ${l.label}` : `Tampilkan ${l.label}`} onClick={() => setLayer(l.key, { visible: !layerUi[l.key]?.visible })} className={cn('flex h-7 w-7 items-center justify-center rounded-full', layerUi[l.key]?.visible ? 'bg-app-accent text-white' : 'bg-slate-100 text-slate-500')}>
+                            {layerUi[l.key]?.visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                          </button>
+                        </div>
+                      ))}
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="h-3 w-3 shrink-0 rounded-full bg-red-500" />
+                        <span className="flex-1">Struktur terdampak</span>
+                        <button type="button" aria-label="Tampilkan atau sembunyikan sorotan kondisi" onClick={() => changeCondition(!condition)} className={cn('flex h-7 w-7 items-center justify-center rounded-full', condition ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-500')}>
+                          {condition ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
                 <div className="relative">

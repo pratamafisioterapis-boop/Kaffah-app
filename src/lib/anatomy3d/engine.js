@@ -56,6 +56,9 @@ export class AnatomyEngine {
     this.selectedId = null;
     this.pins = [];
     this.framed = false;
+    this.conditionOn = true; // false = tampilan "Normal" (sorotan diagnosa dimatikan)
+    this.glow = null;
+    this.frameListeners = new Set();
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: false });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -145,7 +148,19 @@ export class AnatomyEngine {
     this.controls.update();
     // Lampu utama ikut kamera supaya sisi yang dilihat selalu terang (seperti lampu periksa).
     this.keyLight.position.copy(this.camera.position).add(new THREE.Vector3(0.6, 0.8, 0).multiplyScalar(this._radius || 1));
+    if (this.glow) {
+      const k = 1 + 0.08 * Math.sin(now / 380);
+      this.glow.scale.setScalar(k);
+      this.glow.material.opacity = 0.16 + 0.07 * (0.5 + 0.5 * Math.sin(now / 380));
+    }
     this.renderer.render(this.scene, this.camera);
+    this.frameListeners.forEach((fn) => fn());
+  }
+
+  // Dipanggil setiap frame setelah render (mis. untuk menempatkan label HTML). Mengembalikan fungsi berhenti.
+  onFrame(fn) {
+    this.frameListeners.add(fn);
+    return () => this.frameListeners.delete(fn);
   }
 
   dispose() {
@@ -153,6 +168,8 @@ export class AnatomyEngine {
     this._ro.disconnect();
     this.renderer.domElement.removeEventListener('pointerdown', this._onPointerDown);
     this.renderer.domElement.removeEventListener('pointerup', this._onPointerUp);
+    this.frameListeners.clear();
+    this._clearGlow();
     this.controls.dispose();
     this.draco.dispose();
     this.scene.traverse((o) => {
@@ -263,13 +280,14 @@ export class AnatomyEngine {
     const ls = this.layerState[e.layer] || { visible: true, opacity: 1 };
     const m = e.mesh.material;
     const inIsolation = !this.isolatedIds || this.isolatedIds.has(e.id);
-    const isProblem = this.problemIds.has(e.id) || (this.presetIds?.has(e.id) ?? false);
+    const presetOn = this.conditionOn ? this.presetIds : null;
+    const isProblem = this.problemIds.has(e.id) || (presetOn?.has(e.id) ?? false);
     e.mesh.visible = (ls.visible || isProblem) && !this.hiddenIds.has(e.id) && inIsolation;
 
     let opacity = ls.opacity;
     const isContext = this.contextIds?.has(e.id) ?? false;
     if (isContext) e.mesh.visible = !this.hiddenIds.has(e.id) && inIsolation;
-    if (this.presetIds && !isProblem && !isContext) opacity = Math.min(opacity, GHOST_OPACITY);
+    if (presetOn && !isProblem && !isContext) opacity = Math.min(opacity, GHOST_OPACITY);
     if (isProblem) opacity = 1;
     m.transparent = opacity < 0.999;
     m.opacity = opacity;
@@ -352,9 +370,12 @@ export class AnatomyEngine {
     if (!regexes) {
       this.presetIds = null;
       this.contextIds = null;
+      this.conditionOn = true;
+      this._clearGlow();
       this._refreshAll();
       return [];
     }
+    this.conditionOn = true;
     if (layers) for (const l of ANATOMY_LAYERS) this.layerState[l.key].visible = layers.includes(l.key);
     const matched = [...this.entries.values()].filter((e) => regexes.some((r) => r.test(e.search)));
     // Bila preset mengenai jaringan lunak (otot, ligamen, saraf…), tulang yang ikut cocok hanya
@@ -365,8 +386,112 @@ export class AnatomyEngine {
     this.contextIds = new Set(soft ? matched.filter((e) => e.layer === 'skeleton').map((e) => e.id) : []);
     this.presetIds = ids;
     this._refreshAll();
-    if (matched.length) this.focusOn(ids.size ? [...ids] : [...this.contextIds]);
-    return [...ids].map((id) => this._public(this.entries.get(id)));
+    const core = this._coreIds([...ids]);
+    const coreSet = new Set(core);
+    this._makeGlow(core);
+    if (matched.length) this.focusOn(core.length ? core : [...this.contextIds]);
+    return [...ids].map((id) => ({ ...this._public(this.entries.get(id)), core: coreSet.has(id) }));
+  }
+
+  // Struktur patokan (tulang) dari preset aktif, untuk label konteks.
+  presetContext() {
+    return [...(this.contextIds || [])].map((id) => this._public(this.entries.get(id))).filter(Boolean);
+  }
+
+  // Tampilan Normal (tanpa sorotan) vs Kondisi (struktur terdampak merah + glow).
+  setCondition(on) {
+    this.conditionOn = !!on;
+    if (this.glow) this.glow.visible = this.conditionOn;
+    this._refreshAll();
+  }
+
+  // Buang struktur pencilan (mis. "spinal nerve" yang mengenai seluruh tubuh) supaya kamera, glow, dan
+  // peta lokasi memusat pada kelompok utama struktur terdampak.
+  _coreIds(allIds) {
+    // Sendi/ligamen/diskus biasanya paling spesifik lokasinya; saraf dan otot panjang bisa menyebar luas.
+    const joints = allIds.filter((id) => this.entries.get(id)?.layer === 'joints');
+    const ids = joints.length ? joints : allIds;
+    if (ids.length < 4) return ids;
+    const pts = ids.map((id) => {
+      const e = this.entries.get(id);
+      return e ? { id, c: new THREE.Box3().expandByObject(e.mesh).getCenter(new THREE.Vector3()) } : null;
+    }).filter(Boolean);
+    const med = (arr) => [...arr].sort((a, b) => a - b)[Math.floor(arr.length / 2)];
+    const m = new THREE.Vector3(med(pts.map((p) => p.c.x)), med(pts.map((p) => p.c.y)), med(pts.map((p) => p.c.z)));
+    const d = pts.map((p) => p.c.distanceTo(m));
+    const limit = Math.max(med(d) * 2.5, (this._radius || 1) * 0.06);
+    const kept = pts.filter((_, i) => d[i] <= limit).map((p) => p.id);
+    return kept.length ? kept : ids;
+  }
+
+  // Cahaya merah berdenyut di area masalah (hanya bila areanya terlokalisasi, bukan seluruh anggota gerak).
+  _makeGlow(ids) {
+    this._clearGlow();
+    if (!ids.length) return;
+    const box = this._boxOf(ids);
+    if (box.isEmpty()) return;
+    const size = box.getSize(new THREE.Vector3());
+    const max = Math.max(size.x, size.y, size.z);
+    const whole = this._wholeBox().getSize(new THREE.Vector3()).length() || 1;
+    if (max > whole * 0.22) return;
+    const r = Math.max(max * 0.7, whole * 0.012);
+    const mat = new THREE.MeshBasicMaterial({ color: '#ff3b2f', transparent: true, opacity: 0.2, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending });
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 32, 20), mat);
+    m.position.copy(box.getCenter(new THREE.Vector3()));
+    m.renderOrder = 5;
+    this.scene.add(m);
+    this.glow = m;
+  }
+
+  _clearGlow() {
+    if (!this.glow) return;
+    this.glow.geometry.dispose();
+    this.glow.material.dispose();
+    this.glow.removeFromParent();
+    this.glow = null;
+  }
+
+  _wholeBox() {
+    const box = new THREE.Box3();
+    for (const e of this.entries.values()) if (e.layer === 'skeleton') box.expandByObject(e.mesh);
+    if (box.isEmpty()) for (const e of this.entries.values()) box.expandByObject(e.mesh);
+    return box;
+  }
+
+  // Posisi layar (piksel dalam kontainer) pusat sekelompok struktur, untuk garis penunjuk label.
+  project(ids) {
+    const box = this._boxOf(ids);
+    if (box.isEmpty()) return null;
+    const v = box.getCenter(new THREE.Vector3()).project(this.camera);
+    const w = this.container.clientWidth;
+    const h = this.container.clientHeight;
+    return { x: (v.x * 0.5 + 0.5) * w, y: (-v.y * 0.5 + 0.5) * h, visible: v.z > -1 && v.z < 1 };
+  }
+
+  // Letak relatif (0..1) sekelompok struktur terhadap seluruh tubuh, untuk mini peta tubuh.
+  locator(ids) {
+    const box = this._boxOf(this._coreIds(ids));
+    const whole = this._wholeBox();
+    if (box.isEmpty() || whole.isEmpty()) return null;
+    const c = box.getCenter(new THREE.Vector3());
+    const s = whole.getSize(new THREE.Vector3());
+    return { x: (c.x - whole.min.x) / (s.x || 1), y: 1 - (c.y - whole.min.y) / (s.y || 1) };
+  }
+
+  zoomBy(factor) {
+    const off = this.camera.position.clone().sub(this.controls.target);
+    const d = THREE.MathUtils.clamp(off.length() * factor, this.controls.minDistance, this.controls.maxDistance);
+    off.setLength(d);
+    this.tween = {
+      start: performance.now(), dur: 280,
+      fromPos: this.camera.position.clone(), toPos: this.controls.target.clone().add(off),
+      fromTarget: this.controls.target.clone(), toTarget: this.controls.target.clone(),
+    };
+  }
+
+  setAutoRotate(on) {
+    this.controls.autoRotate = !!on;
+    this.controls.autoRotateSpeed = 2.2;
   }
 
   // ── Pin penanda nyeri/lokasi ──────────────────────────────────────────
