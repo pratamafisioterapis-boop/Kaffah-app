@@ -31,6 +31,9 @@ class Worker:
         self.headers = {'apikey': key}
         if not key.startswith('sb_secret_'):
             self.headers['Authorization'] = 'Bearer ' + key
+        provider_path = Path(args.output) / 'provider-config.json'
+        if provider_path.exists() and json.loads(provider_path.read_text()).get('paid_openai_api_enabled') is False:
+            raise RuntimeError('Paid OpenAI API disabled by user; use built-in imagegen and publish_local.py')
         self.client = OpenAI(max_retries=2, timeout=180)
         self.root = Path(args.output).resolve()
         self.root.mkdir(parents=True, exist_ok=True)
