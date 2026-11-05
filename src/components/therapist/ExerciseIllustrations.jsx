@@ -6,6 +6,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { confirmAction } from '@/lib/confirmAction';
+import { readExerciseIllustrationZip } from '@/lib/exerciseIllustrationZip';
 
 const BUCKET = 'exercise-illustrations';
 const MAX_INPUT_BYTES = 25 * 1024 * 1024;
@@ -15,6 +16,11 @@ const ExerciseIllustrations = ({ therapist }) => {
   const { toast } = useToast();
   const [exercises, setExercises] = useState([]);
   const [illus, setIllus] = useState({});
+  const [steps, setSteps] = useState({});
+  const [zipPreview, setZipPreview] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(null);
+  const zipFileRef = useRef(null);
   const [urls, setUrls] = useState({});
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('todo');
@@ -24,17 +30,21 @@ const ExerciseIllustrations = ({ therapist }) => {
   const targetId = useRef(null);
 
   const load = useCallback(async () => {
-    const [ex, vi, il] = await Promise.all([
+    const [ex, vi, il, st] = await Promise.all([
       supabase.from('plan_exercises').select('id, name, grp, how_to, dose').order('id'),
       supabase.from('exercise_video_assets').select('exercise_id'),
       supabase.from('exercise_illustrations').select('exercise_id, storage_path, uploader_name, updated_at'),
+      supabase.from('exercise_illustration_steps').select('exercise_id, step_number, storage_path').order('step_number'),
     ]);
-    const err = ex.error || vi.error || il.error;
+    const err = ex.error || vi.error || il.error || st.error;
     if (err) toast({ variant: 'destructive', title: 'Gagal memuat daftar latihan', description: err.message });
     const hasVideo = new Set((vi.data || []).map((v) => v.exercise_id));
     setExercises((ex.data || []).filter((e) => !hasVideo.has(e.id)));
     const map = Object.fromEntries((il.data || []).map((r) => [r.exercise_id, r]));
     setIllus(map);
+    const stepMap = {};
+    for (const entry of st.data || []) (stepMap[entry.exercise_id] ||= []).push(entry);
+    setSteps(stepMap);
 
     const rows = Object.values(map);
     if (rows.length) {
@@ -48,8 +58,8 @@ const ExerciseIllustrations = ({ therapist }) => {
 
   useEffect(() => { load(); }, [load]);
 
-  const todo = useMemo(() => exercises.filter((e) => !illus[e.id]), [exercises, illus]);
-  const done = useMemo(() => exercises.filter((e) => illus[e.id]), [exercises, illus]);
+  const todo = useMemo(() => exercises.filter((e) => !illus[e.id] && !steps[e.id]?.length), [exercises, illus, steps]);
+  const done = useMemo(() => exercises.filter((e) => illus[e.id] || steps[e.id]?.length), [exercises, illus, steps]);
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (tab === 'todo' ? todo : done).filter((e) =>
@@ -91,6 +101,71 @@ const ExerciseIllustrations = ({ therapist }) => {
     }
   };
 
+
+  const onZipFile = async (ev) => {
+    const file = ev.target.files?.[0];
+    ev.target.value = '';
+    if (!file) return;
+    setZipPreview(null);
+    setImportProgress(null);
+    try {
+      const zip = await readExerciseIllustrationZip(file, new Set(exercises.map((e) => e.id.toUpperCase())));
+      const existing = new Set(Object.values(steps).flat().map((r) => r.exercise_id.toUpperCase() + '/' + r.step_number));
+      // Never overwrite an already imported stage or an existing legacy illustration.
+      const included = zip.entries.filter((entry) => !existing.has(entry.id + '/' + entry.step) && !(entry.step === 1 && illus[entry.id]));
+      const skipped = zip.entries.length - included.length;
+      setZipPreview({ zip, included, skipped, name: file.name });
+      if (!included.length) toast({ title: 'Tidak ada gambar baru untuk diimpor', description: 'Periksa ID latihan, penamaan step, dan ilustrasi yang sudah ada.' });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'ZIP tidak dapat dibaca', description: err.message });
+    }
+  };
+
+  const importZip = async () => {
+    if (!zipPreview || importing || !zipPreview.included.length) return;
+    setImporting(true);
+    const { zip, included } = zipPreview;
+    const failed = [];
+    let successful = 0;
+    for (const [index, entry] of included.entries()) {
+      setImportProgress({ done: index, total: included.length, successful, failures: failed.length });
+      const path = entry.id + '/step-' + String(entry.step).padStart(2, '0') + '.' + entry.ext;
+      try {
+        const blob = await zip.extract(entry);
+        const upload = await supabase.storage.from(BUCKET).upload(path, blob, {
+          upsert: false, contentType: blob.type, cacheControl: '3600',
+        });
+        if (upload.error) throw upload.error;
+        const save = await supabase.from('exercise_illustration_steps').upsert({
+          exercise_id: entry.id, step_number: entry.step, storage_path: path, size_bytes: blob.size,
+        }, { onConflict: 'exercise_id,step_number' });
+        if (save.error) throw save.error;
+        // Existing patient portal uses the legacy table, so the first image is
+        // also registered as the primary illustration (without replacing any prior image).
+        if (entry.step === 1 && !illus[entry.id]) {
+          const legacy = await supabase.from('exercise_illustrations').upsert({
+            exercise_id: entry.id, storage_path: path, size_bytes: blob.size,
+            uploaded_by: therapist?.user_id || null,
+            uploader_name: therapist?.name || 'Import ZIP', updated_at: new Date().toISOString(),
+          }, { onConflict: 'exercise_id' });
+          if (legacy.error) throw legacy.error;
+        }
+        successful++;
+      } catch (error) {
+        failed.push(entry.rawName + ': ' + (error?.message || 'Kesalahan tidak diketahui'));
+      }
+    }
+    setImportProgress({ done: included.length, total: included.length, successful, failures: failed.length, failed });
+    setZipPreview(null);
+    setImporting(false);
+    await load();
+    toast({
+      title: successful + ' gambar berhasil diimpor',
+      description: failed.length ? failed.length + ' gagal; lihat laporan di bawah.' : 'Seluruh gambar berhasil disimpan ke Supabase.',
+      ...(failed.length ? { variant: 'destructive' } : {}),
+    });
+  };
+
   const remove = async (e) => {
     if (!(await confirmAction(`Hapus ilustrasi ${e.id}? Latihan ini akan kembali ke daftar "Belum ada ilustrasi".`))) return;
     setBusyId(e.id);
@@ -107,6 +182,49 @@ const ExerciseIllustrations = ({ therapist }) => {
   return (
     <div className="space-y-4">
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
+      <input ref={zipFileRef} type="file" accept=".zip,application/zip" className="hidden" onChange={onZipFile} />
+      <section className="rounded-app-lg border border-blue-200 bg-blue-50/60 p-4 space-y-3">
+        <div>
+          <h3 className="font-semibold text-slate-900">Import Ilustrasi Massal (ZIP)</h3>
+          <p className="text-sm text-slate-600 mt-1">
+            Masukkan beberapa gambar per latihan dengan struktur folder <code>RO01/step-01.jpg</code>,
+            <code className="ml-1">RO01/step-02.jpg</code>, dan seterusnya.
+            ID harus sesuai kode latihan tanpa video. File gambar JPG, PNG, WebP maksimal 5 MB,
+            maksimal 12 tahap per latihan, ZIP maksimal 200 MB. Berkas yang sudah terpasang tidak ditimpa.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" disabled={importing} onClick={() => zipFileRef.current?.click()}>
+            <Upload className="w-4 h-4 mr-2" /> Pilih ZIP ilustrasi
+          </Button>
+          {zipPreview && <Button size="sm" variant="outline" disabled={importing} onClick={() => { setZipPreview(null); setImportProgress(null); }}>Batalkan</Button>}
+        </div>
+        {zipPreview && (
+          <div className="rounded-lg bg-white border p-3 space-y-2 text-sm">
+            <p className="font-medium break-all">{zipPreview.name}</p>
+            <p>{zipPreview.included.length} gambar siap diimpor untuk {new Set(zipPreview.included.map(e => e.id)).size} latihan.
+              {zipPreview.skipped > 0 && <span> {zipPreview.skipped} gambar sudah ada (dilewati).</span>}
+              {zipPreview.zip.rejected.length > 0 && <span> {zipPreview.zip.rejected.length} file tidak cocok (dilewati).</span>}
+            </p>
+            {!!zipPreview.zip.rejected.length && <details><summary className="cursor-pointer text-amber-800">Lihat file yang ditolak</summary>
+              <ul className="max-h-36 overflow-y-auto list-disc pl-5 mt-1">{zipPreview.zip.rejected.map((item, i) => <li key={i}>{item}</li>)}</ul>
+            </details>}
+            <Button size="sm" disabled={importing || !zipPreview.included.length} onClick={importZip}>
+              {importing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+              Mulai impor {zipPreview.included.length} gambar
+            </Button>
+          </div>
+        )}
+        {importProgress && <div className="rounded-lg bg-white border p-3 text-sm space-y-2">
+          <p>Progres: {importProgress.done}/{importProgress.total} gambar • {importProgress.successful} berhasil • {importProgress.failures} gagal</p>
+          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-full bg-blue-600 transition-all" style={{ width: (importProgress.total ? 100 * importProgress.done / importProgress.total : 0) + '%' }} />
+          </div>
+          {!!importProgress.failed?.length && <details><summary className="cursor-pointer text-red-700">Lihat rincian kegagalan</summary>
+            <ul className="list-disc pl-5 max-h-44 overflow-auto mt-1">{importProgress.failed.map((item, i) => <li key={i}>{item}</li>)}</ul>
+          </details>}
+        </div>}
+      </section>
       <div className="rounded-app-lg border border-slate-200 bg-white p-4 space-y-3">
         <p className="text-sm text-slate-600">
           Daftar ini berisi latihan yang belum punya video. Unggah foto ilustrasi gerakannya (dari kamera atau galeri) supaya pasien tetap bisa melihat contoh gerakan.
@@ -138,6 +256,7 @@ const ExerciseIllustrations = ({ therapist }) => {
                 <div className="min-w-0 flex-1 basis-48">
                   <p className="font-medium text-slate-900 break-words">{e.name}</p>
                   <p className="text-xs text-slate-500">{e.grp}</p>
+                  {steps[e.id]?.length > 0 && <p className="text-xs text-blue-700 mt-1">{steps[e.id].length} gambar tahapan</p>}
                   {r && <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-emerald-700"><CheckCircle2 className="w-3.5 h-3.5" /> Diunggah {r.uploader_name || 'terapis'}</p>}
                 </div>
                 <div className="flex gap-2">
