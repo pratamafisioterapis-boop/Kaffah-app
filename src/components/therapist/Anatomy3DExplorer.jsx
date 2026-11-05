@@ -28,6 +28,7 @@ const VIEWS = [
 ];
 
 const MAX_LIST = 200;
+const BUNDLED_LAYERS = ['skeleton', 'muscles'];
 
 const Anatomy3DExplorer = () => {
   const { toast } = useToast();
@@ -39,7 +40,17 @@ const Anatomy3DExplorer = () => {
 
   const [engineReady, setEngineReady] = useState(false);
   const [engineError, setEngineError] = useState('');
-  const [files, setFiles] = useState(null); // null = memeriksa, [] = belum ada model
+  const [storageFiles, setStorageFiles] = useState(null); // null = memeriksa
+  // Model bawaan aplikasi (public/models/anatomy). Lapisan dari Supabase menimpa yang bawaan.
+  const sources = useMemo(() => {
+    if (storageFiles === null) return null;
+    const out = Object.fromEntries(BUNDLED_LAYERS.map((k) => [k, `/models/anatomy/${k}.glb`]));
+    for (const name of storageFiles) {
+      const key = name.replace(/\.glb$/i, '');
+      if (key === 'full' || LAYER_BY_KEY[key]) out[key] = supabase.storage.from(ANATOMY_BUCKET).getPublicUrl(name).data.publicUrl;
+    }
+    return out;
+  }, [storageFiles]);
   const [loadState, setLoadState] = useState({}); // key -> { status, progress, error }
   const [layerUi, setLayerUi] = useState(() => Object.fromEntries(ANATOMY_LAYERS.map((l) => [l.key, { visible: l.defaultOn, opacity: l.defaultOpacity ?? 1 }])));
   const [counts, setCounts] = useState({});
@@ -79,8 +90,8 @@ const Anatomy3DExplorer = () => {
   // ── Daftar file model di storage ─────────────────────────────────────
   useEffect(() => {
     supabase.storage.from(ANATOMY_BUCKET).list('', { limit: 100 }).then(({ data, error }) => {
-      if (error) { setFiles([]); return; }
-      setFiles((data || []).map((f) => f.name).filter((n) => /\.glb$/i.test(n)));
+      if (error) { setStorageFiles([]); return; }
+      setStorageFiles((data || []).map((f) => f.name).filter((n) => /\.glb$/i.test(n)));
     });
   }, []);
 
@@ -105,22 +116,16 @@ const Anatomy3DExplorer = () => {
     }
   }, [syncFromEngine]);
 
-  const urlOf = (name) => supabase.storage.from(ANATOMY_BUCKET).getPublicUrl(name).data.publicUrl;
-
   // Muat otomatis: file gabungan, atau lapisan yang aktif secara default.
   useEffect(() => {
-    if (!engineReady || !files?.length) return;
-    if (files.includes(COMBINED_MODEL_FILE)) {
-      loadUrl('full', urlOf(COMBINED_MODEL_FILE), 'auto');
-      return;
-    }
-    ANATOMY_LAYERS.filter((l) => l.defaultOn && files.includes(`${l.key}.glb`))
-      .forEach((l) => loadUrl(l.key, urlOf(`${l.key}.glb`), l.key));
-  }, [engineReady, files, loadUrl]);
+    if (!engineReady || !sources) return;
+    if (sources.full) { loadUrl('full', sources.full, 'auto'); return; }
+    ANATOMY_LAYERS.filter((l) => l.defaultOn && sources[l.key]).forEach((l) => loadUrl(l.key, sources[l.key], l.key));
+  }, [engineReady, sources, loadUrl]);
 
   const ensureLayerLoaded = (key) => {
-    if (!files || files.includes(COMBINED_MODEL_FILE) || loadState[key] || loadState.full || loadState.local) return;
-    if (files.includes(`${key}.glb`)) loadUrl(key, urlOf(`${key}.glb`), key);
+    if (!sources || sources.full || loadState[key] || loadState.full || loadState.local) return;
+    if (sources[key]) loadUrl(key, sources[key], key);
   };
 
   const setLayer = (key, patch) => {
@@ -218,7 +223,7 @@ const Anatomy3DExplorer = () => {
     return l.length ? Math.round((l.reduce((a, s) => a + (s.progress || 0), 0) / l.length) * 100) : 0;
   })();
   const hasModel = entries.length > 0;
-  const noModelAvailable = files !== null && files.length === 0 && !loadState.local;
+  const noModelAvailable = sources !== null && Object.keys(sources).length === 0 && !loadState.local;
 
   return (
     <div className="space-y-4">
@@ -375,7 +380,7 @@ const Anatomy3DExplorer = () => {
                 {ANATOMY_LAYERS.map((l) => {
                   const st = layerUi[l.key];
                   const ls = loadState[l.key];
-                  const available = files?.includes(`${l.key}.glb`) || files?.includes(COMBINED_MODEL_FILE) || !!loadState.local;
+                  const available = !!(sources?.[l.key] || sources?.full || loadState.local);
                   return (
                     <div key={l.key} className="rounded-app-sm border border-app-border p-2.5">
                       <div className="flex items-center gap-2">
