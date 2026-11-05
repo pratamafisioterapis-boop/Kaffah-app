@@ -189,11 +189,16 @@ export const portalApi = {
   },
   // Semua latihan sekaligus: { [kode]: { url, poster } }. poster null = sampul belum dibuat.
   videoUrls: async (session, exerciseIds) => {
-    const { data, error } = await supabase.functions.invoke('portal-exercise-video', {
-      body: { session, exercise_ids: exerciseIds },
-    });
-    if (error || !data?.items) throw new Error('Video belum bisa diputar. Coba lagi nanti.');
-    return data.items;
+    const items = {};
+    const ids = [...new Set(exerciseIds)];
+    for (let offset = 0; offset < ids.length; offset += 50) {
+      const { data, error } = await supabase.functions.invoke('portal-exercise-video', {
+        body: { session, exercise_ids: ids.slice(offset, offset + 50) },
+      });
+      if (error || !data?.items) throw new Error('Media latihan belum bisa dimuat. Coba lagi nanti.');
+      Object.assign(items, data.items);
+    }
+    return items;
   },
   submitFeedback: (session, vas, tags, message) =>
     call('portal_submit_feedback', { p_session: session, p_vas: vas, p_tags: tags, p_message: message }),

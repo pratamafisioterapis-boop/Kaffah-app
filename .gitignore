@@ -9,3 +9,7 @@ dist
 *.key
 serviceAccount*.json
 *-service-account*.json
+
+# Local illustration runs
+illustration-runs/
+__pycache__/

@@ -52,11 +52,11 @@ Deno.serve(async (req: Request) => {
         Promise.all(ids.map((id) => rpcPath("portal_video_path", id))),
         Promise.all(ids.map((id) => rpcPath("portal_illustration_path", id))),
       ]);
-      type Item = { url: string | null; poster: string | null; image: string | null };
+      type Item = { url: string | null; poster: string | null; image: string | null; images: { step_number: number; url: string }[] };
       const items: Record<string, Item> = {};
       const withVideo = ids.filter((_, i) => vPaths[i]);
       const withImage = ids.filter((_, i) => iPaths[i]);
-      ids.forEach((id, i) => { if (vPaths[i] || iPaths[i]) items[id] = { url: null, poster: null, image: null }; });
+      ids.forEach((id, i) => { if (vPaths[i] || iPaths[i]) items[id] = { url: null, poster: null, image: null, images: [] }; });
       if (Object.keys(items).length === 0) return json({ items });
 
       const illusStorage = admin.storage.from(ILLUSTRATION_BUCKET);
@@ -75,6 +75,26 @@ Deno.serve(async (req: Request) => {
         const m = images?.data?.[i];
         items[id].image = m && !m.error && m.signedUrl ? m.signedUrl : null;
       });
+      // Only query steps for IDs already authorized by portal_illustration_path.
+      // Never sign arbitrary paths supplied by a caller.
+      if (withImage.length) {
+        const { data: steps, error: stepError } = await admin
+          .from("exercise_illustration_steps")
+          .select("exercise_id, step_number, storage_path")
+          .in("exercise_id", withImage).order("step_number");
+        if (stepError) throw stepError;
+        if (steps?.length) {
+          const { data: signed, error: signingError } = await illusStorage
+            .createSignedUrls(steps.map((step) => step.storage_path), TTL);
+          if (signingError) throw signingError;
+          steps.forEach((step, index) => {
+            const result = signed?.[index];
+            if (result?.signedUrl && !result.error) {
+              items[step.exercise_id].images.push({ step_number: step.step_number, url: result.signedUrl });
+            }
+          });
+        }
+      }
       return json({ items });
     }
 

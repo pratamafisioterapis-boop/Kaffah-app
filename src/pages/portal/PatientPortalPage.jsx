@@ -1,3 +1,4 @@
+import ExerciseIllustrationViewer from '@/components/portal/ExerciseIllustrationViewer';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
@@ -547,11 +548,14 @@ const useVideoUrls = (session, items) => {
     portalApi.videoUrls(session, ids)
       .then((res) => {
         setUrls((p) => ({ ...p, ...Object.fromEntries(ids.map((id) => [id, res[id]?.url ?? null])) }));
-        setImages((p) => ({ ...p, ...Object.fromEntries(ids.map((id) => [id, res[id]?.image ?? null])) }));
+        setImages((p) => ({ ...p, ...Object.fromEntries(ids.map((id) => [id, res[id]?.images?.length ? res[id].images : res[id]?.image ? [{ step_number: 1, url: res[id].image }] : []])) }));
         setPosters((p) => ({ ...p, ...Object.fromEntries(ids.map((id) => [id, res[id]?.poster ?? null])) }));
       })
       // Fungsi lama tanpa mode daftar: ambil satu per satu seperti sebelumnya.
-      .catch(() => ids.forEach((id) => load(id, true)));
+      .catch(() => {
+        setImages((p) => ({ ...p, ...Object.fromEntries(ids.map((id) => [id, []])) }));
+        ids.forEach((id) => load(id, true));
+      });
   }, [items, session, load]);
   return [urls, load, posters, images];
 };
@@ -608,7 +612,7 @@ const ProgramTab = ({ session, items, therapist, onToggle }) => {
             <div className={`ex${e.done_today ? ' is-done' : ''}`} key={e.exercise_id}>
               <div className="ex-r">
                 <button className="ex-open" onClick={() => setOpenId(open ? null : e.exercise_id)} aria-expanded={open}>
-                  <Thumb item={e} url={url} poster={posters[e.exercise_id]} image={images[e.exercise_id]} />
+                  <Thumb item={e} url={url} poster={posters[e.exercise_id]} image={images[e.exercise_id]?.[0]?.url} />
                   <span className="sp"><b className="ex-title">{e.title}</b><span className="muted small">{e.dose}</span></span>
                 </button>
                 <button className={`ck${e.done_today ? ' on' : ''}`} onClick={() => toggle(e)} disabled={busyId === e.exercise_id} aria-pressed={!!e.done_today} aria-label={`Tandai ${e.title} selesai`}>
@@ -624,8 +628,8 @@ const ProgramTab = ({ session, items, therapist, onToggle }) => {
                         : <span>Memuat video...</span>}
                     </div>
                   )}
-                  {!e.has_video && images[e.exercise_id] && (
-                    <img className="illus" src={images[e.exercise_id]} alt={`Ilustrasi ${e.title}`} decoding="async" />
+                  {!e.has_video && e.has_illustration && (
+                    <ExerciseIllustrationViewer key={e.exercise_id} title={e.title} images={images[e.exercise_id]} />
                   )}
                   {e.how_to && (steps ? <ol className="steps">{steps.map((x, i) => <li key={i}>{x}</li>)}</ol> : <p>{e.how_to}</p>)}
                   {e.progression && <><div className="k ok">Jika sudah terasa ringan</div><p>{e.progression}</p></>}
@@ -1052,7 +1056,7 @@ const PatientPortalPage = () => {
         <div className={`pp-body${tab === 'chat' ? ' chatting' : ''}`}>
           {tab === 'home' && home && <HomeTab home={home} goals={goals} go={setTab} onLogout={logout} />}
           {tab === 'prog' && (progress ? <ProgressTab data={progress} goals={goals} complaint={home?.complaint} /> : <div className="pp-pad" style={{ paddingTop: TOP_PAD }}><p className="muted">Memuat...</p></div>)}
-          {tab === 'lat' && <ProgramTab session={session} items={program} therapist={home?.therapist} onToggle={toggleExercise} />}
+          {tab === 'lat' && <ProgramTab key={session} session={session} items={program} therapist={home?.therapist} onToggle={toggleExercise} />}
           {tab === 'fb' && <FeedbackTab token={token} history={history} onSubmit={submitFeedback} />}
           {tab === 'book' && <BookingTab token={token} session={session} onBack={() => setTab('home')} onBooked={() => { refreshHome(session); setTab('home'); }} onUnauthorized={onUnauthorizedBook} />}
           {tab === 'chat' && <ChatTab token={token} session={session} therapist={home?.therapist} clinicName={home?.clinic?.name} onUnauthorized={() => backToGate('Sesi Anda berakhir.')} />}
