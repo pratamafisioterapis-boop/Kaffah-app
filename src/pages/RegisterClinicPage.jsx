@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Building2, User, Mail, Phone, Lock, Loader2, AlertCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
@@ -33,6 +33,40 @@ const RegisterClinicPage = () => {
   const [error, setError] = useState(null);
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const inviteToken = (searchParams.get('token') || '').trim();
+  // 'checking' | 'valid' | 'invalid'
+  const [inviteState, setInviteState] = useState(inviteToken ? 'checking' : 'invalid');
+  const [inviteError, setInviteError] = useState(
+    inviteToken ? null : 'Pendaftaran klinik hanya melalui link undangan dari tim Clinara.'
+  );
+
+  useEffect(() => {
+    if (!inviteToken) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${supabaseUrl}/functions/v1/register-clinic`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', apikey: supabaseAnonKey },
+          body: JSON.stringify({ action: 'validate', invite_token: inviteToken }),
+        });
+        const result = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (res.ok && result.valid) {
+          setInviteState('valid');
+        } else {
+          setInviteError(result.error || 'Link registrasi tidak valid.');
+          setInviteState('invalid');
+        }
+      } catch {
+        if (cancelled) return;
+        setInviteError('Tidak dapat memeriksa link registrasi. Periksa koneksi lalu muat ulang.');
+        setInviteState('invalid');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [inviteToken]);
 
   const setField = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -60,6 +94,7 @@ const RegisterClinicPage = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', apikey: supabaseAnonKey },
         body: JSON.stringify({
+          invite_token: inviteToken,
           clinic_name: form.clinic_name.trim(),
           owner_full_name: form.owner_full_name.trim(),
           email: form.email.trim(),
@@ -117,13 +152,30 @@ const RegisterClinicPage = () => {
                 </p>
               </div>
 
-              {error && (
+              {inviteState === 'checking' && (
+                <div className="py-10 flex justify-center" role="status" aria-label="Memeriksa link">
+                  <Loader2 className="w-6 h-6 animate-spin text-clinara-teal" />
+                </div>
+              )}
+
+              {inviteState === 'invalid' && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="text-sm text-amber-800 leading-snug">
+                    <p className="font-semibold">Link registrasi tidak dapat dipakai</p>
+                    <p className="mt-1">{inviteError} Hubungi tim Clinara untuk meminta link registrasi baru.</p>
+                  </div>
+                </div>
+              )}
+
+              {inviteState === 'valid' && error && (
                 <div className="mb-5 p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5">
                   <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
                   <p className="text-sm text-rose-700 leading-snug">{error}</p>
                 </div>
               )}
 
+              {inviteState === 'valid' && (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <Field icon={Building2} type="text" name="clinic_name" value={form.clinic_name} onChange={setField('clinic_name')} placeholder="Nama Klinik" autoComplete="off" required />
                 <Field icon={User} type="text" name="owner_full_name" value={form.owner_full_name} onChange={setField('owner_full_name')} placeholder="Nama Lengkap Pemilik" autoComplete="off" required />
@@ -148,6 +200,7 @@ const RegisterClinicPage = () => {
                   )}
                 </Button>
               </form>
+              )}
 
               <div className="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs text-slate-500">
                 <span className="flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5 text-clinara-teal" /> Gratis mendaftar</span>

@@ -5,6 +5,7 @@ import { PageHead } from '@/components/superadmin/ui';
 import SuperAdminOverview from '@/pages/SuperAdminOverview';
 import SuperAdminClinics from '@/pages/SuperAdminClinics';
 import SuperAdminClinicViewer from '@/pages/SuperAdminClinicViewer';
+import SuperAdminRegistrationLinks from '@/pages/SuperAdminRegistrationLinks';
 import SuperAdminUsers from '@/pages/SuperAdminUsers';
 import SuperAdminSubscriptions from '@/pages/SuperAdminSubscriptions';
 import JournalKnowledgeBaseManager from '@/components/owner/JournalKnowledgeBaseManager';
@@ -16,6 +17,7 @@ const SuperAdminDashboard = () => (
       <Route path="/" element={<Navigate to="/super-admin/overview" replace />} />
       <Route path="/overview" element={<SuperAdminOverview />} />
       <Route path="/clinics" element={<SuperAdminClinics />} />
+      <Route path="/registration-links" element={<SuperAdminRegistrationLinks />} />
       <Route path="/clinic-viewer" element={<SuperAdminClinicViewer />} />
       <Route path="/users" element={<SuperAdminUsers />} />
       <Route path="/subscriptions" element={<SuperAdminSubscriptions />} />

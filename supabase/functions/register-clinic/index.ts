@@ -126,6 +126,8 @@ Deno.serve(async (req) => {
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 
+  let inviteId: string | null = null;
+  let inviteDone = false;
   try {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const { count: recentAttempts } = await adminClient
@@ -140,6 +142,27 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
+    const inviteToken = String(body.invite_token || "").trim();
+
+    // Registration is invitation-only: a valid, unused, unexpired link
+    // created by a super admin is required.
+    if (!/^[a-f0-9]{64}$/.test(inviteToken)) {
+      return json({ error: "Pendaftaran hanya melalui link undangan dari Clinara." }, 403);
+    }
+    if (body.action === "validate") {
+      const { data: inv } = await adminClient
+        .from("clinic_registration_invites")
+        .select("id, expires_at, used_at, revoked_at")
+        .eq("token", inviteToken)
+        .maybeSingle();
+      const reason = !inv ? "Link registrasi tidak valid."
+        : inv.revoked_at ? "Link registrasi sudah dibatalkan."
+        : inv.used_at ? "Link registrasi ini sudah pernah dipakai."
+        : inv.expires_at && new Date(inv.expires_at) < new Date() ? "Link registrasi sudah kedaluwarsa."
+        : null;
+      return reason ? json({ valid: false, error: reason }, 200) : json({ valid: true });
+    }
+
     const clinic_name = String(body.clinic_name || "").trim();
     const owner_full_name = String(body.owner_full_name || "").trim();
     const email = String(body.email || "").trim().toLowerCase();
@@ -169,6 +192,24 @@ Deno.serve(async (req) => {
       return json({ error: "Email ini sudah terdaftar. Silakan masuk ke akun Anda." }, 409);
     }
 
+    // Atomically claim the invite so a link can only be used once.
+    const { data: claimed } = await adminClient
+      .from("clinic_registration_invites")
+      .update({ used_at: new Date().toISOString() })
+      .eq("token", inviteToken)
+      .is("used_at", null)
+      .is("revoked_at", null)
+      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+      .select("id")
+      .maybeSingle();
+    if (!claimed) {
+      await adminClient.from("clinic_registration_attempts").insert({ ip, email, success: false });
+      return json({ error: "Link registrasi tidak valid, sudah dipakai, atau kedaluwarsa." }, 403);
+    }
+    inviteId = claimed.id;
+    const releaseInvite = () =>
+      adminClient.from("clinic_registration_invites").update({ used_at: null }).eq("id", claimed.id);
+
     const trialEndsAt = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
     const { data: clinic, error: clinicErr } = await adminClient
       .from("clinics")
@@ -186,6 +227,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (clinicErr || !clinic) {
+      await releaseInvite();
       return json({ error: clinicErr?.message || "Gagal membuat klinik." }, 400);
     }
 
@@ -367,6 +409,7 @@ Deno.serve(async (req) => {
     });
 
     if (createErr || !created?.user) {
+      await releaseInvite();
       await adminClient.from("clinics").delete().eq("id", clinic.id);
       await adminClient.from("clinic_registration_attempts").insert({ ip, email, success: false });
       return json({ error: createErr?.message || "Gagal membuat akun." }, 400);
@@ -383,6 +426,7 @@ Deno.serve(async (req) => {
     }, { onConflict: "id" });
 
     if (upsertErr) {
+      await releaseInvite();
       await adminClient.from("clinics").delete().eq("id", clinic.id);
       await adminClient.auth.admin.deleteUser(created.user.id);
       await adminClient.from("clinic_registration_attempts").insert({ ip, email, success: false });
@@ -390,10 +434,15 @@ Deno.serve(async (req) => {
     }
 
     await adminClient.from("clinics").update({ owner_id: created.user.id }).eq("id", clinic.id);
+    inviteDone = true;
+    await adminClient.from("clinic_registration_invites").update({ used_clinic_id: clinic.id }).eq("id", claimed.id);
     await adminClient.from("clinic_registration_attempts").insert({ ip, email, success: true });
 
     return json({ success: true, clinic_id: clinic.id, trial_ends_at: trialEndsAt, subdomain });
   } catch (err) {
+    if (inviteId && !inviteDone) {
+      await adminClient.from("clinic_registration_invites").update({ used_at: null }).eq("id", inviteId);
+    }
     return json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
   }
 });
