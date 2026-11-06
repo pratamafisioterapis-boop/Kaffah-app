@@ -274,7 +274,7 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
     const sfActive = isSoapFirstActiveOn(sfSettings, recapIso);
     const sfEdit = sfActive && mode === 'edit' && !!initialData?.id;
     const sfDateLocked = sfEdit;
-    const { quote, refresh: refreshQuote } = useRecapQuote(initialData?.id, formData.package_type, isOpen && sfEdit);
+    const { quote, refresh: refreshQuote } = useRecapQuote(initialData?.id, formData.package_type, isOpen && sfEdit, formData.special_type || '');
     // Diskon owner yang dijadwalkan dari kartu appointment (Kaffah): berlaku otomatis saat invoice terbit.
     const [ownerPending, setOwnerPending] = useState(null);
     useEffect(() => {

@@ -27,7 +27,7 @@ export const useSoapFirstSettings = () => {
 };
 
 // Penawaran tagihan (tipe pasien, nominal, status kunci SOAP) dari server untuk satu recap.
-export const useRecapQuote = (recapId, packageLabel, enabled) => {
+export const useRecapQuote = (recapId, packageLabel, enabled, specialType = null) => {
   const [quote, setQuote] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -39,12 +39,12 @@ export const useRecapQuote = (recapId, packageLabel, enabled) => {
     if (!enabled || !recapId) { setQuote(null); setError(null); return undefined; }
     let cancelled = false;
     setLoading(true);
-    fetchRecapQuote(recapId, packageLabel)
+    fetchRecapQuote(recapId, packageLabel, specialType)
       .then((q) => { if (!cancelled) { setQuote(q); setError(null); } })
       .catch((e) => { if (!cancelled) { setQuote(null); setError(e.message || 'Gagal memuat tagihan'); } })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [enabled, recapId, packageLabel, nonce]);
+  }, [enabled, recapId, packageLabel, specialType, nonce]);
 
   return { quote, loading, error, refresh };
 };
