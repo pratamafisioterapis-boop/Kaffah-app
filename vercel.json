@@ -141,7 +141,7 @@
     },
     {
       "source": "/((?!assets/).*)",
-      "destination": "/index.html"
+      "destination": "/index-kaffah.html"
     }
   ],
   "headers": [
