@@ -73,7 +73,7 @@ export default async function handler(req, res) {
   const id = String(req.query?.id || '');
   const isClinara = /(^|\.)clinara\.id$/i.test(host);
 
-  const baseRes = await fetch(`https://${host}/${isClinara ? 'index-clinara.html' : 'index.html'}`);
+  const baseRes = await fetch(`https://${host}/${isClinara ? 'index-clinara.html' : 'index-kaffah.html'}`);
   if (!baseRes.ok) {
     res.status(502).send('Pratinjau tidak tersedia');
     return;
