@@ -67,3 +67,62 @@ export const HNP_LAYERS = [
   { key: 'lig', name: 'Ligamen', color: '#c9d1db' },
 ];
 export const HNP_DEFAULT_LAYERS = { bone: true, disc: true, hernia: true, nerve: true, lig: false };
+
+// ── Frozen shoulder ────────────────────────────────────────────────────────
+export const SHOULDER_STAGES = [
+  {
+    k: 1, name: 'Frozen', sub: '(Painful Stage)', dur: '± 2–9 bulan',
+    path: 'Sinovitis pada kapsul sendi bahu. Nyeri hebat, terutama malam hari dan saat bergerak; gerak mulai terbatas.',
+    rom: { flexion: 120, abduction: 100, er: 40 },
+    therapy: [
+      'Kendalikan nyeri: edukasi, modalitas pereda nyeri (mis. TENS atau kompres), dan aktivitas dalam batas nyeri.',
+      'Latihan pendulum serta gerak pasif atau aktif-asistif ringan dalam rentang tanpa nyeri.',
+      'Hindari peregangan agresif yang memicu nyeri hebat.',
+      'Koordinasikan dengan dokter untuk obat atau injeksi kortikosteroid bila diperlukan.',
+    ],
+  },
+  {
+    k: 2, name: 'Frozen', sub: '(Stiffness Stage)', dur: '± 4–12 bulan',
+    path: 'Kapsul menebal dan mengerut, adhesi matang. Nyeri berkurang tetapi kaku mendominasi, terutama rotasi eksternal.',
+    rom: { flexion: 90, abduction: 80, er: 15 },
+    therapy: [
+      'Mobilisasi sendi glenohumeral (grade I–II, lalu III–IV sesuai toleransi) dan peregangan kapsul progresif.',
+      'Latihan ROM aktif-asistif: tongkat (wand), wall climb, cross-body stretch.',
+      'Fokus pada rotasi eksternal dan abduksi yang paling terbatas.',
+      'Latihan skapula dan postur untuk mengurangi gerak kompensasi.',
+    ],
+  },
+  {
+    k: 3, name: 'Thawing', sub: '(Recovery Stage)', dur: '± 6–24 bulan',
+    path: 'Kapsul berangsur melonggar dan adhesi mengendur. Gerak pulih bertahap, nyeri minimal.',
+    rom: { flexion: 130, abduction: 110, er: 35 },
+    therapy: [
+      'Lanjutkan peregangan untuk mempertahankan dan menambah ROM.',
+      'Penguatan rotator cuff dan stabilisator skapula (isometrik, lalu theraband).',
+      'Latihan fungsional: menjangkau ke atas dan ke belakang punggung.',
+      'Evaluasi berkala; rujuk kembali bila tidak membaik.',
+    ],
+  },
+];
+export const SHOULDER_MOTIONS = [
+  { key: 'flexion', label: 'Fleksi', hint: 'angkat ke depan', normal: 180 },
+  { key: 'abduction', label: 'Abduksi', hint: 'angkat ke samping', normal: 180 },
+  { key: 'er', label: 'Rotasi Eksternal', hint: 'putar ke luar', normal: 90 },
+];
+export const SHOULDER_CASE = {
+  title: 'Frozen Shoulder',
+  sub: '(Adhesive Capsulitis)',
+  desc: 'Kondisi ketika kapsul sendi bahu mengalami peradangan, penebalan, dan pengerutan, yang menyebabkan nyeri, kaku, dan keterbatasan gerak bahu.',
+  mechanism: [
+    'Sinovitis: lapisan dalam kapsul glenohumeral meradang.',
+    'Fibrosis: kapsul menebal dan mengerut sehingga volume sendi menyusut.',
+    'Recessus aksilaris melipat dan melekat (adhesi) pada kepala humerus.',
+    'Ligamen coracohumeral dan rotator interval menebal, sehingga rotasi eksternal terbatas paling awal.',
+  ],
+  tabs: [['anatomi', 'Anatomi'], ['patologi', 'Patologi'], ['gerakan', 'Gerakan'], ['terapi', 'Terapi']],
+};
+
+export const CASE_OPTIONS = [
+  ...Object.entries(HNP_REGIONS).flatMap(([rk, r]) => r.discs.map((d, i) => ({ value: `hnp:${rk}:${i}`, label: `${r.title} (${d.name})`, kind: 'hnp' }))),
+  { value: 'shoulder:frozen', label: 'Frozen Shoulder', kind: 'shoulder' },
+];

@@ -11,11 +11,11 @@ const TAU = Math.PI * 2;
 const PHI0 = (-62 * Math.PI) / 180; // arah herniasi: posterolateral kanan
 const BULGE = 0.78;
 const wrap = (a) => ((((a + Math.PI) % TAU) + TAU) % TAU) - Math.PI;
-const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+export const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const noise = (x, y, z) => Math.sin(x * 3.1 + y * 2.3) * Math.cos(z * 2.7 + x * 1.9) * 0.6 + Math.sin(x * 7.3 + z * 5.1 + y * 3.3) * 0.4;
-const rng = (s) => () => (s = (s * 16807) % 2147483647) / 2147483647;
+export const rng = (s) => () => (s = (s * 16807) % 2147483647) / 2147483647;
 
-function canvasTex(size, draw, srgb) {
+export function canvasTex(size, draw, srgb) {
   const c = document.createElement('canvas');
   c.width = c.height = size;
   draw(c.getContext('2d'), size);
@@ -26,7 +26,7 @@ function canvasTex(size, draw, srgb) {
   return t;
 }
 
-function makeMaterials() {
+export function makeMaterials() {
   const boneCol = canvasTex(512, (g, S) => {
     g.fillStyle = '#e0c79d'; g.fillRect(0, 0, S, S);
     const r = rng(11);
@@ -417,7 +417,7 @@ export function createHnpViewer({ canvas, stage, labelsEl, leadersEl, onInteract
       disposed = true; cancelAnimationFrame(raf); ro.disconnect(); controls.dispose();
       disposeRoot();
       Object.values(mats).forEach((m) => m.dispose()); textures.forEach((t) => t.dispose()); glowMat.dispose();
-      renderer.dispose();
+      renderer.dispose(); renderer.forceContextLoss();
     },
   };
 }
