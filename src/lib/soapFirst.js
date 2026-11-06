@@ -57,10 +57,11 @@ export const fetchSoapFirstSettings = async () => {
   return data || null;
 };
 
-export const fetchRecapQuote = async (recapId, packageLabel = null) => {
+export const fetchRecapQuote = async (recapId, packageLabel = null, specialType = null) => {
   const { data, error } = await supabase.rpc('soap_first_quote', {
     p_recap_id: recapId,
     p_package_label: packageLabel || null,
+    p_special_type: specialType == null ? null : specialType,
   });
   if (error) throw error;
   return data || { active: false };
