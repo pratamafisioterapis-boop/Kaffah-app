@@ -66,6 +66,7 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
     // harga langsung di recap, field "Tipe Layanan" & diskon recap tidak dipakai.
     const [isKwitansi, setIsKwitansi] = useState(false);
     const [invoiceItems, setInvoiceItems] = useState([]);
+    const [savedInvoiceItems, setSavedInvoiceItems] = useState([]);
 
     useEffect(() => {
         if (!isOpen || !userDetails?.clinic_id) { setIsKwitansi(false); return; }
@@ -77,12 +78,14 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
 
     useEffect(() => {
         if (!isOpen) return;
-        if (mode !== 'edit' || !initialData?.id) { setInvoiceItems([]); return; }
+        if (mode !== 'edit' || !initialData?.id) { setInvoiceItems([]); setSavedInvoiceItems([]); return; }
         let cancelled = false;
         supabase.from('daily_recaps').select('invoice_items').eq('id', initialData.id).maybeSingle()
             .then(({ data }) => {
                 if (cancelled) return;
-                setInvoiceItems(Array.isArray(data?.invoice_items) ? data.invoice_items : []);
+                const loaded = Array.isArray(data?.invoice_items) ? data.invoice_items : [];
+                setInvoiceItems(loaded);
+                setSavedInvoiceItems(loaded);
             });
         return () => { cancelled = true; };
     }, [isOpen, mode, initialData?.id]);
@@ -2206,7 +2209,7 @@ setFormData({
                         <div className="space-y-6">
                             <div className="space-y-3">
                                 <h3 className="text-sm font-bold text-slate-800 border-b pb-2">Item Invoice (Katalog Harga)</h3>
-                                <RecapInvoiceItems clinicId={userDetails?.clinic_id} items={invoiceItems} onChange={setInvoiceItems} />
+                                <RecapInvoiceItems clinicId={userDetails?.clinic_id} items={invoiceItems} onChange={setInvoiceItems} savedItems={savedInvoiceItems} />
                             </div>
                             <div className="space-y-3">
                                 <h3 className="text-sm font-bold text-slate-800 border-b pb-2">Pembayaran</h3>

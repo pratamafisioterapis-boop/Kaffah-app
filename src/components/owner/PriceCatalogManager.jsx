@@ -29,6 +29,10 @@ const num = (v) => {
 // Harga jual otomatis = harga dasar + margin, kalau harga dasar terisi.
 const calcSelling = (base, margin) => Math.round(num(base) * (1 + num(margin) / 100));
 
+// Margin (%) otomatis dari harga dasar & harga jual (kebalikan calcSelling).
+const calcMargin = (base, selling) =>
+  num(base) > 0 ? Math.round(((num(selling) / num(base)) - 1) * 10000) / 100 : null;
+
 const PriceCatalogManager = () => {
   const { toast } = useToast();
   const { userDetails } = useAuth();
@@ -121,6 +125,14 @@ const PriceCatalogManager = () => {
     persist(item.id, patch);
   };
 
+  const handleSellingBlur = (item) => {
+    const patch = { selling_price: item.selling_price === '' || item.selling_price == null ? null : num(item.selling_price) };
+    const m = patch.selling_price == null ? null : calcMargin(item.base_price, patch.selling_price);
+    if (m != null) patch.margin_pct = m;
+    patchLocal(item.id, patch);
+    persist(item.id, patch);
+  };
+
   const handleDelete = async (item) => {
     if (!await confirmAction(item.inventory_item_id
       ? `Hapus "${item.name}" dari katalog? Barang ini tertaut ke Stok Barang; stok tidak lagi berkurang otomatis dan toggle "dijual" di Stok Barang dimatikan.`
@@ -174,15 +186,32 @@ const PriceCatalogManager = () => {
         </div>
         <div>
           <label className="text-xs text-slate-500">Harga Dasar (Rp)</label>
-          <Input type="number" min="0" value={form.base_price} onChange={(e) => setForm({ ...form, base_price: e.target.value })} />
+          <Input type="number" min="0" value={form.base_price} onChange={(e) => {
+            const base_price = e.target.value;
+            const next = { ...form, base_price };
+            if (form.selling_price !== '') { const m = calcMargin(base_price, form.selling_price); if (m != null) next.margin_pct = String(m); }
+            else if (num(base_price) > 0) next.selling_price = String(calcSelling(base_price, form.margin_pct));
+            setForm(next);
+          }} />
         </div>
         <div>
           <label className="text-xs text-slate-500">Margin (%)</label>
-          <Input type="number" min="0" value={form.margin_pct} onChange={(e) => setForm({ ...form, margin_pct: e.target.value })} />
+          <Input type="number" min="0" value={form.margin_pct} onChange={(e) => {
+            const margin_pct = e.target.value;
+            const next = { ...form, margin_pct };
+            if (num(form.base_price) > 0) next.selling_price = String(calcSelling(form.base_price, margin_pct));
+            setForm(next);
+          }} />
         </div>
         <div>
           <label className="text-xs text-slate-500">Harga Jual (Rp)</label>
-          <Input type="number" min="0" value={form.selling_price} onChange={(e) => setForm({ ...form, selling_price: e.target.value })} />
+          <Input type="number" min="0" value={form.selling_price} onChange={(e) => {
+            const selling_price = e.target.value;
+            const next = { ...form, selling_price };
+            const m = calcMargin(form.base_price, selling_price);
+            if (m != null) next.margin_pct = String(m);
+            setForm(next);
+          }} />
         </div>
         <div>
           <label className="text-xs text-slate-500">Porsi Klinik (%)</label>
@@ -237,7 +266,7 @@ const PriceCatalogManager = () => {
                 </td>
                 <td className="p-2">{numInput(item, 'base_price', { onBlur: () => handleMarginOrBaseBlur(item) })}</td>
                 <td className="p-2">{numInput(item, 'margin_pct', { onBlur: () => handleMarginOrBaseBlur(item) })}</td>
-                <td className="p-2">{numInput(item, 'selling_price')}</td>
+                <td className="p-2">{numInput(item, 'selling_price', { onBlur: () => handleSellingBlur(item) })}</td>
                 <td className="p-2">{numInput(item, 'company_portion_pct')}</td>
                 <td className="p-2">{numInput(item, 'doctor_portion_pct')}</td>
                 <td className="p-2 text-center">
