@@ -54,7 +54,7 @@ const InventoryTakeOutForm = ({ items = [], onSuccess }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Jumlah {selectedItem ? `(${selectedItem.unit})` : ''}</Label>
-          <Input type="number" step="0.01" min="0" placeholder="0" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
+          <Input type="number" step="0.01" min="0.01" placeholder="0" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
         </div>
         <div className="space-y-2">
           <Label>Tanggal Ambil</Label>
@@ -70,7 +70,7 @@ const InventoryTakeOutForm = ({ items = [], onSuccess }) => {
           <Input
             type="number"
             step="1"
-            min="0"
+            min="1"
             placeholder={selectedItem.unit === 'Liter' ? 'Misal: 500' : 'Misal: 250'}
             onChange={(e) => {
               const smallUnitValue = Number(e.target.value) || 0;

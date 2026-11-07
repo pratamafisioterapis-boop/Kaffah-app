@@ -57,7 +57,7 @@ const InventoryTakeOutEditModal = ({ isOpen, onClose, row, onSuccess }) => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Jumlah ({row.unit})</Label>
-              <Input type="number" step="0.01" min="0" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
+              <Input type="number" step="0.01" min="0.01" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>Tanggal Ambil</Label>
