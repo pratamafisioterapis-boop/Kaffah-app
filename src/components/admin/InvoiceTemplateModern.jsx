@@ -1,4 +1,5 @@
 import React, { forwardRef } from 'react';
+import { getGoodsLines } from '@/lib/recapGoods';
 
 // Kwitansi desain "Minimal Bersih" (Kaffah). Sumber data sama dengan InvoiceTemplate:
 // data.clinic, data.patients, data.tiered_line, data.payment_splits, data.admin_signer_*, dst.
@@ -66,6 +67,7 @@ const InvoiceTemplateModern = forwardRef(({ data }, ref) => {
     data?.service_type === 'Sport Injury Treatment' ? 'C34' :
     data?.service_type === 'Neurological Rehabilitation' ? 'D08' :
     data?.service_type === 'Pre-Post Operative Rehabilitation' ? 'E52' : 'X00';
+  const { lines: goodsLines, total: goodsTotal } = getGoodsLines(data);
   const line = data?.tiered_line || {
     code: legacyCode,
     description: data?.service_type || '-',
@@ -182,6 +184,14 @@ const InvoiceTemplateModern = forwardRef(({ data }, ref) => {
               {formatCurrency(data?.amount_original || data?.amount)}
             </td>
           </tr>
+          {goodsLines.map((g, i) => (
+            <tr key={`goods-${i}`}>
+              <td style={{ fontSize: '13px', padding: '16px 0', borderBottom: `1px solid ${C.line}`, color: C.body }}>BRG</td>
+              <td style={{ fontSize: '13.5px', fontWeight: 500, padding: '16px 0', borderBottom: `1px solid ${C.line}` }}>{g.name}</td>
+              <td style={{ fontSize: '13px', padding: '16px 0', borderBottom: `1px solid ${C.line}`, color: C.body }}>{g.qty}</td>
+              <td style={{ fontSize: '13.5px', fontWeight: 500, padding: '16px 0', borderBottom: `1px solid ${C.line}`, textAlign: 'right' }}>{formatCurrency(g.total)}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
 
@@ -229,13 +239,13 @@ const InvoiceTemplateModern = forwardRef(({ data }, ref) => {
 
         <div style={{ width: `${AXIS_WIDTH}px`, flex: 'none' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', padding: '6px 0', color: C.body }}>
-            <span>Subtotal</span><span>{formatCurrency(data?.amount_original || data?.amount)}</span>
+            <span>Subtotal</span><span>{formatCurrency((Number(data?.amount_original || data?.amount) || 0) + goodsTotal)}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', padding: '6px 0', color: C.body }}>
             <span>Discount</span><span>{discountText}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '15px', fontWeight: 700, color: C.navy, background: C.tint, borderRadius: '8px', padding: '14px 16px', margin: '8px -16px 0' }}>
-            <span>Balance Paid</span><span>{formatCurrency(data?.amount)}</span>
+            <span>Balance Paid</span><span>{formatCurrency((Number(data?.amount) || 0) + goodsTotal)}</span>
           </div>
         </div>
       </div>

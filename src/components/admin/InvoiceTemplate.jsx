@@ -1,4 +1,5 @@
 import React, { forwardRef } from 'react';
+import { getGoodsLines } from '@/lib/recapGoods';
 
 // Tanggal invoice = tanggal pembayaran (invoice_created_at); tanggal layanan = recap_date.
 const fmtInvoiceDate = (value) => {
@@ -17,6 +18,7 @@ const InvoiceTemplate = forwardRef(({ data }, ref) => {
       minimumFractionDigits: 0,
     }).format(value || 0);
   };
+const { lines: goodsLines, total: goodsTotal } = getGoodsLines(data);
 const therapistName = data?.therapist_name ?? '-';
   const payment = (data?.payment_method || '').toLowerCase();
 
@@ -237,7 +239,16 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
               <td style={tdCenter}>{formatCurrency(data?.amount_original || data?.amount)}</td>
             </tr>
 
-            {[...Array(5)].map((_, i) => (
+            {goodsLines.map((g, i) => (
+              <tr key={`goods-${i}`}>
+                <td style={tdCenter}>BRG</td>
+                <td style={tdCenter}>{g.name}</td>
+                <td style={tdCenter}>{g.qty}</td>
+                <td style={tdCenter}>{formatCurrency(g.total)}</td>
+              </tr>
+            ))}
+
+            {[...Array(Math.max(5 - goodsLines.length, 0))].map((_, i) => (
               <tr key={i}>
                 <td style={empty}></td>
                 <td style={empty}></td>
@@ -259,7 +270,7 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
           <div style={totalGrid}>
             <span>Subtotal</span>
             <span>:</span>
-            <span>{formatCurrency(data?.amount_original || data?.amount)}</span>
+            <span>{formatCurrency((Number(data?.amount_original || data?.amount) || 0) + goodsTotal)}</span>
 
             <span>Discount</span>
             <span>:</span>
@@ -275,7 +286,7 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
           <div style={balanceGrid}>
             <span>Balance Paid</span>
             <span>:</span>
-            <span>{formatCurrency(data?.amount)}</span>
+            <span>{formatCurrency((Number(data?.amount) || 0) + goodsTotal)}</span>
           </div>
 
         </div>
