@@ -100,8 +100,8 @@ const AdminIncomeList = ({ income = [], onRefresh, onEdit, onDelete, canEdit: pr
                   <div>
                     <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Akun Bank</p>
                     <p className="text-slate-600">
-                      {inc.bank_account ? (
-                        <span className="font-medium text-slate-900">{inc.bank_account.bank_name}</span>
+                      {(inc.bank_accounts || inc.bank_account) ? (
+                        <span className="font-medium text-slate-900">{(inc.bank_accounts || inc.bank_account).bank_name}</span>
                       ) : (
                         <span className="text-slate-500 italic">Tunai/Lain</span>
                       )}
@@ -162,8 +162,8 @@ const AdminIncomeList = ({ income = [], onRefresh, onEdit, onDelete, canEdit: pr
                     {inc.sub_category || '-'}
                   </td>
                   <td className="px-3 py-3 text-slate-600 break-words">
-                    {inc.bank_account ? (
-                        <span className="font-medium text-slate-900">{inc.bank_account.bank_name}</span>
+                    {(inc.bank_accounts || inc.bank_account) ? (
+                        <span className="font-medium text-slate-900">{(inc.bank_accounts || inc.bank_account).bank_name}</span>
                     ) : (
                         <span className="text-slate-500 italic text-xs">Tunai/Lain</span>
                     )}

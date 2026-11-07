@@ -3922,7 +3922,7 @@ export const updateAdminIncome = async (id, payload) => {
     const { data, error } = await supabase
       .from('admin_income')
       .update({
-  date: payload.date,
+  date: payload.date || payload.transaction_date,
   amount: payload.amount,
   category: payload.category,
   sub_category: payload.sub_category || null,

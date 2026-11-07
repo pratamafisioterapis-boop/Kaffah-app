@@ -119,13 +119,13 @@ const AdminIncomeForm = ({ onSuccess, onCancel, initialData = null }) => {
     setForm(prev => ({
       ...prev,
       sub_category: val,
-      source: selected ? selected.categoryName : prev.source 
+      category: selected ? selected.categoryName : prev.category
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.amount || !form.source || !form.sub_category || !form.transaction_date || !form.bank_account_id || !form.payment_method) {
+    if (!form.amount || !form.category || !form.sub_category || !form.transaction_date || !form.bank_account_id || !form.payment_method) {
       toast({ variant: "destructive", title: "Missing Fields", description: "Please fill in all required fields including Bank Account and Metode Pembayaran." });
       return;
     }
@@ -141,7 +141,7 @@ const AdminIncomeForm = ({ onSuccess, onCancel, initialData = null }) => {
         const currentTime = format(new Date(), 'HH:mm:ss');
         const payload = {
   ...form,
-  category: form.source, // 🔥 INI FIX NYA
+  category: form.category,
   input_time: currentTime
 };
         const { error } = await createAdminIncome(payload);
