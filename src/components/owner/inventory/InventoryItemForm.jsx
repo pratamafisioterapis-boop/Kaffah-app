@@ -8,6 +8,7 @@ import { createInventoryItem, getAccountingSubcategories } from '@/lib/api';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import SearchableSelect from '@/components/ui/searchable-select';
+import SellableToggle from './SellableToggle';
 
 const UNIT_OPTIONS = ['Liter', 'ML', 'Kg', 'Gram', 'Pcs', 'Box', 'Botol', 'Jerigen', 'Pack'];
 
@@ -19,7 +20,8 @@ const InventoryItemForm = ({ onSuccess }) => {
   const [form, setForm] = useState({
     item_name: '', unit: 'Pcs', quantity: '', total_price: '',
     minimum_stock: '', purchase_date: format(new Date(), 'yyyy-MM-dd'),
-    category_id: '', subcategory_id: '', categoryName: ''
+    category_id: '', subcategory_id: '', categoryName: '',
+    is_sellable: false, sell_category: 'consumable'
   });
 
   useEffect(() => {
@@ -65,7 +67,7 @@ const InventoryItemForm = ({ onSuccess }) => {
       const { error } = await createInventoryItem({ ...form, created_by: user?.id });
       if (error) throw error;
       toast({ title: 'Barang ditambahkan', description: `${form.item_name} berhasil disimpan ke stok gudang.` });
-      setForm({ item_name: '', unit: 'Pcs', quantity: '', total_price: '', minimum_stock: '', purchase_date: format(new Date(), 'yyyy-MM-dd'), category_id: '', subcategory_id: '', categoryName: '' });
+      setForm({ item_name: '', unit: 'Pcs', quantity: '', total_price: '', minimum_stock: '', purchase_date: format(new Date(), 'yyyy-MM-dd'), category_id: '', subcategory_id: '', categoryName: '', is_sellable: false, sell_category: 'consumable' });
       if (onSuccess) onSuccess();
     } catch (err) {
       toast({ variant: 'destructive', title: 'Gagal menyimpan', description: err.message || 'Terjadi kesalahan.' });
@@ -121,6 +123,7 @@ const InventoryItemForm = ({ onSuccess }) => {
           <p className="text-xs text-slate-500">Kategori induk: {form.categoryName}</p>
         )}
       </div>
+      <SellableToggle isSellable={form.is_sellable} sellCategory={form.sell_category} onChange={(p) => setForm(prev => ({ ...prev, ...p }))} />
       {pricePerUnit > 0 && (
         <div className="text-sm bg-slate-50 border border-slate-200 rounded-app-sm px-3 py-2 text-slate-600">
           Harga per {form.unit || 'satuan'}: <span className="font-semibold text-slate-900">Rp {pricePerUnit.toLocaleString('id-ID', { maximumFractionDigits: 2 })}</span>

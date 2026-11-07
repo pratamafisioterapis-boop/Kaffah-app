@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
 import { updateInventoryItem, getAccountingSubcategories } from '@/lib/api';
 import SearchableSelect from '@/components/ui/searchable-select';
+import SellableToggle from './SellableToggle';
 
 const UNIT_OPTIONS = ['Liter', 'ML', 'Kg', 'Gram', 'Pcs', 'Box', 'Botol', 'Jerigen', 'Pack'];
 
@@ -16,7 +17,8 @@ const InventoryItemEditModal = ({ isOpen, onClose, item, onSuccess }) => {
   const [subcategoryOptions, setSubcategoryOptions] = useState([]);
   const [form, setForm] = useState({
     item_name: '', unit: 'Pcs', minimum_stock: '', is_active: true,
-    category_id: '', subcategory_id: '', categoryName: ''
+    category_id: '', subcategory_id: '', categoryName: '',
+    is_sellable: false, sell_category: 'consumable'
   });
 
   useEffect(() => {
@@ -48,7 +50,9 @@ const InventoryItemEditModal = ({ isOpen, onClose, item, onSuccess }) => {
         is_active: item.is_active !== false,
         category_id: item.category_id || '',
         subcategory_id: item.subcategory_id || '',
-        categoryName: item.category?.category_name || ''
+        categoryName: item.category?.category_name || '',
+        is_sellable: !!item.is_sellable,
+        sell_category: item.sell_category || 'consumable'
       });
     }
   }, [item, isOpen]);
@@ -120,6 +124,7 @@ const InventoryItemEditModal = ({ isOpen, onClose, item, onSuccess }) => {
               <p className="text-xs text-slate-500">Kategori induk: {form.categoryName}</p>
             )}
           </div>
+          <SellableToggle id="edit_is_sellable" isSellable={form.is_sellable} sellCategory={form.sell_category} onChange={(p) => setForm(prev => ({ ...prev, ...p }))} />
           <div className="flex items-center gap-2">
             <input
               id="is_active"
