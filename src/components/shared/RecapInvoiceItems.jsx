@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,16 +12,42 @@ export const itemsNetTotal = (items) => (items || []).reduce((s, it) => s + item
 
 // Pemilih item invoice (klinik dengan template Kwitansi). Item dipilih dari
 // Katalog Harga klinik dan disimpan di daily_recaps.invoice_items.
-const RecapInvoiceItems = ({ clinicId, items, onChange, allowManual = false, defaultCategory = 'procedure' }) => {
+// Status stok barang gudang: 'empty' | 'short' | 'low' | null.
+// current_stock di DB sudah dikurangi qty yang tersimpan sebelumnya, jadi saat
+// edit, stok tersedia = current_stock + qty tersimpan item yang sama.
+const stockStatus = (inv, qty, savedQty = 0) => {
+  if (!inv) return null;
+  const available = Number(inv.current_stock) + savedQty;
+  if (available <= 0) return { level: 'empty', text: 'Stok habis' };
+  if (qty > available) return { level: 'short', text: `Stok kurang (tersedia ${available} ${inv.unit})` };
+  const left = available - qty;
+  const min = Number(inv.minimum_stock) || 0;
+  if (left <= 0) return { level: 'low', text: `Stok jadi habis setelah terjual` };
+  if (min > 0 && left <= min) return { level: 'low', text: `Stok menipis (sisa ${left} ${inv.unit})` };
+  return null;
+};
+
+const RecapInvoiceItems = ({ clinicId, items, onChange, allowManual = false, defaultCategory = 'procedure', savedItems = [] }) => {
   const [catalog, setCatalog] = useState([]);
   const [pick, setPick] = useState('');
 
   useEffect(() => {
     if (!clinicId) return;
-    supabase.from('price_catalog_items').select('id, category, name, selling_price, base_price, inventory_item_id, inventory_items:inventory_item_id ( current_stock, unit )')
+    supabase.from('price_catalog_items').select('id, category, name, selling_price, base_price, inventory_item_id, inventory_items:inventory_item_id ( current_stock, minimum_stock, unit )')
       .eq('clinic_id', clinicId).order('name')
       .then(({ data }) => setCatalog(data || []));
   }, [clinicId]);
+
+  const savedQtyOf = (catalogId) =>
+    (savedItems || []).filter((x) => x.catalog_item_id === catalogId).reduce((a, x) => a + (Number(x.qty) || 0), 0);
+  const itemStatus = (it) => {
+    if (!it.catalog_item_id) return null;
+    const c = catalog.find((x) => x.id === it.catalog_item_id);
+    if (!c?.inventory_items) return null;
+    // total qty semua baris dengan barang yang sama
+    const totalQty = items.filter((x) => x.catalog_item_id === it.catalog_item_id).reduce((a, x) => a + (Number(x.qty) || 0), 0);
+    return stockStatus(c.inventory_items, totalQty, savedQtyOf(it.catalog_item_id));
+  };
 
   const patch = (i, p) => onChange(items.map((it, idx) => (idx === i ? { ...it, ...p } : it)));
 
@@ -41,7 +67,7 @@ const RecapInvoiceItems = ({ clinicId, items, onChange, allowManual = false, def
           {KWITANSI_CATEGORIES.map((cat) => (
             <optgroup key={cat.value} label={cat.label}>
               {catalog.filter((c) => c.category === cat.value).map((c) => (
-                <option key={c.id} value={c.id}>{c.name} — {Number(c.selling_price ?? c.base_price ?? 0).toLocaleString('id-ID')}{c.inventory_items ? ` (stok ${Number(c.inventory_items.current_stock)} ${c.inventory_items.unit})` : ''}</option>
+                <option key={c.id} value={c.id}>{c.name} — {Number(c.selling_price ?? c.base_price ?? 0).toLocaleString('id-ID')}{c.inventory_items ? ` (${Number(c.inventory_items.current_stock) <= 0 ? 'STOK HABIS' : `stok ${Number(c.inventory_items.current_stock)} ${c.inventory_items.unit}${Number(c.inventory_items.minimum_stock) > 0 && Number(c.inventory_items.current_stock) <= Number(c.inventory_items.minimum_stock) ? ', menipis' : ''}`})` : ''}</option>
               ))}
             </optgroup>
           ))}
@@ -73,6 +99,18 @@ const RecapInvoiceItems = ({ clinicId, items, onChange, allowManual = false, def
               <Trash2 className="w-4 h-4" />
             </button>
           </div>
+          {(() => {
+            const st = itemStatus(it);
+            if (!st) return null;
+            const cls = st.level === 'low'
+              ? 'text-amber-700 bg-amber-50 border-amber-200'
+              : 'text-rose-700 bg-rose-50 border-rose-200';
+            return (
+              <p className={`flex items-center gap-1.5 text-xs font-medium rounded-md border px-2 py-1 ${cls}`}>
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />{st.text}
+              </p>
+            );
+          })()}
           <div className="grid grid-cols-3 gap-2">
             <div>
               <Label className="text-xs text-slate-500">Qty</Label>
