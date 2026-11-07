@@ -3711,6 +3711,8 @@ export const createInventoryItem = async (payload) => {
         minimum_stock: payload.minimum_stock || 0,
         category_id: payload.category_id || null,
         subcategory_id: payload.subcategory_id || null,
+        is_sellable: !!payload.is_sellable,
+        sell_category: payload.sell_category === 'drug' ? 'drug' : 'consumable',
         created_by: payload.created_by || null,
         clinic_id: userRow?.clinic_id
       })
@@ -3748,6 +3750,8 @@ export const updateInventoryItem = async (id, payload) => {
         is_active: payload.is_active,
         category_id: payload.category_id || null,
         subcategory_id: payload.subcategory_id || null,
+        is_sellable: !!payload.is_sellable,
+        sell_category: payload.sell_category === 'drug' ? 'drug' : 'consumable',
         updated_at: new Date().toISOString()
       })
       .eq('id', id)

@@ -122,7 +122,12 @@ const PriceCatalogManager = () => {
   };
 
   const handleDelete = async (item) => {
-    if (!await confirmAction(`Hapus "${item.name}"?`)) return;
+    if (!await confirmAction(item.inventory_item_id
+      ? `Hapus "${item.name}" dari katalog? Barang ini tertaut ke Stok Barang; stok tidak lagi berkurang otomatis dan toggle "dijual" di Stok Barang dimatikan.`
+      : `Hapus "${item.name}"?`)) return;
+    if (item.inventory_item_id) {
+      await supabase.from('inventory_items').update({ is_sellable: false }).eq('id', item.inventory_item_id);
+    }
     const { error } = await supabase.from('price_catalog_items').delete().eq('id', item.id);
     if (error) {
       toast({ variant: 'destructive', title: 'Gagal menghapus', description: error.message });
@@ -150,7 +155,7 @@ const PriceCatalogManager = () => {
         <h3 className="text-lg font-semibold text-slate-900">Katalog Harga</h3>
         <p className="text-sm text-slate-500">
           Daftar Procedure, Consumable, Drug, Consultation, dan Administration beserta harga, margin, dan porsi.
-          Saat ini hanya disimpan sebagai data.
+          Item bertanda "Stok" berasal dari Stok Barang (toggle "dijual") dan mengurangi stok gudang otomatis saat terjual.
         </p>
       </div>
 
@@ -226,6 +231,9 @@ const PriceCatalogManager = () => {
                     onChange={(e) => patchLocal(item.id, { name: e.target.value })}
                     onBlur={() => item.name.trim() && persist(item.id, { name: item.name.trim() })}
                   />
+                  {item.inventory_item_id && (
+                    <span className="mt-1 inline-block text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">Stok gudang</span>
+                  )}
                 </td>
                 <td className="p-2">{numInput(item, 'base_price', { onBlur: () => handleMarginOrBaseBlur(item) })}</td>
                 <td className="p-2">{numInput(item, 'margin_pct', { onBlur: () => handleMarginOrBaseBlur(item) })}</td>

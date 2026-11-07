@@ -18,7 +18,7 @@ const RecapInvoiceItems = ({ clinicId, items, onChange, allowManual = false, def
 
   useEffect(() => {
     if (!clinicId) return;
-    supabase.from('price_catalog_items').select('id, category, name, selling_price, base_price')
+    supabase.from('price_catalog_items').select('id, category, name, selling_price, base_price, inventory_item_id, inventory_items:inventory_item_id ( current_stock, unit )')
       .eq('clinic_id', clinicId).order('name')
       .then(({ data }) => setCatalog(data || []));
   }, [clinicId]);
@@ -29,7 +29,7 @@ const RecapInvoiceItems = ({ clinicId, items, onChange, allowManual = false, def
     const c = catalog.find((x) => x.id === pick);
     if (!c) return;
     const price = c.selling_price ?? c.base_price ?? 0;
-    onChange([...items, { category: c.category, name: c.name, qty: 1, price: Number(price), discount: 0 }]);
+    onChange([...items, { category: c.category, name: c.name, qty: 1, price: Number(price), discount: 0, ...(c.inventory_item_id ? { catalog_item_id: c.id } : {}) }]);
     setPick('');
   };
 
@@ -41,7 +41,7 @@ const RecapInvoiceItems = ({ clinicId, items, onChange, allowManual = false, def
           {KWITANSI_CATEGORIES.map((cat) => (
             <optgroup key={cat.value} label={cat.label}>
               {catalog.filter((c) => c.category === cat.value).map((c) => (
-                <option key={c.id} value={c.id}>{c.name} — {Number(c.selling_price ?? c.base_price ?? 0).toLocaleString('id-ID')}</option>
+                <option key={c.id} value={c.id}>{c.name} — {Number(c.selling_price ?? c.base_price ?? 0).toLocaleString('id-ID')}{c.inventory_items ? ` (stok ${Number(c.inventory_items.current_stock)} ${c.inventory_items.unit})` : ''}</option>
               ))}
             </optgroup>
           ))}
