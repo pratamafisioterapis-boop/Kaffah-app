@@ -101,8 +101,8 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
                   <div>
                     <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Akun Bank</p>
                     <p className="text-slate-600">
-                      {ex.bank_account ? (
-                        <span className="font-medium text-slate-900">{ex.bank_account.bank_name}</span>
+                      {(ex.bank_accounts || ex.bank_account) ? (
+                        <span className="font-medium text-slate-900">{(ex.bank_accounts || ex.bank_account).bank_name}</span>
                       ) : (
                         <span className="text-slate-500 italic">Tunai/Lain</span>
                       )}
@@ -163,8 +163,8 @@ const AdminExpenseList = ({ expenses = [], onRefresh, onEdit, onDelete, canEdit:
                     {ex.sub_category || '-'}
                   </td>
                   <td className="px-3 py-3 text-slate-600 break-words">
-                    {ex.bank_account ? (
-                        <span className="font-medium text-slate-900">{ex.bank_account.bank_name}</span>
+                    {(ex.bank_accounts || ex.bank_account) ? (
+                        <span className="font-medium text-slate-900">{(ex.bank_accounts || ex.bank_account).bank_name}</span>
                     ) : (
                         <span className="text-slate-500 italic text-xs">Tunai/Lain</span>
                     )}
