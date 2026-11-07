@@ -1897,6 +1897,16 @@ export const createDailyRecap = async (payload) => {
       await saveDailyRecapPaymentSplits(data.recap_id, paymentSplits);
     }
 
+    // RPC pembuatan recap tidak dijamin menyimpan kolom tips_amount, jadi
+    // disimpan lewat update terpisah.
+    if (Number(payload.tips_amount) > 0) {
+      const { error: tipsError } = await supabase
+        .from('daily_recaps')
+        .update({ tips_amount: Number(payload.tips_amount) })
+        .eq('id', data.recap_id);
+      if (tipsError) return { error: tipsError };
+    }
+
     return { data, error: null };
 
   }, 'createDailyRecap');
@@ -1976,6 +1986,7 @@ export const getDailyRecaps = async ({
   therapist_id,
   amount,
   amount_original,
+  tips_amount,
   payment_method,
   discount_type,
   discount_value,
@@ -2888,6 +2899,7 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
         recap_date,
         amount,
         amount_package,
+        tips_amount,
         package_type,
         package_tracking_id,
         patient_type,
@@ -2962,7 +2974,7 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
       });
     }
 
-    const formatted = (data || []).map(item => ({
+    const toIncomeRow = item => ({
       id: item.id,
 
       date: item.recap_date,
@@ -3005,7 +3017,26 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
       // Dipakai untuk laporan Excel mode "Real-time" (kas masuk),
       // berbeda dari `amount` di atas yang bersifat akrual per sesi.
       cash_amount: Number(item.amount || 0)
-    }));
+    });
+
+    // Tips terapis tidak ada di invoice/kwitansi, tapi tetap pemasukan klinik:
+    // dicatat sebagai baris tersendiri dengan metode pembayaran yang sama
+    // dengan nominal terapi recap tsb.
+    const formatted = (data || []).flatMap(item => {
+      const row = toIncomeRow(item);
+      const tips = Number(item.tips_amount) || 0;
+      if (tips <= 0) return [row];
+      return [row, {
+        ...row,
+        id: `${item.id}-tips`,
+        patient_type: 'Tips Terapis',
+        package_name: 'Tips',
+        session_number: null,
+        amount: tips,
+        cash_amount: tips,
+        is_tips: true
+      }];
+    });
 
     return {
       data: formatted,

@@ -173,6 +173,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
         }
       });
 
+      const tipsTotal = (recapsRes.data || []).reduce((sum, r) => sum + (Number(r.tips_amount) || 0), 0);
       let transportAllowance = 0;
       let incentiveAmount = 0;
       let incentiveItems = [];
@@ -242,6 +243,9 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
         transport_per_day: transportAllowance,
         incentive_amount: incentiveAmount,
         custom_commission: commission,
+        // Tips dari recap terapis pada periode ini (diisi admin di Edit Recap
+        // Harian) otomatis dihitung ke payroll.
+        tips: tipsTotal,
       }));
     } catch (error) {
       setSoapStatus(null);
@@ -439,11 +443,11 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <label className="text-xs font-medium text-slate-600">
-                Tips (Non-Cash yang Masuk Rekening Kaffah)
+                Tips Pasien
               </label>
               <Input type="number" value={form.tips} onChange={(e) => setForm({ ...form, tips: e.target.value })} />
               <p className="text-xs text-slate-500">
-                Tips dari pasien secara non-tunai (transfer/QRIS) yang masuk ke rekening klinik, diteruskan ke terapis lewat slip gaji ini.
+                Otomatis dijumlahkan dari kolom Tips Terapis di recap harian pada periode ini (sudah tercatat sebagai pemasukan klinik), diteruskan ke terapis lewat slip gaji ini. Bisa disesuaikan manual.
               </p>
             </div>
             <div className="space-y-1.5 sm:col-span-2">

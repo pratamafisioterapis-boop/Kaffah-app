@@ -396,6 +396,7 @@ setFormData({
     package_type: pkgLabel,
     therapist_id: initialData.therapist_id || '', 
     amount: initialData.amount || 0,
+    tips_amount: initialData.tips_amount || '',
     payment_method: initialData.payment_method || '',
     discount_type: initialData.discount_type || 'none',
     discount_value: initialData.discount_value || 0,
@@ -433,6 +434,7 @@ setFormData({
                     package_type: '',
                     therapist_id: '',
                     amount: '',
+                    tips_amount: '',
                     payment_method: '',
                     discount_type: 'none',
                     discount_value: 0,
@@ -1377,6 +1379,14 @@ setFormData({
             return;
         }
 
+        // Tips mengikuti metode pembayaran nominal terapi, jadi metode wajib ada
+        // (dan bukan 'Package', yang bukan pembayaran riil).
+        if (parseFloat(formData.tips_amount) < 0) {
+            newErrors.tips_amount = "Tips tidak boleh negatif";
+        } else if (parseFloat(formData.tips_amount) > 0 && !useSplitPayment
+            && (!formData.payment_method || formData.payment_method === 'Package')) {
+            newErrors.tips_amount = "Pilih metode pembayaran dulu karena tips mengikuti metode pembayaran terapi";
+        }
         // Ada nominal tapi metode kosong = pembayaran tidak tercatat (termasuk Recovery di luar paket).
         if (!useSplitPayment && formData.special_type !== 'free' && !formData.payment_method && parseFloat(formData.amount) > 0) {
             newErrors.payment_method = "Metode pembayaran wajib dipilih karena nominal sudah terisi";
@@ -1451,6 +1461,9 @@ setFormData({
     }).filter(Boolean)
   : undefined,
                 amount: parseFloat(formData.amount) || 0,
+                // Tips terpisah dari amount: tidak masuk invoice/kwitansi, tapi tetap
+                // pemasukan akuntansi & komponen tips di payroll terapis.
+                tips_amount: Math.max(parseFloat(formData.tips_amount) || 0, 0),
                 // Tanpa tipe potongan = tanpa diskon: nilai & label ikut dikosongkan
                 // supaya diskon lama benar-benar terhapus di DB dan invoice.
                 discount_value: formData.discount_type === 'none' || discountBlockedByPackage ? 0 : (parseFloat(formData.discount_value) || 0),
@@ -1836,6 +1849,21 @@ setFormData({
                                         {errors.payment_splits && <p className="text-xs text-red-500">{errors.payment_splits}</p>}
                                     </div>
                                 )}
+                                <div className="space-y-1">
+                                    <Label>Tips Terapis (Rp)</Label>
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        value={formData.tips_amount ?? ''}
+                                        onChange={e => handleChange('tips_amount', e.target.value)}
+                                        placeholder="0"
+                                        disabled={isPackageSessionLocked}
+                                    />
+                                    <p className="text-[11px] text-slate-500">
+                                        Opsional, isi manual. Tidak tercantum di invoice/kwitansi, tetap tercatat sebagai pemasukan dan otomatis masuk payroll terapis. Metode pembayaran tips mengikuti metode pembayaran terapi{useSplitPayment ? ' (pada split: metode dengan nominal terbesar)' : ''}.
+                                    </p>
+                                    {errors.tips_amount && <p className="text-xs text-red-500">{errors.tips_amount}</p>}
+                                </div>
         </>
     );
 
