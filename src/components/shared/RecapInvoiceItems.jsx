@@ -27,7 +27,7 @@ const stockStatus = (inv, qty, savedQty = 0) => {
   return null;
 };
 
-const RecapInvoiceItems = ({ clinicId, items, onChange, allowManual = false, defaultCategory = 'procedure', savedItems = [] }) => {
+const RecapInvoiceItems = ({ clinicId, items, onChange, allowManual = false, defaultCategory = 'procedure', savedItems = [], goodsOnly = false }) => {
   const [catalog, setCatalog] = useState([]);
   const [pick, setPick] = useState('');
 
@@ -35,8 +35,8 @@ const RecapInvoiceItems = ({ clinicId, items, onChange, allowManual = false, def
     if (!clinicId) return;
     supabase.from('price_catalog_items').select('id, category, name, selling_price, base_price, inventory_item_id, inventory_items:inventory_item_id ( current_stock, minimum_stock, unit )')
       .eq('clinic_id', clinicId).order('name')
-      .then(({ data }) => setCatalog(data || []));
-  }, [clinicId]);
+      .then(({ data }) => setCatalog(goodsOnly ? (data || []).filter((c) => c.inventory_item_id) : (data || [])));
+  }, [clinicId, goodsOnly]);
 
   const savedQtyOf = (catalogId) =>
     (savedItems || []).filter((x) => x.catalog_item_id === catalogId).reduce((a, x) => a + (Number(x.qty) || 0), 0);
@@ -63,7 +63,7 @@ const RecapInvoiceItems = ({ clinicId, items, onChange, allowManual = false, def
     <div className="space-y-2">
       <div className="flex gap-2">
         <select className="flex-1 min-w-0 border rounded-md h-9 px-2 text-sm bg-white" value={pick} onChange={(e) => setPick(e.target.value)}>
-          <option value="">+ Pilih item dari katalog…</option>
+          <option value="">{goodsOnly ? '+ Pilih barang…' : '+ Pilih item dari katalog…'}</option>
           {KWITANSI_CATEGORIES.map((cat) => (
             <optgroup key={cat.value} label={cat.label}>
               {catalog.filter((c) => c.category === cat.value).map((c) => (
@@ -84,7 +84,7 @@ const RecapInvoiceItems = ({ clinicId, items, onChange, allowManual = false, def
       </div>
 
       {items.length === 0 && (
-        <p className="text-xs text-slate-500">Belum ada item. Pilih dari katalog harga; Nominal dihitung otomatis dari daftar ini.</p>
+        <p className="text-xs text-slate-500">{goodsOnly ? 'Belum ada barang dijual.' : 'Belum ada item. Pilih dari katalog harga; Nominal dihitung otomatis dari daftar ini.'}</p>
       )}
 
       {items.map((it, i) => (

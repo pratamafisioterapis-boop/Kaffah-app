@@ -1907,6 +1907,15 @@ export const createDailyRecap = async (payload) => {
       if (tipsError) return { error: tipsError };
     }
 
+    // Barang dijual (goods_items) juga disimpan lewat update terpisah; total & stok dihitung trigger DB.
+    if (Array.isArray(payload.goods_items) && payload.goods_items.length > 0) {
+      const { error: goodsError } = await supabase
+        .from('daily_recaps')
+        .update({ goods_items: payload.goods_items })
+        .eq('id', data.recap_id);
+      if (goodsError) return { error: goodsError };
+    }
+
     return { data, error: null };
 
   }, 'createDailyRecap');
@@ -1987,6 +1996,7 @@ export const getDailyRecaps = async ({
   amount,
   amount_original,
   tips_amount,
+  goods_amount,
   payment_method,
   discount_type,
   discount_value,
@@ -2900,6 +2910,7 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
         amount,
         amount_package,
         tips_amount,
+        goods_amount,
         package_type,
         package_tracking_id,
         patient_type,
@@ -3025,8 +3036,20 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
     const formatted = (data || []).flatMap(item => {
       const row = toIncomeRow(item);
       const tips = Number(item.tips_amount) || 0;
-      if (tips <= 0) return [row];
-      return [row, {
+      // Penjualan barang gudang: pemasukan terpisah dari pendapatan terapi.
+      const goods = Number(item.goods_amount) || 0;
+      const goodsRows = goods > 0 ? [{
+        ...row,
+        id: `${item.id}-goods`,
+        patient_type: 'Penjualan Barang',
+        package_name: 'Barang',
+        session_number: null,
+        amount: goods,
+        cash_amount: goods,
+        is_goods: true
+      }] : [];
+      if (tips <= 0) return [row, ...goodsRows];
+      return [row, ...goodsRows, {
         ...row,
         id: `${item.id}-tips`,
         patient_type: 'Tips Terapis',

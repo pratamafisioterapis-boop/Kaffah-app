@@ -67,6 +67,9 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
     const [isKwitansi, setIsKwitansi] = useState(false);
     const [invoiceItems, setInvoiceItems] = useState([]);
     const [savedInvoiceItems, setSavedInvoiceItems] = useState([]);
+    // Barang gudang yang dijual di sesi ini (klinik non-Kwitansi). Total terpisah dari nominal terapi.
+    const [goodsItems, setGoodsItems] = useState([]);
+    const [savedGoodsItems, setSavedGoodsItems] = useState([]);
 
     useEffect(() => {
         if (!isOpen || !userDetails?.clinic_id) { setIsKwitansi(false); return; }
@@ -78,14 +81,17 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
 
     useEffect(() => {
         if (!isOpen) return;
-        if (mode !== 'edit' || !initialData?.id) { setInvoiceItems([]); setSavedInvoiceItems([]); return; }
+        if (mode !== 'edit' || !initialData?.id) { setInvoiceItems([]); setSavedInvoiceItems([]); setGoodsItems([]); setSavedGoodsItems([]); return; }
         let cancelled = false;
-        supabase.from('daily_recaps').select('invoice_items').eq('id', initialData.id).maybeSingle()
+        supabase.from('daily_recaps').select('invoice_items, goods_items').eq('id', initialData.id).maybeSingle()
             .then(({ data }) => {
                 if (cancelled) return;
                 const loaded = Array.isArray(data?.invoice_items) ? data.invoice_items : [];
                 setInvoiceItems(loaded);
                 setSavedInvoiceItems(loaded);
+                const goods = Array.isArray(data?.goods_items) ? data.goods_items : [];
+                setGoodsItems(goods);
+                setSavedGoodsItems(goods);
             });
         return () => { cancelled = true; };
     }, [isOpen, mode, initialData?.id]);
@@ -1390,6 +1396,11 @@ setFormData({
             && (!formData.payment_method || formData.payment_method === 'Package')) {
             newErrors.tips_amount = "Pilih metode pembayaran dulu karena tips mengikuti metode pembayaran terapi";
         }
+        // Barang dijual dibayar dengan metode recap (seperti tips), jadi metode wajib ada.
+        if (itemsNetTotal(goodsItems) > 0 && !useSplitPayment
+            && (!formData.payment_method || formData.payment_method === 'Package')) {
+            newErrors.goods = "Pilih metode pembayaran dulu karena barang dibayar dengan metode pembayaran recap";
+        }
         // Ada nominal tapi metode kosong = pembayaran tidak tercatat (termasuk Recovery di luar paket).
         if (!useSplitPayment && formData.special_type !== 'free' && !formData.payment_method && parseFloat(formData.amount) > 0) {
             newErrors.payment_method = "Metode pembayaran wajib dipilih karena nominal sudah terisi";
@@ -1467,6 +1478,8 @@ setFormData({
                 // Tips terpisah dari amount: tidak masuk invoice/kwitansi, tapi tetap
                 // pemasukan akuntansi & komponen tips di payroll terapis.
                 tips_amount: Math.max(parseFloat(formData.tips_amount) || 0, 0),
+                // Hanya dikirim bila ada/pernah ada barang, supaya simpan biasa tidak tergantung kolom baru.
+                ...((!isKwitansi && (goodsItems.length > 0 || savedGoodsItems.length > 0)) ? { goods_items: goodsItems } : {}),
                 // Tanpa tipe potongan = tanpa diskon: nilai & label ikut dikosongkan
                 // supaya diskon lama benar-benar terhapus di DB dan invoice.
                 discount_value: formData.discount_type === 'none' || discountBlockedByPackage ? 0 : (parseFloat(formData.discount_value) || 0),
@@ -1768,6 +1781,23 @@ setFormData({
         </>
     );
 
+    const goodsTotal = Math.round(itemsNetTotal(goodsItems));
+    const fGoods = (!isKwitansi && !isPackageSessionLocked) ? (
+        <div className="space-y-2 bg-slate-50 p-3 rounded-app-sm border">
+            <Label className="text-sm font-bold text-slate-800">Barang Dijual</Label>
+            <RecapInvoiceItems goodsOnly clinicId={userDetails?.clinic_id} items={goodsItems} onChange={setGoodsItems} savedItems={savedGoodsItems} />
+            {errors.goods && <p className="text-xs text-red-500">{errors.goods}</p>}
+            {goodsTotal > 0 && (
+                <div className="text-xs text-slate-600 space-y-0.5 pt-1">
+                    <p className="flex justify-between"><span>Nominal terapi</span><span>Rp {Math.round(effectiveAmount).toLocaleString('id-ID')}</span></p>
+                    <p className="flex justify-between"><span>Barang</span><span>Rp {goodsTotal.toLocaleString('id-ID')}</span></p>
+                    <p className="flex justify-between font-semibold text-slate-900"><span>Total dibayar pasien</span><span>Rp {(Math.round(effectiveAmount) + goodsTotal).toLocaleString('id-ID')}</span></p>
+                    <p className="text-[11px] text-slate-500">Tercatat terpisah di akuntansi dari pendapatan terapi, tampil sebagai item di invoice, dan stok gudang berkurang otomatis.</p>
+                </div>
+            )}
+        </div>
+    ) : null;
+
     const fPayment = (
         <>
                                 <div className="grid grid-cols-2 items-end gap-3 sm:gap-4">
@@ -1852,6 +1882,7 @@ setFormData({
                                         {errors.payment_splits && <p className="text-xs text-red-500">{errors.payment_splits}</p>}
                                     </div>
                                 )}
+                                {fGoods}
                                 <div className="space-y-1">
                                     <Label>Tips Terapis (Rp)</Label>
                                     <Input

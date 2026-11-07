@@ -108,13 +108,13 @@ const RevenueOverview = ({ dateRange }) => {
         getOwnerExpenditures(dateRange),
         getAdminExpenses(dateRange),
         supabase.from('daily_recaps')
-          .select('therapist_name, amount, tips_amount, patient_type, payment_method, payment_splits:daily_recap_payment_splits(payment_method, amount)')
+          .select('therapist_name, amount, tips_amount, goods_amount, patient_type, payment_method, payment_splits:daily_recap_payment_splits(payment_method, amount)')
           .eq('clinic_id', clinicId)
           .gte('revenue_date', dateRange.startDate)
           .lte('revenue_date', dateRange.endDate)
           .is('package_tracking_id', null),
         supabase.from('daily_recaps')
-          .select('therapist_name, patient_type, payment_method, package_tracking_id, amount, tips_amount, payment_splits:daily_recap_payment_splits(payment_method, amount), package_tracking!inner(nominal, total_sessions)')
+          .select('therapist_name, patient_type, payment_method, package_tracking_id, amount, tips_amount, goods_amount, payment_splits:daily_recap_payment_splits(payment_method, amount), package_tracking!inner(nominal, total_sessions)')
           .eq('clinic_id', clinicId)
           .gte('recap_date', dateRange.startDate)
           .lte('recap_date', dateRange.endDate)
@@ -256,7 +256,7 @@ const RevenueOverview = ({ dateRange }) => {
     // Tips terapis tetap pemasukan; metodenya mengikuti metode pembayaran terapi
     // recap tsb (pada split = metode ringkasan di daily_recaps.payment_method).
     allRecaps.forEach(r => {
-      const tips = Number(r.tips_amount) || 0;
+      const tips = (Number(r.tips_amount) || 0) + (Number(r.goods_amount) || 0); // tips + penjualan barang
       if (tips <= 0) return;
       const label = paymentMethodMap[r.payment_method] || r.payment_method || 'Tidak Diketahui';
       map[label] = (map[label] || 0) + tips;
