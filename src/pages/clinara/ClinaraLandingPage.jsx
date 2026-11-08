@@ -503,7 +503,7 @@ const ClinaraLandingPage = () => {
                   <img
                     loading="lazy"
                     decoding="async"
-                    src="/section3/problem-photo.png"
+                    src="/section3/problem-photo.webp"
                     alt="Tenaga kesehatan kewalahan dengan pekerjaan administratif manual"
                     className="w-full h-full object-cover"
                   />
@@ -525,7 +525,7 @@ const ClinaraLandingPage = () => {
                   <img
                     loading="lazy"
                     decoding="async"
-                    src="/section3/solution-photo.png"
+                    src="/section3/solution-photo.webp"
                     alt="Tenaga kesehatan bekerja tenang dan efisien dengan dashboard Clinara"
                     className="w-full h-full object-cover"
                     style={{ objectPosition: '25% center' }}
@@ -554,7 +554,7 @@ const ClinaraLandingPage = () => {
                   <img
                     loading="lazy"
                     decoding="async"
-                    src="/section3/problem-photo.png"
+                    src="/section3/problem-photo.webp"
                     alt="Tenaga kesehatan kewalahan dengan pekerjaan administratif manual"
                     className="lg:hidden w-full h-44 object-cover rounded-2xl mb-5"
                   />
@@ -605,7 +605,7 @@ const ClinaraLandingPage = () => {
                   <img
                     loading="lazy"
                     decoding="async"
-                    src="/section3/solution-photo.png"
+                    src="/section3/solution-photo.webp"
                     alt="Tenaga kesehatan bekerja tenang dan efisien dengan dashboard Clinara"
                     className="lg:hidden w-full h-44 object-cover rounded-2xl mb-5"
                   />
