@@ -14,13 +14,13 @@ import { normalizeRole } from '@/lib/roles';
 // later is a file replace, not a code change. Only rendered on APP_DOMAIN
 // (clinara.id), so this never touches the Kaffah Physiotherapy
 // patient-facing brand on the public domain.
-const CLINARA_LOGO_URL = '/clinara-logo.png';
+const CLINARA_LOGO_URL = '/clinara-logo.webp';
 // Both crops have the wave accent already baked in — portrait for below the
 // `sm` breakpoint, landscape (with the wave along the top and bottom edges)
 // from `sm` up — so neither needs the blur/tint/CSS-wave treatment the
 // plain photo used to require.
-const CLINARA_LOGIN_BG_MOBILE_URL = '/login-bg-mobile.jpg';
-const CLINARA_LOGIN_BG_DESKTOP_URL = '/login-bg-desktop.jpg';
+const CLINARA_LOGIN_BG_MOBILE_URL = '/login-bg-mobile.webp';
+const CLINARA_LOGIN_BG_DESKTOP_URL = '/login-bg-desktop.webp';
 // Icon-only crops (see public/clinara-icon.png generation) - the favicon
 // needs just the mark with no visible box (browser tabs render transparency
 // fine); apple-touch-icon needs an opaque backing since iOS paints
