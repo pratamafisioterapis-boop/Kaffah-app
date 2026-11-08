@@ -4,7 +4,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { LogOut, Menu, X } from 'lucide-react';
 import DashboardTopbar from '@/components/DashboardTopbar';
 import { cn } from '@/lib/utils';
+import { loadFontStylesheet } from '@/lib/loadFont';
 import './therapistTheme.css';
+
+const THERAPIST_FONTS = 'https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Albert+Sans:wght@400;500;600;700&display=swap';
 
 // Kerangka halaman akun terapis: rail ikon di desktop (melebar saat disorot), tab bar bawah
 // dengan tombol Menu di tengah di HP. Daftar menu, filter fitur klinik, dan aksinya tetap
@@ -29,6 +32,8 @@ const TherapistShell = ({ navItems, iconMap, userName, clinicInfo, clinicId, onL
   const [menuOpen, setMenuOpen] = useState(false);
   const [railPinned, setRailPinned] = useState(false);
   const iconFor = (item) => iconMap[item.icon] || iconMap.Home;
+
+  useEffect(() => { loadFontStylesheet('therapist-fonts', THERAPIST_FONTS); }, []);
 
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
   useEffect(() => {
