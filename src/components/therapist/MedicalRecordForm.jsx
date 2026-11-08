@@ -1158,6 +1158,18 @@ if (isCreate) {
                   )}
                 </span>
               </div>
+              {isKaffahClinic && (
+                <VoiceDictationButton
+                  disabled={sfLocked}
+                  onAppend={(text) => {
+                    setEducationAuto(false);
+                    setFormData((prev) => ({
+                      ...prev,
+                      education: prev.education?.trim() ? `${prev.education.replace(/\s+$/, '')} ${text}` : text,
+                    }));
+                  }}
+                />
+              )}
               <Textarea
                 placeholder="Terisi otomatis dari template edukasi setelah diagnosa dipilih. Bisa diedit."
                 className={`bg-slate-50/80 border-slate-200 resize-none rounded-app focus:bg-white focus:border-slate-300 transition-colors ${isPWA ? 'min-h-[260px] text-base' : 'min-h-[300px]'}`}
