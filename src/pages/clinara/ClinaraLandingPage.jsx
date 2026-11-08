@@ -411,6 +411,8 @@ const ClinaraLandingPage = () => {
                 className="relative w-[112%] -ml-[6%] sm:w-full sm:ml-0"
               >
                 <img
+                  loading="lazy"
+                  decoding="async"
                   src="/hero/clinara-section2-laptop.webp"
                   alt="Dashboard Clinara ditampilkan di laptop — menu pasien, appointment, rekam medis, pembayaran, dan analytics klinik"
                   className="w-full h-auto block"
@@ -499,6 +501,8 @@ const ClinaraLandingPage = () => {
               <div className="hidden lg:block absolute inset-y-0 right-[calc(100%+24px)] w-[170px] xl:w-[210px]">
                 <FadeIn className="relative h-full rounded-[28px] overflow-hidden">
                   <img
+                    loading="lazy"
+                    decoding="async"
                     src="/section3/problem-photo.png"
                     alt="Tenaga kesehatan kewalahan dengan pekerjaan administratif manual"
                     className="w-full h-full object-cover"
@@ -519,6 +523,8 @@ const ClinaraLandingPage = () => {
               <div className="hidden lg:block absolute inset-y-0 left-[calc(100%+24px)] w-[170px] xl:w-[210px]">
                 <FadeIn className="relative h-full rounded-[28px] overflow-hidden">
                   <img
+                    loading="lazy"
+                    decoding="async"
                     src="/section3/solution-photo.png"
                     alt="Tenaga kesehatan bekerja tenang dan efisien dengan dashboard Clinara"
                     className="w-full h-full object-cover"
@@ -546,6 +552,8 @@ const ClinaraLandingPage = () => {
                     TANTANGAN TANPA CLINARA
                   </span>
                   <img
+                    loading="lazy"
+                    decoding="async"
                     src="/section3/problem-photo.png"
                     alt="Tenaga kesehatan kewalahan dengan pekerjaan administratif manual"
                     className="lg:hidden w-full h-44 object-cover rounded-2xl mb-5"
@@ -595,6 +603,8 @@ const ClinaraLandingPage = () => {
                     SOLUSI DENGAN CLINARA
                   </span>
                   <img
+                    loading="lazy"
+                    decoding="async"
                     src="/section3/solution-photo.png"
                     alt="Tenaga kesehatan bekerja tenang dan efisien dengan dashboard Clinara"
                     className="lg:hidden w-full h-44 object-cover rounded-2xl mb-5"
@@ -662,7 +672,7 @@ const ClinaraLandingPage = () => {
 
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
               <FadeIn className="w-44 h-44 rounded-full bg-white shadow-[0_20px_50px_rgba(11,39,71,0.15)] border border-clinara-teal/20 flex flex-col items-center justify-center text-center">
-                <img src={ICON_URL} alt="Clinara" className="w-9 h-9 mb-2" />
+                <img loading="lazy" decoding="async" src={ICON_URL} alt="Clinara" className="w-9 h-9 mb-2" />
                 <span className="font-extrabold text-clinara-navy text-lg leading-none">Clinara</span>
                 <span className="mt-1.5 text-[11px] text-slate-500 leading-snug px-4">
                   Satu Platform<br />untuk Klinik Anda
@@ -701,7 +711,7 @@ const ClinaraLandingPage = () => {
           {/* Mobile — stacked vertical flow */}
           <div className="lg:hidden">
             <FadeIn className="mx-auto w-40 h-40 rounded-full bg-white shadow-[0_16px_40px_rgba(11,39,71,0.12)] border border-clinara-teal/20 flex flex-col items-center justify-center text-center mb-6">
-              <img src={ICON_URL} alt="Clinara" className="w-8 h-8 mb-1.5" />
+              <img loading="lazy" decoding="async" src={ICON_URL} alt="Clinara" className="w-8 h-8 mb-1.5" />
               <span className="font-extrabold text-clinara-navy text-base leading-none">Clinara</span>
               <span className="mt-1.5 text-[11px] text-slate-500 leading-snug px-3">
                 Satu Platform<br />untuk Klinik Anda
