@@ -316,6 +316,11 @@ export default defineConfig({
 				// Dashboard. Keeping recharts and its charting dependencies in one
 				// chunk means they always evaluate together, in one guaranteed order.
 				manualChunks(id) {
+					// React di chunk sendiri (satu arah: recharts -> react-vendor, tanpa
+					// siklus) supaya halaman tanpa grafik tidak ikut mengunduh recharts.
+					if (id.includes('commonjsHelpers') || /node_modules\/(react|react-dom|scheduler|object-assign|prop-types|react-is|clsx)\//.test(id)) {
+						return 'react-vendor';
+					}
 					if (/node_modules\/(recharts|d3-|victory-vendor|decimal\.js-light|eventemitter3)/.test(id)) {
 						return 'recharts-vendor';
 					}
