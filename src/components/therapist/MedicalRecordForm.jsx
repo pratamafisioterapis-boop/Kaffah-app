@@ -18,6 +18,7 @@ import SearchableSelect from '@/components/ui/searchable-select';
 import SubjectiveTemplateBuilder from '@/components/therapist/SubjectiveTemplateBuilder';
 import ObjectiveProgressUpdate from '@/components/therapist/ObjectiveProgressUpdate';
 import PlanChecklist from '@/components/therapist/PlanChecklist';
+import VoiceDictationButton from '@/components/therapist/VoiceDictationButton';
 import { SoapContinuationPrompt, SubjectiveProgressNote, applyProgressNote } from '@/components/therapist/SoapContinuation';
 import LabRadiologyUpload from '@/components/therapist/LabRadiologyUpload';
 import SOAPHistoryModal from '@/components/therapist/SOAPHistoryModal';
@@ -1092,6 +1093,18 @@ if (isCreate) {
                         mode={field.key}
                       />
                     </div>
+                  )}
+                  {isKaffahClinic && field.key !== 'plan' && (
+                    <VoiceDictationButton
+                      disabled={isTemplateLocked(field.key) || sfLocked}
+                      onAppend={(text) => {
+                        if (field.key === 'assessment') setAssessmentAuto(false);
+                        setFormData((prev) => ({
+                          ...prev,
+                          [field.key]: prev[field.key]?.trim() ? `${prev[field.key].replace(/\s+$/, '')} ${text}` : text,
+                        }));
+                      }}
+                    />
                   )}
                   <Textarea
                     readOnly={isTemplateLocked(field.key)}
