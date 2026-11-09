@@ -13,3 +13,4 @@ serviceAccount*.json
 # Local illustration runs
 illustration-runs/
 __pycache__/
+perf-results/

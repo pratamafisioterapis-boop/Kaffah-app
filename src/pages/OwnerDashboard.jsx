@@ -1,3 +1,4 @@
+import { fetchSlotsByDateCached } from '@/lib/slotsByDate';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
@@ -236,10 +237,7 @@ const currentUserRow = { clinic_id: await getCachedClinicId(currentUserId) };
 // 🔥 Gunakan RPC yang sama persis dengan halaman Appointments
 // agar konsisten (tabel therapist_schedules tidak memperhitungkan
 // override/pengecualian jadwal untuk tanggal spesifik)
-const { data: rpcData } = await supabase.rpc(
-  'get_available_slots_with_status_by_date',
-  { p_date: today, p_clinic_id: currentUserRow?.clinic_id }
-);
+const { data: rpcData } = await fetchSlotsByDateCached(today, currentUserRow?.clinic_id);
 
 let slotCountMap = {};
 (rpcData || []).forEach(slot => {

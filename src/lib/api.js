@@ -1,3 +1,4 @@
+import { getOptionsMap, invalidateOptionsMapCache } from '@/lib/optionsMapCache';
 import { sanitizeSearchTerm } from '@/lib/safeFilter';
 import { supabase } from '@/lib/customSupabaseClient';
 import {
@@ -165,18 +166,21 @@ const enrichRecapsWithOptions = async (recaps) => {
   const userId = sessionData?.session?.user?.id;
   const userRow = { clinic_id: await getCachedClinicId(userId) };
 
-  const { data: options } = await supabase
-    .from('operational_options')
-    .select('id, label, category')
-    .eq('clinic_id', userRow?.clinic_id)
-    .in('category', ['diagnosa', 'service_type', 'patient_type', 'tipe_paket', 'service', 'payment_method']);
+  const neededIds = recaps.flatMap((r) => {
+    let d = r.diagnosis;
+    try { d = typeof d === 'string' ? JSON.parse(d) : d; } catch { d = []; }
+    return [...(Array.isArray(d) ? d.flat() : d ? [d] : []), r.service_type, r.patient_type, r.package_type, r.payment_method];
+  });
+  const optionsMap = await getOptionsMap(userRow?.clinic_id, async () => {
+    const { data } = await supabase
+      .from('operational_options')
+      .select('id, label, category')
+      .eq('clinic_id', userRow?.clinic_id)
+      .in('category', ['diagnosa', 'service_type', 'patient_type', 'tipe_paket', 'service', 'payment_method']);
+    return data;
+  }, neededIds);
 
-  if (!options) return recaps;
-
-  const optionsMap = options.reduce((acc, opt) => {
-    acc[opt.id] = opt.label;
-    return acc;
-  }, {});
+  if (!optionsMap) return recaps;
 
   return recaps.map(recap => {
     let diagArray = [];
@@ -6487,6 +6491,7 @@ export const deletePatientInfoOption = async (id) => {
   }, 'deletePatientInfoOption');
 };
 export const createOperationalOption = async (category, label, extra = {}) => {
+  invalidateOptionsMapCache(); // label berubah -> buang cache peta opsi
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
@@ -6509,6 +6514,7 @@ export const createOperationalOption = async (category, label, extra = {}) => {
   }, 'createOperationalOption');
 };
 export const updateOperationalOption = async (id, label, extra = {}) => {
+  invalidateOptionsMapCache(); // label berubah -> buang cache peta opsi
   return safeQuery(async () => {
     const { data, error } = await supabase
       .from('operational_options')
@@ -6524,6 +6530,7 @@ export const updateOperationalOption = async (id, label, extra = {}) => {
   }, 'updateOperationalOption');
 };
 export const deleteOperationalOption = async (id) => {
+  invalidateOptionsMapCache(); // label berubah -> buang cache peta opsi
   return safeQuery(async () => {
     const { error } = await supabase
       .from('operational_options')
@@ -6538,6 +6545,7 @@ export const deleteOperationalOption = async (id) => {
 // pengguna. Diagnosa nonaktif yang masih dipakai rekap pasien (via ID) dilewati agar
 // tidak ada tautan yang putus.
 export const purgeInactiveDiagnoses = async () => {
+  invalidateOptionsMapCache(); // label berubah -> buang cache peta opsi
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;

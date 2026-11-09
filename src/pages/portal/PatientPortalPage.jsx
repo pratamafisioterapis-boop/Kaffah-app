@@ -5,7 +5,10 @@ import { Helmet } from 'react-helmet';
 import { Home, TrendingUp, PlayCircle, ClipboardList, MessageCircle, Send, Check, Play, CalendarPlus, CalendarCheck, ChevronLeft, Activity, Ban, AlertTriangle, Flame, Snowflake, Lock } from 'lucide-react';
 import { formatOnsetAgo } from '@/lib/onsetHelpers';
 import { portalApi, loadSession, saveSession, clearSession, loadDraft, saveDraft } from '@/lib/patientPortal';
+import { loadFontStylesheet } from '@/lib/loadFont';
 import './portal.css';
+
+const PORTAL_FONTS = 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&display=swap';
 
 // Aplikasi pasien Clinara, dibuka dari tautan /p/<token> yang dikirim admin.
 // Tanpa login: pasien memasukkan tanggal lahir (portal_verify), sesinya
@@ -915,6 +918,7 @@ const ChatTab = ({ token, session, therapist, clinicName, onUnauthorized }) => {
 
 // ---------------------------------------------------------------- Page
 const PatientPortalPage = () => {
+  useEffect(() => { loadFontStylesheet('portal-fonts', PORTAL_FONTS); }, []);
   const { token } = useParams();
   const [phase, setPhase] = useState('loading'); // loading | retry | blocked | gate | app
   const [branding, setBranding] = useState(null);

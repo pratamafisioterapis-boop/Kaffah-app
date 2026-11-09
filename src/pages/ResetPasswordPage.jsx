@@ -8,7 +8,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Loader2, AlertCircle, Lock, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { validatePassword, PASSWORD_MIN_LENGTH } from '@/lib/passwordPolicy';
 
-const CLINARA_LOGO_URL = '/clinara-logo.png';
+const CLINARA_LOGO_URL = '/clinara-logo.webp';
 const CLINARA_ICON_URL = '/clinara-icon.png';
 const CLINARA_APP_ICON_URL = '/clinara-icon-app.png';
 

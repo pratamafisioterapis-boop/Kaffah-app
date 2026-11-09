@@ -1,3 +1,4 @@
+import { fetchSlotsByDateCached } from '@/lib/slotsByDate';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import {
@@ -61,10 +62,7 @@ const CapacityVsDemandChart = ({ className }) => {
       // Fetch all days in parallel (monthly view can span ~30 days)
       const slotResults = await Promise.all(
         days.map((day) =>
-          supabase.rpc('get_available_slots_with_status_by_date', {
-            p_date: format(day, 'yyyy-MM-dd'),
-            p_clinic_id: currentClinicId,
-          })
+          fetchSlotsByDateCached(format(day, 'yyyy-MM-dd'), currentClinicId)
         )
       );
 

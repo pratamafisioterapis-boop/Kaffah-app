@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Albert+Sans:wght@400;500;600;700&display=swap");
 
 /* Tampilan akun terapis (redesain). Berlaku untuk semua klinik, jadi tidak ikut tema warna klinik.
    Token Tailwind app-* (app-accent, app-ink, dst) ditimpa di dalam .tv2, sehingga widget lama

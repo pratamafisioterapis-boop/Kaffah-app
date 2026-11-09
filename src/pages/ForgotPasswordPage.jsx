@@ -6,7 +6,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Loader2, AlertCircle, Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
-const CLINARA_LOGO_URL = '/clinara-logo.png';
+const CLINARA_LOGO_URL = '/clinara-logo.webp';
 const CLINARA_ICON_URL = '/clinara-icon.png';
 const CLINARA_APP_ICON_URL = '/clinara-icon-app.png';
 
