@@ -44,12 +44,29 @@ if (PROFILE === 'mobile') {
 
 // --- login ---
 if (!NO_LOGIN) {
-  await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' });
-  await page.locator('input[placeholder="Email atau Username"]:visible').first().fill(process.env.PERF_EMAIL);
-  await page.locator('input[type="password"]:visible').first().fill(process.env.PERF_PASSWORD);
-  await page.locator('button[type="submit"]:visible').first().click();
-  try { await page.waitForURL((u) => !/\/login/.test(u.pathname), { timeout: 45000 }); }
-  catch { console.error('Login gagal / tidak berpindah dari /login. Cek kredensial.'); await browser.close(); process.exit(2); }
+  let ok = false; let lastReason = '';
+  for (let attempt = 1; attempt <= 3 && !ok; attempt++) {
+    await page.goto(`${BASE}/login`, { waitUntil: 'networkidle' }).catch(() => {});
+    const email = page.locator('input[placeholder="Email atau Username"]:visible').first();
+    const pass = page.locator('input[type="password"]:visible').first();
+    await email.waitFor({ state: 'visible', timeout: 30000 }).catch(() => {});
+    await page.waitForTimeout(1500); // beri waktu aplikasi siap menerima input
+    await email.fill(process.env.PERF_EMAIL);
+    await pass.fill(process.env.PERF_PASSWORD);
+    await pass.press('Enter');
+    try { await page.waitForURL((u) => !/\/login/.test(u.pathname), { timeout: 30000 }); ok = true; }
+    catch {
+      // tampilkan alasan yang dilihat pengguna (tanpa mencetak kredensial)
+      lastReason = await page.evaluate(() => {
+        const el = document.querySelector('[role="alert"], .text-red-600, .text-red-500, [data-state="open"][role="status"]');
+        return (el?.textContent || document.body.innerText || '').trim().replace(/\s+/g, ' ').slice(0, 200);
+      });
+      console.error(`Percobaan login ${attempt}/3 gagal. Teks di layar: "${lastReason}"`);
+      fs.mkdirSync('perf-results', { recursive: true });
+      await page.screenshot({ path: 'perf-results/login-gagal.png' }).catch(() => {});
+    }
+  }
+  if (!ok) { console.error('Login gagal. Screenshot: perf-results/login-gagal.png (kolom password tersamar).'); await browser.close(); process.exit(2); }
   await page.waitForLoadState('networkidle').catch(() => {});
 }
 const home = new URL(page.url()).pathname;
