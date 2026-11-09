@@ -75,14 +75,27 @@ console.log(`Masuk. Halaman awal: ${home}`);
 // --- daftar menu ---
 let routes = (process.env.PERF_ROUTES || '').split(',').map((s) => s.trim()).filter(Boolean);
 if (!routes.length) {
-  routes = await page.evaluate(() => {
+  const area = home.split('/').filter(Boolean)[0] || ''; // owner / admin / therapist ...
+  // tunggu sidebar benar-benar tampil (bukan sisa halaman login)
+  await page.waitForSelector(`aside a[href^="/${area}"], nav a[href^="/${area}"]`, { timeout: 45000 }).catch(() => {});
+  await page.waitForTimeout(2500);
+  // buka grup menu yang tertutup supaya tautan di dalamnya ikut terbaca
+  for (let i = 0; i < 3; i++) {
+    const closed = page.locator('aside [aria-expanded="false"], nav [aria-expanded="false"]');
+    const n = Math.min(await closed.count(), 25);
+    for (let j = 0; j < n; j++) await closed.nth(j).click({ timeout: 1500 }).catch(() => {});
+    await page.waitForTimeout(500);
+  }
+  routes = await page.evaluate((area) => {
     const set = new Set();
     document.querySelectorAll('a[href^="/"]').forEach((a) => {
-      const h = a.getAttribute('href').split('?')[0].split('#')[0];
-      if (h && h !== '/' && !/^\/(login|logout|register)/.test(h)) set.add(h);
+      const h = a.getAttribute('href').split('?')[0].split('#')[0].replace(/\/$/, '');
+      if (h.startsWith(`/${area}/`) && !h.includes(':')) set.add(h);
     });
     return [...set];
-  });
+  }, area);
+  const max = Number(process.env.PERF_MAX_ROUTES || 60);
+  routes = routes.slice(0, max);
   if (!routes.length) routes = [home];
 }
 console.log(`Menu yang akan diukur (${routes.length}):`, routes.join(' '));
@@ -113,8 +126,8 @@ async function measure(route) {
   await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {});
   const tIdle = Date.now() - t0;
   const pm1 = await perfMetrics();
-  const scriptMs = Math.round(((pm1.ScriptDuration || 0) - (pm0.ScriptDuration || 0)) * 1000);
-  const taskMs = Math.round(((pm1.TaskDuration || 0) - (pm0.TaskDuration || 0)) * 1000);
+  const scriptMs = Math.round((pm1.ScriptDuration || 0) * 1000); // hitung ulang per dokumen
+  const taskMs = Math.round((pm1.TaskDuration || 0) * 1000);
   const dom = await page.evaluate(() => ({
     rows: document.querySelectorAll('tbody tr, [role="row"]').length,
     nodes: document.getElementsByTagName('*').length,
