@@ -45,7 +45,12 @@ if (PROFILE === 'mobile') {
 // --- login ---
 if (!NO_LOGIN) {
   let ok = false; let lastReason = '';
-  for (let attempt = 1; attempt <= 3 && !ok; attempt++) {
+  const authLog = [];
+  page.on('response', (r) => { if (/\/auth\/v1\/(token|user)/.test(r.url())) authLog.push(`${r.status()} ${new URL(r.url()).pathname}`); });
+  page.on('requestfailed', (r) => { if (/supabase\.co/.test(r.url())) authLog.push(`GAGAL ${new URL(r.url()).pathname}: ${r.failure()?.errorText}`); });
+  for (let attempt = 1; attempt <= 2 && !ok; attempt++) {
+    if (attempt > 1) { console.error('Menunggu 30 detik sebelum mencoba lagi...'); await page.waitForTimeout(30000); }
+    authLog.length = 0;
     await page.goto(`${BASE}/login`, { waitUntil: 'networkidle' }).catch(() => {});
     const email = page.locator('input[placeholder="Email atau Username"]:visible').first();
     const pass = page.locator('input[type="password"]:visible').first();
@@ -58,10 +63,11 @@ if (!NO_LOGIN) {
     catch {
       // tampilkan alasan yang dilihat pengguna (tanpa mencetak kredensial)
       lastReason = await page.evaluate(() => {
-        const el = document.querySelector('[role="alert"], .text-red-600, .text-red-500, [data-state="open"][role="status"]');
-        return (el?.textContent || document.body.innerText || '').trim().replace(/\s+/g, ' ').slice(0, 200);
+        const el = document.querySelector('p.text-red-600, [role="alert"]');
+        return (el?.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 120);
       });
-      console.error(`Percobaan login ${attempt}/3 gagal. Teks di layar: "${lastReason}"`);
+      if (lastReason) console.error(`Pesan di layar login: "${lastReason}"`);
+      console.error(`Percobaan login ${attempt}/2 gagal. Respons server: ${authLog.join(' | ') || '(tidak ada respons)'}`);
       fs.mkdirSync('perf-results', { recursive: true });
       await page.screenshot({ path: 'perf-results/login-gagal.png' }).catch(() => {});
     }
