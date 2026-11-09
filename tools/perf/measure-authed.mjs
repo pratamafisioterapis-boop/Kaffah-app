@@ -34,6 +34,8 @@ const ctx = await browser.newContext(PROFILE === 'mobile' ? { ...devices['Pixel 
 const page = await ctx.newPage();
 const cdp = await ctx.newCDPSession(page);
 await cdp.send('Network.enable');
+await cdp.send('Performance.enable');
+const perfMetrics = async () => Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map((m) => [m.name, m.value]));
 if (PROFILE === 'mobile') {
   // ~ slow 4G
   await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 150, downloadThroughput: 1.6 * 1024 * 1024 / 8, uploadThroughput: 750 * 1024 / 8 });
@@ -73,7 +75,7 @@ const median = (a) => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)];
 
 async function measure(route) {
   const reqs = new Map();
-  const onReq = (r) => reqs.set(r, { url: r.url(), start: Date.now(), method: r.method() });
+  const onReq = (r) => reqs.set(r, { url: r.url(), start: Date.now(), method: r.method(), type: r.resourceType() });
   const onDone = async (r) => {
     const m = reqs.get(r); if (!m) return; m.ms = Date.now() - m.start;
     try { const s = await r.sizes(); m.bytes = s.responseBodySize + s.responseHeadersSize; } catch { m.bytes = 0; }
@@ -88,14 +90,18 @@ async function measure(route) {
     new PerformanceObserver((l) => l.getEntries().forEach((e) => { window.__perf.long += Math.max(0, e.duration - 50); })).observe({ type: 'longtask', buffered: true });
     new PerformanceObserver((l) => l.getEntries().forEach((e) => { window.__perf.lcp = e.startTime; })).observe({ type: 'largest-contentful-paint', buffered: true });
   });
+  const pm0 = await perfMetrics();
   const t0 = Date.now();
   await page.goto(BASE + route, { waitUntil: 'domcontentloaded' });
   await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {});
   const tIdle = Date.now() - t0;
+  const pm1 = await perfMetrics();
+  const scriptMs = Math.round(((pm1.ScriptDuration || 0) - (pm0.ScriptDuration || 0)) * 1000);
+  const taskMs = Math.round(((pm1.TaskDuration || 0) - (pm0.TaskDuration || 0)) * 1000);
   const dom = await page.evaluate(() => ({
     rows: document.querySelectorAll('tbody tr, [role="row"]').length,
     nodes: document.getElementsByTagName('*').length,
-    tbt: Math.round(window.__perf?.long || 0), lcp: Math.round(window.__perf?.lcp || 0),
+    lcp: Math.round(window.__perf?.lcp || 0),
     spinner: !!document.querySelector('.animate-spin'),
   }));
   page.off('request', onReq); page.off('requestfinished', onDone); page.off('console', onErr);
@@ -109,8 +115,14 @@ async function measure(route) {
   }));
   const dupes = {}; api.forEach((r) => { const k = r.method + ' ' + r.url.replace(/=([^&]*)/g, '=*'); dupes[k] = (dupes[k] || 0) + 1; });
   const dup = Object.entries(dupes).filter(([, n]) => n > 1).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, n]) => ({ n, what: k.slice(0, 140) }));
+  const byType = {};
+  list.forEach((r) => { byType[r.type] = byType[r.type] || { n: 0, kb: 0 }; byType[r.type].n++; byType[r.type].kb += (r.bytes || 0) / 1024; });
+  const typeSummary = Object.entries(byType).map(([t, v]) => `${t}: ${v.n} file, ${Math.round(v.kb)} KB`).sort();
+  const biggest = [...list].sort((a, b) => (b.bytes || 0) - (a.bytes || 0)).slice(0, 8).map((r) => ({
+    kb: Math.round((r.bytes || 0) / 1024), type: r.type, what: r.url.replace(/^https?:\/\/[^/]+/, '').replace(/=([^&]*)/g, '=*').slice(0, 110),
+  }));
   return {
-    route, tIdleMs: tIdle, lcpMs: dom.lcp, tbtMs: dom.tbt, rows: dom.rows, domNodes: dom.nodes, stuckSpinner: dom.spinner,
+    route, tIdleMs: tIdle, scriptMs, taskMs, typeSummary, biggest, lcpMs: dom.lcp,  rows: dom.rows, domNodes: dom.nodes, stuckSpinner: dom.spinner,
     requests: list.length, apiCalls: api.length, apiMsSum: api.reduce((s, r) => s + r.ms, 0),
     transferKb: Math.round(list.reduce((s, r) => s + (r.bytes || 0), 0) / 1024),
     slowestApi: slow, duplicateApi: dup, consoleErrors: errors.slice(0, 3),
@@ -125,7 +137,7 @@ for (const route of routes) {
   if (!good.length) { results.push(runs[0]); console.log('GAGAL', route); continue; }
   const worst = good.reduce((a, b) => (b.tIdleMs > a.tIdleMs ? b : a));
   results.push({ ...worst, tIdleMedianMs: median(good.map((r) => r.tIdleMs)), runs: good.length });
-  console.log(`${route.padEnd(36)} idle ${worst.tIdleMs}ms  api ${worst.apiCalls}  rows ${worst.rows}  tbt ${worst.tbtMs}ms`);
+  console.log(`${route.padEnd(36)} idle ${worst.tIdleMs}ms  api ${worst.apiCalls}  rows ${worst.rows}  script ${worst.scriptMs}ms`);
 }
 await browser.close();
 
@@ -133,9 +145,9 @@ fs.mkdirSync('perf-results', { recursive: true });
 const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
 const base = path.join('perf-results', `${LABEL}-${stamp}`);
 fs.writeFileSync(base + '.json', JSON.stringify({ label: LABEL, profile: PROFILE, base: BASE, results }, null, 2));
-const md = [`# ${LABEL} (${PROFILE}) — ${BASE}`, '', '| Menu | idle (ms) | LCP | TBT | API | baris | KB | spinner nyangkut |', '|---|---|---|---|---|---|---|---|',
-  ...results.map((r) => r.error ? `| ${r.route} | ERROR ${r.error} |||||||` : `| ${r.route} | ${r.tIdleMs} | ${r.lcpMs} | ${r.tbtMs} | ${r.apiCalls} | ${r.rows} | ${r.transferKb} | ${r.stuckSpinner ? 'ya' : ''} |`), '',
-  '## Request API terlambat & duplikat per menu', '',
-  ...results.filter((r) => !r.error).flatMap((r) => [`### ${r.route}`, ...r.slowestApi.map((s) => `- ${s.ms} ms · ${s.kb} KB · ${s.what}`), ...r.duplicateApi.map((d) => `- DUPLIKAT x${d.n}: ${d.what}`), ''])].join('\n');
+const md = [`# ${LABEL} (${PROFILE}) — ${BASE}`, '', '| Menu | idle (ms) | LCP | script (ms) | API | baris | KB | spinner nyangkut |', '|---|---|---|---|---|---|---|---|',
+  ...results.map((r) => r.error ? `| ${r.route} | ERROR ${r.error} |||||||` : `| ${r.route} | ${r.tIdleMs} | ${r.lcpMs} | ${r.scriptMs} | ${r.apiCalls} | ${r.rows} | ${r.transferKb} | ${r.stuckSpinner ? 'ya' : ''} |`), '',
+  '## Rincian per menu: ukuran, request API terlambat & duplikat', '',
+  ...results.filter((r) => !r.error).flatMap((r) => [`### ${r.route}`, `Transfer: ${r.typeSummary.join(' · ')}`, 'File terbesar:', ...r.biggest.map((b) => `- ${b.kb} KB · ${b.type} · ${b.what}`), 'API terlambat:', ...r.slowestApi.map((s) => `- ${s.ms} ms · ${s.kb} KB · ${s.what}`), ...r.duplicateApi.map((d) => `- DUPLIKAT x${d.n}: ${d.what}`), ''])].join('\n');
 fs.writeFileSync(base + '.md', md);
 console.log(`\nSelesai. Kirim file ini ke Claude: ${base}.md (dan .json)`);

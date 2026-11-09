@@ -1,3 +1,4 @@
+import { fetchSlotsByDateCached } from '@/lib/slotsByDate';
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, XCircle, Clock, RefreshCcw } from 'lucide-react';
@@ -74,10 +75,7 @@ const TodaysOverviewWidget = () => {
           .lte('appointment_date', todayEnd)
           .ilike('status', '%cancelled%'),
         // 3. Total Slot Kosong Hari Ini - Menggunakan Function Database
-        supabase.rpc('get_available_slots_with_status_by_date', {
-          p_date: new Date().toISOString().split('T')[0],
-          p_clinic_id: clinicId,
-        }),
+        fetchSlotsByDateCached(new Date().toISOString().split('T')[0], clinicId),
       ]);
 
       if (appError) throw appError;

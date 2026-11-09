@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { lightLoadFetch, configureLightLoadMode } from '@/lib/lightLoadMode';
+import { dedupeFetch } from '@/lib/dedupeFetch';
 
 // Nilai publik (anon key tunduk pada RLS). Bisa di-override lewat env VITE_*.
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://dqkejdamagvlhqvxaqej.supabase.co';
@@ -15,7 +16,7 @@ const customSupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
   },
   // Lets the admin-only "Mode Beban Ringan" trim appointment / recap /
   // package reads. A pure passthrough unless that mode is on.
-  global: { fetch: lightLoadFetch },
+  global: { fetch: dedupeFetch(lightLoadFetch) },
 })
 
 configureLightLoadMode({

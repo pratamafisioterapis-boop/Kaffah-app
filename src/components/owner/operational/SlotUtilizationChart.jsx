@@ -1,3 +1,4 @@
+import { fetchSlotsByDateCached } from '@/lib/slotsByDate';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { AlertCircle, RefreshCw, LayoutGrid } from 'lucide-react';
@@ -25,10 +26,7 @@ const SlotUtilizationChart = ({ className }) => {
     const userId = sessionData?.session?.user?.id;
     const userRow = { clinic_id: await getCachedClinicId(userId) };
 
-    const { data, error } = await supabase.rpc(
-      'get_available_slots_with_status_by_date',
-      { p_date: today, p_clinic_id: userRow?.clinic_id }
-    );
+    const { data, error } = await fetchSlotsByDateCached(today, userRow?.clinic_id);
 
     if (error) throw error;
 
