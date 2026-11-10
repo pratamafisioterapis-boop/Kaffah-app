@@ -29,7 +29,7 @@ const TxSection = ({ tone, icon, title, items = [], kind = 'neutral', loading, o
   );
 
   const subtotal = filtered.reduce((s, i) => s + (Number(i.amt) || 0), 0);
-  const showFilter = methods.length > 1;
+  const showFilter = methods.length > 0;
 
   return (
     <FinanceTile
