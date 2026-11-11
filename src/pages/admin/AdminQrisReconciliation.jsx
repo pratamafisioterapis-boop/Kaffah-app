@@ -22,6 +22,7 @@ const formatRp = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
 const todayStr = () => format(new Date(), 'yyyy-MM-dd');
 const shiftDate = (d, delta) => format(addDays(parseISO(d), delta), 'yyyy-MM-dd');
 const fmtLong = (d) => { try { return format(parseISO(d), 'EEEE, d MMMM yyyy', { locale: localeId }); } catch { return d; } };
+const fmtShort = (d) => { try { return format(parseISO(d), 'd MMM', { locale: localeId }); } catch { return d; } };
 const fmtClock = (v) => { try { return v ? format(new Date(v), 'HH:mm') : null; } catch { return null; } };
 const toHHmm = (v) => {
   if (!v) return null;
@@ -41,7 +42,6 @@ const getIssues = (parsed) => {
   const issues = [];
   const { meta, summary, transactions } = parsed;
   if (meta.merchantName && !/KAFFAH/i.test(meta.merchantName)) issues.push('Nama merchant di laporan bukan Kaffah Physiotherapy.');
-  if (meta.periodStart && meta.periodEnd && meta.periodStart !== meta.periodEnd) issues.push('Periode laporan lebih dari satu hari. Disarankan mengunggah laporan per hari.');
   if (summary) {
     if (summary.count !== transactions.length) issues.push(`Jumlah transaksi terbaca (${transactions.length}) berbeda dari ringkasan laporan (${summary.count}).`);
     const sum = transactions.reduce((s, t) => s + t.amount, 0);
@@ -131,6 +131,25 @@ const AdminQrisReconciliation = () => {
       .eq('id', m.transactionId).eq('clinic_id', clinicId)));
   }, [clinicId, user?.id]);
 
+  // Cocokkan otomatis transaksi yang belum berpasangan dengan recap pada hari yang sama.
+  // Mengembalikan daftar transaksi dengan hasil pencocokan terbaru.
+  const autoMatchDay = useCallback(async (transactions, portions) => {
+    const used = new Set(transactions.flatMap((t) => [t.matched_recap_id, ...(t.extra_recap_ids || [])]).filter(Boolean));
+    // Transaksi yang pernah dilepas manual (auto_match_blocked) tidak dicocokkan otomatis lagi.
+    const freeTrx = transactions.filter((t) => !t.matched_recap_id && !t.auto_match_blocked);
+    const freePortions = portions.filter((p) => !used.has(p.recapId));
+    // Dahulukan pembayaran terpecah (satu recap = beberapa transaksi bank atas nama pasien itu).
+    const splitMatches = autoMatchSplits(freeTrx, freePortions);
+    const splitTx = new Set(splitMatches.map((m) => m.transactionId));
+    const splitRecaps = new Set(splitMatches.map((m) => m.recapId));
+    const { matches: amountMatches } = autoMatchQris(freeTrx.filter((t) => !splitTx.has(t.id)), freePortions.filter((p) => !splitRecaps.has(p.recapId)));
+    const matches = [...splitMatches, ...amountMatches];
+    if (!matches.length) return transactions;
+    await persistMatches(matches);
+    const byTx = Object.fromEntries(matches.map((m) => [m.transactionId, m.recapId]));
+    return transactions.map((t) => (byTx[t.id] ? { ...t, matched_recap_id: byTx[t.id], match_method: 'auto' } : t));
+  }, [persistMatches]);
+
   const loadDay = useCallback(async (d) => {
     if (!clinicId) return;
     setLoading(true);
@@ -144,21 +163,7 @@ const AdminQrisReconciliation = () => {
       let transactions = trx || [];
 
       // Cocokkan otomatis yang belum berpasangan (mis. admin baru melengkapi recap setelah PDF diunggah).
-      const used = new Set(transactions.flatMap((t) => [t.matched_recap_id, ...(t.extra_recap_ids || [])]).filter(Boolean));
-      // Transaksi yang pernah dilepas manual (auto_match_blocked) tidak dicocokkan otomatis lagi.
-      const freeTrx = transactions.filter((t) => !t.matched_recap_id && !t.auto_match_blocked);
-      const freePortions = portions.filter((p) => !used.has(p.recapId));
-      // Dahulukan pembayaran terpecah (satu recap = beberapa transaksi bank atas nama pasien itu).
-      const splitMatches = autoMatchSplits(freeTrx, freePortions);
-      const splitTx = new Set(splitMatches.map((m) => m.transactionId));
-      const splitRecaps = new Set(splitMatches.map((m) => m.recapId));
-      const { matches: amountMatches } = autoMatchQris(freeTrx.filter((t) => !splitTx.has(t.id)), freePortions.filter((p) => !splitRecaps.has(p.recapId)));
-      const matches = [...splitMatches, ...amountMatches];
-      if (matches.length) {
-        await persistMatches(matches);
-        const byTx = Object.fromEntries(matches.map((m) => [m.transactionId, m.recapId]));
-        transactions = transactions.map((t) => (byTx[t.id] ? { ...t, matched_recap_id: byTx[t.id], match_method: 'auto' } : t));
-      }
+      transactions = await autoMatchDay(transactions, portions);
 
       const uploaderIds = [...new Set((ups || []).map((u) => u.uploaded_by).filter(Boolean))];
       const userNames = {};
@@ -172,7 +177,7 @@ const AdminQrisReconciliation = () => {
     } finally {
       setLoading(false);
     }
-  }, [clinicId, loadQrisPortions, persistMatches, toast]);
+  }, [clinicId, loadQrisPortions, autoMatchDay, toast]);
 
   useEffect(() => { if (isKaffah) loadDay(date); }, [date, isKaffah, loadDay]);
 
@@ -185,10 +190,13 @@ const AdminQrisReconciliation = () => {
 
       // Transaksi yang RRN-nya sudah tersimpan (mis. dari PDF admin pagi) dilewati.
       const rrns = parsed.transactions.map((t) => t.rrn).filter(Boolean);
-      const { data: existing } = rrns.length
-        ? await supabase.from('qris_report_transactions').select('rrn').eq('clinic_id', clinicId).in('rrn', rrns)
-        : { data: [] };
-      const existingRrn = new Set((existing || []).map((e) => e.rrn));
+      // Dipecah per 100 agar URL tidak terlalu panjang untuk laporan sebulan.
+      const existingRrn = new Set();
+      for (let i = 0; i < rrns.length; i += 100) {
+        const { data: existing, error: exErr } = await supabase.from('qris_report_transactions').select('rrn').eq('clinic_id', clinicId).in('rrn', rrns.slice(i, i + 100));
+        if (exErr) throw exErr;
+        (existing || []).forEach((e) => existingRrn.add(e.rrn));
+      }
 
       // Transaksi tanpa RRN (mis. dari PDF versi lain) dideteksi lewat kunci cadangan
       // tanggal+jam+nominal+nama+issuer, supaya PDF yang tumpang tindih tidak menggandakan transaksi.
@@ -209,38 +217,70 @@ const AdminQrisReconciliation = () => {
         return true;
       });
 
+      // Satu catatan unggahan per tanggal transaksi, supaya tiap hari punya riwayat & batas waktu laporannya
+      // sendiri (laporan 2 minggu / sebulan tampil benar di setiap harinya).
+      const touchedDates = [];
       if (fresh.length) {
         const generatedAt = parseGeneratedAt(fileName);
-        const { data: upload, error: upErr } = await supabase.from('qris_report_uploads').insert({
-          clinic_id: clinicId,
-          report_date: reportDate,
-          file_name: fileName,
-          mid: parsed.meta.mid,
-          mpan: parsed.meta.mpan,
-          total_count: parsed.transactions.length,
-          new_count: fresh.length,
-          total_amount: parsed.transactions.reduce((s, t) => s + t.amount, 0),
-          total_net: parsed.transactions.reduce((s, t) => s + t.netAmount, 0),
-          report_generated_at: generatedAt ? generatedAt.toISOString() : null,
-          uploaded_by: user?.id || null,
-        }).select('id').single();
-        if (upErr) throw upErr;
+        const byDate = {};
+        parsed.transactions.forEach((t) => { (byDate[t.dateStr] ||= { all: [], fresh: [] }).all.push(t); });
+        fresh.forEach((t) => byDate[t.dateStr].fresh.push(t));
 
-        const { error: insErr } = await supabase.from('qris_report_transactions').insert(fresh.map((t) => ({
-          upload_id: upload.id, clinic_id: clinicId, trx_date: t.dateStr, trx_time: t.timeStr, issuer: t.issuer,
-          customer_name: t.customerName, ref_no: t.refNo, rrn: t.rrn, amount: t.amount, mdr: t.mdr, net_amount: t.netAmount,
-        })));
-        if (insErr) throw insErr;
+        for (const d of Object.keys(byDate).sort()) {
+          const g = byDate[d];
+          if (!g.fresh.length) continue;
+          const { data: upload, error: upErr } = await supabase.from('qris_report_uploads').insert({
+            clinic_id: clinicId,
+            report_date: d,
+            file_name: fileName,
+            mid: parsed.meta.mid,
+            mpan: parsed.meta.mpan,
+            total_count: g.all.length,
+            new_count: g.fresh.length,
+            total_amount: g.all.reduce((sum, t) => sum + t.amount, 0),
+            total_net: g.all.reduce((sum, t) => sum + t.netAmount, 0),
+            report_generated_at: generatedAt ? generatedAt.toISOString() : null,
+            uploaded_by: user?.id || null,
+          }).select('id').single();
+          if (upErr) throw upErr;
+
+          const { error: insErr } = await supabase.from('qris_report_transactions').insert(g.fresh.map((t) => ({
+            upload_id: upload.id, clinic_id: clinicId, trx_date: t.dateStr, trx_time: t.timeStr, issuer: t.issuer,
+            customer_name: t.customerName, ref_no: t.refNo, rrn: t.rrn, amount: t.amount, mdr: t.mdr, net_amount: t.netAmount,
+          })));
+          if (insErr) throw insErr;
+          touchedDates.push(d);
+        }
       }
 
+      // Rentang beberapa hari: cocokkan semua harinya sekaligus, lalu laporkan hari yang masih perlu dicek.
+      const unmatchedByDate = [];
+      if (touchedDates.length > 1) {
+        for (const d of touchedDates) {
+          const [{ data: trx }, portions] = await Promise.all([
+            supabase.from('qris_report_transactions').select('*').eq('clinic_id', clinicId).eq('trx_date', d).order('trx_time'),
+            loadQrisPortions(d),
+          ]);
+          const after = await autoMatchDay(trx || [], portions);
+          const n = after.filter((t) => !t.matched_recap_id).length;
+          if (n) unmatchedByDate.push({ d, n });
+        }
+      }
+
+      const parts = [];
+      if (touchedDates.length > 1) parts.push(`${touchedDates.length} hari (${fmtShort(touchedDates[0])} – ${fmtShort(touchedDates[touchedDates.length - 1])}).`);
+      if (parsed.transactions.length > fresh.length && fresh.length) parts.push(`${parsed.transactions.length - fresh.length} transaksi lain sudah ada dari unggahan sebelumnya.`);
+      if (unmatchedByDate.length) parts.push(`Belum cocok: ${unmatchedByDate.map((u) => `${fmtShort(u.d)} (${u.n})`).join(', ')}.`);
       toast({
         title: fresh.length ? `Laporan tersimpan: ${fresh.length} transaksi baru` : 'Tidak ada transaksi baru',
-        description: fresh.length
-          ? (parsed.transactions.length > fresh.length ? `${parsed.transactions.length - fresh.length} transaksi lain sudah ada dari unggahan sebelumnya.` : undefined)
-          : 'Semua transaksi di PDF ini sudah pernah diunggah.',
+        description: fresh.length ? (parts.join(' ') || undefined) : 'Semua transaksi di PDF ini sudah pernah diunggah.',
       });
       setPendingFile(null);
-      if (reportDate === date) await loadDay(reportDate); else setDate(reportDate);
+      // Tampilkan hari yang sedang dibuka bila termasuk dalam laporan; selain itu loncat ke hari paling awal yang perlu dicek
+      // (atau hari terakhir di laporan).
+      const target = touchedDates.includes(date) ? date
+        : (unmatchedByDate[0]?.d || touchedDates[touchedDates.length - 1] || reportDate);
+      if (target === date) await loadDay(target); else setDate(target);
     } catch (e) {
       toast({ variant: 'destructive', title: 'Gagal menyimpan', description: e.message });
     } finally {
@@ -637,7 +677,7 @@ const AdminQrisReconciliation = () => {
         >
           <UploadCloud className="w-7 h-7 mx-auto text-emerald-600 mb-1" />
           <div className="font-medium">Klik atau seret PDF Laporan Transaksi ke halaman ini</div>
-          <div className="text-xs text-slate-400">BSI Merchant › Laporan Transaksi (PDF). Boleh diunggah beberapa kali sehari, data yang sama tidak akan dobel.</div>
+          <div className="text-xs text-slate-400">BSI Merchant › Laporan Transaksi (PDF). Boleh satu hari atau rentang panjang (2 minggu, sebulan) dan boleh diunggah berulang; data yang sama tidak akan dobel.</div>
         </button>
       )}
     </div>
