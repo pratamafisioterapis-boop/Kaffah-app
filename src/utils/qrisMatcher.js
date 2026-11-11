@@ -129,6 +129,34 @@ export const findCombos = (t, portions, { maxSize = 3, limit = 5 } = {}) => {
     .slice(0, limit);
 };
 
+// Satu pasien membayar QRIS dua kali (mis. 200rb lalu 25rb) tetapi di recap hanya tercatat sekali (225rb).
+// Cocokkan 2-3 transaksi dengan nama pelanggan mirip nama pasien yang jumlahnya pas dengan recap.
+// Hanya dipakai bila gabungannya tunggal (tidak ambigu).
+export const autoMatchSplits = (transactions, portions, { maxParts = 3 } = {}) => {
+  const takenTx = new Set();
+  const matches = [];
+  for (const p of portions) {
+    const target = Math.round(p.amount);
+    const pool = transactions
+      .filter((t) => !takenTx.has(t.id) && t.trx_date === p.date && Math.round(t.amount) > 0 && Math.round(t.amount) < target && nameOverlap(t.customer_name, p.name) > 0)
+      .slice(0, 20);
+    if (pool.length < 2) continue;
+    const found = [];
+    const walk = (start, picked, sum) => {
+      if (picked.length >= 2 && sum === target) { found.push([...picked]); return; }
+      if (picked.length >= maxParts) return;
+      for (let i = start; i < pool.length; i += 1) {
+        const next = sum + Math.round(pool[i].amount);
+        if (next <= target) walk(i + 1, [...picked, pool[i]], next);
+      }
+    };
+    walk(0, [], 0);
+    if (found.length !== 1) continue;
+    found[0].forEach((t) => { takenTx.add(t.id); matches.push({ transactionId: t.id, recapId: p.recapId }); });
+  }
+  return matches;
+};
+
 /**
  * @param transactions [{ id, trx_date, trx_time, amount, customer_name }] yang belum dicocokkan
  * @param portions     [{ recapId, date, amount, name, time, payAt }] pembayaran QRIS di recap yang belum terpakai
