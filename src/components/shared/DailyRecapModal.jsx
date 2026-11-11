@@ -31,6 +31,7 @@ import {
     getActiveReferralRewards,
     getReferralRewardById,
     getBirthdayRewardStatus,
+    searchBirthdayVoucherOwners,
     getWelcomeRewardStatus,
     getPatientActivePackage,
     extendPackage
@@ -413,6 +414,7 @@ setFormData({
     discount_referral_code: initialData.discount_referral_code || '',
     referral_reward_id: initialData.referral_reward_id || '',
     birthday_reward_year: initialData.birthday_reward_year || null,
+    birthday_reward_patient_id: initialData.birthday_reward_patient_id || null,
     welcome_reward_used: !!initialData.welcome_reward_used
 });
 
@@ -451,6 +453,7 @@ setFormData({
                     discount_referral_code: '',
                     referral_reward_id: '',
                     birthday_reward_year: null,
+                    birthday_reward_patient_id: null,
                     welcome_reward_used: false
                 });
                 setRewardInfo(null);
@@ -1012,16 +1015,25 @@ setFormData({
     const isoToDisplay = (iso) => String(iso || '').slice(0, 10).split('-').reverse().join('/');
 
     // Diskon ultah (Kaffah): cek otomatis berdasarkan tanggal lahir pasien & tanggal rekap.
+    // Voucher juga bisa milik pasien lain (birthdayOwner): pemilik dipilih manual.
     const [birthdayStatus, setBirthdayStatus] = useState(null);
+    const [birthdayOwner, setBirthdayOwner] = useState(null); // { value, label } | null
+    const [birthdayOwnerOptions, setBirthdayOwnerOptions] = useState([]);
+    const [showBirthdayOwnerPicker, setShowBirthdayOwnerPicker] = useState(false);
+    const birthdayOwnerId = birthdayOwner?.value || formData.birthday_reward_patient_id || null;
     useEffect(() => {
         if (!isOpen || !sfSettings || !formData.patient_id || !recapIso) { setBirthdayStatus(null); return; }
         let cancelled = false;
-        getBirthdayRewardStatus(formData.patient_id, recapIso, mode === 'edit' ? initialData?.id : null).then(({ data }) => {
+        getBirthdayRewardStatus(formData.patient_id, recapIso, mode === 'edit' ? initialData?.id : null, birthdayOwnerId).then(({ data }) => {
             if (!cancelled) setBirthdayStatus(data && !data.hidden ? data : null);
         });
         return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, !!sfSettings, formData.patient_id, recapIso, mode, initialData?.id]);
+    }, [isOpen, !!sfSettings, formData.patient_id, recapIso, mode, initialData?.id, birthdayOwnerId]);
+
+    useEffect(() => {
+        if (!isOpen) { setBirthdayOwner(null); setShowBirthdayOwnerPicker(false); }
+    }, [isOpen]);
 
     // Ganti pasien/tanggal: diskon ultah yang terpasang dilepas (periode & kuota bisa berbeda).
     const birthdayKeyRef = useRef(`${formData.patient_id}|${recapIso}`);
@@ -1029,6 +1041,8 @@ setFormData({
         const key = `${formData.patient_id}|${recapIso}`;
         if (birthdayKeyRef.current === key) return;
         birthdayKeyRef.current = key;
+        setBirthdayOwner(null);
+        setShowBirthdayOwnerPicker(false);
         if (formData.birthday_reward_year) clearBirthdayReward();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [formData.patient_id, recapIso]);
@@ -1076,6 +1090,7 @@ setFormData({
         setFormData(prev => ({
             ...prev,
             birthday_reward_year: birthdayStatus.year,
+            birthday_reward_patient_id: birthdayStatus.owner_id && birthdayStatus.owner_id !== prev.patient_id ? birthdayStatus.owner_id : null,
             welcome_reward_used: false,
             discount_type: birthdayStatus.discount_value_type,
             discount_value: String(birthdayStatus.discount_value),
@@ -1084,7 +1099,7 @@ setFormData({
     };
 
     const clearBirthdayReward = () => {
-        setFormData(prev => ({ ...prev, birthday_reward_year: null, discount_type: 'none', discount_value: 0, discount_label: '' }));
+        setFormData(prev => ({ ...prev, birthday_reward_year: null, birthday_reward_patient_id: null, discount_type: 'none', discount_value: 0, discount_label: '' }));
     };
 
     const clearReferralReward = () => {
@@ -1487,6 +1502,7 @@ setFormData({
                 discount_label: formData.discount_type === 'none' || discountBlockedByPackage ? null : (formData.discount_label || null),
                 referral_reward_id: discountBlockedByPackage ? null : (formData.referral_reward_id || null),
                 birthday_reward_year: discountBlockedByPackage ? null : (formData.birthday_reward_year || null),
+                birthday_reward_patient_id: discountBlockedByPackage || !formData.birthday_reward_year ? null : (formData.birthday_reward_patient_id || null),
                 welcome_reward_used: discountBlockedByPackage ? false : !!formData.welcome_reward_used,
                 discount_referral_code: !discountBlockedByPackage && formData.discount_type !== 'none' && needsDiscountRefCode ? (formData.discount_referral_code || '').trim() : null,
                 package_type_id: formData.package_type_id || null,
@@ -1526,6 +1542,7 @@ setFormData({
                 payload.discount_label = null;
                 payload.referral_reward_id = null;
                 payload.birthday_reward_year = null;
+                payload.birthday_reward_patient_id = null;
                 payload.welcome_reward_used = false;
             }
             // Sesi paket (metode 'Package') selalu Rp 0. Tanpa ini, nominal basi di form
@@ -1924,13 +1941,13 @@ setFormData({
                                         <p className="text-xs text-amber-700">Paket dengan lebih dari 1 sesi tidak boleh mendapat diskon.</p>
                                     )}
                                     {/* Diskon tersedia otomatis (ultah & referral) */}
-                                    {!discountBlockedByPackage && (birthdayStatus || welcomeStatus || activeRewards.length > 0) && (
+                                    {!discountBlockedByPackage && (birthdayStatus || welcomeStatus || activeRewards.length > 0 || sfSettings) && (
                                         <div className="space-y-2 rounded-md border border-emerald-200 bg-emerald-50 p-3">
                                             <p className="text-xs font-semibold text-emerald-800">Diskon tersedia untuk pasien ini</p>
                                             {birthdayStatus && (
                                                 <div className="flex items-center justify-between gap-2 text-xs">
                                                     <span className="text-slate-800">
-                                                        <span className="font-semibold">🎂 {birthdayStatus.discount_label}</span>{' '}
+                                                        <span className="font-semibold">🎂 {birthdayStatus.discount_label}</span>{birthdayStatus.owner_id && birthdayStatus.owner_id !== formData.patient_id && <span className="text-slate-600"> milik {birthdayStatus.owner_name}</span>}{' '}
                                                         ({birthdayStatus.discount_value_type === 'percentage'
                                                             ? `${Number(birthdayStatus.discount_value)}%`
                                                             : `Rp ${Number(birthdayStatus.discount_value).toLocaleString('id-ID')}`})
@@ -1943,6 +1960,35 @@ setFormData({
                                                     ) : birthdayStatus.eligible ? (
                                                         <Button type="button" size="sm" className="h-7 px-3 text-xs" onClick={applyBirthdayReward}>Terapkan</Button>
                                                     ) : null}
+                                                </div>
+                                            )}
+                                            {sfSettings && !formData.birthday_reward_year && (
+                                                <div className="space-y-1 text-xs">
+                                                    {!showBirthdayOwnerPicker && !birthdayOwner ? (
+                                                        <button type="button" className="text-emerald-700 underline" onClick={() => setShowBirthdayOwnerPicker(true)}>
+                                                            🎂 Pakai voucher ultah pasien lain
+                                                        </button>
+                                                    ) : (
+                                                        <div className="space-y-1">
+                                                            <span className="font-semibold text-slate-800">Pemilik voucher ultah</span>
+                                                            <SearchableSelect
+                                                                options={birthdayOwnerOptions}
+                                                                value={birthdayOwner?.value || ''}
+                                                                onChange={(v) => {
+                                                                    const opt = birthdayOwnerOptions.find(o => o.value === v);
+                                                                    setBirthdayOwner(opt ? { value: opt.value, label: opt.label } : null);
+                                                                }}
+                                                                onSearch={async (t) => {
+                                                                    const { data } = await searchBirthdayVoucherOwners(t);
+                                                                    setBirthdayOwnerOptions(data);
+                                                                }}
+                                                                placeholder="Cari nama pasien yang berulang tahun..."
+                                                            />
+                                                            <button type="button" className="text-slate-500 underline" onClick={() => { setBirthdayOwner(null); setShowBirthdayOwnerPicker(false); }}>
+                                                                Batal (pakai voucher pasien ini sendiri)
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                             {welcomeStatus && (
