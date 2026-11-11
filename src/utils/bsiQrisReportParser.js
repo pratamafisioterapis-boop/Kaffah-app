@@ -19,7 +19,7 @@ export const parseIdAmount = (str) => {
   return Number.isFinite(n) ? n : 0;
 };
 
-async function ensurePdfJs() {
+export async function ensurePdfJs() {
   if (!window.pdfjsLib) {
     await new Promise((resolve, reject) => {
       const script = document.createElement('script');
@@ -34,7 +34,7 @@ async function ensurePdfJs() {
   return window.pdfjsLib;
 }
 
-async function extractPagesWords(file) {
+export async function extractPagesWords(file) {
   const pdfjsLib = await ensurePdfJs();
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
