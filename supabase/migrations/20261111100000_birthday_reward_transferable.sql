@@ -188,21 +188,3 @@ BEGIN
   RETURN NEW;
 END;
 $function$;
-
--- Koreksi data: rekap Abdi Nugroho (11 Nov 2026) seharusnya memakai voucher ultah Irma Soffa.
--- Trigger validasi dilewati: di SQL Editor/migrasi tidak ada user login (get_my_clinic_id() NULL),
--- sehingga validasi selalu menolak. Kelayakan sudah diperiksa manual (Irma Soffa, ultah 21 Okt,
--- sudah pasien lama, voucher 2026 belum terpakai).
-ALTER TABLE public.daily_recaps DISABLE TRIGGER ab_birthday_reward_validate;
-
-UPDATE public.daily_recaps r
-SET birthday_reward_year = 2026,
-    birthday_reward_patient_id = 'b59afffb-85c7-4e90-a020-ade89fbfa8f9',
-    discount_type = 'nominal',
-    discount_value = 100000,
-    discount_label = 'Birthday reward'
-WHERE r.id = '2ccfe093-3f7f-4b64-b4a2-7467ed637836'
-  AND r.patient_id = '6745aa60-23af-4211-b04e-63784c03d41d'
-  AND r.birthday_reward_year IS NULL;
-
-ALTER TABLE public.daily_recaps ENABLE TRIGGER ab_birthday_reward_validate;
