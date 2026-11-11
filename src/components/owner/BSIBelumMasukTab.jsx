@@ -73,7 +73,7 @@ const BSIBelumMasukTab = ({ clinicId }) => {
         fetchAll(() =>
           supabase
             .from('daily_recaps')
-            .select('id, recap_date, revenue_date, payment_method, amount, full_name, guest_name, end_time, status')
+            .select('id, recap_date, revenue_date, payment_method, amount, goods_amount, tips_amount, full_name, guest_name, end_time, status')
             .eq('clinic_id', clinicId)
             .gte('revenue_date', from)
             .lte('revenue_date', to)
@@ -264,6 +264,12 @@ const BSIBelumMasukTab = ({ clinicId }) => {
                           <td className="py-2 pr-3 text-right whitespace-nowrap">{formatRp(c.amount)}</td>
                           <td className="py-2 text-xs text-slate-500">
                             {c.beforePeriod ? 'Transaksi periode sebelumnya (diabaikan)' : 'Tidak ada pembayaran non-tunai yang cocok — cek apakah dicatat Cash atau belum di-input'}
+                            {!c.beforePeriod && c.suggestions?.length > 0 && (
+                              <p className="mt-1 text-amber-700">
+                                Kemungkinan: {c.suggestions.map((u) => `${u.name} (${fmtDate(u.date)}, tercatat ${METHOD_LABEL[u.method]} ${formatRp(u.amount)})`).join('; ')}.
+                                {' '}Kalau benar, ubah metode pembayaran di recap-nya ke {c.type === 'debit' ? 'Debit' : 'metode yang sesuai'}, lalu upload ulang.
+                              </p>
+                            )}
                           </td>
                         </tr>
                       ))}

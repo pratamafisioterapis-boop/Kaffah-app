@@ -56,7 +56,7 @@ const hhmmWita = (ts) => {
 
 /**
  * Ubah baris database menjadi unit pembayaran non-tunai.
- * @param recaps  daily_recaps  {id, recap_date, revenue_date, payment_method, amount, full_name, guest_name, end_time, status}
+ * @param recaps  daily_recaps  {id, recap_date, revenue_date, payment_method, amount, goods_amount, tips_amount, full_name, guest_name, end_time, status}
  * @param splits  daily_recap_payment_splits {id, recap_id, payment_method, amount}
  * @param incomes admin_income  {id, date, amount, payment_method, description, sub_category, created_at}
  */
@@ -82,8 +82,10 @@ export const buildUnits = ({ recaps = [], splits = [], incomes = [] }) => {
       });
       return;
     }
+    // Total yang benar-benar dibayar pasien = terapi + penjualan barang + tips (semuanya mengikuti
+    // metode bayar recap), bukan hanya kolom amount.
     const method = methodOf(r.payment_method);
-    const amount = Number(r.amount) || 0;
+    const amount = (Number(r.amount) || 0) + (Number(r.goods_amount) || 0) + (Number(r.tips_amount) || 0);
     if (method && amount > 0) units.push({ id: r.id, kind: 'pasien', date, time, method, amount, name });
   });
 
@@ -210,9 +212,29 @@ export const reconcileSettlement = ({ credits, units, periodStart, asOf }) => {
     pending.push({ ...u, ageDays: age, overdue: age >= (u.method === 'debit' ? 8 : 3), ambiguous: twin });
   });
 
+  // Setoran yang tidak cocok: sarankan pembayaran yang belum masuk dengan nominal mirip tetapi
+  // metodenya beda (mis. debit yang tercatat "Transfer"). Hanya saran, tidak dicocokkan otomatis.
+  const pendingIds = new Set(pending.map((p) => p.id));
+  const suggestFor = (c) =>
+    free
+      .filter((u) => pendingIds.has(u.id))
+      .filter((u) => {
+        const lag = daysBetween(u.date, c.dateStr);
+        if (lag < -1 || lag > 10) return false;
+        const asDebit = c.amount <= u.amount + TOL && c.amount >= u.amount * (1 - DEBIT_MAX_MDR) - TOL;
+        return asDebit || Math.abs(u.net - c.amount) <= TOL;
+      })
+      .sort(rankFor(c))
+      .slice(0, 3)
+      .map((u) => ({ id: u.id, name: u.name, date: u.date, method: u.method, amount: u.amount }));
+
   const unmatchedCredits = creds
     .filter((c) => !matched.has(c.id))
-    .map((c) => ({ ...c, beforePeriod: Boolean(periodStart && c.qrDateStr && c.qrDateStr < periodStart) }));
+    .map((c) => ({
+      ...c,
+      beforePeriod: Boolean(periodStart && c.qrDateStr && c.qrDateStr < periodStart),
+      suggestions: suggestFor(c),
+    }));
 
   // Ringkasan per tanggal transaksi (hanya yang dalam periode).
   const inScope = free.filter((u) => !periodStart || u.date >= periodStart);
