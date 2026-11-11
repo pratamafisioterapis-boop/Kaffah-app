@@ -100,6 +100,35 @@ const clearlyBetter = (a, b) => {
   return a.gap <= NEAR_MIN && a.gap + CLEAR_MARGIN <= b.gap;
 };
 
+// Cari gabungan 2-3 pembayaran QRIS yang jumlahnya persis sama dengan satu transaksi bank
+// (satu scan untuk beberapa pasien). Diurutkan: nama mirip, lalu satu admin, lalu jam terdekat.
+export const findCombos = (t, portions, { maxSize = 3, limit = 5 } = {}) => {
+  const target = Math.round(Number(t.amount));
+  const pool = portions.filter((p) => Math.round(p.amount) > 0 && Math.round(p.amount) < target).slice(0, 40);
+  const found = [];
+  const walk = (start, picked, sum) => {
+    if (picked.length >= 2 && sum === target) { found.push([...picked]); return; }
+    if (picked.length >= maxSize) return;
+    for (let i = start; i < pool.length; i += 1) {
+      const next = sum + Math.round(pool[i].amount);
+      if (next <= target) walk(i + 1, [...picked, pool[i]], next);
+    }
+  };
+  walk(0, [], 0);
+  return found
+    .map((items) => {
+      const scores = items.map((p) => scorePair(t, p));
+      return {
+        items,
+        name: scores.reduce((s, x) => s + x.name, 0),
+        gap: Math.max(...scores.map((x) => x.gap)),
+        sameAdmin: new Set(items.map((p) => p.cashierId)).size === 1,
+      };
+    })
+    .sort((a, b) => b.name - a.name || Number(b.sameAdmin) - Number(a.sameAdmin) || a.gap - b.gap)
+    .slice(0, limit);
+};
+
 /**
  * @param transactions [{ id, trx_date, trx_time, amount, customer_name }] yang belum dicocokkan
  * @param portions     [{ recapId, date, amount, name, time, payAt }] pembayaran QRIS di recap yang belum terpakai

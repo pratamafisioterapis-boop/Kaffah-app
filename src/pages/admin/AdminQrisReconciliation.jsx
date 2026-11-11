@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { confirmAction } from '@/lib/confirmAction';
 import { parseQrisReportPdf } from '@/utils/bsiQrisReportParser';
-import { autoMatchQris, qrisPortionOfRecap, rankCandidates } from '@/utils/qrisMatcher';
+import { autoMatchQris, findCombos, qrisPortionOfRecap, rankCandidates } from '@/utils/qrisMatcher';
 import { fetchRecapHandlerEvents } from '@/lib/recapCashier';
 
 // Catatan: komentar ini hanya untuk mengubah hash aset build (bukan perubahan fungsi).
@@ -70,6 +70,7 @@ const AdminQrisReconciliation = () => {
   const [pendingFile, setPendingFile] = useState(null); // { fileName, parsed, issues } menunggu konfirmasi
   const [day, setDay] = useState({ uploads: [], transactions: [], portions: [], userNames: {} });
   const [openAdmins, setOpenAdmins] = useState({});
+  const [multiPick, setMultiPick] = useState({}); // { [transactionId]: [recapId, ...] } pilihan manual beberapa pasien
 
   // --- Data ------------------------------------------------------------------
   const loadQrisPortions = useCallback(async (d) => {
@@ -142,7 +143,7 @@ const AdminQrisReconciliation = () => {
       let transactions = trx || [];
 
       // Cocokkan otomatis yang belum berpasangan (mis. admin baru melengkapi recap setelah PDF diunggah).
-      const used = new Set(transactions.map((t) => t.matched_recap_id).filter(Boolean));
+      const used = new Set(transactions.flatMap((t) => [t.matched_recap_id, ...(t.extra_recap_ids || [])]).filter(Boolean));
       const { matches } = autoMatchQris(transactions.filter((t) => !t.matched_recap_id), portions.filter((p) => !used.has(p.recapId)));
       if (matches.length) {
         await persistMatches(matches);
@@ -261,12 +262,15 @@ const AdminQrisReconciliation = () => {
   };
 
   // --- Aksi manual -----------------------------------------------------------
+  // recapId: satu id, array id (satu pembayaran untuk beberapa pasien), atau null untuk melepas.
   const setMatch = async (transactionId, recapId) => {
-    const patch = recapId
-      ? { matched_recap_id: recapId, match_method: 'manual', matched_at: new Date().toISOString(), matched_by: user?.id || null }
-      : { matched_recap_id: null, match_method: null, matched_at: null, matched_by: null };
+    const ids = [].concat(recapId || []);
+    const patch = ids.length
+      ? { matched_recap_id: ids[0], extra_recap_ids: ids.slice(1), match_method: 'manual', matched_at: new Date().toISOString(), matched_by: user?.id || null }
+      : { matched_recap_id: null, extra_recap_ids: [], match_method: null, matched_at: null, matched_by: null };
     const { error } = await supabase.from('qris_report_transactions').update(patch).eq('id', transactionId).eq('clinic_id', clinicId);
     if (error) { toast({ variant: 'destructive', title: 'Gagal menyimpan', description: error.message }); return; }
+    setMultiPick((s) => { const { [transactionId]: _drop, ...rest } = s; return rest; });
     loadDay(date);
   };
 
@@ -280,7 +284,7 @@ const AdminQrisReconciliation = () => {
   // --- Turunan tampilan ------------------------------------------------------
   const view = useMemo(() => {
     const { uploads, transactions, portions } = day;
-    const trxByRecap = Object.fromEntries(transactions.filter((t) => t.matched_recap_id).map((t) => [t.matched_recap_id, t]));
+    const trxByRecap = Object.fromEntries(transactions.flatMap((t) => (t.matched_recap_id ? [t.matched_recap_id, ...(t.extra_recap_ids || [])] : []).map((rid) => [rid, t])));
     const cutoff = uploads.length
       ? new Date(Math.max(...uploads.map((u) => new Date(u.report_generated_at || u.created_at).getTime())))
       : null;
@@ -404,6 +408,13 @@ const AdminQrisReconciliation = () => {
             const sameAmount = view.freeRows.filter((p) => Math.round(p.amount) === Math.round(t.amount));
             const cands = rankCandidates(t, sameAmount);
             const others = view.freeRows.filter((p) => !sameAmount.includes(p));
+            const combos = findCombos(t, view.freeRows);
+            const picked = (multiPick[t.id] || []).map((rid) => view.freeRows.find((p) => p.recapId === rid)).filter(Boolean);
+            const pickedSum = picked.reduce((s, p) => s + Math.round(p.amount), 0);
+            const togglePick = (rid) => setMultiPick((s) => {
+              const cur = s[t.id] || [];
+              return { ...s, [t.id]: cur.includes(rid) ? cur.filter((x) => x !== rid) : [...cur, rid] };
+            });
             const hintOf = (c) => {
               const parts = [];
               if (c.name > 0) parts.push('nama mirip');
@@ -433,6 +444,49 @@ const AdminQrisReconciliation = () => {
                           ))}
                         </div>
                       </>}
+                  {combos.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-xs text-slate-500">Atau satu pembayaran untuk beberapa pasien (jumlahnya pas {formatRp(t.amount)}):</p>
+                      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
+                        {combos.map((c) => (
+                          <Button key={c.items.map((p) => p.recapId).join('+')} size="sm" variant="outline" onClick={() => setMatch(t.id, c.items.map((p) => p.recapId))} className="gap-1.5 h-auto min-h-9 py-1.5 justify-start text-left whitespace-normal border-emerald-300">
+                            <Link2 className="w-3.5 h-3.5 shrink-0" />
+                            <span className="min-w-0">
+                              <span className="block break-words">{c.items.map((p) => p.name).join(' + ')}{c.name > 0 ? <span className="ml-1 text-emerald-600 text-xs">· nama mirip</span> : null}</span>
+                              <span className="block text-xs text-slate-400 break-words">{c.items.map((p) => formatRp(p.amount)).join(' + ')}{c.sameAdmin ? ` · ${c.items[0].cashierName}` : ''}</span>
+                            </span>
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {view.freeRows.length > 1 && (
+                    <details className="text-sm" open={picked.length > 0}>
+                      <summary className="cursor-pointer text-xs text-slate-500 hover:text-slate-700">Pilih beberapa pasien sendiri…</summary>
+                      <div className="mt-2 rounded-md border border-slate-200 divide-y divide-slate-100 max-h-56 overflow-y-auto">
+                        {view.freeRows.map((p) => (
+                          <label key={p.recapId} className="flex items-center gap-2 px-2.5 py-2 cursor-pointer hover:bg-slate-50">
+                            <input type="checkbox" checked={picked.some((x) => x.recapId === p.recapId)} onChange={() => togglePick(p.recapId)} />
+                            <span className="flex-1 min-w-0 break-words">{p.name} <span className="text-xs text-slate-400">· {p.cashierName}</span></span>
+                            <span className="tabular-nums">{formatRp(p.amount)}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                        <span className={`text-xs ${pickedSum === Math.round(t.amount) ? 'text-emerald-600' : 'text-slate-500'}`}>
+                          Terpilih {formatRp(pickedSum)} dari {formatRp(t.amount)}{pickedSum === Math.round(t.amount) ? ' · pas' : ''}
+                        </span>
+                        <Button
+                          size="sm"
+                          disabled={picked.length < 2}
+                          onClick={async () => {
+                            if (pickedSum !== Math.round(t.amount) && !await confirmAction(`Jumlah pasien terpilih ${formatRp(pickedSum)} berbeda dengan nominal bank ${formatRp(t.amount)}. Tetap cocokkan?`)) return;
+                            setMatch(t.id, picked.map((p) => p.recapId));
+                          }}
+                        >Cocokkan {picked.length} pasien</Button>
+                      </div>
+                    </details>
+                  )}
                   {others.length > 0 && (
                     <select
                       className="w-full sm:w-auto text-sm border border-slate-300 rounded-md bg-white px-2 py-2 text-slate-600"
@@ -495,7 +549,7 @@ const AdminQrisReconciliation = () => {
                         <div className="min-w-0">
                           <div className="font-medium break-words leading-snug">{r.name}</div>
                           <div className="text-xs text-slate-400 break-words">
-                            {r.trx ? `${r.trx.customer_name} · ${r.trx.issuer} · ${r.trx.trx_time}${r.trx.match_method === 'manual' ? ' · manual' : ''}` : (r.time ? `Sesi ${r.time}` : '')}
+                            {r.trx ? `${r.trx.customer_name} · ${r.trx.issuer} · ${r.trx.trx_time}${r.trx.match_method === 'manual' ? ' · manual' : ''}${(r.trx.extra_recap_ids || []).length ? ` · satu pembayaran ${formatRp(r.trx.amount)} untuk ${r.trx.extra_recap_ids.length + 1} pasien` : ''}` : (r.time ? `Sesi ${r.time}` : '')}
                           </div>
                         </div>
                         <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
