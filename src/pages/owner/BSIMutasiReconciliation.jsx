@@ -19,6 +19,8 @@ import {
 import { id as localeId } from 'date-fns/locale';
 import { confirmAction } from '@/lib/confirmAction';
 import DateRangePicker from '@/components/ui/date-range-picker';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
+import BSIBelumMasukTab from '@/components/owner/BSIBelumMasukTab';
 
 // --- Helpers ----------------------------------------------------------------
 
@@ -2015,7 +2017,26 @@ const BSIMutasiReconciliation = ({ readOnly = false }) => {
           <Search className="w-4 h-4 inline mr-1.5" />
           Recap Belum Match
         </button>
+        {clinicId === KAFFAH_CLINIC_ID && (
+          <button
+            onClick={() => setActiveTab('pending')}
+            className={cn(
+              'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
+              activeTab === 'pending'
+                ? 'border-app-accent text-app-accent'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
+            )}
+          >
+            <Clock className="w-4 h-4 inline mr-1.5" />
+            Belum Masuk
+          </button>
+        )}
       </div>
+
+      {/* -- BELUM MASUK TAB (khusus Kaffah): upload PDF mutasi -> uang yang belum masuk rekening -- */}
+      {activeTab === 'pending' && clinicId === KAFFAH_CLINIC_ID && (
+        <BSIBelumMasukTab clinicId={clinicId} />
+      )}
 
       {/* -- UPLOAD TAB -- */}
       {activeTab === 'upload' && !readOnly && (
