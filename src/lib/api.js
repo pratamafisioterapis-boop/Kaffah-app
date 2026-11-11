@@ -1847,14 +1847,33 @@ export const getActiveReferralRewards = async (patientId) => {
 };
 
 // Diskon ultah (Kaffah): status kelayakan + nilai diskon untuk tanggal rekap tertentu.
-export const getBirthdayRewardStatus = async (patientId, recapIsoDate, recapId = null) => {
+// ownerId = pemilik voucher (pasien yang berulang tahun); kosong = pasien itu sendiri.
+export const getBirthdayRewardStatus = async (patientId, recapIsoDate, recapId = null, ownerId = null) => {
   if (!patientId || !recapIsoDate) return { data: null, error: null };
   const { data, error } = await supabase.rpc('birthday_reward_status', {
     p_patient_id: patientId,
     p_recap_date: recapIsoDate,
-    p_recap_id: recapId
+    p_recap_id: recapId,
+    p_owner_id: ownerId
   });
   return { data: error ? null : data, error };
+};
+
+// Cari pasien untuk memilih pemilik voucher ultah yang dipakai pasien lain.
+export const searchBirthdayVoucherOwners = async (term) => {
+  const q = String(term || '').trim();
+  if (q.length < 2) return { data: [], error: null };
+  const { data, error } = await supabase
+    .from('patients')
+    .select('id, full_name, medical_record_number')
+    .ilike('full_name', `%${q}%`)
+    .not('birth_date', 'is', null)
+    .order('full_name')
+    .limit(15);
+  return {
+    data: (data || []).map(p => ({ value: p.id, label: `${p.full_name}${p.medical_record_number ? ` (${p.medical_record_number})` : ''}` })),
+    error
+  };
 };
 
 // Referral welcome reward (Kaffah): pasien yang direkomendasikan, 1x pakai.
@@ -2007,6 +2026,7 @@ export const getDailyRecaps = async ({
   discount_label,
   referral_reward_id,
   birthday_reward_year,
+  birthday_reward_patient_id,
   welcome_reward_used,
   created_at,
   invoice_created_at,
