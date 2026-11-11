@@ -86,7 +86,10 @@ const InvoiceViewPage = () => {
 
   const loadBlob = async () => {
     if (blobRef.current) return blobRef.current;
-    const res = await fetch(invoiceUrl);
+    // PDF bisa dibuat ulang ke berkas/tautan yang sama (mis. nominal dikoreksi): lewati cache
+    // browser & CDN supaya pasien selalu melihat versi terbaru.
+    const bust = `${invoiceUrl}${invoiceUrl.includes('?') ? '&' : '?'}t=${Math.floor(Date.now() / 60000)}`;
+    const res = await fetch(bust, { cache: 'no-store' });
     if (!res.ok) throw new Error('fetch');
     blobRef.current = new Blob([await res.arrayBuffer()], { type: 'application/pdf' });
     return blobRef.current;
