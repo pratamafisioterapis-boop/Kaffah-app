@@ -119,7 +119,7 @@ export const buildUnits = ({ recaps = [], splits = [], incomes = [] }) => {
     const amount = Number(i.amount) || 0;
     if (!method || amount <= 0) return;
     const label = [i.sub_category, i.description].filter(Boolean).join(' - ') || 'Pemasukan lain';
-    units.push({ id: `inc:${i.id}`, recapId: null, kind: 'lainnya', date: i.date, time: hhmmWita(i.created_at), tBank: hhmmJakarta(i.created_at), method, amount, name: label });
+    units.push({ id: `inc:${i.id}`, recapId: `inc:${i.id}`, kind: 'lainnya', date: i.date, time: hhmmWita(i.created_at), tBank: hhmmJakarta(i.created_at), method, amount, name: label });
   });
   return units;
 };
@@ -191,7 +191,7 @@ const tokenHit = (a, b) => {
  * Selisih nominal (mis. kinesiotape yang dibayar bersama terapi) diserap dari pemasukan
  * QRIS lain pada tanggal itu.
  *
- * @param gatewayTrx {id, trx_date, trx_time(WIB), customer_name, issuer, amount, net_amount, matched_recap_id, extra_recap_ids}
+ * @param gatewayTrx {id, trx_date, trx_time(WIB), customer_name, issuer, amount, net_amount, matched_recap_id, extra_recap_ids, extra_income_ids}
  */
 export const applyGatewayReport = ({ units, gatewayTrx = [] }) => {
   const covered = new Set();
@@ -206,7 +206,7 @@ export const applyGatewayReport = ({ units, gatewayTrx = [] }) => {
 
   const trxs = [...gatewayTrx].sort((a, b) => `${a.trx_date}${a.trx_time || ''}`.localeCompare(`${b.trx_date}${b.trx_time || ''}`));
   const prepared = trxs.map((t) => {
-    const ids = [t.matched_recap_id, ...(t.extra_recap_ids || [])].filter(Boolean);
+    const ids = [t.matched_recap_id, ...(t.extra_recap_ids || []), ...(t.extra_income_ids || []).map((x) => `inc:${x}`)].filter(Boolean);
     const linked = ids.flatMap((id) => byRecap.get(id) || []).filter((u) => !covered.has(u.id));
     linked.forEach((u) => covered.add(u.id));
     return { t, ids, linked, how: ids.length ? 'admin' : null };

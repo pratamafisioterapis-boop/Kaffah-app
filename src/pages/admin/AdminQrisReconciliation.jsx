@@ -16,6 +16,7 @@ import { confirmAction } from '@/lib/confirmAction';
 import { parseQrisReportPdf } from '@/utils/bsiQrisReportParser';
 import { autoMatchQris, autoMatchSplits, findCombos, qrisPortionOfRecap, rankCandidates } from '@/utils/qrisMatcher';
 import { fetchRecapHandlerEvents } from '@/lib/recapCashier';
+import { isLinked, keysOfTrx, linkPatch, clearPatch, detachPatch, incomeKey, rankPool } from '@/utils/qrisLinks';
 
 // Catatan: komentar ini hanya untuk mengubah hash aset build (bukan perubahan fungsi).
 const formatRp = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
@@ -57,6 +58,67 @@ const STATUS = {
   missing: { label: 'Tidak ada di bank', cls: 'bg-red-100 text-red-700 border-red-200' },
 };
 
+// Pemilih manual: cari pasien / pemasukan lain-lain dari hari transaksi dan sehari sebelum-sesudahnya,
+// metode bayar apa pun (yang bukan QRIS diberi peringatan). Bisa memilih satu atau beberapa item.
+const ManualPicker = ({ t, pool, poolTrx, onSubmit }) => {
+  const [q, setQ] = useState('');
+  const [picked, setPicked] = useState([]);
+  const linkedBy = useMemo(() => {
+    const m = {};
+    poolTrx.forEach((o) => { if (o.id !== t.id) keysOfTrx(o).forEach((k) => { m[k] = o; }); });
+    return m;
+  }, [poolTrx, t.id]);
+  const ranked = useMemo(() => rankPool(t, pool), [t, pool]);
+  const needle = q.trim().toLowerCase();
+  const shown = ranked.filter(({ p }) => !needle || String(p.name).toLowerCase().includes(needle)).slice(0, needle ? 80 : 40);
+  const items = picked.map((k) => pool.find((p) => p.key === k)).filter(Boolean);
+  const sum = items.reduce((a, p) => a + Math.round(p.amount), 0);
+  const toggle = (k) => setPicked((cur) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]));
+
+  return (
+    <details className="text-sm" open={picked.length > 0 || needle.length > 0}>
+      <summary className="cursor-pointer text-xs text-slate-500 hover:text-slate-700">Cari dan pilih sendiri (pasien atau pemasukan lain, metode apa pun)…</summary>
+      <div className="mt-2 space-y-2">
+        <input
+          type="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Cari nama pasien / keterangan…"
+          aria-label="Cari nama"
+          className="w-full text-sm border border-slate-300 rounded-md bg-white px-2.5 py-2"
+        />
+        <div className="rounded-md border border-slate-200 divide-y divide-slate-100 max-h-64 overflow-y-auto">
+          {shown.length === 0 && <p className="px-2.5 py-3 text-xs text-slate-500">Tidak ada yang cocok. Yang ditampilkan hanya hari transaksi dan sehari sebelum/sesudahnya.</p>}
+          {shown.map(({ p }) => {
+            const other = linkedBy[p.key];
+            return (
+              <label key={p.key} className="flex items-start gap-2 px-2.5 py-2 cursor-pointer hover:bg-slate-50">
+                <input type="checkbox" className="mt-1" checked={picked.includes(p.key)} onChange={() => toggle(p.key)} />
+                <span className="flex-1 min-w-0">
+                  <span className="block break-words">{p.name}</span>
+                  <span className="flex flex-wrap gap-1 mt-0.5 text-[11px]">
+                    {p.date !== t.trx_date && <span className="px-1.5 rounded bg-sky-50 text-sky-700 border border-sky-200">{fmtShort(p.date)}</span>}
+                    {p.kind === 'income' && <span className="px-1.5 rounded bg-violet-50 text-violet-700 border border-violet-200">Pemasukan lain</span>}
+                    {!p.isQris && <span className="px-1.5 rounded bg-amber-50 text-amber-700 border border-amber-200">tercatat {p.method || 'bukan QRIS'}</span>}
+                    {other && <span className="px-1.5 rounded bg-rose-50 text-rose-700 border border-rose-200">sudah tertaut ke {other.customer_name} {formatRp(other.amount)} — akan dipindahkan</span>}
+                  </span>
+                </span>
+                <span className="tabular-nums shrink-0">{formatRp(p.amount)}</span>
+              </label>
+            );
+          })}
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className={`text-xs ${items.length && sum === Math.round(t.amount) ? 'text-emerald-600' : 'text-slate-500'}`}>
+            Terpilih {formatRp(sum)} dari {formatRp(t.amount)}{items.length && sum === Math.round(t.amount) ? ' · pas' : ''}
+          </span>
+          <Button size="sm" disabled={items.length < 1} onClick={() => onSubmit(picked, items)}>Cocokkan {items.length || ''} item</Button>
+        </div>
+      </div>
+    </details>
+  );
+};
+
 const AdminQrisReconciliation = () => {
   const { toast } = useToast();
   const { user, userDetails } = useAuth();
@@ -69,34 +131,52 @@ const AdminQrisReconciliation = () => {
   const [busy, setBusy] = useState(false); // membaca/menyimpan PDF
   const [dragOver, setDragOver] = useState(false);
   const [pendingFile, setPendingFile] = useState(null); // { fileName, parsed, issues } menunggu konfirmasi
-  const [day, setDay] = useState({ uploads: [], transactions: [], portions: [], userNames: {} });
+  const [day, setDay] = useState({ uploads: [], transactions: [], portions: [], pool: [], poolTrx: [], userNames: {} });
   const [openAdmins, setOpenAdmins] = useState({});
-  const [multiPick, setMultiPick] = useState({}); // { [transactionId]: [recapId, ...] } pilihan manual beberapa pasien
 
   // --- Data ------------------------------------------------------------------
-  const loadQrisPortions = useCallback(async (d) => {
+  // Muat recap + pemasukan lain-lain. Mengembalikan:
+  //  portions: pembayaran QRIS pada tanggal d (recap + pemasukan lain QRIS) -> jadi baris rekonsiliasi.
+  //  pool: semua pembayaran d-1..d+1 dengan metode apa pun -> pilihan di pemilih manual.
+  const loadRecapData = useCallback(async (d) => {
+    const lo = shiftDate(d, -1);
+    const hi = shiftDate(d, 1);
     const { data: options } = await supabase
       .from('operational_options').select('id, label').eq('clinic_id', clinicId).eq('category', 'payment_method');
+    const labelById = {};
+    (options || []).forEach((o) => { labelById[String(o.id)] = o.label; });
+    const labelOf = (m) => (m ? (labelById[String(m)] || String(m)) : '');
     const qrisIds = new Set((options || []).filter((o) => /^\s*qris\s*$/i.test(o.label || '')).map((o) => String(o.id)));
     const isQrisMethod = (m) => !!m && (qrisIds.has(String(m)) || /^\s*qris\s*$/i.test(String(m)));
 
-    const { data: recaps, error } = await supabase
-      .from('daily_recaps')
-      .select('id, revenue_date, amount, payment_method, patient_id, actual_patient_id, full_name, guest_name, start_time, end_time, created_at, cashier_id, created_by, status, payment_splits:daily_recap_payment_splits(payment_method, amount)')
-      .eq('clinic_id', clinicId).eq('revenue_date', d).or('status.is.null,status.neq.cancelled');
+    const [{ data: recaps, error }, { data: incomes, error: incErr }] = await Promise.all([
+      supabase
+        .from('daily_recaps')
+        .select('id, revenue_date, amount, goods_amount, tips_amount, payment_method, patient_id, actual_patient_id, full_name, guest_name, start_time, end_time, created_at, cashier_id, created_by, status, payment_splits:daily_recap_payment_splits(payment_method, amount)')
+        .eq('clinic_id', clinicId).gte('revenue_date', lo).lte('revenue_date', hi).or('status.is.null,status.neq.cancelled'),
+      supabase
+        .from('admin_income')
+        .select('id, date, amount, payment_method, description, sub_category, created_at')
+        .eq('clinic_id', clinicId).gte('date', lo).lte('date', hi),
+    ]);
     if (error) throw error;
+    if (incErr) throw incErr;
 
     const patientIds = [...new Set((recaps || []).flatMap((r) => [r.patient_id, r.actual_patient_id]).filter(Boolean))];
     const patientMap = {};
-    if (patientIds.length) {
-      const { data: pts } = await supabase.from('patients').select('id, full_name').in('id', patientIds).eq('clinic_id', clinicId);
+    for (let i = 0; i < patientIds.length; i += 150) {
+      const { data: pts } = await supabase.from('patients').select('id, full_name').in('id', patientIds.slice(i, i + 150)).eq('clinic_id', clinicId);
       (pts || []).forEach((p) => { patientMap[p.id] = p.full_name; });
     }
+    const nameOf = (r) => patientMap[r.actual_patient_id] || patientMap[r.patient_id] || r.full_name || r.guest_name || '-';
+    const incomeLabel = (i) => [i.sub_category, i.description].filter(Boolean).join(' - ') || 'Pemasukan lain';
+
     // Kasir sebenarnya = admin yang mengisi TTV atau mengubah pembayaran recap (bukan sekadar pembuat booking).
-    const recapIds = (recaps || []).map((r) => r.id);
+    const dayRecaps = (recaps || []).filter((r) => r.revenue_date === d);
+    const recapIds = dayRecaps.map((r) => r.id);
     const handlerEvents = await fetchRecapHandlerEvents(supabase, recapIds);
     const staffIds = [...new Set([
-      ...(recaps || []).flatMap((r) => [r.cashier_id, r.created_by]),
+      ...dayRecaps.flatMap((r) => [r.cashier_id, r.created_by]),
       ...Object.values(handlerEvents).flat().map((e) => e.userId),
     ].filter(Boolean))];
     const staff = {};
@@ -105,7 +185,7 @@ const AdminQrisReconciliation = () => {
       (us || []).forEach((u) => { staff[u.id] = u; });
     }
 
-    return (recaps || []).map((r) => {
+    const portions = dayRecaps.map((r) => {
       // Urutan: kasir tercatat -> admin pertama yang mengisi TTV/mengubah pembayaran -> pembuat recap bila admin.
       const isAdmin = (id) => ['admin', 'clinic_admin'].includes(staff[id]?.role);
       const handler = (handlerEvents[r.id] || []).find((e) => isAdmin(e.userId))?.userId || null;
@@ -115,13 +195,49 @@ const AdminQrisReconciliation = () => {
         recapId: r.id,
         date: r.revenue_date,
         amount: qrisPortionOfRecap(r, isQrisMethod),
-        name: patientMap[r.actual_patient_id] || patientMap[r.patient_id] || r.full_name || r.guest_name || '-',
+        name: nameOf(r),
         time: toHHmm(r.start_time),
         payAt: payAt ? new Date(payAt) : null,
         cashierId: cashierId || 'none',
         cashierName: cashierId ? (staff[cashierId]?.full_name || 'Admin') : 'Belum ada kasir',
       };
     }).filter((p) => p.amount > 0);
+
+    // Pemasukan lain-lain yang dibayar QRIS ikut direkonsiliasi (tips, tapping, kinesiotape, dst).
+    const incomePortions = (incomes || [])
+      .filter((i) => i.date === d && isQrisMethod(i.payment_method) && Number(i.amount) > 0)
+      .map((i) => ({
+        recapId: incomeKey(i.id),
+        isIncome: true,
+        date: i.date,
+        amount: Number(i.amount),
+        name: incomeLabel(i),
+        time: toHHmm(i.created_at),
+        payAt: i.created_at ? new Date(i.created_at) : null,
+        cashierId: 'income',
+        cashierName: 'Pemasukan lain-lain',
+      }));
+
+    const pool = [
+      ...(recaps || []).map((r) => {
+        const splits = Array.isArray(r.payment_splits) ? r.payment_splits : [];
+        const qris = qrisPortionOfRecap(r, isQrisMethod);
+        const total = splits.length ? splits.reduce((a, x) => a + Number(x.amount || 0), 0) : Number(r.amount || 0) + Number(r.goods_amount || 0) + Number(r.tips_amount || 0);
+        const payAt = r.end_time || r.start_time || r.created_at;
+        return {
+          key: r.id, kind: 'recap', isQris: qris > 0, method: splits.length ? 'Split' : labelOf(r.payment_method),
+          name: nameOf(r), date: r.revenue_date, time: toHHmm(r.start_time), payAt: payAt ? new Date(payAt) : null,
+          amount: qris > 0 ? qris : total,
+        };
+      }),
+      ...(incomes || []).map((i) => ({
+        key: incomeKey(i.id), kind: 'income', isQris: isQrisMethod(i.payment_method), method: labelOf(i.payment_method),
+        name: incomeLabel(i), date: i.date, time: toHHmm(i.created_at), payAt: i.created_at ? new Date(i.created_at) : null,
+        amount: Number(i.amount) || 0,
+      })),
+    ].filter((p) => p.amount > 0);
+
+    return { portions: [...portions, ...incomePortions], pool };
   }, [clinicId]);
 
   const persistMatches = useCallback(async (matches) => {
@@ -134,10 +250,11 @@ const AdminQrisReconciliation = () => {
   // Cocokkan otomatis transaksi yang belum berpasangan dengan recap pada hari yang sama.
   // Mengembalikan daftar transaksi dengan hasil pencocokan terbaru.
   const autoMatchDay = useCallback(async (transactions, portions) => {
-    const used = new Set(transactions.flatMap((t) => [t.matched_recap_id, ...(t.extra_recap_ids || [])]).filter(Boolean));
+    const used = new Set(transactions.flatMap((t) => keysOfTrx(t)));
     // Transaksi yang pernah dilepas manual (auto_match_blocked) tidak dicocokkan otomatis lagi.
-    const freeTrx = transactions.filter((t) => !t.matched_recap_id && !t.auto_match_blocked);
-    const freePortions = portions.filter((p) => !used.has(p.recapId));
+    const freeTrx = transactions.filter((t) => !isLinked(t) && !t.auto_match_blocked);
+    // Otomatis hanya untuk recap pasien; pemasukan lain-lain ditautkan manual.
+    const freePortions = portions.filter((p) => !p.isIncome && !used.has(p.recapId));
     // Dahulukan pembayaran terpecah (satu recap = beberapa transaksi bank atas nama pasien itu).
     const splitMatches = autoMatchSplits(freeTrx, freePortions);
     const splitTx = new Set(splitMatches.map((m) => m.transactionId));
@@ -154,12 +271,17 @@ const AdminQrisReconciliation = () => {
     if (!clinicId) return;
     setLoading(true);
     try {
-      const [{ data: ups, error: e1 }, { data: trx, error: e2 }, portions] = await Promise.all([
+      const [{ data: ups, error: e1 }, { data: trx, error: e2 }, recapData, { data: nearTrx, error: e3 }] = await Promise.all([
         supabase.from('qris_report_uploads').select('*').eq('clinic_id', clinicId).eq('report_date', d).order('created_at'),
         supabase.from('qris_report_transactions').select('*').eq('clinic_id', clinicId).eq('trx_date', d).order('trx_time'),
-        loadQrisPortions(d),
+        loadRecapData(d),
+        // Transaksi sehari sebelum/sesudahnya: untuk tahu item mana yang sudah tertaut ke transaksi lain.
+        supabase.from('qris_report_transactions')
+          .select('id, trx_date, trx_time, customer_name, amount, matched_recap_id, extra_recap_ids, extra_income_ids')
+          .eq('clinic_id', clinicId).gte('trx_date', shiftDate(d, -1)).lte('trx_date', shiftDate(d, 1)),
       ]);
-      if (e1 || e2) throw e1 || e2;
+      if (e1 || e2 || e3) throw e1 || e2 || e3;
+      const { portions, pool } = recapData;
       let transactions = trx || [];
 
       // Cocokkan otomatis yang belum berpasangan (mis. admin baru melengkapi recap setelah PDF diunggah).
@@ -171,13 +293,15 @@ const AdminQrisReconciliation = () => {
         const { data: us } = await supabase.from('users').select('id, full_name').in('id', uploaderIds);
         (us || []).forEach((u) => { userNames[u.id] = u.full_name; });
       }
-      setDay({ uploads: ups || [], transactions, portions, userNames });
+      const byId = Object.fromEntries(transactions.map((t) => [t.id, t]));
+      const poolTrx = (nearTrx || []).map((t) => byId[t.id] || t);
+      setDay({ uploads: ups || [], transactions, portions, pool, poolTrx, userNames });
     } catch (e) {
       toast({ variant: 'destructive', title: 'Gagal memuat data', description: e.message });
     } finally {
       setLoading(false);
     }
-  }, [clinicId, loadQrisPortions, autoMatchDay, toast]);
+  }, [clinicId, loadRecapData, autoMatchDay, toast]);
 
   useEffect(() => { if (isKaffah) loadDay(date); }, [date, isKaffah, loadDay]);
 
@@ -257,12 +381,12 @@ const AdminQrisReconciliation = () => {
       const unmatchedByDate = [];
       if (touchedDates.length > 1) {
         for (const d of touchedDates) {
-          const [{ data: trx }, portions] = await Promise.all([
+          const [{ data: trx }, { portions }] = await Promise.all([
             supabase.from('qris_report_transactions').select('*').eq('clinic_id', clinicId).eq('trx_date', d).order('trx_time'),
-            loadQrisPortions(d),
+            loadRecapData(d),
           ]);
           const after = await autoMatchDay(trx || [], portions);
-          const n = after.filter((t) => !t.matched_recap_id).length;
+          const n = after.filter((t) => !isLinked(t)).length;
           if (n) unmatchedByDate.push({ d, n });
         }
       }
@@ -311,22 +435,41 @@ const AdminQrisReconciliation = () => {
   };
 
   // --- Aksi manual -----------------------------------------------------------
-  // recapId: satu id, array id (satu pembayaran untuk beberapa pasien), atau null untuk melepas.
-  const setMatch = async (transactionId, recapId) => {
-    const ids = [].concat(recapId || []);
-    const patch = ids.length
-      ? { matched_recap_id: ids[0], extra_recap_ids: ids.slice(1), auto_match_blocked: false, match_method: 'manual', matched_at: new Date().toISOString(), matched_by: user?.id || null }
-      : { matched_recap_id: null, extra_recap_ids: [], auto_match_blocked: true, match_method: null, matched_at: null, matched_by: null };
-    const { error } = await supabase.from('qris_report_transactions').update(patch).eq('id', transactionId).eq('clinic_id', clinicId);
-    if (error) { toast({ variant: 'destructive', title: 'Gagal menyimpan', description: error.message }); return; }
-    setMultiPick((s) => { const { [transactionId]: _drop, ...rest } = s; return rest; });
+  // keys: satu kunci, array kunci (satu pembayaran untuk beberapa pasien/pemasukan), atau null untuk melepas.
+  // Kunci = id recap, atau "inc:<id>" untuk pemasukan lain-lain. Item yang masih tertaut ke transaksi
+  // lain dikeluarkan dari transaksi itu (dipindahkan).
+  const setMatch = async (transactionId, keys) => {
+    const list = [].concat(keys || []);
+    const patch = list.length ? linkPatch(list, { userId: user?.id || null }) : clearPatch();
+    const moving = new Set(list);
+    const donors = day.poolTrx.filter((o) => o.id !== transactionId && keysOfTrx(o).some((k) => moving.has(k)));
+    const writes = [
+      supabase.from('qris_report_transactions').update(patch).eq('id', transactionId).eq('clinic_id', clinicId),
+      ...donors.map((o) => supabase.from('qris_report_transactions').update(detachPatch(o, moving)).eq('id', o.id).eq('clinic_id', clinicId)),
+    ];
+    const results = await Promise.all(writes);
+    const failed = results.find((r) => r.error);
+    if (failed) { toast({ variant: 'destructive', title: 'Gagal menyimpan', description: failed.error.message }); return; }
     loadDay(date);
+  };
+
+  // Konfirmasi (bila perlu) lalu simpan pilihan manual.
+  const submitManual = async (t, keys, items) => {
+    const sum = items.reduce((a, p) => a + Math.round(p.amount), 0);
+    const warns = [];
+    if (sum !== Math.round(t.amount)) warns.push(`Jumlah terpilih ${formatRp(sum)} berbeda dengan nominal bank ${formatRp(t.amount)}.`);
+    const odd = items.filter((p) => !p.isQris);
+    if (odd.length) warns.push(`Tercatat bukan QRIS: ${odd.map((p) => `${p.name} (${p.method || 'metode kosong'})`).join(', ')}.`);
+    const moved = items.filter((p) => day.poolTrx.some((o) => o.id !== t.id && keysOfTrx(o).includes(p.key)));
+    if (moved.length) warns.push(`Sudah tertaut ke transaksi lain, akan dipindahkan: ${moved.map((p) => p.name).join(', ')}.`);
+    if (warns.length && !await confirmAction(`${warns.join('\n')}\nTetap cocokkan?`)) return;
+    await setMatch(t.id, keys);
   };
 
   // Lepas semua transaksi bank dari satu pasien (bisa lebih dari satu bila dibayar terpecah).
   const unlinkRow = async (r) => {
     const { error } = await supabase.from('qris_report_transactions')
-      .update({ matched_recap_id: null, extra_recap_ids: [], auto_match_blocked: true, match_method: null, matched_at: null, matched_by: null })
+      .update(clearPatch())
       .in('id', r.trxs.map((t) => t.id)).eq('clinic_id', clinicId);
     if (error) { toast({ variant: 'destructive', title: 'Gagal melepas', description: error.message }); return; }
     loadDay(date);
@@ -345,8 +488,7 @@ const AdminQrisReconciliation = () => {
     // Satu recap bisa punya beberapa transaksi bank (dibayar terpecah); satu transaksi bisa untuk beberapa recap.
     const trxsByRecap = {};
     transactions.forEach((t) => {
-      if (!t.matched_recap_id) return;
-      [t.matched_recap_id, ...(t.extra_recap_ids || [])].forEach((rid) => { (trxsByRecap[rid] ||= []).push(t); });
+      keysOfTrx(t).forEach((rid) => { (trxsByRecap[rid] ||= []).push(t); });
     });
     const cutoff = uploads.length
       ? new Date(Math.max(...uploads.map((u) => new Date(u.report_generated_at || u.created_at).getTime())))
@@ -354,13 +496,13 @@ const AdminQrisReconciliation = () => {
     const rows = portions.map((p) => {
       const trxs = trxsByRecap[p.recapId] || [];
       // Transaksi gabungan (beberapa pasien) dianggap menutup penuh tiap pasiennya.
-      const covered = trxs.reduce((s, t) => s + ((t.extra_recap_ids || []).length ? p.amount : Number(t.amount)), 0);
+      const covered = trxs.reduce((s, t) => s + (keysOfTrx(t).length > 1 ? p.amount : Number(t.amount)), 0);
       const status = trxs.length
         ? (Math.round(covered) >= Math.round(p.amount) ? 'matched' : 'partial')
         : (!cutoff || (p.payAt && p.payAt > cutoff)) ? 'pending' : 'missing';
       return { ...p, trxs, covered, status };
     });
-    const unmatchedTrx = transactions.filter((t) => !t.matched_recap_id);
+    const unmatchedTrx = transactions.filter((t) => !isLinked(t));
     // Pasien yang belum tertutup penuh; amount = sisa yang masih dicari di bank.
     const freeRows = rows.filter((r) => r.covered < r.amount).map((r) => ({ ...r, amount: r.amount - r.covered }));
 
@@ -476,14 +618,7 @@ const AdminQrisReconciliation = () => {
           {view.unmatchedTrx.map((t) => {
             const sameAmount = view.freeRows.filter((p) => Math.round(p.amount) === Math.round(t.amount));
             const cands = rankCandidates(t, sameAmount);
-            const others = view.freeRows.filter((p) => !sameAmount.includes(p));
             const combos = findCombos(t, view.freeRows);
-            const picked = (multiPick[t.id] || []).map((rid) => view.freeRows.find((p) => p.recapId === rid)).filter(Boolean);
-            const pickedSum = picked.reduce((s, p) => s + Math.round(p.amount), 0);
-            const togglePick = (rid) => setMultiPick((s) => {
-              const cur = s[t.id] || [];
-              return { ...s, [t.id]: cur.includes(rid) ? cur.filter((x) => x !== rid) : [...cur, rid] };
-            });
             const hintOf = (c) => {
               const parts = [];
               if (c.name > 0) parts.push('nama mirip');
@@ -498,7 +633,7 @@ const AdminQrisReconciliation = () => {
                 </div>
                 <div className="mt-2 space-y-2">
                   {cands.length === 0
-                    ? <p className="text-xs text-slate-500">Tidak ada pembayaran QRIS bernominal sama di Daily Recap. Cek apakah pasien salah dicatat cash/transfer, atau recap belum diisi.</p>
+                    ? <p className="text-xs text-slate-500">Tidak ada pembayaran QRIS bernominal sama di Daily Recap. Pakai "Cari dan pilih sendiri" di bawah: pasien yang salah dicatat cash/transfer, pemasukan lain-lain (tips, tapping), dan recap hari sebelum/sesudahnya juga bisa dipilih.</p>
                     : <>
                         <p className="text-xs text-slate-500">Ini pembayaran siapa? (diurutkan dari yang paling mirip nama dan jam akhir sesinya)</p>
                         <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
@@ -529,48 +664,7 @@ const AdminQrisReconciliation = () => {
                       </div>
                     </div>
                   )}
-                  {view.freeRows.length > 1 && (
-                    <details className="text-sm" open={picked.length > 0}>
-                      <summary className="cursor-pointer text-xs text-slate-500 hover:text-slate-700">Pilih beberapa pasien sendiri…</summary>
-                      <div className="mt-2 rounded-md border border-slate-200 divide-y divide-slate-100 max-h-56 overflow-y-auto">
-                        {view.freeRows.map((p) => (
-                          <label key={p.recapId} className="flex items-center gap-2 px-2.5 py-2 cursor-pointer hover:bg-slate-50">
-                            <input type="checkbox" checked={picked.some((x) => x.recapId === p.recapId)} onChange={() => togglePick(p.recapId)} />
-                            <span className="flex-1 min-w-0 break-words">{p.name} <span className="text-xs text-slate-400">· {p.cashierName}</span></span>
-                            <span className="tabular-nums">{formatRp(p.amount)}</span>
-                          </label>
-                        ))}
-                      </div>
-                      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                        <span className={`text-xs ${pickedSum === Math.round(t.amount) ? 'text-emerald-600' : 'text-slate-500'}`}>
-                          Terpilih {formatRp(pickedSum)} dari {formatRp(t.amount)}{pickedSum === Math.round(t.amount) ? ' · pas' : ''}
-                        </span>
-                        <Button
-                          size="sm"
-                          disabled={picked.length < 2}
-                          onClick={async () => {
-                            if (pickedSum !== Math.round(t.amount) && !await confirmAction(`Jumlah pasien terpilih ${formatRp(pickedSum)} berbeda dengan nominal bank ${formatRp(t.amount)}. Tetap cocokkan?`)) return;
-                            setMatch(t.id, picked.map((p) => p.recapId));
-                          }}
-                        >Cocokkan {picked.length} pasien</Button>
-                      </div>
-                    </details>
-                  )}
-                  {others.length > 0 && (
-                    <select
-                      className="w-full sm:w-auto text-sm border border-slate-300 rounded-md bg-white px-2 py-2 text-slate-600"
-                      value=""
-                      aria-label="Pilih pasien lain secara manual"
-                      onChange={async (e) => {
-                        const p = others.find((o) => o.recapId === e.target.value);
-                        if (!p) return;
-                        if (await confirmAction(`Nominal bank ${formatRp(t.amount)} berbeda dengan recap ${p.name} (${formatRp(p.amount)}). Tetap cocokkan?`)) setMatch(t.id, p.recapId);
-                      }}
-                    >
-                      <option value="">Pilih pasien lain…</option>
-                      {others.map((p) => <option key={p.recapId} value={p.recapId}>{p.name} · {formatRp(p.amount)} · {p.cashierName}</option>)}
-                    </select>
-                  )}
+                  <ManualPicker key={t.id} t={t} pool={day.pool} poolTrx={day.poolTrx} onSubmit={(keys, items) => submitManual(t, keys, items)} />
                 </div>
               </div>
             );
@@ -605,7 +699,7 @@ const AdminQrisReconciliation = () => {
                     <User className="w-4 h-4 text-slate-400 shrink-0 mt-1" />
                     <div className="min-w-0">
                       <div className="font-semibold break-words leading-snug">{g.name}</div>
-                      <div className="text-xs text-slate-500">{g.items.length} pasien QRIS</div>
+                      <div className="text-xs text-slate-500">{g.items.length} pembayaran QRIS</div>
                     </div>
                   </div>
                   <div className="flex items-center justify-between sm:justify-end gap-1.5 pl-6 sm:pl-0">
@@ -624,7 +718,7 @@ const AdminQrisReconciliation = () => {
                         <div className="min-w-0">
                           <div className="font-medium break-words leading-snug">{r.name}</div>
                           <div className="text-xs text-slate-400 break-words">
-                            {r.trxs.length ? r.trxs.map((t) => `${t.customer_name} · ${t.issuer} · ${t.trx_time}${r.trxs.length > 1 ? ` · ${formatRp(t.amount)}` : ''}${t.match_method === 'manual' ? ' · manual' : ''}${(t.extra_recap_ids || []).length ? ` · satu pembayaran ${formatRp(t.amount)} untuk ${t.extra_recap_ids.length + 1} pasien` : ''}`).join(' + ') : (r.time ? `Sesi ${r.time}` : '')}
+                            {r.trxs.length ? r.trxs.map((t) => `${t.customer_name} · ${t.issuer} · ${t.trx_time}${r.trxs.length > 1 ? ` · ${formatRp(t.amount)}` : ''}${t.match_method === 'manual' ? ' · manual' : ''}${keysOfTrx(t).length > 1 ? ` · satu pembayaran ${formatRp(t.amount)} untuk ${keysOfTrx(t).length} item` : ''}`).join(' + ') : (r.time ? `Sesi ${r.time}` : '')}
                           </div>
                         </div>
                         <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">

@@ -107,7 +107,7 @@ const BSIBelumMasukTab = ({ clinicId }) => {
         fetchAll(() =>
           supabase
             .from('qris_report_transactions')
-            .select('id, trx_date, trx_time, customer_name, issuer, amount, net_amount, matched_recap_id, extra_recap_ids')
+            .select('id, trx_date, trx_time, customer_name, issuer, amount, net_amount, matched_recap_id, extra_recap_ids, extra_income_ids')
             .eq('clinic_id', clinicId)
             .gte('trx_date', from)
             .lte('trx_date', to)

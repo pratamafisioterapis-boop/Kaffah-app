@@ -79,7 +79,9 @@ export const qrisPortionOfRecap = (recap, isQrisMethod) => {
       .filter((s) => isQrisMethod(s.payment_method))
       .reduce((sum, s) => sum + Number(s.amount || 0), 0);
   }
-  return isQrisMethod(recap.payment_method) ? Number(recap.amount || 0) : 0;
+  // Total yang dibayar pasien = terapi + penjualan barang + tips (mengikuti metode bayar recap).
+  const total = Number(recap.amount || 0) + Number(recap.goods_amount || 0) + Number(recap.tips_amount || 0);
+  return isQrisMethod(recap.payment_method) ? total : 0;
 };
 
 const NEAR_MIN = 180; // pasien bisa bayar lebih awal atau jauh setelah slot: dianggap "dekat" bila selisih <= 3 jam
