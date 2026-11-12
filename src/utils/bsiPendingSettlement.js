@@ -13,6 +13,13 @@
 //    terapinya (225rb + 100rb = 325rb). Karena itu satu kredit bisa cocok dengan 2-4 unit.
 //  - QRIS di atas Rp500.000 kena MDR 0,3%; debit sekitar 0,15% -> yang masuk lebih kecil.
 //  - QRIS dari m-banking BSI masuk sebagai "TRF Dari" tanpa kode QR.
+//
+// Sumber kebenaran QRIS = "Laporan Transaksi QRIS" BSI Merchant yang sudah diunggah dan
+// dicocokkan ke recap di halaman admin (tabel qris_report_transactions: matched_recap_id +
+// extra_recap_ids). Satu transaksi laporan = satu uang masuk di bank (nominal net), dan
+// pembayaran gabungan (keluarga) sudah tercatat di sana. Recap QRIS yang BELUM ada di laporan
+// (belum diunggah / belum cocok) tetap dicocokkan dari nominal recap, ditandai "belum terverifikasi".
+// Transfer dan debit dicocokkan otomatis dari recap.
 
 const TOL = 2; // toleransi pembulatan (Rp)
 export const QRIS_MDR_THRESHOLD = 500000;
@@ -54,6 +61,23 @@ const hhmmWita = (ts) => {
   return d.toLocaleTimeString('en-GB', { timeZone: 'Asia/Makassar', hour: '2-digit', minute: '2-digit', hour12: false });
 };
 
+const hhmmJakarta = (ts) => {
+  if (!ts) return null;
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleTimeString('en-GB', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hour12: false });
+};
+const toMin = (hhmm) => {
+  const m = String(hhmm || '').match(/(\d{1,2}):(\d{2})/);
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+};
+const addMinutes = (hhmm, n) => {
+  const t = toMin(hhmm);
+  if (t == null) return null;
+  const v = (t + n + 1440) % 1440;
+  return `${String(Math.floor(v / 60)).padStart(2, '0')}:${String(v % 60).padStart(2, '0')}`;
+};
+
 /**
  * Ubah baris database menjadi unit pembayaran non-tunai.
  * @param recaps  daily_recaps  {id, recap_date, revenue_date, payment_method, amount, goods_amount, tips_amount, full_name, guest_name, end_time, status}
@@ -73,12 +97,13 @@ export const buildUnits = ({ recaps = [], splits = [], incomes = [] }) => {
     const date = r.revenue_date || r.recap_date;
     const name = (r.full_name || r.guest_name || '-').trim();
     const time = hhmmWita(r.end_time);
+    const tBank = hhmmJakarta(r.end_time); // mutasi bank memakai jam WIB
     const sp = splitsByRecap.get(r.id);
     if (sp && sp.length > 0) {
       sp.forEach((s) => {
         const method = methodOf(s.payment_method);
         const amount = Number(s.amount) || 0;
-        if (method && amount > 0) units.push({ id: `${r.id}:${s.id}`, kind: 'pasien', date, time, method, amount, name });
+        if (method && amount > 0) units.push({ id: `${r.id}:${s.id}`, recapId: r.id, kind: 'pasien', date, time, tBank, method, amount, name });
       });
       return;
     }
@@ -86,7 +111,7 @@ export const buildUnits = ({ recaps = [], splits = [], incomes = [] }) => {
     // metode bayar recap), bukan hanya kolom amount.
     const method = methodOf(r.payment_method);
     const amount = (Number(r.amount) || 0) + (Number(r.goods_amount) || 0) + (Number(r.tips_amount) || 0);
-    if (method && amount > 0) units.push({ id: r.id, kind: 'pasien', date, time, method, amount, name });
+    if (method && amount > 0) units.push({ id: r.id, recapId: r.id, kind: 'pasien', date, time, tBank, method, amount, name });
   });
 
   incomes.forEach((i) => {
@@ -94,7 +119,7 @@ export const buildUnits = ({ recaps = [], splits = [], incomes = [] }) => {
     const amount = Number(i.amount) || 0;
     if (!method || amount <= 0) return;
     const label = [i.sub_category, i.description].filter(Boolean).join(' - ') || 'Pemasukan lain';
-    units.push({ id: `inc:${i.id}`, kind: 'lainnya', date: i.date, time: hhmmWita(i.created_at), method, amount, name: label });
+    units.push({ id: `inc:${i.id}`, recapId: null, kind: 'lainnya', date: i.date, time: hhmmWita(i.created_at), tBank: hhmmJakarta(i.created_at), method, amount, name: label });
   });
   return units;
 };
@@ -105,9 +130,15 @@ const nameHit = (u, c) => {
 };
 
 // Urutan pilihan unit untuk satu kredit: nama cocok > metode sama > tanggal terdekat > yang lebih dulu.
+const feasible = (u, c) => {
+  if (c.dateStr !== u.date || !u.tBank || !c.time) return true;
+  return toMin(c.time) >= toMin(u.tBank) - 10;
+};
 const rankFor = (c) => (a, b) => {
   const nh = Number(nameHit(b, c)) - Number(nameHit(a, c));
   if (nh) return nh;
+  const fe = Number(feasible(b, c)) - Number(feasible(a, c));
+  if (fe) return fe;
   const sameM = (u) => Number(u.method === c.type || (c.type === 'transfer' && u.method === 'transfer'));
   if (sameM(a) !== sameM(b)) return sameM(b) - sameM(a);
   const lag = (u) => Math.abs(daysBetween(u.date, c.qrDateStr || c.dateStr));
@@ -122,17 +153,17 @@ const unitFits = (u, credit) =>
     ? credit <= u.amount + TOL && credit >= u.amount * (1 - DEBIT_MAX_MDR) - TOL
     : Math.abs(u.net - credit) <= TOL;
 
-// Cari kombinasi 2..MAX_COMBO unit yang jumlah net-nya = nominal kredit.
-const findCombo = (pool, target) => {
-  const cand = pool.filter((u) => u.method !== 'debit' && u.net < target + TOL).slice(0, MAX_COMBO_POOL);
-  for (let size = 2; size <= MAX_COMBO; size += 1) {
+// Cari himpunan bagian (ukuran minSize..maxSize) dari pool yang jumlah val()-nya = target.
+const findSubset = (pool, target, val, minSize, maxSize) => {
+  const cand = pool.filter((u) => val(u) <= target + TOL).slice(0, MAX_COMBO_POOL);
+  for (let size = minSize; size <= maxSize; size += 1) {
     const pick = [];
     const dfs = (start, sum) => {
       if (pick.length === size) return Math.abs(sum - target) <= TOL;
       for (let i = start; i < cand.length; i += 1) {
-        if (sum + cand[i].net > target + TOL) continue;
+        if (sum + val(cand[i]) > target + TOL) continue;
         pick.push(cand[i]);
-        if (dfs(i + 1, sum + cand[i].net)) return true;
+        if (dfs(i + 1, sum + val(cand[i]))) return true;
         pick.pop();
       }
       return false;
@@ -142,6 +173,90 @@ const findCombo = (pool, target) => {
   return null;
 };
 
+// Kombinasi 2..MAX_COMBO unit yang jumlah net-nya = nominal kredit.
+const findCombo = (pool, target) => findSubset(pool.filter((u) => u.method !== 'debit'), target, (u) => u.net, 2, MAX_COMBO);
+
+const tokenHit = (a, b) => {
+  const B = String(b || '').toUpperCase();
+  return String(a || '').toUpperCase().split(/[^A-Z]+/).some((t) => t.length >= 4 && B.includes(t));
+};
+
+/**
+ * Gabungkan Laporan Transaksi QRIS (qris_report_transactions) ke daftar unit.
+ *
+ * Tiap transaksi laporan menjadi SATU unit "laporan" (nominal net = uang yang masuk ke bank).
+ * Recap yang sudah dicocokkan admin ke transaksi itu (matched_recap_id + extra_recap_ids)
+ * "dilebur" ke unit tersebut, jadi tidak dihitung dua kali. Bila transaksi belum dicocokkan,
+ * dicoba dicocokkan otomatis dengan recap QRIS yang belum terpakai (tanggal sama, nominal sama).
+ * Selisih nominal (mis. kinesiotape yang dibayar bersama terapi) diserap dari pemasukan
+ * QRIS lain pada tanggal itu.
+ *
+ * @param gatewayTrx {id, trx_date, trx_time(WIB), customer_name, issuer, amount, net_amount, matched_recap_id, extra_recap_ids}
+ */
+export const applyGatewayReport = ({ units, gatewayTrx = [] }) => {
+  const covered = new Set();
+  const byRecap = new Map();
+  units.forEach((u) => {
+    if (!u.recapId) return;
+    if (!byRecap.has(u.recapId)) byRecap.set(u.recapId, []);
+    byRecap.get(u.recapId).push(u);
+  });
+  const freeQris = (date) => units.filter((u) => !covered.has(u.id) && u.method === 'qris' && u.date === date);
+  const sumAmt = (arr) => arr.reduce((t, u) => t + u.amount, 0);
+
+  const trxs = [...gatewayTrx].sort((a, b) => `${a.trx_date}${a.trx_time || ''}`.localeCompare(`${b.trx_date}${b.trx_time || ''}`));
+  const prepared = trxs.map((t) => {
+    const ids = [t.matched_recap_id, ...(t.extra_recap_ids || [])].filter(Boolean);
+    const linked = ids.flatMap((id) => byRecap.get(id) || []).filter((u) => !covered.has(u.id));
+    linked.forEach((u) => covered.add(u.id));
+    return { t, ids, linked, how: ids.length ? 'admin' : null };
+  });
+
+  // Selisih nominal pada transaksi yang sudah dicocokkan admin -> serap dari pemasukan QRIS lain.
+  prepared.filter((p) => p.how === 'admin').forEach((p) => {
+    const residual = Number(p.t.amount) - sumAmt(p.linked);
+    if (residual <= TOL) return;
+    const hit = findSubset(freeQris(p.t.trx_date), residual, (u) => u.amount, 1, 2);
+    if (hit) { hit.forEach((u) => covered.add(u.id)); p.linked.push(...hit); }
+  });
+
+  // Transaksi yang belum dicocokkan admin -> cocokkan otomatis dengan recap QRIS yang belum terpakai.
+  prepared.filter((p) => !p.how).forEach((p) => {
+    const pool = freeQris(p.t.trx_date);
+    const single = pool.filter((u) => Math.abs(u.amount - Number(p.t.amount)) <= TOL);
+    const one = single.find((u) => tokenHit(u.name, p.t.customer_name)) || single[0];
+    const pick = one ? [one] : findSubset(pool, Number(p.t.amount), (u) => u.amount, 2, 3);
+    if (pick) { pick.forEach((u) => covered.add(u.id)); p.linked.push(...pick); p.how = 'auto'; }
+  });
+
+  const gwUnits = prepared.map(({ t, linked, how }) => ({
+    id: `gw:${t.id}`,
+    recapId: null,
+    kind: 'laporan',
+    date: t.trx_date,
+    time: addMinutes(t.trx_time, 60), // tampilan WITA, seperti recap
+    tBank: t.trx_time || null,
+    method: 'qris',
+    amount: Number(t.amount) || 0,
+    net: Number(t.net_amount) || 0,
+    name: linked.length ? linked.map((u) => u.name).join(' + ') : (t.customer_name || '-'),
+    verified: true,
+    gateway: { customer: t.customer_name || '', issuer: t.issuer || '', time: t.trx_time || '', how, recapCount: linked.length },
+  }));
+
+  return {
+    units: [...units.filter((u) => !covered.has(u.id)), ...gwUnits],
+    stats: {
+      trxCount: trxs.length,
+      linkedByAdmin: prepared.filter((p) => p.how === 'admin').length,
+      linkedAuto: prepared.filter((p) => p.how === 'auto').length,
+      unlinked: prepared.filter((p) => !p.how).length,
+      firstDate: trxs.length ? trxs[0].trx_date : null,
+      lastDate: trxs.length ? trxs[trxs.length - 1].trx_date : null,
+    },
+  };
+};
+
 /**
  * @param credits     hasil parseMutasiPdf().credits
  * @param units       hasil buildUnits()
@@ -149,7 +264,7 @@ const findCombo = (pool, target) => {
  * @param asOf        tanggal terakhir yang dicakup mutasi (YYYY-MM-DD), untuk menghitung umur
  */
 export const reconcileSettlement = ({ credits, units, periodStart, asOf }) => {
-  const free = units.map((u) => ({ ...u, net: netOf(u.method, u.amount), taken: false })).sort(byDateTime);
+  const free = units.map((u) => ({ ...u, net: u.net ?? netOf(u.method, u.amount), taken: false })).sort(byDateTime);
   const creds = [...credits].sort((a, b) => `${a.dateStr}${a.time || ''}`.localeCompare(`${b.dateStr}${b.time || ''}`));
   const matched = new Set();
   const matches = [];
@@ -217,7 +332,7 @@ export const reconcileSettlement = ({ credits, units, periodStart, asOf }) => {
   const pendingIds = new Set(pending.map((p) => p.id));
   const suggestFor = (c) =>
     free
-      .filter((u) => pendingIds.has(u.id))
+      .filter((u) => pendingIds.has(u.id) && !u.verified)
       .filter((u) => {
         const lag = daysBetween(u.date, c.dateStr);
         if (lag < -1 || lag > 10) return false;
@@ -227,6 +342,12 @@ export const reconcileSettlement = ({ credits, units, periodStart, asOf }) => {
       .sort(rankFor(c))
       .slice(0, 3)
       .map((u) => ({ id: u.id, name: u.name, date: u.date, method: u.method, amount: u.amount }));
+
+  // Kode QR di mutasi tidak memuat nama: bila ada transaksi lain dengan tanggal & nominal sama,
+  // pasangan nama-nya bisa tertukar (uangnya tetap benar).
+  matches.forEach((m) => {
+    m.ambiguous = m.units.some((u) => free.some((o) => o.id !== u.id && o.date === u.date && o.method === u.method && Math.abs(o.net - u.net) <= TOL));
+  });
 
   const unmatchedCredits = creds
     .filter((c) => !matched.has(c.id))
@@ -251,6 +372,10 @@ export const reconcileSettlement = ({ credits, units, periodStart, asOf }) => {
   const sum = (arr, f) => arr.reduce((s, x) => s + f(x), 0);
   const summary = {
     expectedCount: inScope.length,
+    unverifiedQrisCount: inScope.filter((u) => u.method === 'qris' && !u.verified).length,
+    unverifiedQrisGross: sum(inScope.filter((u) => u.method === 'qris' && !u.verified), (u) => u.amount),
+    unverifiedQrisPending: pending.filter((u) => u.method === 'qris' && !u.verified).length,
+    gatewayUnlinkedCount: inScope.filter((u) => u.kind === 'laporan' && !u.gateway.how).length,
     expectedGross: sum(inScope, (u) => u.amount),
     expectedNet: sum(inScope, (u) => u.net),
     receivedNet: sum(inScope.filter((u) => u.taken), (u) => u.net),
