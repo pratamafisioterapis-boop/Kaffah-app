@@ -15,6 +15,20 @@ const fmtDate = (ymd) => {
   const [y, m, d] = ymd.split('-').map(Number);
   return `${d} ${MONTHS[m - 1]} ${y}`;
 };
+// Mutasi bank dan Laporan QRIS memakai jam WIB; recap & tampilan aplikasi memakai WITA (+1 jam).
+// Pencocokan tetap membandingkan sesama WIB, konversi ini hanya untuk tampilan.
+const wita = (ymd, hhmm) => {
+  const m = String(hhmm || '').match(/(\d{1,2}):(\d{2})/);
+  if (!ymd || !m) return { date: ymd, time: hhmm || '' };
+  let t = Number(m[1]) * 60 + Number(m[2]) + 60;
+  let date = ymd;
+  if (t >= 1440) { t -= 1440; date = addDays(ymd, 1); }
+  return { date, time: `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}` };
+};
+const fmtDateTimeWita = (ymd, hhmm) => {
+  const w = wita(ymd, hhmm);
+  return `${fmtDate(w.date)} ${w.time}`.trim();
+};
 const METHOD_LABEL = { qris: 'QRIS', debit: 'Debit', transfer: 'Transfer' };
 const todayWita = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Makassar' });
 
@@ -151,7 +165,7 @@ const BSIBelumMasukTab = ({ clinicId }) => {
               <input type="file" accept=".pdf" className="hidden" onChange={handleFile} disabled={busy} />
             </label>
             <p className="text-xs text-slate-500">
-              Unduh "Mutasi Rekening" (PDF) dari BSINet lalu upload di sini. File hanya dibaca di browser dan tidak disimpan.
+              Unduh "Mutasi Rekening" (PDF) dari BSINet lalu upload di sini. File hanya dibaca di browser dan tidak disimpan. Semua jam ditampilkan WITA (jam asli mutasi dan laporan QRIS adalah WIB, sudah dikonversi).
             </p>
           </div>
           {error && (
@@ -248,7 +262,7 @@ const BSIBelumMasukTab = ({ clinicId }) => {
                             {u.kind === 'lainnya' && <span className="ml-1 text-xs text-slate-400">(pemasukan lain)</span>}
                             {u.verified ? (
                               <p className="text-xs text-emerald-700">
-                                Laporan QRIS: {u.gateway.customer} · {u.gateway.issuer} · {u.gateway.time} WIB
+                                Laporan QRIS: {u.gateway.customer} · {u.gateway.issuer} · {wita(u.date, u.gateway.time).time} WITA
                                 {!u.gateway.how && ' · belum dicocokkan ke recap di admin'}
                               </p>
                             ) : u.method === 'qris' ? (
@@ -296,7 +310,7 @@ const BSIBelumMasukTab = ({ clinicId }) => {
                     <tbody>
                       {r.unmatchedCredits.map((c) => (
                         <tr key={c.id} className="border-b last:border-0">
-                          <td className="py-2 pr-3 whitespace-nowrap">{fmtDate(c.dateStr)} {c.time}</td>
+                          <td className="py-2 pr-3 whitespace-nowrap">{fmtDateTimeWita(c.dateStr, c.time)}</td>
                           <td className="py-2 pr-3 break-words">{c.desc}</td>
                           <td className="py-2 pr-3 text-right whitespace-nowrap">{formatRp(c.amount)}</td>
                           <td className="py-2 text-xs text-slate-500">
@@ -359,7 +373,7 @@ const BSIBelumMasukTab = ({ clinicId }) => {
                 <tbody>
                   {r.matches.map((m) => (
                     <tr key={m.credit.id} className="border-b last:border-0 align-top">
-                      <td className="py-2 pr-3 whitespace-nowrap">{fmtDate(m.credit.dateStr)} {m.credit.time}</td>
+                      <td className="py-2 pr-3 whitespace-nowrap">{fmtDateTimeWita(m.credit.dateStr, m.credit.time)}</td>
                       <td className="py-2 pr-3 text-right whitespace-nowrap">{formatRp(m.credit.amount)}</td>
                       <td className="py-2 break-words">
                         {m.units.map((u) => `${u.name} (${fmtDate(u.date)}, ${formatRp(u.amount)})`).join(' + ')}
