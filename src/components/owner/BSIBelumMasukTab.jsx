@@ -6,7 +6,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { cn } from '@/lib/utils';
 import { parseMutasiPdf } from '@/utils/bsiMutasiPdfParser';
-import { buildUnits, reconcileSettlement, addDays } from '@/utils/bsiPendingSettlement';
+import { buildUnits, applyGatewayReport, reconcileSettlement, addDays } from '@/utils/bsiPendingSettlement';
 
 const formatRp = (n) => `Rp ${Math.round(Number(n) || 0).toLocaleString('id-ID')}`;
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
@@ -14,6 +14,20 @@ const fmtDate = (ymd) => {
   if (!ymd) return '-';
   const [y, m, d] = ymd.split('-').map(Number);
   return `${d} ${MONTHS[m - 1]} ${y}`;
+};
+// Mutasi bank dan Laporan QRIS memakai jam WIB; recap & tampilan aplikasi memakai WITA (+1 jam).
+// Pencocokan tetap membandingkan sesama WIB, konversi ini hanya untuk tampilan.
+const wita = (ymd, hhmm) => {
+  const m = String(hhmm || '').match(/(\d{1,2}):(\d{2})/);
+  if (!ymd || !m) return { date: ymd, time: hhmm || '' };
+  let t = Number(m[1]) * 60 + Number(m[2]) + 60;
+  let date = ymd;
+  if (t >= 1440) { t -= 1440; date = addDays(ymd, 1); }
+  return { date, time: `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}` };
+};
+const fmtDateTimeWita = (ymd, hhmm) => {
+  const w = wita(ymd, hhmm);
+  return `${fmtDate(w.date)} ${w.time}`.trim();
 };
 const METHOD_LABEL = { qris: 'QRIS', debit: 'Debit', transfer: 'Transfer' };
 const todayWita = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Makassar' });
@@ -69,11 +83,11 @@ const BSIBelumMasukTab = ({ clinicId }) => {
       const from = addDays(meta.periodStart, -10); // 10 hari ke belakang untuk debit/QRIS yang masuk telat
       const to = [todayWita(), meta.periodEnd || meta.periodStart].sort().pop();
 
-      const [recaps, incomes] = await Promise.all([
+      const [recaps, incomes, gatewayTrx] = await Promise.all([
         fetchAll(() =>
           supabase
             .from('daily_recaps')
-            .select('id, recap_date, revenue_date, payment_method, amount, full_name, guest_name, end_time, status')
+            .select('id, recap_date, revenue_date, payment_method, amount, goods_amount, tips_amount, full_name, guest_name, end_time, status')
             .eq('clinic_id', clinicId)
             .gte('revenue_date', from)
             .lte('revenue_date', to)
@@ -89,6 +103,16 @@ const BSIBelumMasukTab = ({ clinicId }) => {
             .lte('date', to)
             .order('id')
         ),
+        // Laporan Transaksi QRIS (BSI Merchant) yang sudah diunggah & dicocokkan di halaman admin.
+        fetchAll(() =>
+          supabase
+            .from('qris_report_transactions')
+            .select('id, trx_date, trx_time, customer_name, issuer, amount, net_amount, matched_recap_id, extra_recap_ids')
+            .eq('clinic_id', clinicId)
+            .gte('trx_date', from)
+            .lte('trx_date', to)
+            .order('id')
+        ),
       ]);
 
       const splits = [];
@@ -102,14 +126,15 @@ const BSIBelumMasukTab = ({ clinicId }) => {
         splits.push(...(sp || []));
       }
 
-      const units = buildUnits({ recaps, splits, incomes });
+      const base = buildUnits({ recaps, splits, incomes });
+      const { units, stats: gwStats } = applyGatewayReport({ units: base, gatewayTrx });
       const result = reconcileSettlement({
         credits,
         units,
         periodStart: meta.periodStart,
         asOf: meta.periodEnd || meta.periodStart,
       });
-      setData({ parsed, result, loadedAt: new Date() });
+      setData({ parsed, result, gwStats, loadedAt: new Date() });
     } catch (err) {
       console.error(err);
       setError(err?.message || 'Gagal membaca file.');
@@ -121,6 +146,7 @@ const BSIBelumMasukTab = ({ clinicId }) => {
 
   const parsed = data?.parsed;
   const r = data?.result;
+  const gw = data?.gwStats;
   const s = r?.summary;
   const check = parsed?.check;
   const parseOk = check && check.creditTotalOk !== false && check.balanceMismatch === 0;
@@ -139,7 +165,7 @@ const BSIBelumMasukTab = ({ clinicId }) => {
               <input type="file" accept=".pdf" className="hidden" onChange={handleFile} disabled={busy} />
             </label>
             <p className="text-xs text-slate-500">
-              Unduh "Mutasi Rekening" (PDF) dari BSINet lalu upload di sini. File hanya dibaca di browser dan tidak disimpan.
+              Unduh "Mutasi Rekening" (PDF) dari BSINet lalu upload di sini. File hanya dibaca di browser dan tidak disimpan. Semua jam ditampilkan WITA (jam asli mutasi dan laporan QRIS adalah WIB, sudah dikonversi).
             </p>
           </div>
           {error && (
@@ -190,6 +216,23 @@ const BSIBelumMasukTab = ({ clinicId }) => {
             />
           </div>
 
+          <div className="rounded-lg border bg-slate-50 p-3 text-xs text-slate-600 space-y-1">
+            <p>
+              <span className="font-semibold">QRIS</span> dicocokkan dengan <span className="font-medium">Laporan Transaksi QRIS</span> yang sudah dicocokkan di Admin → Rekonsiliasi QRIS
+              {gw?.trxCount > 0
+                ? ` (${gw.trxCount} transaksi, ${fmtDate(gw.firstDate)} – ${fmtDate(gw.lastDate)}; ${gw.linkedByAdmin} dari admin${gw.linkedAuto ? `, ${gw.linkedAuto} otomatis` : ''}${gw.unlinked ? `, ${gw.unlinked} belum dicocokkan ke recap` : ''}).`
+                : ' — belum ada laporan pada periode ini.'}
+              {' '}<span className="font-semibold">Transfer dan debit</span> dicocokkan otomatis dari recap.
+            </p>
+            {s.unverifiedQrisCount > 0 && (
+              <p className="text-amber-700 flex items-start gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                {s.unverifiedQrisCount} pembayaran QRIS ({formatRp(s.unverifiedQrisGross)}) belum ada di Laporan QRIS, jadi hanya dicocokkan dari nominal recap
+                (kurang pasti). Unggah dan cocokkan laporan hari itu di halaman admin agar hasilnya terverifikasi.
+              </p>
+            )}
+          </div>
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2"><Hourglass className="w-4 h-4" /> Belum masuk rekening</CardTitle>
@@ -217,6 +260,14 @@ const BSIBelumMasukTab = ({ clinicId }) => {
                           <td className="py-2 pr-3 break-words">
                             {u.name}
                             {u.kind === 'lainnya' && <span className="ml-1 text-xs text-slate-400">(pemasukan lain)</span>}
+                            {u.verified ? (
+                              <p className="text-xs text-emerald-700">
+                                Laporan QRIS: {u.gateway.customer} · {u.gateway.issuer} · {wita(u.date, u.gateway.time).time} WITA
+                                {!u.gateway.how && ' · belum dicocokkan ke recap di admin'}
+                              </p>
+                            ) : u.method === 'qris' ? (
+                              <p className="text-xs text-slate-400">Dari recap saja (belum ada di Laporan QRIS)</p>
+                            ) : null}
                             {u.ambiguous && (
                               <p className="text-xs text-slate-400">Ada transaksi lain dengan nominal sama di hari itu, jadi nama bisa tertukar.</p>
                             )}
@@ -259,11 +310,17 @@ const BSIBelumMasukTab = ({ clinicId }) => {
                     <tbody>
                       {r.unmatchedCredits.map((c) => (
                         <tr key={c.id} className="border-b last:border-0">
-                          <td className="py-2 pr-3 whitespace-nowrap">{fmtDate(c.dateStr)} {c.time}</td>
+                          <td className="py-2 pr-3 whitespace-nowrap">{fmtDateTimeWita(c.dateStr, c.time)}</td>
                           <td className="py-2 pr-3 break-words">{c.desc}</td>
                           <td className="py-2 pr-3 text-right whitespace-nowrap">{formatRp(c.amount)}</td>
                           <td className="py-2 text-xs text-slate-500">
                             {c.beforePeriod ? 'Transaksi periode sebelumnya (diabaikan)' : 'Tidak ada pembayaran non-tunai yang cocok — cek apakah dicatat Cash atau belum di-input'}
+                            {!c.beforePeriod && c.suggestions?.length > 0 && (
+                              <p className="mt-1 text-amber-700">
+                                Kemungkinan: {c.suggestions.map((u) => `${u.name} (${fmtDate(u.date)}, tercatat ${METHOD_LABEL[u.method]} ${formatRp(u.amount)})`).join('; ')}.
+                                {' '}Kalau benar, ubah metode pembayaran di recap-nya ke {c.type === 'debit' ? 'Debit' : 'metode yang sesuai'}, lalu upload ulang.
+                              </p>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -316,11 +373,12 @@ const BSIBelumMasukTab = ({ clinicId }) => {
                 <tbody>
                   {r.matches.map((m) => (
                     <tr key={m.credit.id} className="border-b last:border-0 align-top">
-                      <td className="py-2 pr-3 whitespace-nowrap">{fmtDate(m.credit.dateStr)} {m.credit.time}</td>
+                      <td className="py-2 pr-3 whitespace-nowrap">{fmtDateTimeWita(m.credit.dateStr, m.credit.time)}</td>
                       <td className="py-2 pr-3 text-right whitespace-nowrap">{formatRp(m.credit.amount)}</td>
                       <td className="py-2 break-words">
                         {m.units.map((u) => `${u.name} (${fmtDate(u.date)}, ${formatRp(u.amount)})`).join(' + ')}
                         {m.units.length > 1 && <span className="ml-1 text-xs text-slate-400">dibayar sekaligus</span>}
+                        {m.ambiguous && <span className="ml-1 text-xs text-slate-400">· mutasi tidak memuat nama; ada nominal sama di hari itu, nama bisa tertukar (jumlah uang tetap benar)</span>}
                       </td>
                     </tr>
                   ))}
