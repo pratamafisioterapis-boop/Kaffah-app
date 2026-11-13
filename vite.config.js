@@ -306,6 +306,14 @@ export default defineConfig({
 				'@babel/types'
 			],
 			output: {
+				// Akhiran "-r2" memberi semua file hasil build alamat yang belum pernah
+				// diminta browser mana pun. Sebelum 404 di /assets dibuat no-store,
+				// jawaban "tidak ada" ikut di-cache setahun (immutable); browser yang
+				// sempat meminta chunk saat production berpindah versi akan terus
+				// gagal memuat alamat yang sama walau filenya sudah ada lagi.
+				entryFileNames: 'assets/[name]-[hash]-r2.js',
+				chunkFileNames: 'assets/[name]-[hash]-r2.js',
+				assetFileNames: 'assets/[name]-[hash]-r2[extname]',
 				// Recharts' internal modules (generateCategoricalChart, D3Scale, etc.)
 				// import each other circularly. Left to Rollup's default heuristics
 				// they get split across several separate async chunks shared between
