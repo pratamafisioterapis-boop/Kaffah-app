@@ -7921,6 +7921,28 @@ export const fetchTotalSessions = async (startDate, endDate) => {
     return { data: count || 0 };
   }, 'fetchTotalSessions');
 };
+// Jumlah sesi periode yang terkait paket (punya package_tracking_id).
+// Sesi non paket = total sesi - sesi paket.
+export const fetchPackageSessionsCount = async (startDate, endDate) => {
+  return safeQuery(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    const clinicId = await getCachedClinicId(userId);
+
+    let query = supabase
+      .from('daily_recaps')
+      .select('id', { count: 'exact', head: true })
+      .eq('clinic_id', clinicId)
+      .not('package_tracking_id', 'is', null);
+
+    if (startDate) query = query.gte('recap_date', startDate);
+    if (endDate) query = query.lte('recap_date', endDate);
+
+    const { count, error } = await query;
+    if (error) return { error };
+    return { data: count || 0 };
+  }, 'fetchPackageSessionsCount');
+};
 // ============================
 // TODAY SESSIONS
 // ============================
