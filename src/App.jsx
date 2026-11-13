@@ -45,6 +45,7 @@ const AboutPage = React.lazy(lazyRetry(() => import('@/pages/AboutPage'), 'About
 const TeamPage = React.lazy(lazyRetry(() => import('@/pages/TeamPage'), 'TeamPage'));
 const LocationPage = React.lazy(lazyRetry(() => import('@/pages/LocationPage'), 'LocationPage'));
 const FaqPage = React.lazy(lazyRetry(() => import('@/pages/FaqPage'), 'FaqPage'));
+const PrivacyPolicyPage = React.lazy(lazyRetry(() => import('@/pages/PrivacyPolicyPage'), 'PrivacyPolicyPage'));
 const ServicesIndexPage = React.lazy(lazyRetry(() => import('@/pages/layanan/ServicesIndexPage'), 'ServicesIndexPage'));
 const ServiceDetailPage = React.lazy(lazyRetry(() => import('@/pages/layanan/ServiceDetailPage'), 'ServiceDetailPage'));
 const BlogIndexPage = React.lazy(lazyRetry(() => import('@/pages/artikel/BlogIndexPage'), 'BlogIndexPage'));
@@ -402,6 +403,7 @@ function App() {
                 <Route path="/tim-fisioterapis" element={<TeamPage />} />
                 <Route path="/lokasi" element={<LocationPage />} />
                 <Route path="/faq" element={<FaqPage />} />
+                <Route path="/kebijakan-privasi" element={<PrivacyPolicyPage />} />
                 <Route path="/layanan" element={<ServicesIndexPage />} />
                 <Route path="/layanan/:slug" element={<ServiceDetailPage />} />
                 <Route path="/artikel" element={<BlogIndexPage />} />
