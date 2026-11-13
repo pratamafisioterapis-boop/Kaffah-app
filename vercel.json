@@ -96,6 +96,10 @@
       "destination": "/clinara-icon-app.png"
     },
     {
+      "source": "/assets/(.*)",
+      "destination": "/api/asset-missing"
+    },
+    {
       "source": "/p/:token",
       "has": [
         {
