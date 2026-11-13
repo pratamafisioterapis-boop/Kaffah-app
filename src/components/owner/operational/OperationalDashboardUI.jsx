@@ -35,11 +35,15 @@ const OperationalDashboardUI = ({
 
   const nonPackageSessions = Math.max(0, totalSessions - packageSessions);
   const periodKPIs = [
-    { label: 'Total Sesi', value: totalSessions, badge: 'Periode', icon: Activity, tone: 'acc' },
+    {
+      label: 'Total Sesi', value: totalSessions, badge: 'Periode', icon: Activity, tone: 'acc', wide: true,
+      breakdown: [
+        { label: 'Paket', value: packageSessions, percent: pct(packageSessions, totalSessions), bar: 'bg-emerald-500', text: 'text-emerald-600' },
+        { label: 'Non Paket', value: nonPackageSessions, percent: pct(nonPackageSessions, totalSessions), bar: 'bg-amber-500', text: 'text-amber-600' },
+      ],
+    },
     { label: 'Total Pasien', value: totalPatients, badge: 'Unik', icon: Users, tone: 'ind' },
     { label: 'Total Paket', value: totalPackages, badge: 'Aktif', icon: Package, tone: 'vio' },
-    { label: 'Sesi Paket', value: pct(packageSessions, totalSessions), suffix: '%', sub: `${formatInt(packageSessions)} dari ${formatInt(totalSessions)} sesi`, badge: 'Paket', icon: Package, tone: 'pos' },
-    { label: 'Sesi Non Paket', value: pct(nonPackageSessions, totalSessions), suffix: '%', sub: `${formatInt(nonPackageSessions)} dari ${formatInt(totalSessions)} sesi`, badge: 'Non Paket', icon: Activity, tone: 'warn' },
   ];
 
   const patientsToday = newPatientsToday + returningPatientsToday;
@@ -68,11 +72,11 @@ const OperationalDashboardUI = ({
     <>
       {/* Ringkasan periode */}
       <FinanceTile tone="acc" icon={Activity} title="Ringkasan Periode" className="col-span-2 md:col-span-4 lg:col-span-6">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
-          {periodKPIs.map(({ label, value, suffix, sub, badge, icon: Icon, tone }) => {
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
+          {periodKPIs.map(({ label, value, breakdown, wide, badge, icon: Icon, tone }) => {
             const t = TONES[tone];
             return (
-              <div key={label} className={cn('rounded-2xl border border-slate-100 px-2 py-3 sm:p-3 md:p-4 min-w-0', t.tint)}>
+              <div key={label} className={cn('rounded-2xl border border-slate-100 px-3 py-3 sm:p-3 md:p-4 min-w-0', t.tint, wide && 'col-span-2 md:col-span-1')}>
                 <div className="flex items-center justify-between gap-1 mb-2 md:mb-3">
                   <span className={cn('w-7 h-7 md:w-9 md:h-9 rounded-[10px] flex items-center justify-center', t.icon)}>
                     <Icon className="w-3.5 h-3.5 md:w-[18px] md:h-[18px]" />
@@ -80,10 +84,30 @@ const OperationalDashboardUI = ({
                   <span className={cn('hidden sm:inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold', t.soft, t.text)}>{badge}</span>
                 </div>
                 <p className="text-2xl md:text-4xl font-black tabular-nums leading-none text-slate-900">
-                  <AnimatedNumber value={value} format={suffix ? (v) => `${formatInt(v)}${suffix}` : formatInt} />
+                  <AnimatedNumber value={value} format={formatInt} />
                 </p>
                 <p className="text-[11px] sm:text-xs md:text-sm font-medium tracking-tight text-slate-500 mt-1 whitespace-nowrap truncate">{label}</p>
-                {sub && <p className="text-[10.5px] md:text-xs text-slate-400 mt-0.5 truncate">{sub}</p>}
+                {breakdown && (
+                  <div className="mt-3 pt-3 border-t border-slate-200/70 space-y-2">
+                    <div className="flex h-1.5 rounded-full overflow-hidden bg-slate-200/70">
+                      {breakdown.map((b) => (
+                        <span key={b.label} className={b.bar} style={{ width: `${b.percent}%` }} />
+                      ))}
+                    </div>
+                    {breakdown.map((b) => (
+                      <div key={b.label} className="flex items-center justify-between gap-2 text-xs md:text-[13px]">
+                        <span className="flex items-center gap-1.5 text-slate-600 min-w-0">
+                          <span className={cn('w-2 h-2 rounded-full shrink-0', b.bar)} />
+                          <span className="truncate">{b.label}</span>
+                        </span>
+                        <span className="tabular-nums shrink-0">
+                          <b className="font-bold text-slate-900">{formatInt(b.value)}</b>
+                          <span className={cn('ml-1.5 font-semibold', b.text)}>{b.percent}%</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
