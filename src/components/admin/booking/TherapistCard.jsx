@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, CalendarOff, FileWarning } from 'lucide-react';
+import { Plus, CalendarOff, FileWarning, Clock } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,7 @@ const TherapistCard = ({
   leaveStatus = 'aktif',
   leaveReason = '',
   replacement = false, // hari libur mingguan yang diganti jadwal pengganti izin
+  partialLeaves, // izin jam tertentu di hari ini: [{ start, end, label }]
   soapStatus = null // { unfilled_count, threshold_count, period_start, period_end, locked }
 }) => {
   
@@ -175,6 +176,17 @@ const TherapistCard = ({
             Pengganti izin
           </span>
         )}
+
+                {!isLeave && Array.isArray(partialLeaves) && partialLeaves.map((p) => (
+          <span
+            key={`${p.start}-${p.end}`}
+            title={p.label}
+            className="px-2 py-0.5 rounded text-xs font-semibold border whitespace-nowrap flex items-center gap-1 bg-amber-100 text-amber-800 border-amber-200"
+          >
+            <Clock className="w-3 h-3" />
+            Izin {p.start} - {p.end}
+          </span>
+        ))}
 
                 {(isLeave || isFullBooked) && (
           <span className={cn(
