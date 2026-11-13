@@ -66,6 +66,7 @@ const AdminAppointmentBooking = () => {
   const [therapistLeaveStatus, setTherapistLeaveStatus] = useState({});
   const [therapistLeaveReason, setTherapistLeaveReason] = useState({});
   const [therapistReplacement, setTherapistReplacement] = useState({});
+  const [therapistPartialLeave, setTherapistPartialLeave] = useState({});
   const [soapStatusByTherapist, setSoapStatusByTherapist] = useState({});
   const [schedulesMap, setSchedulesMap] = useState({});
   const [appointments, setAppointments] = useState([]);
@@ -253,6 +254,7 @@ const formattedDateFull = date
       // tetap terdeteksi dan badge-nya tampil di kartu terapis.
       const reasonMap = {};
       const replacementMap = {};
+      const partialMap = {};
       const { data: timeOffRows } = await supabase
         .from('therapist_time_off')
         .select('therapist_id, reason, leave_type, start_time, end_time')
@@ -271,7 +273,15 @@ const formattedDateFull = date
         // Izin parsial (jam tertentu): hanya slot di jam itu yang ditutup (sudah
         // berstatus 'cuti' dari RPC dan tidak ditampilkan sebagai slot kosong).
         // Terapis tetap aktif di jam lainnya, jadi jangan tandai seharian cuti.
-        if (row.start_time && row.end_time) return;
+        if (row.start_time && row.end_time) {
+          if (!partialMap[row.therapist_id]) partialMap[row.therapist_id] = [];
+          partialMap[row.therapist_id].push({
+            start: String(row.start_time).slice(0, 5),
+            end: String(row.end_time).slice(0, 5),
+            label: (row.reason || '').split(' - ')[0].trim() || 'Izin'
+          });
+          return;
+        }
         // Kategori disimpan sebagai "<Kategori> - <catatan>" (lihat TherapistTimeOffForm).
         // Ambil kategorinya saja — jangan cari kata "cuti" di seluruh string,
         // karena kategori yang valid adalah Cuti/Sakit/Libur/Training/Izin Pribadi/Lainnya
@@ -301,6 +311,7 @@ const formattedDateFull = date
       setTherapistLeaveStatus(statusMap);
       setTherapistLeaveReason(reasonMap);
       setTherapistReplacement(replacementMap);
+      setTherapistPartialLeave(partialMap);
 
     } catch (err) {
       setError("Gagal memuat jadwal.");
@@ -752,6 +763,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
                 leaveStatus={leaveStatus}
                 leaveReason={therapistLeaveReason[therapist.id]}
                 replacement={!!therapistReplacement[therapist.id]}
+                partialLeaves={therapistPartialLeave[therapist.id]}
                 soapStatus={soapStatusByTherapist[therapist.id]}
                 onSlotClick={(slot, t) => setActiveModal({ type: 'slot', data: { slot, therapist: t } })}
                 onManualBooking={(t) => setActiveModal({ type: 'manual', data: { therapist: t } })}
