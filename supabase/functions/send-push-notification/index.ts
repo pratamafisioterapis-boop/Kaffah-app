@@ -3,6 +3,11 @@ import { GoogleAuth } from "npm:google-auth-library";
 
 const PROJECT_ID = Deno.env.get("GOOGLE_PROJECT_ID")!;
 
+// Cermin push ke Telegram HANYA untuk owner klinik Kaffah Physiotherapy.
+// role dan clinic_id dibaca dari tabel users (bukan dari body request), jadi
+// pemanggil tidak bisa memalsukannya. send-telegram juga memeriksa ulang.
+const TELEGRAM_CLINIC_ID = "bfdc3fd8-a052-4753-a5b7-229930b3237a";
+
 async function getAccessToken() {
   const auth = new GoogleAuth({
     credentials: {
@@ -74,6 +79,27 @@ if (authHeader) {
   if (!isSelf && !isSameClinicManager) {
     return Response.json({ success: false, error: "Anda tidak punya akses untuk mengirim notifikasi ke pengguna ini." }, { status: 403 });
   }
+}
+
+// Cermin ke Telegram (hanya owner Kaffah). Dijalankan sebelum pencarian token
+// FCM supaya tetap terkirim walau owner belum punya token push. Kegagalan
+// Telegram tidak boleh mengganggu push FCM di bawah.
+if (userData?.role === "owner" && userData?.clinic_id === TELEGRAM_CLINIC_ID) {
+  try {
+    const telegramSecret = Deno.env.get("TELEGRAM_INTERNAL_SECRET");
+    if (telegramSecret) {
+      await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-telegram`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-internal-secret": telegramSecret },
+        body: JSON.stringify({
+          event: "push_owner",
+          clinic_id: userData.clinic_id,
+          text: `🔔 ${body.title || ""}\n${body.body || ""}`.trim(),
+        }),
+        signal: AbortSignal.timeout(5000),
+      });
+    }
+  } catch (_) { /* abaikan */ }
 }
 
 // Logo klinik dipakai sebagai icon notifikasi supaya tiap klinik lihat
