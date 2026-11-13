@@ -7863,10 +7863,14 @@ export const getTherapistLeaveStatus = async (therapistId, date) => {
       .eq('therapist_id', therapistId)
       .lte('start_date', dateStr)
       .gte('end_date', dateStr)
+      // Izin parsial (jam tertentu) tidak menutup seluruh hari; slotnya sudah
+      // ditandai tertutup per jam oleh RPC slot.
+      .is('start_time', null)
+      .limit(1)
       .maybeSingle();
-      
+
     if (error) return { error };
-    
+
     if (data) {
         return { isOnLeave: true, reason: data.reason, endDate: data.end_date };
     }
