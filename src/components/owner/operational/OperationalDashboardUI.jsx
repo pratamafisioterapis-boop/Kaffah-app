@@ -72,23 +72,25 @@ const OperationalDashboardUI = ({
     <>
       {/* Ringkasan periode */}
       <FinanceTile tone="acc" icon={Activity} title="Ringkasan Periode" className="col-span-2 md:col-span-4 lg:col-span-6">
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] gap-2 sm:gap-3 md:gap-4">
           {periodKPIs.map(({ label, value, breakdown, wide, badge, icon: Icon, tone }) => {
             const t = TONES[tone];
             return (
-              <div key={label} className={cn('rounded-2xl border border-slate-100 px-3 py-3 sm:p-3 md:p-4 min-w-0', t.tint, wide && 'col-span-2')}>
-                <div className="flex items-center justify-between gap-1 mb-2 md:mb-3">
+              <div key={label} className={cn('rounded-2xl border border-slate-100 px-3 py-3 sm:p-3 md:p-4 min-w-0', t.tint, wide ? 'col-span-2 md:col-span-1 md:row-span-2 flex flex-col' : 'md:flex md:items-center md:gap-4')}>
+                <div className={cn('flex items-center justify-between gap-1 mb-2', wide ? 'md:mb-3' : 'md:mb-0')}>
                   <span className={cn('w-7 h-7 md:w-9 md:h-9 rounded-[10px] flex items-center justify-center', t.icon)}>
                     <Icon className="w-3.5 h-3.5 md:w-[18px] md:h-[18px]" />
                   </span>
-                  <span className={cn('hidden sm:inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold', t.soft, t.text)}>{badge}</span>
+                  <span className={cn('hidden sm:inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold', t.soft, t.text, !wide && 'md:hidden')}>{badge}</span>
                 </div>
-                <p className="text-2xl md:text-4xl font-black tabular-nums leading-none text-slate-900">
-                  <AnimatedNumber value={value} format={formatInt} />
-                </p>
-                <p className="text-[11px] sm:text-xs md:text-sm font-medium tracking-tight text-slate-500 mt-1 whitespace-nowrap truncate">{label}</p>
+                <div className="min-w-0">
+                  <p className={cn('text-2xl font-black tabular-nums leading-none text-slate-900', wide ? 'md:text-4xl' : 'md:text-3xl')}>
+                    <AnimatedNumber value={value} format={formatInt} />
+                  </p>
+                  <p className="text-[11px] sm:text-xs md:text-sm font-medium tracking-tight text-slate-500 mt-1 whitespace-nowrap truncate">{label}</p>
+                </div>
                 {breakdown && (
-                  <div className="mt-3 pt-3 border-t border-slate-200/70 space-y-2">
+                  <div className="mt-3 pt-3 border-t border-slate-200/70 space-y-2 md:mt-auto">
                     <div className="flex h-1.5 rounded-full overflow-hidden bg-slate-200/70">
                       {breakdown.map((b) => (
                         <span key={b.label} className={b.bar} style={{ width: `${b.percent}%` }} />
