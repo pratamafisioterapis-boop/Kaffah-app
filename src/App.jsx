@@ -161,7 +161,19 @@ class AuthErrorBoundary extends React.Component {
     // it's what a mismatched mix of old/new hashed chunks looks like when
     // the browser serves some modules from a previous deploy alongside
     // freshly built ones.
-    if (isStaleChunkError(error)) reloadForStaleChunk('stale-chunk-auth-boundary');
+    if (isStaleChunkError(error) && !reloadForStaleChunk('stale-chunk-auth-boundary')) {
+      // Reload biasa sudah habis jatahnya / baru saja dilakukan, tapi chunk masih
+      // gagal dimuat (cache HTTP / service worker masih memegang versi lama).
+      // Coba sekali lagi dengan membersihkan cache + URL segar, lalu menyerah
+      // ke layar error. Dibatasi 1x per 10 menit agar tidak jadi loop.
+      try {
+        const last = Number(sessionStorage.getItem('stale-chunk-hard-refresh') || 0);
+        if (Date.now() - last > 10 * 60 * 1000) {
+          sessionStorage.setItem('stale-chunk-hard-refresh', String(Date.now()));
+          hardRefresh();
+        }
+      } catch { /* sessionStorage tidak tersedia: tampilkan layar error */ }
+    }
   }
 
   render() {
@@ -188,7 +200,7 @@ class AuthErrorBoundary extends React.Component {
             )}
             <div className="space-y-3">
                <button 
-                 onClick={() => window.location.reload()}
+                 onClick={() => (isStaleChunkError(this.state.error) ? hardRefresh() : window.location.reload())}
                  className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
                >
                  Refresh Application
