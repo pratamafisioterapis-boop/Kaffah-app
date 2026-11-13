@@ -72,11 +72,11 @@ const OperationalDashboardUI = ({
     <>
       {/* Ringkasan periode */}
       <FinanceTile tone="acc" icon={Activity} title="Ringkasan Periode" className="col-span-2 md:col-span-4 lg:col-span-6">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
           {periodKPIs.map(({ label, value, breakdown, wide, badge, icon: Icon, tone }) => {
             const t = TONES[tone];
             return (
-              <div key={label} className={cn('rounded-2xl border border-slate-100 px-3 py-3 sm:p-3 md:p-4 min-w-0', t.tint, wide && 'col-span-2 md:col-span-1')}>
+              <div key={label} className={cn('rounded-2xl border border-slate-100 px-3 py-3 sm:p-3 md:p-4 min-w-0', t.tint, wide && 'col-span-2')}>
                 <div className="flex items-center justify-between gap-1 mb-2 md:mb-3">
                   <span className={cn('w-7 h-7 md:w-9 md:h-9 rounded-[10px] flex items-center justify-center', t.icon)}>
                     <Icon className="w-3.5 h-3.5 md:w-[18px] md:h-[18px]" />
