@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
-import { createInventoryItem, getAccountingSubcategories } from '@/lib/api';
+import { createInventoryItem, createPendingInventoryOrder, getAccountingSubcategories } from '@/lib/api';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import SearchableSelect from '@/components/ui/searchable-select';
@@ -14,7 +15,10 @@ const UNIT_OPTIONS = ['Liter', 'ML', 'Kg', 'Gram', 'Pcs', 'Box', 'Botol', 'Jerig
 
 const InventoryItemForm = ({ onSuccess }) => {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, userDetails } = useAuth();
+  const isKaffah = userDetails?.clinic_id === KAFFAH_CLINIC_ID;
+  const [inTransit, setInTransit] = useState(false);
+  const [expectedDate, setExpectedDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [subcategoryOptions, setSubcategoryOptions] = useState([]);
   const [form, setForm] = useState({
@@ -64,9 +68,23 @@ const InventoryItemForm = ({ onSuccess }) => {
     }
     setLoading(true);
     try {
-      const { error } = await createInventoryItem({ ...form, created_by: user?.id });
+      // Pembelian online: barang dibuat dengan stok 0, stok baru masuk saat pesanan diterima.
+      const { data: created, error } = await createInventoryItem(
+        inTransit ? { ...form, quantity: 0, total_price: 0, created_by: user?.id } : { ...form, created_by: user?.id }
+      );
       if (error) throw error;
-      toast({ title: 'Barang ditambahkan', description: `${form.item_name} berhasil disimpan ke stok gudang.` });
+      if (inTransit) {
+        const { error: orderError } = await createPendingInventoryOrder({
+          item_id: created.id, quantity: form.quantity, total_price: form.total_price,
+          paid_date: form.purchase_date, expected_date: expectedDate
+        });
+        if (orderError) throw new Error(`Barang tersimpan, tapi pesanan gagal dicatat: ${orderError.message}`);
+      }
+      toast(inTransit
+        ? { title: 'Pesanan dicatat', description: `${form.item_name} masuk stok setelah diterima di tab "Pesanan Dikirim".` }
+        : { title: 'Barang ditambahkan', description: `${form.item_name} berhasil disimpan ke stok gudang.` });
+      setInTransit(false);
+      setExpectedDate('');
       setForm({ item_name: '', unit: 'Pcs', quantity: '', total_price: '', minimum_stock: '', purchase_date: format(new Date(), 'yyyy-MM-dd'), category_id: '', subcategory_id: '', categoryName: '', is_sellable: false, sell_category: 'consumable' });
       if (onSuccess) onSuccess();
     } catch (err) {
@@ -91,7 +109,7 @@ const InventoryItemForm = ({ onSuccess }) => {
           </select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="quantity">Kuantitas Awal</Label>
+          <Label htmlFor="quantity">{inTransit ? 'Kuantitas Dipesan' : 'Kuantitas Awal'}</Label>
           <Input id="quantity" type="number" step="0.01" min="0" placeholder="0" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
         </div>
       </div>
@@ -101,10 +119,25 @@ const InventoryItemForm = ({ onSuccess }) => {
           <Input id="total_price" type="number" min="0" placeholder="0" value={form.total_price} onChange={(e) => setForm({ ...form, total_price: e.target.value })} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="purchase_date">Tanggal Beli</Label>
+          <Label htmlFor="purchase_date">{inTransit ? 'Tanggal Bayar' : 'Tanggal Beli'}</Label>
           <Input id="purchase_date" type="date" value={form.purchase_date} onChange={(e) => setForm({ ...form, purchase_date: e.target.value })} />
         </div>
       </div>
+      {isKaffah && (
+        <label className="flex items-start gap-2 rounded-app border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 cursor-pointer">
+          <input type="checkbox" className="mt-1" checked={inTransit} onChange={(e) => setInTransit(e.target.checked)} />
+          <span>
+            <span className="font-semibold">Pembelian online, barang belum datang</span>
+            <span className="block text-xs text-amber-800">Dicatat hari ini, tapi stok baru bertambah setelah barang diterima di tab "Pesanan Dikirim".</span>
+          </span>
+        </label>
+      )}
+      {inTransit && (
+        <div className="space-y-2">
+          <Label htmlFor="expected_date">Perkiraan Tiba (opsional)</Label>
+          <Input id="expected_date" type="date" value={expectedDate} onChange={(e) => setExpectedDate(e.target.value)} />
+        </div>
+      )}
       <div className="space-y-2">
         <Label htmlFor="minimum_stock">Stok Minimum (opsional, untuk alert)</Label>
         <Input id="minimum_stock" type="number" step="0.01" min="0" placeholder="0" value={form.minimum_stock} onChange={(e) => setForm({ ...form, minimum_stock: e.target.value })} />
@@ -131,7 +164,7 @@ const InventoryItemForm = ({ onSuccess }) => {
       )}
       <Button type="submit" disabled={loading} className="w-full">
         {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-        Simpan Barang
+        {inTransit ? 'Catat Pesanan' : 'Simpan Barang'}
       </Button>
     </form>
   );
