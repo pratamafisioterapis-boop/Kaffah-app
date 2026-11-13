@@ -9,7 +9,11 @@ import { isStaleChunkError, reloadForStaleChunk } from '@/lib/staleChunk';
 // Vite memicu 'vite:preloadError' saat preload chunk gagal; error import dinamis
 // yang lolos dari React muncul sebagai unhandled rejection.
 window.addEventListener('vite:preloadError', (event) => {
-  event.preventDefault();
+  // JANGAN event.preventDefault(): helper preload Vite lalu menelan error asli dan
+  // mengembalikan undefined, sehingga React.lazy hanya melihat "reading 'default'"
+  // dan file mana yang gagal dimuat tidak pernah terlihat. Tanpa preventDefault,
+  // error asli (nama file / pesan) dilempar ke lazyRetry dan tampil di layar error.
+  try { console.error('vite:preloadError', event.payload); } catch { /* ignore */ }
   reloadForStaleChunk('vite-preload-error');
 });
 window.addEventListener('unhandledrejection', (event) => {
