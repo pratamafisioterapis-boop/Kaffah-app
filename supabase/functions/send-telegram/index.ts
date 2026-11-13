@@ -5,6 +5,7 @@
 // x-internal-secret (sama dengan secret TELEGRAM_INTERNAL_SECRET).
 //
 // Body: { "event": "booking_baru", "text": "isi pesan", "clinic_id": "<uuid>" }
+//   atau { "event": "laporan_malam", "texts": ["pesan 1", "pesan 2"], ... }
 //   - text dikirim apa adanya (teks biasa, tanpa parse_mode, supaya karakter
 //     seperti _ atau * dari nama pasien tidak merusak pesan).
 //
@@ -48,7 +49,9 @@ Deno.serve(async (req) => {
     return json({ ok: false, error: "Tidak diizinkan" }, 401);
   }
 
-  let payload: { event?: string; text?: string; clinic_id?: string };
+  // `text` = satu pesan; `texts` = beberapa pesan yang dikirim berurutan
+  // (maks. 5), mis. laporan malam 1/2 dan 2/2.
+  let payload: { event?: string; text?: string; texts?: string[]; clinic_id?: string };
   try {
     payload = await req.json();
   } catch {
@@ -56,47 +59,63 @@ Deno.serve(async (req) => {
   }
 
   const event = String(payload.event || "umum").slice(0, 60);
-  const text = String(payload.text || "").trim();
-  if (!text) return json({ ok: false, error: "text wajib diisi" }, 400);
+  const raw = Array.isArray(payload.texts) ? payload.texts : [payload.text];
+  const items = raw
+    .map((t) => String(t ?? "").trim())
+    .filter((t) => t.length > 0)
+    .slice(0, 5);
+  if (items.length === 0) return json({ ok: false, error: "text wajib diisi" }, 400);
   if (payload.clinic_id && payload.clinic_id !== ALLOWED_CLINIC_ID) {
     return json({ ok: false, error: "Klinik tidak diizinkan" }, 403);
   }
 
-  const message = text.length > MAX_LEN ? text.slice(0, MAX_LEN) + "…" : text;
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
 
-  let status = "failed";
-  let error: string | null = null;
-  try {
-    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: CHAT_ID,
-        text: message,
-        disable_web_page_preview: true,
-      }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.ok && data?.ok) status = "sent";
-    else error = String(data?.description || `HTTP ${res.status}`).slice(0, 300);
-  } catch (e) {
-    error = String((e as Error)?.message || e).slice(0, 300);
+  let allSent = true;
+  let firstError: string | null = null;
+
+  // Berurutan (await di dalam loop) supaya pesan 1/2 selalu tiba sebelum 2/2.
+  for (const text of items) {
+    const message = text.length > MAX_LEN ? text.slice(0, MAX_LEN) + "…" : text;
+
+    let status = "failed";
+    let error: string | null = null;
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: CHAT_ID,
+          text: message,
+          disable_web_page_preview: true,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.ok) status = "sent";
+      else error = String(data?.description || `HTTP ${res.status}`).slice(0, 300);
+    } catch (e) {
+      error = String((e as Error)?.message || e).slice(0, 300);
+    }
+
+    if (status !== "sent") {
+      allSent = false;
+      firstError = firstError ?? error;
+    }
+
+    // Catat hasil; kegagalan mencatat tidak boleh mengubah respons ke pemanggil.
+    try {
+      await supabase.from("telegram_logs").insert({
+        clinic_id: ALLOWED_CLINIC_ID,
+        event,
+        message,
+        status,
+        error,
+      });
+    } catch (_) { /* abaikan */ }
   }
 
-  // Catat hasil; kegagalan mencatat tidak boleh mengubah respons ke pemanggil.
-  try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-    await supabase.from("telegram_logs").insert({
-      clinic_id: ALLOWED_CLINIC_ID,
-      event,
-      message,
-      status,
-      error,
-    });
-  } catch (_) { /* abaikan */ }
-
-  return json({ ok: status === "sent", error }, status === "sent" ? 200 : 502);
+  return json({ ok: allSent, sent: items.length, error: firstError }, allSent ? 200 : 502);
 });
