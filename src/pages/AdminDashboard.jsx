@@ -6,6 +6,7 @@ const AdminCheckTransaksi = React.lazy(lazyRetry(() => import('@/pages/admin/Adm
 const AdminQrisReconciliation = React.lazy(lazyRetry(() => import('@/pages/admin/AdminQrisReconciliation'), 'AdminQrisReconciliation'));
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import {
   LineChart,
@@ -48,7 +49,8 @@ import PageSkeleton from '@/components/shared/PageSkeleton';
 import DateRangePicker from '@/components/ui/date-range-picker';
 const AdminDashboardHome = () => {
   const location = useLocation();
-  const { clinicName } = useAuth();
+  const { clinicName, userDetails } = useAuth();
+  const isKaffahClinic = userDetails?.clinic_id === KAFFAH_CLINIC_ID;
   const today = new Date().toISOString().split('T')[0];
   const isPWA =
     window.matchMedia('(display-mode: standalone)').matches ||
@@ -399,9 +401,11 @@ await Promise.all([loadSlots(), loadStats()]);
     );
   })()}
 </div>
-<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div className={isKaffahClinic ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-stretch" : "space-y-8"}>
+<div className={isKaffahClinic ? "contents" : "grid grid-cols-1 lg:grid-cols-2 gap-6"}>
 
-  {/* TOP THERAPIST */}
+  {/* TOP THERAPIST (disembunyikan untuk klinik Kaffah) */}
+  {!isKaffahClinic && (
   <div className="bg-white rounded-app-lg border shadow-sm p-5 space-y-4 h-full flex flex-col">
 
   <h3 className="text-lg font-semibold text-slate-800">
@@ -454,6 +458,7 @@ await Promise.all([loadSlots(), loadStats()]);
   )}
 
 </div>
+  )}
   
 {/* TOP PATIENT */}
 <div className="bg-white rounded-app-lg border shadow-sm p-5 space-y-4 h-full flex flex-col">
@@ -511,7 +516,7 @@ await Promise.all([loadSlots(), loadStats()]);
 
   </div>
 {/* TOP DIAGNOSA + TOP LAYANAN */}
-<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div className={isKaffahClinic ? "contents" : "grid grid-cols-1 lg:grid-cols-2 gap-6"}>
 
   {/* TOP DIAGNOSA */}
   <div className="bg-white rounded-app-lg border shadow-sm p-5 space-y-4 h-full flex flex-col">
@@ -553,7 +558,7 @@ await Promise.all([loadSlots(), loadStats()]);
 
 
   {/* TOP LAYANAN */}
-  <div className="bg-white rounded-app-lg border shadow-sm p-5 space-y-4 h-full flex flex-col">
+  <div className={`bg-white rounded-app-lg border shadow-sm p-5 space-y-4 h-full flex flex-col${isKaffahClinic ? " md:col-span-2 xl:col-span-1" : ""}`}>
 
     <h3 className="text-lg font-semibold text-slate-800">
       Top Layanan
@@ -587,6 +592,7 @@ await Promise.all([loadSlots(), loadStats()]);
     ))}
   </div>
 )}
+</div>
 </div>
 </div>
 {/* PEAK ACTIVITY FULL WIDTH */}
