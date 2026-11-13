@@ -255,7 +255,7 @@ const formattedDateFull = date
       const replacementMap = {};
       const { data: timeOffRows } = await supabase
         .from('therapist_time_off')
-        .select('therapist_id, reason, leave_type')
+        .select('therapist_id, reason, leave_type, start_time, end_time')
         .lte('start_date', dateStr)
         .gte('end_date', dateStr);
 
@@ -268,6 +268,10 @@ const formattedDateFull = date
       const hasExtraShift = new Set((extraShiftRows || []).map(r => r.therapist_id));
 
       (timeOffRows || []).forEach(row => {
+        // Izin parsial (jam tertentu): hanya slot di jam itu yang ditutup (sudah
+        // berstatus 'cuti' dari RPC dan tidak ditampilkan sebagai slot kosong).
+        // Terapis tetap aktif di jam lainnya, jadi jangan tandai seharian cuti.
+        if (row.start_time && row.end_time) return;
         // Kategori disimpan sebagai "<Kategori> - <catatan>" (lihat TherapistTimeOffForm).
         // Ambil kategorinya saja — jangan cari kata "cuti" di seluruh string,
         // karena kategori yang valid adalah Cuti/Sakit/Libur/Training/Izin Pribadi/Lainnya
