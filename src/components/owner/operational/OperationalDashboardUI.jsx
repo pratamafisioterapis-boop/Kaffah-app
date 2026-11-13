@@ -19,6 +19,7 @@ const OperationalDashboardUI = ({
   totalSessions = 0,
   totalPatients = 0,
   totalPackages = 0,
+  packageSessions = 0,
   todaySessions = 0,
   ongoingSessions = 0,
   completedSessions = 0,
@@ -32,10 +33,13 @@ const OperationalDashboardUI = ({
   // Kartu Hari Ini yang diketuk menampilkan persentasenya dari total.
   const [selected, setSelected] = useState(null);
 
+  const nonPackageSessions = Math.max(0, totalSessions - packageSessions);
   const periodKPIs = [
     { label: 'Total Sesi', value: totalSessions, badge: 'Periode', icon: Activity, tone: 'acc' },
     { label: 'Total Pasien', value: totalPatients, badge: 'Unik', icon: Users, tone: 'ind' },
     { label: 'Total Paket', value: totalPackages, badge: 'Aktif', icon: Package, tone: 'vio' },
+    { label: 'Sesi Paket', value: pct(packageSessions, totalSessions), suffix: '%', sub: `${formatInt(packageSessions)} dari ${formatInt(totalSessions)} sesi`, badge: 'Paket', icon: Package, tone: 'pos' },
+    { label: 'Sesi Non Paket', value: pct(nonPackageSessions, totalSessions), suffix: '%', sub: `${formatInt(nonPackageSessions)} dari ${formatInt(totalSessions)} sesi`, badge: 'Non Paket', icon: Activity, tone: 'warn' },
   ];
 
   const patientsToday = newPatientsToday + returningPatientsToday;
@@ -64,8 +68,8 @@ const OperationalDashboardUI = ({
     <>
       {/* Ringkasan periode */}
       <FinanceTile tone="acc" icon={Activity} title="Ringkasan Periode" className="col-span-2 md:col-span-4 lg:col-span-6">
-        <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4">
-          {periodKPIs.map(({ label, value, badge, icon: Icon, tone }) => {
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
+          {periodKPIs.map(({ label, value, suffix, sub, badge, icon: Icon, tone }) => {
             const t = TONES[tone];
             return (
               <div key={label} className={cn('rounded-2xl border border-slate-100 px-2 py-3 sm:p-3 md:p-4 min-w-0', t.tint)}>
@@ -76,9 +80,10 @@ const OperationalDashboardUI = ({
                   <span className={cn('hidden sm:inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold', t.soft, t.text)}>{badge}</span>
                 </div>
                 <p className="text-2xl md:text-4xl font-black tabular-nums leading-none text-slate-900">
-                  <AnimatedNumber value={value} format={formatInt} />
+                  <AnimatedNumber value={value} format={suffix ? (v) => `${formatInt(v)}${suffix}` : formatInt} />
                 </p>
                 <p className="text-[11px] sm:text-xs md:text-sm font-medium tracking-tight text-slate-500 mt-1 whitespace-nowrap truncate">{label}</p>
+                {sub && <p className="text-[10.5px] md:text-xs text-slate-400 mt-0.5 truncate">{sub}</p>}
               </div>
             );
           })}

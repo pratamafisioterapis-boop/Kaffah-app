@@ -59,7 +59,7 @@ const ClinicalDocuments = React.lazy(lazyRetry(() => import('@/pages/admin/Clini
 const MedicalRecordForm = React.lazy(lazyRetry(() => import('@/components/therapist/MedicalRecordForm'), 'MedicalRecordForm'));
 
 // API
-import { fetchTotalSessions, fetchTotalPatients, fetchTotalPackages, fetchTodaySessions, fetchOngoingSessions, fetchCompletedSessions, fetchCancelledAppointments, fetchActiveTherapists, fetchEmptySlots, fetchTodayNewPatients, fetchTodayReturningPatients, fetchAllTherapists, fetchTodaySessionsByTherapist, getClinicTherapistsSoapLockStatus, getCachedClinicId, getPhysiotherapistByUserId } from '@/lib/api';
+import { fetchTotalSessions, fetchTotalPatients, fetchTotalPackages, fetchTodaySessions, fetchOngoingSessions, fetchCompletedSessions, fetchCancelledAppointments, fetchActiveTherapists, fetchEmptySlots, fetchTodayNewPatients, fetchTodayReturningPatients, fetchAllTherapists, fetchTodaySessionsByTherapist, getClinicTherapistsSoapLockStatus, getCachedClinicId, getPhysiotherapistByUserId, fetchPackageSessionsCount } from '@/lib/api';
 import { getTherapistsPatientMetrics } from '@/lib/therapistDataUtils';
 import PageHero from '@/components/shared/PageHero';
 import HeroClock from '@/components/shared/HeroClock';
@@ -119,6 +119,7 @@ const OwnerDashboardHome = () => {
   const [totalSessions, setTotalSessions] = useState(0);
   const [totalPatients, setTotalPatients] = useState(0);
   const [totalPackages, setTotalPackages] = useState(0);
+  const [packageSessions, setPackageSessions] = useState(0);
   const [todaySessions, setTodaySessions] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -166,7 +167,8 @@ const OwnerDashboardHome = () => {
         activeRes,
         slotsRes,
         newPatientsRes,
-        returningPatientsRes
+        returningPatientsRes,
+        packageSessionsRes
       ] = await Promise.all([
         fetchTotalSessions(dateRange.startDate, dateRange.endDate),
         fetchTotalPatients(dateRange.startDate, dateRange.endDate),
@@ -178,13 +180,15 @@ const OwnerDashboardHome = () => {
         fetchActiveTherapists(),
         fetchEmptySlots(),
         fetchTodayNewPatients(),
-        fetchTodayReturningPatients()
+        fetchTodayReturningPatients(),
+        fetchPackageSessionsCount(dateRange.startDate, dateRange.endDate)
       ]);
 
       // Safely extract values using helper
       setTotalSessions(safeExtractNumber(sessionsRes));
       setTotalPatients(safeExtractNumber(patientsRes));
       setTotalPackages(safeExtractNumber(packagesRes));
+      setPackageSessions(safeExtractNumber(packageSessionsRes));
       setTodaySessions(safeExtractNumber(todayRes));
       
       setOngoingSessions(safeExtractNumber(ongoingRes));
@@ -432,6 +436,7 @@ setTherapists(enrichedTherapists);
                 totalSessions={totalSessions}
                 totalPatients={totalPatients}
                 totalPackages={totalPackages}
+                packageSessions={packageSessions}
                 todaySessions={todaySessions}
                 ongoingSessions={ongoingSessions}
                 completedSessions={completedSessions}
