@@ -3,7 +3,7 @@ import {
   UploadCloud, CheckCircle2, AlertTriangle, QrCode, Loader2, Trash2, Link2, Unlink,
   ChevronLeft, ChevronRight, ChevronDown, Clock, FileText, User, Hourglass,
 } from 'lucide-react';
-import { format, parseISO, addDays } from 'date-fns';
+import { format, parseISO, addDays, startOfMonth, endOfMonth } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { Helmet } from 'react-helmet';
 import { Button } from '@/components/ui/button';
@@ -162,6 +162,8 @@ const AdminQrisReconciliation = () => {
 
   const [date, setDate] = useState(todayStr());
   const [calOpen, setCalOpen] = useState(false);
+  const [calMonth, setCalMonth] = useState(() => new Date());
+  const [issueDays, setIssueDays] = useState([]); // tanggal (yyyy-MM-dd) di bulan kalender yang masih ada yang belum cocok
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false); // membaca/menyimpan PDF
   const [dragOver, setDragOver] = useState(false);
@@ -276,6 +278,41 @@ const AdminQrisReconciliation = () => {
     return { portions: [...portions, ...incomePortions], pool };
   }, [clinicId]);
 
+  // Tanggal dalam satu bulan yang masih punya masalah: transaksi bank belum berpasangan, atau pembayaran QRIS di
+  // recap/pemasukan lain yang tidak ada di bank padahal laporannya sudah melewati jam bayarnya.
+  const loadMonthIssues = useCallback(async (monthDate) => {
+    const first = format(startOfMonth(monthDate), 'yyyy-MM-dd');
+    const last = format(endOfMonth(monthDate), 'yyyy-MM-dd');
+    const [{ data: options }, { data: trx }, { data: ups }, { data: recaps }, { data: incomes }] = await Promise.all([
+      supabase.from('operational_options').select('id, label').eq('clinic_id', clinicId).eq('category', 'payment_method'),
+      supabase.from('qris_report_transactions').select('trx_date, matched_recap_id, extra_recap_ids, extra_income_ids')
+        .eq('clinic_id', clinicId).gte('trx_date', shiftDate(first, -30)).lte('trx_date', shiftDate(last, 3)),
+      supabase.from('qris_report_uploads').select('report_date, report_generated_at, created_at').eq('clinic_id', clinicId).gte('report_date', first).lte('report_date', last),
+      supabase.from('daily_recaps')
+        .select('id, revenue_date, amount, goods_amount, tips_amount, payment_method, start_time, end_time, created_at, payment_splits:daily_recap_payment_splits(payment_method, amount)')
+        .eq('clinic_id', clinicId).gte('revenue_date', first).lte('revenue_date', last).or('status.is.null,status.neq.cancelled'),
+      supabase.from('admin_income').select('id, date, amount, payment_method, created_at').eq('clinic_id', clinicId).gte('date', first).lte('date', last),
+    ]);
+    const qrisIds = new Set((options || []).filter((o) => /^\s*qris\s*$/i.test(o.label || '')).map((o) => String(o.id)));
+    const isQrisMethod = (m) => !!m && (qrisIds.has(String(m)) || /^\s*qris\s*$/i.test(String(m)));
+    const linked = new Set((trx || []).flatMap((t) => keysOfTrx(t)));
+    const days = new Set();
+    (trx || []).forEach((t) => { if (t.trx_date >= first && t.trx_date <= last && !isLinked(t)) days.add(t.trx_date); });
+    const cutoffOf = {};
+    (ups || []).forEach((u) => {
+      const v = new Date(u.report_generated_at || u.created_at).getTime();
+      cutoffOf[u.report_date] = Math.max(cutoffOf[u.report_date] || 0, v);
+    });
+    const overdue = (date, at) => cutoffOf[date] && at && new Date(at).getTime() <= cutoffOf[date];
+    (recaps || []).forEach((r) => {
+      if (qrisPortionOfRecap(r, isQrisMethod) > 0 && !linked.has(r.id) && overdue(r.revenue_date, r.end_time || r.start_time || r.created_at)) days.add(r.revenue_date);
+    });
+    (incomes || []).forEach((i) => {
+      if (isQrisMethod(i.payment_method) && Number(i.amount) > 0 && !linked.has(incomeKey(i.id)) && overdue(i.date, i.created_at)) days.add(i.date);
+    });
+    return [...days];
+  }, [clinicId]);
+
   const persistMatches = useCallback(async (matches) => {
     const now = new Date().toISOString();
     await Promise.all(matches.map((m) => supabase.from('qris_report_transactions')
@@ -357,6 +394,14 @@ const AdminQrisReconciliation = () => {
   }, [clinicId, loadRecapData, autoMatchDay, toast]);
 
   useEffect(() => { if (isKaffah) loadDay(date); }, [date, isKaffah, loadDay]);
+
+  // Tanda merah di kalender: dimuat saat kalender dibuka / ganti bulan, dan diperbarui setelah data hari ini berubah.
+  useEffect(() => {
+    if (!isKaffah || !calOpen || !clinicId) return undefined;
+    let cancelled = false;
+    loadMonthIssues(calMonth).then((d) => { if (!cancelled) setIssueDays(d); }).catch(() => { if (!cancelled) setIssueDays([]); });
+    return () => { cancelled = true; };
+  }, [isKaffah, calOpen, calMonth, clinicId, loadMonthIssues, day]);
 
   // --- Upload ----------------------------------------------------------------
   const saveParsed = async (parsed, fileName) => {
@@ -642,7 +687,7 @@ const AdminQrisReconciliation = () => {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1">
           <Button size="icon" variant="outline" onClick={() => setDate(shiftDate(date, -1))} aria-label="Hari sebelumnya"><ChevronLeft className="w-4 h-4" /></Button>
-          <Popover open={calOpen} onOpenChange={setCalOpen}>
+          <Popover open={calOpen} onOpenChange={(o) => { if (o) setCalMonth(parseISO(date)); setCalOpen(o); }}>
             <PopoverTrigger asChild>
               <button type="button" aria-label="Pilih tanggal" className="px-2 sm:px-3 py-1.5 text-base sm:text-lg font-bold text-slate-900 hover:bg-slate-100 rounded-md leading-tight text-left">{fmtLong(date)}</button>
             </PopoverTrigger>
@@ -651,11 +696,17 @@ const AdminQrisReconciliation = () => {
                 mode="single"
                 locale={localeId}
                 selected={parseISO(date)}
-                defaultMonth={parseISO(date)}
+                month={calMonth}
+                onMonthChange={setCalMonth}
                 disabled={{ after: new Date() }}
+                modifiers={{ issue: issueDays.map((d) => parseISO(d)) }}
+                modifiersClassNames={{ issue: 'relative after:content-[""] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1.5 after:w-1.5 after:rounded-full after:bg-red-500' }}
                 onSelect={(d) => { if (d) { setDate(format(d, 'yyyy-MM-dd')); setCalOpen(false); } }}
                 initialFocus
               />
+              <div className="flex items-center gap-1.5 border-t border-slate-100 px-3 py-2 text-xs text-slate-500">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-500" /> Ada yang belum cocok
+              </div>
             </PopoverContent>
           </Popover>
           <Button size="icon" variant="outline" onClick={() => setDate(shiftDate(date, 1))} disabled={date >= todayStr()} aria-label="Hari berikutnya"><ChevronRight className="w-4 h-4" /></Button>
