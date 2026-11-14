@@ -8,8 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Input } from '@/components/ui/input';
-import { PRAXIS_CLINIC_ID } from '@/lib/clinicIds';
 
 const idr = (v) => `Rp ${Math.round(Number(v) || 0).toLocaleString('id-ID')}`;
 const wita = (value) => new Date(new Date(value).getTime() + 8 * 3600 * 1000).toISOString().slice(0, 10);
@@ -41,9 +39,6 @@ const PrepayPackagePanel = ({ appointment, onChanged }) => {
   const [reason, setReason] = useState('');
 
   const clinicId = userDetails?.clinic_id || appointment?.clinic_id;
-  // Praxis: perpanjangan paket reguler (semua paket multi-sesi), nominal diisi admin.
-  const isPraxis = clinicId === PRAXIS_CLINIC_ID;
-  const [amountInput, setAmountInput] = useState('');
   const today = wita(Date.now());
   const apptDay = appointment?.appointment_date ? wita(appointment.appointment_date) : null;
   const isFuture = !!apptDay && apptDay > today;
@@ -82,15 +77,12 @@ const PrepayPackagePanel = ({ appointment, onChanged }) => {
   useEffect(() => { load(); }, [load]);
 
   const eligible = useMemo(() => packages.filter((p) => {
-    if (isPraxis) return !p.is_homecare || !!appointment?.is_homecare;
     if (p.price == null) return false;
     if (p.is_homecare) return !!appointment?.is_homecare;
     return /\sRU$/i.test(p.label || '');
-  }), [packages, appointment?.is_homecare, isPraxis]);
+  }), [packages, appointment?.is_homecare]);
 
   const selected = eligible.find((p) => p.label === packageLabel) || null;
-  const praxisAmount = parseFloat(amountInput) || 0;
-  const amountReady = isPraxis ? praxisAmount > 0 : true;
 
   if (!canShow || (loading && !recap)) return null;
 
@@ -104,24 +96,16 @@ const PrepayPackagePanel = ({ appointment, onChanged }) => {
     if (!selected || !method) return;
     setSaving(true);
     try {
-      const { error } = isPraxis
-        ? await supabase.rpc('praxis_prepay_package', {
-            p_appointment_id: appointment.id,
-            p_package_label: selected.label,
-            p_payment_method: method,
-            p_amount: praxisAmount,
-          })
-        : await supabase.rpc('prepay_package', {
-            p_appointment_id: appointment.id,
-            p_package_label: selected.label,
-            p_payment_method: method,
-          });
+      const { error } = await supabase.rpc('prepay_package', {
+        p_appointment_id: appointment.id,
+        p_package_label: selected.label,
+        p_payment_method: method,
+      });
       if (error) throw error;
-      toast({ title: 'Pembayaran di muka tercatat', description: `${selected.label} · ${idr(isPraxis ? praxisAmount : selected.price)}. Invoice terbit hari ini; sesi terhitung pada hari terapi.` });
+      toast({ title: 'Pembayaran di muka tercatat', description: `${selected.label} · ${idr(selected.price)}. Invoice terbit hari ini; sesi terhitung pada hari terapi.` });
       setPayOpen(false);
       setPackageLabel('');
       setMethod('');
-      setAmountInput('');
       await load();
       onChanged?.();
     } catch (err) {
@@ -207,7 +191,7 @@ const PrepayPackagePanel = ({ appointment, onChanged }) => {
                 <SelectTrigger><SelectValue placeholder="Pilih paket" /></SelectTrigger>
                 <SelectContent>
                   {eligible.map((p) => (
-                    <SelectItem key={p.id} value={p.label}>{p.label} ({p.session_count} sesi){p.price != null ? ` · ${idr(p.price)}` : ''}</SelectItem>
+                    <SelectItem key={p.id} value={p.label}>{p.label} ({p.session_count} sesi) · {idr(p.price)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -223,28 +207,15 @@ const PrepayPackagePanel = ({ appointment, onChanged }) => {
                 </SelectContent>
               </Select>
             </div>
-            {isPraxis && (
-              <div className="space-y-1">
-                <Label>Nominal paket (Rp)</Label>
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  min="0"
-                  value={amountInput}
-                  onChange={(e) => setAmountInput(e.target.value)}
-                  placeholder={selected?.price != null ? String(selected.price) : 'Mis. 1500000'}
-                />
-              </div>
-            )}
             {selected && (
               <p className="rounded-md bg-slate-50 p-2 text-sm text-slate-700">
-                Total <strong>{idr(isPraxis ? praxisAmount : selected.price)}</strong> · {selected.session_count} sesi · berlaku {selected.validity_days} hari sejak sesi pertama. Paket tidak bisa diberi diskon.
+                Total <strong>{idr(selected.price)}</strong> · {selected.session_count} sesi · berlaku {selected.validity_days} hari sejak sesi pertama. Paket tidak bisa diberi diskon.
               </p>
             )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setPayOpen(false)} disabled={saving}>Batal</Button>
-            <Button type="button" onClick={handlePay} disabled={saving || !selected || !method || !amountReady}>
+            <Button type="button" onClick={handlePay} disabled={saving || !selected || !method}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Catat pembayaran
             </Button>
