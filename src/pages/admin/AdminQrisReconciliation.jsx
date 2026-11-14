@@ -7,6 +7,8 @@ import { format, parseISO, addDays } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { Helmet } from 'react-helmet';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -127,6 +129,7 @@ const AdminQrisReconciliation = () => {
   const fileInputRef = useRef(null);
 
   const [date, setDate] = useState(todayStr());
+  const [calOpen, setCalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false); // membaca/menyimpan PDF
   const [dragOver, setDragOver] = useState(false);
@@ -586,10 +589,22 @@ const AdminQrisReconciliation = () => {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1">
           <Button size="icon" variant="outline" onClick={() => setDate(shiftDate(date, -1))} aria-label="Hari sebelumnya"><ChevronLeft className="w-4 h-4" /></Button>
-          <label className="relative cursor-pointer">
-            <span className="block px-2 sm:px-3 py-1.5 text-base sm:text-lg font-bold text-slate-900 hover:bg-slate-100 rounded-md leading-tight">{fmtLong(date)}</span>
-            <input type="date" value={date} max={todayStr()} onChange={(e) => e.target.value && setDate(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full" />
-          </label>
+          <Popover open={calOpen} onOpenChange={setCalOpen}>
+            <PopoverTrigger asChild>
+              <button type="button" aria-label="Pilih tanggal" className="px-2 sm:px-3 py-1.5 text-base sm:text-lg font-bold text-slate-900 hover:bg-slate-100 rounded-md leading-tight text-left">{fmtLong(date)}</button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                locale={localeId}
+                selected={parseISO(date)}
+                defaultMonth={parseISO(date)}
+                disabled={{ after: new Date() }}
+                onSelect={(d) => { if (d) { setDate(format(d, 'yyyy-MM-dd')); setCalOpen(false); } }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
           <Button size="icon" variant="outline" onClick={() => setDate(shiftDate(date, 1))} disabled={date >= todayStr()} aria-label="Hari berikutnya"><ChevronRight className="w-4 h-4" /></Button>
           {date !== todayStr() && <Button size="sm" variant="ghost" onClick={() => setDate(todayStr())}>Hari ini</Button>}
         </div>
