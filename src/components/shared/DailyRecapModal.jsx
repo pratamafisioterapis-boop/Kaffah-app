@@ -2111,6 +2111,7 @@ setFormData({
                                                             ? `${Number(r.discount_value)}%`
                                                             : `Rp ${Number(r.discount_value).toLocaleString('id-ID')}`})
                                                         <span className="text-slate-500"> · s/d {isoToDisplay(r.expires_at)}</span>
+                                                        {r.referred_name && <span className="text-slate-600"> · merekomendasikan <span className="font-semibold">{r.referred_name}</span></span>}
                                                     </span>
                                                     <Button type="button" size="sm" className="h-7 px-3 text-xs" disabled={rewardChecking || !!formData.birthday_reward_year || !!formData.welcome_reward_used} onClick={() => applyReferralReward(r.code)}>Terapkan</Button>
                                                 </div>
@@ -2128,6 +2129,7 @@ setFormData({
                                                     ({rewardInfo.discount_value_type === 'percentage'
                                                         ? `${Number(rewardInfo.discount_value)}%`
                                                         : `Rp ${Number(rewardInfo.discount_value).toLocaleString('id-ID')}`})
+                                                    {rewardInfo.referred_name && <span className="text-emerald-700"> · merekomendasikan <span className="font-semibold">{rewardInfo.referred_name}</span></span>}
                                                 </span>
                                                 <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-xs text-red-600" onClick={clearReferralReward}>Lepas</Button>
                                             </div>
@@ -2151,7 +2153,7 @@ setFormData({
                                                     <p className="text-xs text-emerald-700">
                                                         Pasien punya reward aktif:{' '}
                                                         {activeRewards.map(r => (
-                                                            <button key={r.id} type="button" className="mr-2 font-semibold underline" onClick={() => setRewardCode(r.code)}>{r.code}</button>
+                                                            <button key={r.id} type="button" className="mr-2 font-semibold underline" onClick={() => setRewardCode(r.code)}>{r.code}{r.referred_name ? ` (${r.referred_name})` : ''}</button>
                                                         ))}
                                                     </p>
                                                 )}
