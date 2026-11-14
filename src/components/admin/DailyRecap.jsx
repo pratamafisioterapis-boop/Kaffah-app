@@ -1183,7 +1183,15 @@ const getPremiumPastelBadge = (text) => {
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center">
                        <div className="font-semibold text-slate-800">Rp {(parseFloat(recap.amount || 0) + parseFloat(recap.goods_amount || 0)).toLocaleString('id-ID')}</div>
                        <PaidOnNote recap={recap} />
-                       {recap.payment_method && (
+                       {Array.isArray(recap.payment_splits) && recap.payment_splits.length > 1 ? (
+                         <div className="mt-0.5 space-y-0.5">
+                           {recap.payment_splits.map((s, i) => (
+                             <div key={s.id || i} className="text-xs text-slate-500 font-medium capitalize">
+                               {s.payment_method} (Rp{parseFloat(s.amount || 0).toLocaleString('id-ID')})
+                             </div>
+                           ))}
+                         </div>
+                       ) : recap.payment_method && (
                          <div className="text-xs text-slate-500 font-medium mt-0.5 capitalize">{recap.payment_method}</div>
                        )}
                        {parseFloat(recap.amount) > 0 && !recap.payment_method && recap.special_type !== 'free' && (
