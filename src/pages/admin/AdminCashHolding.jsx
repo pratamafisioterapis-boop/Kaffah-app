@@ -48,6 +48,7 @@ const AdminCashHolding = () => {
   const [holdings, setHoldings] = useState([]);
   const [handovers, setHandovers] = useState([]);
   const [admins, setAdmins] = useState([]);
+  const [custodianId, setCustodianId] = useState(null);
   const [names, setNames] = useState({});
   const [detail, setDetail] = useState([]);
   const [patientNames, setPatientNames] = useState({});
@@ -68,17 +69,22 @@ const AdminCashHolding = () => {
     if (!userDetails?.id) return;
     setLoading(true);
     try {
-      const [h, ho, ad] = await Promise.all([
+      const [h, ho, ad, cfg] = await Promise.all([
         supabase.rpc('get_cash_holdings'),
         supabase.from('cash_handovers').select('*').order('created_at', { ascending: false }).limit(200),
-        supabase.from('users').select('id, full_name').eq('clinic_id', userDetails.clinic_id).eq('role', 'admin'),
+        supabase.from('users').select('id, full_name, is_active').eq('clinic_id', userDetails.clinic_id).eq('role', 'admin'),
+        supabase.from('cash_ledger_config').select('custodian_user_id').eq('clinic_id', userDetails.clinic_id).maybeSingle(),
       ]);
       if (h.error) throw h.error;
       if (ho.error) throw ho.error;
       setHoldings(h.data || []);
       setHandovers(ho.data || []);
+      
       const adminList = ad.data || [];
       setAdmins(adminList);
+      const cid = cfg.data?.custodian_user_id || null;
+      // pemegang kas utama yang sudah nonaktif dianggap belum ditandai
+      setCustodianId(cid && adminList.some((x) => x.id === cid && x.is_active !== false) ? cid : null);
       setNames(Object.fromEntries(adminList.map((a) => [a.id, a.full_name])));
     } catch (e) {
       toast({ title: 'Gagal memuat data cash', description: e.message, variant: 'destructive' });
@@ -104,7 +110,13 @@ const AdminCashHolding = () => {
   useEffect(() => { if (showDetail) loadDetail(); }, [showDetail, loadDetail]);
 
   const nameOf = (id) => names[id] || holdings.find((h) => h.user_id === id)?.full_name || 'Admin';
-  const otherAdmins = admins.filter((a) => a.id !== userDetails?.id);
+  // Admin nonaktif tidak muncul sebagai penerima. Bila pemegang kas utama sudah ditandai,
+  // hanya dia penerima setoran antar admin.
+  const activeAdmins = admins.filter((a) => a.is_active !== false);
+  const otherAdmins = activeAdmins.filter((a) => a.id !== userDetails?.id && (!custodianId || a.id === custodianId));
+  const iAmCustodian = !!custodianId && custodianId === userDetails?.id;
+  const canToAdmin = otherAdmins.length > 0;
+  const canToFinance = !custodianId || iAmCustodian;
 
   const incomingPending = useMemo(
     () => handovers.filter((x) => x.status === 'pending' && x.to_user_id === userDetails?.id),
@@ -118,7 +130,7 @@ const AdminCashHolding = () => {
   const openDialog = () => {
     const last = (() => { try { return localStorage.getItem('cashHandoverLastTo') || ''; } catch { return ''; } })();
     const preset = otherAdmins.find((a) => a.id === last)?.id || (otherAdmins.length === 1 ? otherAdmins[0].id : '');
-    setForm({ ...emptyForm, toUser: preset, amount: myBalance > 0 ? String(Math.round(myBalance)) : '' });
+    setForm({ ...emptyForm, toType: canToAdmin ? 'admin' : 'finance', toUser: preset, amount: myBalance > 0 ? String(Math.round(myBalance)) : '' });
     setDialogOpen(true);
   };
 
@@ -154,6 +166,20 @@ const AdminCashHolding = () => {
       if (showDetail) loadDetail();
     } catch (e) {
       toast({ title: 'Gagal menyimpan setoran', description: e.message, variant: 'destructive' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveCustodian = async (value) => {
+    setBusy(true);
+    try {
+      const { error } = await supabase.rpc('set_cash_custodian', { p_user: value === 'none' ? null : value });
+      if (error) throw error;
+      toast({ title: value === 'none' ? 'Penanda pemegang kas utama dihapus' : 'Pemegang kas utama disimpan' });
+      load();
+    } catch (e) {
+      toast({ title: 'Gagal menyimpan pemegang kas utama', description: e.message, variant: 'destructive' });
     } finally {
       setBusy(false);
     }
@@ -211,7 +237,7 @@ const AdminCashHolding = () => {
           <p className="text-sm text-slate-500">Cash dari pembayaran pasien yang belum disetor ke keuangan. Cash tips terapis tidak dihitung.</p>
         </div>
         {isAdmin && (
-          <Button onClick={openDialog} disabled={loading || myBalance <= 0}>
+          <Button onClick={openDialog} disabled={loading || myBalance <= 0 || (!canToAdmin && !canToFinance)}>
             <Wallet className="mr-2 h-4 w-4" /> Setor Cash
           </Button>
         )}
@@ -238,6 +264,24 @@ const AdminCashHolding = () => {
             </div>
           )}
 
+          {role === 'owner' && (
+            <section className="rounded-xl border bg-white p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold">Pemegang kas utama (Admin 1)</h2>
+                  <p className="text-xs text-slate-500">Admin lain hanya bisa setor ke akun ini. Setoran ke keuangan juga hanya oleh akun ini. Admin nonaktif tidak bisa dipilih.</p>
+                </div>
+                <Select value={custodianId || 'none'} onValueChange={saveCustodian} disabled={busy}>
+                  <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Belum ditandai (semua admin)</SelectItem>
+                    {activeAdmins.map((a) => <SelectItem key={a.id} value={a.id}>{a.full_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </section>
+          )}
+
           {!isAdmin && (
             <section className="rounded-xl border bg-white">
               <h2 className="border-b px-4 py-3 text-sm font-semibold">Saldo per admin</h2>
@@ -247,13 +291,18 @@ const AdminCashHolding = () => {
                   return (
                     <div key={h.user_id ?? 'none'} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
                       <div>
-                        <p className="font-medium">{h.full_name || 'Tanpa kasir tercatat'}</p>
+                        <p className="font-medium">
+                          {h.full_name || 'Tanpa kasir tercatat'}
+                          {h.is_custodian && <Badge variant="outline" className="ml-2 border-emerald-300 text-emerald-700">Pemegang kas utama</Badge>}
+                          {h.user_id && h.is_active === false && <Badge variant="outline" className="ml-2 border-slate-300 text-slate-500">Nonaktif</Badge>}
+                        </p>
                         <p className="text-xs text-slate-500">
                           Terima {formatRp(h.cash_received)} · dari admin {formatRp(h.handover_in)} · disetor {formatRp(h.handover_out)}
                           {Number(h.pending_in) > 0 && ` · menunggu konfirmasi ${formatRp(h.pending_in)}`}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
+                        {h.is_active === false && Number(h.balance) !== 0 && <Badge variant="outline" className="border-red-300 text-red-700"><AlertTriangle className="mr-1 h-3 w-3" />akun nonaktif masih pegang uang</Badge>}
                         {age > STALE_DAYS && <Badge variant="outline" className="border-amber-300 text-amber-700"><AlertTriangle className="mr-1 h-3 w-3" />cash tertua {age} hari</Badge>}
                         <span className={`font-semibold tabular-nums ${Number(h.balance) < 0 ? 'text-red-600' : ''}`}>{formatRp(h.balance)}</span>
                       </div>
@@ -357,15 +406,15 @@ const AdminCashHolding = () => {
               <Select value={form.toType} onValueChange={(v) => setForm((f) => ({ ...f, toType: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Admin lain (perlu konfirmasi)</SelectItem>
-                  <SelectItem value="finance">Tim Keuangan (langsung tercatat)</SelectItem>
+                  {canToAdmin && <SelectItem value="admin">Pemegang kas utama (perlu konfirmasi)</SelectItem>}
+                  {canToFinance && <SelectItem value="finance">Tim Keuangan (langsung tercatat)</SelectItem>}
                 </SelectContent>
               </Select>
             </div>
 
             {form.toType === 'admin' && (
               <div className="space-y-1.5">
-                <Label>Admin penerima</Label>
+                <Label>{custodianId ? 'Penerima (pemegang kas utama)' : 'Admin penerima'}</Label>
                 <Select value={form.toUser} onValueChange={(v) => setForm((f) => ({ ...f, toUser: v }))}>
                   <SelectTrigger><SelectValue placeholder="Pilih admin" /></SelectTrigger>
                   <SelectContent>
