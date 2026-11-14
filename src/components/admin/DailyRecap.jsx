@@ -1186,8 +1186,8 @@ const getPremiumPastelBadge = (text) => {
                        {Array.isArray(recap.payment_splits) && recap.payment_splits.length > 1 ? (
                          <div className="mt-0.5 space-y-0.5">
                            {recap.payment_splits.map((s, i) => (
-                             <div key={s.id || i} className="text-xs text-slate-500 font-medium capitalize">
-                               {s.payment_method} (Rp{parseFloat(s.amount || 0).toLocaleString('id-ID')})
+                             <div key={s.id || i} className="text-xs text-slate-500 font-medium capitalize whitespace-nowrap">
+                               {s.payment_method} {parseFloat(s.amount || 0).toLocaleString('id-ID')}
                              </div>
                            ))}
                          </div>
