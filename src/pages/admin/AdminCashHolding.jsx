@@ -194,6 +194,10 @@ const AdminCashHolding = () => {
     return <div className="p-6 text-sm text-slate-500">Fitur ini hanya tersedia untuk Kaffah Physiotherapy.</div>;
   }
 
+  const pendingTotal = handovers.filter((x) => x.status === 'pending').reduce((s, x) => s + Number(x.amount || 0), 0);
+  const myPendingOut = handovers
+    .filter((x) => x.status === 'pending' && x.from_user_id === userDetails?.id)
+    .reduce((s, x) => s + Number(x.amount || 0), 0);
   const totalHeld = holdings.reduce((s, h) => s + Number(h.balance || 0), 0);
   const totalToFinance = holdings.reduce((s, h) => s + Number(h.to_finance || 0), 0);
 
@@ -221,7 +225,7 @@ const AdminCashHolding = () => {
         <>
           {isAdmin ? (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              <Stat label="Cash yang saya pegang" value={formatRp(myBalance)} tone={myBalance < 0 ? 'text-red-600' : 'text-emerald-700'} hint={myBalance < 0 ? 'Negatif: cek rekap yang direvisi' : undefined} />
+              <Stat label="Cash yang saya pegang" value={formatRp(myBalance)} tone={myBalance < 0 ? 'text-red-600' : 'text-emerald-700'} hint={myBalance < 0 ? 'Negatif: cek rekap yang direvisi' : (myPendingOut > 0 ? `Belum termasuk ${formatRp(myPendingOut)} yang menunggu konfirmasi penerima` : undefined)} />
               <Stat label="Diterima dari pasien" value={formatRp(me?.cash_received)} />
               <Stat label="Diterima dari admin lain" value={formatRp(me?.handover_in)} />
               <Stat label="Sudah saya setor" value={formatRp(me?.handover_out)} />
@@ -230,7 +234,7 @@ const AdminCashHolding = () => {
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
               <Stat label="Total cash di tangan admin" value={formatRp(totalHeld)} tone="text-emerald-700" />
               <Stat label="Sudah disetor ke keuangan" value={formatRp(totalToFinance)} />
-              <Stat label="Setoran menunggu konfirmasi" value={String(handovers.filter((x) => x.status === 'pending').length)} />
+              <Stat label="Dalam proses setor (pending)" value={formatRp(pendingTotal)} tone="text-amber-700" hint="Sudah keluar dari pengirim, belum dikonfirmasi penerima" />
             </div>
           )}
 
