@@ -90,9 +90,11 @@ const TherapistMetrics = ({ therapist, userId }) => {
     annualLeaveQuota: 0,
     annualLeaveEntries: [],
     workDays: 0,
+    izinEntries: [],
     absence: { cuti: 0, izin: 0, sakit: 0, training: 0 }
   });
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
+  const [izinDialogOpen, setIzinDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activePeriod, setActivePeriod] = useState({ start: null, end: null });
@@ -193,7 +195,13 @@ const rawMonthlyRecaps = recapsRes.data || [];
       const liburDates = new Set();
       const absentByCategory = { cuti: new Set(), izin: new Set(), sakit: new Set(), training: new Set() };
       const categoryOf = { annual: 'cuti', sick: 'sakit', training: 'training', personal: 'izin', other: 'izin' };
+      const izinEntries = [];
       (timeOffRes?.data || []).forEach(t => {
+        const isLiburEntry = t.leave_type === 'weekly_off' || (t.reason || '').trim().startsWith('Libur');
+        if (!isLiburEntry && (categoryOf[t.leave_type] || 'izin') === 'izin'
+          && t.end_date >= startCustom && t.start_date <= endCustom) {
+          izinEntries.push(t);
+        }
         if (t.start_time) return; // izin parsial (jam tertentu) tidak menghilangkan satu hari penuh
         const isLibur = t.leave_type === 'weekly_off' || (t.reason || '').trim().startsWith('Libur');
         const cat = categoryOf[t.leave_type] || 'izin';
@@ -212,8 +220,11 @@ const rawMonthlyRecaps = recapsRes.data || [];
       });
       const workDays = periodDays.length - liburDates.size;
 
+      izinEntries.sort((a, b) => a.start_date.localeCompare(b.start_date));
+
       setMetrics({
         workDays,
+        izinEntries,
         absence: {
           cuti: absentByCategory.cuti.size,
           izin: absentByCategory.izin.size,
@@ -256,7 +267,7 @@ const rawMonthlyRecaps = recapsRes.data || [];
   const absenceCards = [
     { key: 'workDays', label: 'Hari Kerja', value: metrics.workDays, sub: 'hari kerja periode ini', Icon: Briefcase, box: 'bg-app-soft', icon: 'text-app-accent', always: true },
     { key: 'cuti', label: 'Cuti', value: metrics.absence.cuti, sub: 'hari cuti periode ini', Icon: Umbrella, box: 'bg-teal-50', icon: 'text-teal-600' },
-    { key: 'izin', label: 'Izin', value: metrics.absence.izin, sub: 'hari izin periode ini', Icon: FileText, box: 'bg-amber-50', icon: 'text-amber-600' },
+    { key: 'izin', label: 'Izin', value: metrics.absence.izin, sub: 'hari izin periode ini', onClick: () => setIzinDialogOpen(true), Icon: FileText, box: 'bg-amber-50', icon: 'text-amber-600' },
     { key: 'sakit', label: 'Sakit', value: metrics.absence.sakit, sub: 'hari sakit periode ini', Icon: Stethoscope, box: 'bg-rose-50', icon: 'text-rose-600' },
     { key: 'training', label: 'Training', value: metrics.absence.training, sub: 'hari training periode ini', Icon: GraduationCap, box: 'bg-violet-50', icon: 'text-violet-600' }
   ].filter(c => c.always || c.value > 0);
@@ -360,12 +371,13 @@ const rawMonthlyRecaps = recapsRes.data || [];
 
       {/* ── Row 2: hari kerja & ketidakhadiran periode (kartu absensi hanya muncul bila ada) ── */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        {absenceCards.map(({ key, label, value, sub, Icon, box, icon }, i) => (
+        {absenceCards.map(({ key, label, value, sub, Icon, box, icon, onClick }, i) => (
           <StatCard
             key={key}
             label={label}
             value={value}
-            sub={sub}
+            sub={onClick ? `${sub} →` : sub}
+            onClick={onClick}
             Icon={Icon}
             iconBox={box}
             iconColor={icon}
@@ -403,6 +415,44 @@ const rawMonthlyRecaps = recapsRes.data || [];
                     )}
                     <p className="text-xs text-slate-500 mt-1">
                       Keterangan: {entry.reason || '-'}
+                    </p>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: daftar izin periode ini */}
+      <Dialog open={izinDialogOpen} onOpenChange={setIzinDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Riwayat Izin</DialogTitle>
+            <DialogDescription>
+              {metrics.absence.izin} hari izin pada periode ini
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto space-y-2">
+            {metrics.izinEntries.length === 0 ? (
+              <p className="text-sm text-slate-500 text-center py-6">Belum ada izin pada periode ini.</p>
+            ) : (
+              metrics.izinEntries.map((entry) => {
+                const sameDay = entry.start_date === entry.end_date;
+                const fmt = (d) => format(new Date(`${d}T00:00:00`), 'dd MMM yyyy', { locale: idLocale });
+                return (
+                  <div key={entry.id} className="rounded-app border border-slate-100 bg-slate-50 p-3">
+                    <p className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                      <CalendarDays className="w-3.5 h-3.5 text-amber-600" />
+                      {sameDay ? fmt(entry.start_date) : `${fmt(entry.start_date)} – ${fmt(entry.end_date)}`}
+                    </p>
+                    {entry.start_time && entry.end_time && (
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Pukul {entry.start_time.slice(0, 5)} – {entry.end_time.slice(0, 5)}
+                      </p>
+                    )}
+                    <p className="text-xs text-slate-500 mt-1">
+                      Catatan: {entry.reason || '-'}
                     </p>
                   </div>
                 );
