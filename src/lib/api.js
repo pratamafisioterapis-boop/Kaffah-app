@@ -6827,7 +6827,7 @@ export const getTherapistSchedules = async (therapistId) => {
 export const getTherapistExtraShifts = async (therapistId) => {
   const { data, error } = await supabase
     .from('therapist_extra_shifts')
-    .select('shift_date, start_time, end_time, leave_request_id, therapist_leave_requests(is_partial)')
+    .select('shift_date, start_time, end_time, leave_request_id, sunday_swap_id, therapist_leave_requests(is_partial)')
     .eq('therapist_id', therapistId)
     .order('shift_date', { ascending: true });
   // `replaces_partial_leave`: pengganti dari izin parsial. Hari pengganti itu tidak dihitung hari masuk

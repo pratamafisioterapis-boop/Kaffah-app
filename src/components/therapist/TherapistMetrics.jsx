@@ -91,10 +91,12 @@ const TherapistMetrics = ({ therapist, userId }) => {
     annualLeaveEntries: [],
     workDays: 0,
     izinEntries: [],
+    swapEntries: [],
     absence: { cuti: 0, izin: 0, sakit: 0, training: 0 }
   });
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
   const [izinDialogOpen, setIzinDialogOpen] = useState(false);
+  const [swapDialogOpen, setSwapDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activePeriod, setActivePeriod] = useState({ start: null, end: null });
@@ -196,14 +198,20 @@ const rawMonthlyRecaps = recapsRes.data || [];
       const absentByCategory = { cuti: new Set(), izin: new Set(), sakit: new Set(), training: new Set() };
       const categoryOf = { annual: 'cuti', sick: 'sakit', training: 'training', personal: 'izin', other: 'izin' };
       const izinEntries = [];
+      const swapEntries = [];
       (timeOffRes?.data || []).forEach(t => {
-        const isLiburEntry = t.leave_type === 'weekly_off' || (t.reason || '').trim().startsWith('Libur');
+        // Tukar jadwal Minggu: hari tidak masuk dihitung libur (bukan izin); gantinya ada shift tambahan.
+        const isSwapOff = !t.start_time && (t.reason || '').trim().startsWith('Tukar jadwal Minggu');
+        if (isSwapOff && periodSet.has(t.start_date)) {
+          swapEntries.push({ id: `off-${t.id}`, date: t.start_date, type: 'libur', note: t.reason });
+        }
+        const isLiburEntry = isSwapOff || t.leave_type === 'weekly_off' || (t.reason || '').trim().startsWith('Libur');
         if (!isLiburEntry && (categoryOf[t.leave_type] || 'izin') === 'izin'
           && t.end_date >= startCustom && t.start_date <= endCustom) {
           izinEntries.push(t);
         }
         if (t.start_time) return; // izin parsial (jam tertentu) tidak menghilangkan satu hari penuh
-        const isLibur = t.leave_type === 'weekly_off' || (t.reason || '').trim().startsWith('Libur');
+        const isLibur = isSwapOff || t.leave_type === 'weekly_off' || (t.reason || '').trim().startsWith('Libur');
         const cat = categoryOf[t.leave_type] || 'izin';
         eachDayOfInterval({ start: parseISO(t.start_date), end: parseISO(t.end_date) }).forEach(d => {
           const key = format(d, 'yyyy-MM-dd');
@@ -216,15 +224,20 @@ const rawMonthlyRecaps = recapsRes.data || [];
       // Hari libur yang diganti kerja (pengganti izin seharian) dihitung hari kerja.
       // Pengganti izin parsial tidak: hari izin parsialnya sudah dihitung hari kerja.
       (extraShiftRes?.data || []).forEach(e => {
+        if (e.sunday_swap_id && periodSet.has(e.shift_date)) {
+          swapEntries.push({ id: `on-${e.sunday_swap_id}`, date: e.shift_date, type: 'masuk', start: e.start_time, end: e.end_time });
+        }
         if (!e.replaces_partial_leave && periodSet.has(e.shift_date)) liburDates.delete(e.shift_date);
       });
       const workDays = periodDays.length - liburDates.size;
 
+      swapEntries.sort((a, b) => a.date.localeCompare(b.date));
       izinEntries.sort((a, b) => a.start_date.localeCompare(b.start_date));
 
       setMetrics({
         workDays,
         izinEntries,
+        swapEntries,
         absence: {
           cuti: absentByCategory.cuti.size,
           izin: absentByCategory.izin.size,
@@ -269,6 +282,7 @@ const rawMonthlyRecaps = recapsRes.data || [];
     { key: 'cuti', label: 'Cuti', value: metrics.absence.cuti, sub: 'hari cuti periode ini', Icon: Umbrella, box: 'bg-teal-50', icon: 'text-teal-600' },
     { key: 'izin', label: 'Izin', value: metrics.absence.izin, sub: 'hari izin periode ini', onClick: () => setIzinDialogOpen(true), Icon: FileText, box: 'bg-amber-50', icon: 'text-amber-600' },
     { key: 'sakit', label: 'Sakit', value: metrics.absence.sakit, sub: 'hari sakit periode ini', Icon: Stethoscope, box: 'bg-rose-50', icon: 'text-rose-600' },
+    { key: 'swap', label: 'Tukar Jadwal', value: metrics.swapEntries.length, sub: 'hari tukar jadwal Minggu', onClick: () => setSwapDialogOpen(true), Icon: CalendarDays, box: 'bg-sky-50', icon: 'text-sky-600' },
     { key: 'training', label: 'Training', value: metrics.absence.training, sub: 'hari training periode ini', Icon: GraduationCap, box: 'bg-violet-50', icon: 'text-violet-600' }
   ].filter(c => c.always || c.value > 0);
 
@@ -458,6 +472,36 @@ const rawMonthlyRecaps = recapsRes.data || [];
                 );
               })
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: tukar jadwal Minggu periode ini */}
+      <Dialog open={swapDialogOpen} onOpenChange={setSwapDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Tukar Jadwal Minggu</DialogTitle>
+            <DialogDescription>
+              Hari masuk bertambah / libur berpindah pada periode ini. Tidak dihitung izin.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto space-y-2">
+            {metrics.swapEntries.map((e) => (
+              <div key={e.id} className="rounded-app border border-slate-100 bg-slate-50 p-3">
+                <p className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                  <CalendarDays className="w-3.5 h-3.5 text-sky-600" />
+                  {format(new Date(`${e.date}T00:00:00`), 'dd MMM yyyy', { locale: idLocale })}
+                  <span className={cn("ml-auto text-[11px] font-semibold px-2 py-0.5 rounded-full",
+                    e.type === 'masuk' ? "bg-emerald-50 text-emerald-700" : "bg-slate-200 text-slate-600")}>
+                    {e.type === 'masuk' ? 'Masuk (+1 hari kerja)' : 'Libur (tukar)'}
+                  </span>
+                </p>
+                {e.type === 'masuk' && e.start && e.end && (
+                  <p className="text-xs text-slate-500 mt-0.5">Pukul {e.start.slice(0, 5)} – {e.end.slice(0, 5)}</p>
+                )}
+                {e.note && <p className="text-xs text-slate-500 mt-1">Catatan: {e.note}</p>}
+              </div>
+            ))}
           </div>
         </DialogContent>
       </Dialog>
