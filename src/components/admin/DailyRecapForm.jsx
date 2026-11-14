@@ -489,7 +489,9 @@ const isPackageAlreadySelected = !!formData.package_type_id;
 // multi-sesi yang sudah pernah dipakai. Sesi pertama wajib diisi manual
 // dengan metode pembayaran asli oleh staff.
 const isMultiSession = (pkg.total_sessions || 0) > 1;
-const hasStartedUsage = (pkg.sessions_used || 0) > 0;
+// Paket hasil perpanjangan (sudah dibayar + kwitansi di Package Recaps) juga dianggap sudah
+// dibayar: sesi pertamanya langsung 'Package' Rp 0, bukan pembayaran baru.
+const hasStartedUsage = (pkg.sessions_used || 0) > 0 || !!pkg.purchase_payment_id;
 const shouldAutoFillPackage = pkg.status === 'aktif' && isMultiSession && hasStartedUsage;
 
 if (mode === 'add' && !isPackageAlreadySelected) {
