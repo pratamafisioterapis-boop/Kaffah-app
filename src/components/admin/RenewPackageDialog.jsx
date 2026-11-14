@@ -7,12 +7,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
+import SearchableSelect from '@/components/ui/searchable-select';
+import { fetchPatients } from '@/lib/dailyRecapHelpers';
 import { getRenewalTerms } from '@/lib/packageRenewalTerms';
 
 const idr = (v) => `Rp ${Math.round(Number(v) || 0).toLocaleString('id-ID')}`;
 
-// Perpanjang paket dari Package Recaps: hanya pembayaran + kwitansi (tanpa rekap kunjungan).
-const RenewPackageDialog = ({ isOpen, onClose, clinicId, previousPackage, onDone }) => {
+// Tambah paket dari Package Recaps untuk pasien yang membayar di awal: hanya pembayaran +
+// kwitansi (tanpa rekap kunjungan). Pasien dipilih di dialog ini.
+const RenewPackageDialog = ({ isOpen, onClose, clinicId, onDone }) => {
   const { toast } = useToast();
   const terms = getRenewalTerms(clinicId);
 
@@ -23,18 +26,21 @@ const RenewPackageDialog = ({ isOpen, onClose, clinicId, previousPackage, onDone
   const [amount, setAmount] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const patientId = previousPackage?.patient_id;
-  const patientName = previousPackage?.patients?.full_name || '-';
+  const [patients, setPatients] = useState([]);
+  const [patientId, setPatientId] = useState('');
+  const [previousPackage, setPreviousPackage] = useState(null);
 
   useEffect(() => {
     if (!isOpen || !clinicId) return;
     let cancelled = false;
     setMethod('');
     setSaving(false);
-    // Default: paket yang sama dengan sebelumnya dan nominal terakhir (bisa diubah).
-    setPackageLabel(previousPackage?.package_name || '');
-    setAmount(previousPackage?.nominal ? String(Math.round(Number(previousPackage.nominal))) : '');
+    setPatientId('');
+    setPreviousPackage(null);
+    setPackageLabel('');
+    setAmount('');
     (async () => {
+      fetchPatients().then((list) => { if (!cancelled) setPatients(Array.isArray(list) ? list : []); });
       const [pk, pm] = await Promise.all([
         supabase.from('operational_options')
           .select('id, label, session_count, validity_days, price')
@@ -49,7 +55,26 @@ const RenewPackageDialog = ({ isOpen, onClose, clinicId, previousPackage, onDone
       setMethods((pm.data || []).filter((m) => (m.label || '').toLowerCase() !== 'package'));
     })();
     return () => { cancelled = true; };
-  }, [isOpen, clinicId, previousPackage?.id, previousPackage?.package_name, previousPackage?.nominal]);
+  }, [isOpen, clinicId]);
+
+  // Pasien dipilih: tampilkan paket terakhirnya dan isi paket/nominal dari paket itu (bisa diubah).
+  const handlePatientChange = async (id) => {
+    setPatientId(id);
+    setPreviousPackage(null);
+    if (!id) return;
+    const { data } = await supabase
+      .from('package_tracking')
+      .select('id, package_name, nominal, sessions_used, total_sessions, sessions_remaining, status')
+      .eq('patient_id', id)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    const prev = data?.[0] || null;
+    setPreviousPackage(prev);
+    if (prev) {
+      setPackageLabel(prev.package_name || '');
+      setAmount(prev.nominal ? String(Math.round(Number(prev.nominal))) : '');
+    }
+  };
 
   const selected = packages.find((p) => p.label === packageLabel) || null;
   const amountNum = parseFloat(amount) || 0;
@@ -90,12 +115,21 @@ const RenewPackageDialog = ({ isOpen, onClose, clinicId, previousPackage, onDone
         </DialogHeader>
 
         <div className="space-y-3">
-          <div className="rounded-md bg-slate-50 p-2 text-sm text-slate-700">
-            Pasien: <strong>{patientName}</strong>
+          <div className="space-y-1">
+            <Label>Pasien</Label>
+            <SearchableSelect
+              options={patients}
+              value={patientId}
+              onChange={handlePatientChange}
+              placeholder="Cari pasien..."
+            />
             {previousPackage?.package_name && (
-              <span className="block text-xs text-slate-500">
-                Paket sebelumnya: {previousPackage.package_name} ({previousPackage.sessions_used}/{previousPackage.total_sessions} sesi)
-              </span>
+              <p className="text-xs text-slate-500">
+                Paket terakhir: {previousPackage.package_name} ({previousPackage.sessions_used}/{previousPackage.total_sessions} sesi, {previousPackage.status})
+              </p>
+            )}
+            {previousPackage && (previousPackage.sessions_remaining ?? 0) > 0 && ['aktif', 'pending', 'diperpanjang'].includes((previousPackage.status || '').toLowerCase()) && (
+              <p className="text-xs text-red-600">Pasien ini masih punya sisa sesi di paket sebelumnya; penambahan akan ditolak.</p>
             )}
           </div>
 

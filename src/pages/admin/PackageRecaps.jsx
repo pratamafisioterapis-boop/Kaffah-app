@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
     Search, Package, Clock, CheckCircle, 
-    AlertTriangle, Loader2, Filter, ChevronLeft, ChevronRight, RefreshCw, Receipt
+    AlertTriangle, Loader2, Filter, ChevronLeft, ChevronRight, Plus, Receipt
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,7 +36,7 @@ export const PackageRecapsContent = () => {
     const terms = getRenewalTerms(clinicId);
     const [packages, setPackages] = useState([]);
     const [payments, setPayments] = useState([]);
-    const [renewTarget, setRenewTarget] = useState(null);
+    const [renewOpen, setRenewOpen] = useState(false);
     const [receiptPaymentId, setReceiptPaymentId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -98,43 +98,11 @@ export const PackageRecapsContent = () => {
         setIsHistoryModalOpen(true);
     };
 
-    // Perpanjangan: hanya untuk paket terakhir pasien yang sesinya sudah habis / selesai / expired,
-    // dan pasien belum punya paket aktif dengan sisa sesi.
     const paymentByPackage = React.useMemo(() => {
         const m = {};
         payments.forEach((p) => { if (p.package_tracking_id) m[p.package_tracking_id] = p.id; });
         return m;
     }, [payments]);
-
-    const latestPackageByPatient = React.useMemo(() => {
-        const m = {};
-        packages.forEach((p) => {
-            const cur = m[p.patient_id];
-            if (!cur || new Date(p.created_at) > new Date(cur.created_at)) m[p.patient_id] = p;
-        });
-        return m;
-    }, [packages]);
-
-    const canRenew = (pkg) => {
-        if (!renewalOn || !pkg.patient_id) return false;
-        if (latestPackageByPatient[pkg.patient_id]?.id !== pkg.id) return false;
-        const status = (pkg.status || '').toLowerCase();
-        const finished = ['selesai', 'habis', 'expired'].includes(status) || (pkg.sessions_remaining ?? 1) <= 0;
-        return finished && (pkg.total_sessions || 0) > 1;
-    };
-
-    const renewButton = (pkg, className = '') => (
-        canRenew(pkg) ? (
-            <Button
-                size="sm"
-                variant="outline"
-                className={className}
-                onClick={(e) => { e.stopPropagation(); setRenewTarget(pkg); }}
-            >
-                <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> {terms.action}
-            </Button>
-        ) : null
-    );
 
     const receiptButton = (pkg, className = '') => (
         paymentByPackage[pkg.id] ? (
@@ -374,6 +342,14 @@ export const PackageRecapsContent = () => {
         <div className="space-y-6">
             <PageHero image="/hero/clinara-package-hero.webp" title="Rekap" highlight="Paket" description="Kelola status dan riwayat paket pasien." />
 
+            {renewalOn && (
+                <div className="flex justify-end">
+                    <Button onClick={() => setRenewOpen(true)}>
+                        <Plus className="mr-2 h-4 w-4" /> {terms.action}
+                    </Button>
+                </div>
+            )}
+
 
             {/* Restructured Filter Section */}
             <div className="bg-white p-4 sm:p-5 rounded-app border border-slate-200 shadow-sm">
@@ -498,9 +474,8 @@ export const PackageRecapsContent = () => {
                                                 : (pkg.end_date ? formatDateIndonesian(pkg.end_date) : '-')
                                             }</span>
                                         </div>
-                                        {(canRenew(pkg) || paymentByPackage[pkg.id]) && (
+                                        {paymentByPackage[pkg.id] && (
                                             <div className="flex flex-wrap gap-2">
-                                                {renewButton(pkg)}
                                                 {receiptButton(pkg)}
                                             </div>
                                         )}
@@ -560,7 +535,6 @@ export const PackageRecapsContent = () => {
                                             <td className="px-4 py-3 text-center">{getStatusBadge(pkg.status)}</td>
                                             {renewalOn && (
                                                 <td className="px-4 py-3 text-center whitespace-nowrap">
-                                                    {renewButton(pkg)}
                                                     {receiptButton(pkg)}
                                                 </td>
                                             )}
@@ -587,12 +561,11 @@ export const PackageRecapsContent = () => {
             {renewalOn && (
                 <>
                     <RenewPackageDialog
-                        isOpen={!!renewTarget}
-                        onClose={() => setRenewTarget(null)}
+                        isOpen={renewOpen}
+                        onClose={() => setRenewOpen(false)}
                         clinicId={clinicId}
-                        previousPackage={renewTarget}
                         onDone={(result) => {
-                            setRenewTarget(null);
+                            setRenewOpen(false);
                             fetchPackages();
                             if (result?.payment_id) setReceiptPaymentId(result.payment_id);
                         }}
