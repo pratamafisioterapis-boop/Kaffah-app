@@ -16,7 +16,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { confirmAction } from '@/lib/confirmAction';
 import { parseQrisReportPdf } from '@/utils/bsiQrisReportParser';
-import { autoMatchQris, autoMatchSplits, autoMatchGroups, findCombos, findGroupCombos, groupTrxByPayer, qrisPortionOfRecap, rankCandidates } from '@/utils/qrisMatcher';
+import { nameOverlap, autoMatchQris, autoMatchSplits, autoMatchGroups, findCombos, findGroupCombos, groupTrxByPayer, qrisPortionOfRecap, rankCandidates } from '@/utils/qrisMatcher';
 import { fetchRecapHandlerEvents } from '@/lib/recapCashier';
 import { isLinked, keysOfTrx, linkPatch, clearPatch, detachPatch, incomeKey, rankPool, coverageOf } from '@/utils/qrisLinks';
 
@@ -79,7 +79,7 @@ const ManualPicker = ({ t, pool, poolTrx, onSubmit }) => {
 
   return (
     <details className="text-sm" open={picked.length > 0 || needle.length > 0}>
-      <summary className="cursor-pointer text-xs text-slate-500 hover:text-slate-700">Cari dan pilih sendiri (pasien atau pemasukan lain, metode apa pun)…</summary>
+      <summary className="cursor-pointer text-xs text-slate-500 hover:text-slate-700">Cari dan pilih sendiri (pasien atau pemasukan lain, metode apa pun, termasuk jadwal terapi di hari lain)…</summary>
       <div className="mt-2 space-y-2">
         <input
           type="search"
@@ -90,7 +90,7 @@ const ManualPicker = ({ t, pool, poolTrx, onSubmit }) => {
           className="w-full text-sm border border-slate-300 rounded-md bg-white px-2.5 py-2"
         />
         <div className="rounded-md border border-slate-200 divide-y divide-slate-100 max-h-64 overflow-y-auto">
-          {shown.length === 0 && <p className="px-2.5 py-3 text-xs text-slate-500">Tidak ada yang cocok. Yang ditampilkan hanya hari transaksi dan sehari sebelum/sesudahnya.</p>}
+          {shown.length === 0 && <p className="px-2.5 py-3 text-xs text-slate-500">Tidak ada yang cocok. Yang ditampilkan: 3 hari sebelum sampai 30 hari sesudah tanggal transaksi (untuk bayar di muka). Ketik nama untuk mencari.</p>}
           {shown.map(({ p }) => {
             const other = linkedBy[p.key];
             return (
@@ -121,6 +121,38 @@ const ManualPicker = ({ t, pool, poolTrx, onSubmit }) => {
   );
 };
 
+// Kebalikan ManualPicker: untuk pasien yang tercatat QRIS tetapi tidak ada di bank hari itu, pilih transaksi bank
+// (hari lain, mis. dibayar di muka) yang membayarnya. Transaksi yang sudah tertaut ke pasien lain tetap boleh dipilih:
+// pembayaran itu ditambahkan untuk pasien ini juga (satu pembayaran untuk beberapa pasien).
+const TrxPicker = ({ r, trxPool, onPick }) => {
+  const [q, setQ] = useState('');
+  const needle = q.trim().toLowerCase();
+  const ranked = useMemo(() => trxPool
+    .map((t) => ({ t, name: nameOverlap(t.customer_name, r.name), dist: Math.abs(parseISO(t.trx_date) - parseISO(r.date)) }))
+    .sort((a, b) => b.name - a.name || a.dist - b.dist), [trxPool, r.name, r.date]);
+  const shown = ranked.filter(({ t }) => !needle || String(t.customer_name).toLowerCase().includes(needle)).slice(0, needle ? 60 : 25);
+  return (
+    <details className="text-sm mt-2 w-full" open={needle.length > 0}>
+      <summary className="cursor-pointer text-xs text-slate-500 hover:text-slate-700">Sudah dibayar di hari lain? Cari transaksi bank…</summary>
+      <div className="mt-2 space-y-2">
+        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari nama pembayar di bank…" aria-label="Cari pembayar" className="w-full text-sm border border-slate-300 rounded-md bg-white px-2.5 py-2" />
+        <div className="rounded-md border border-slate-200 divide-y divide-slate-100 max-h-64 overflow-y-auto">
+          {shown.length === 0 && <p className="px-2.5 py-3 text-xs text-slate-500">Tidak ada transaksi bank di laporan yang terunggah (30 hari sebelum sampai 3 hari sesudah).</p>}
+          {shown.map(({ t }) => (
+            <button key={t.id} type="button" onClick={() => onPick(t)} className="w-full flex items-start justify-between gap-2 px-2.5 py-2 text-left hover:bg-slate-50">
+              <span className="min-w-0">
+                <span className="block break-words">{t.customer_name}</span>
+                <span className="block text-[11px] text-slate-500">{fmtShort(t.trx_date)} {String(t.trx_time || '').slice(0, 5)}{t.issuer ? ` · ${t.issuer}` : ''}{keysOfTrx(t).length ? ` · sudah tertaut ke ${keysOfTrx(t).length} item (akan dibagi)` : ''}</span>
+              </span>
+              <span className="tabular-nums shrink-0">{formatRp(t.amount)}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </details>
+  );
+};
+
 const AdminQrisReconciliation = () => {
   const { toast } = useToast();
   const { user, userDetails } = useAuth();
@@ -134,7 +166,7 @@ const AdminQrisReconciliation = () => {
   const [busy, setBusy] = useState(false); // membaca/menyimpan PDF
   const [dragOver, setDragOver] = useState(false);
   const [pendingFile, setPendingFile] = useState(null); // { fileName, parsed, issues } menunggu konfirmasi
-  const [day, setDay] = useState({ uploads: [], transactions: [], portions: [], pool: [], poolTrx: [], userNames: {} });
+  const [day, setDay] = useState({ uploads: [], transactions: [], portions: [], pool: [], poolTrx: [], linkedOther: [], userNames: {} });
   const [openAdmins, setOpenAdmins] = useState({});
 
   // --- Data ------------------------------------------------------------------
@@ -142,8 +174,9 @@ const AdminQrisReconciliation = () => {
   //  portions: pembayaran QRIS pada tanggal d (recap + pemasukan lain QRIS) -> jadi baris rekonsiliasi.
   //  pool: semua pembayaran d-1..d+1 dengan metode apa pun -> pilihan di pemilih manual.
   const loadRecapData = useCallback(async (d) => {
-    const lo = shiftDate(d, -1);
-    const hi = shiftDate(d, 1);
+    // Jendela lebar: pasien bisa bayar di muka (jadwal terapi hari lain) atau sebaliknya.
+    const lo = shiftDate(d, -3);
+    const hi = shiftDate(d, 30);
     const { data: options } = await supabase
       .from('operational_options').select('id, label').eq('clinic_id', clinicId).eq('category', 'payment_method');
     const labelById = {};
@@ -292,15 +325,20 @@ const AdminQrisReconciliation = () => {
         loadRecapData(d),
         // Transaksi sehari sebelum/sesudahnya: untuk tahu item mana yang sudah tertaut ke transaksi lain.
         supabase.from('qris_report_transactions')
-          .select('id, trx_date, trx_time, customer_name, amount, matched_recap_id, extra_recap_ids, extra_income_ids')
-          .eq('clinic_id', clinicId).gte('trx_date', shiftDate(d, -1)).lte('trx_date', shiftDate(d, 1)),
+          .select('id, trx_date, trx_time, customer_name, issuer, amount, match_method, matched_recap_id, extra_recap_ids, extra_income_ids')
+          .eq('clinic_id', clinicId).gte('trx_date', shiftDate(d, -30)).lte('trx_date', shiftDate(d, 3)),
       ]);
       if (e1 || e2 || e3) throw e1 || e2 || e3;
       const { portions, pool } = recapData;
       let transactions = trx || [];
 
+      // Pembayaran dari hari lain (mis. bayar di muka) yang sudah tertaut ke pasien hari ini.
+      const todayKeys = new Set(portions.map((p) => p.recapId));
+      const linkedOther = (nearTrx || []).filter((t) => t.trx_date !== d && keysOfTrx(t).some((k) => todayKeys.has(k)));
+      const otherKeys = new Set(linkedOther.flatMap((t) => keysOfTrx(t)));
+
       // Cocokkan otomatis yang belum berpasangan (mis. admin baru melengkapi recap setelah PDF diunggah).
-      transactions = await autoMatchDay(transactions, portions);
+      transactions = await autoMatchDay(transactions, portions.filter((p) => !otherKeys.has(p.recapId)));
 
       const uploaderIds = [...new Set((ups || []).map((u) => u.uploaded_by).filter(Boolean))];
       const userNames = {};
@@ -310,7 +348,7 @@ const AdminQrisReconciliation = () => {
       }
       const byId = Object.fromEntries(transactions.map((t) => [t.id, t]));
       const poolTrx = (nearTrx || []).map((t) => byId[t.id] || t);
-      setDay({ uploads: ups || [], transactions, portions, pool, poolTrx, userNames });
+      setDay({ uploads: ups || [], transactions, portions, pool, poolTrx, linkedOther, userNames });
     } catch (e) {
       toast({ variant: 'destructive', title: 'Gagal memuat data', description: e.message });
     } finally {
@@ -483,12 +521,21 @@ const AdminQrisReconciliation = () => {
     await setMatch(t.id, keys);
   };
 
-  // Lepas semua transaksi bank dari satu pasien (bisa lebih dari satu bila dibayar terpecah).
+  // Lepas pasien ini dari semua transaksi bank yang membayarnya. Transaksi gabungan tetap untuk pasien lainnya.
   const unlinkRow = async (r) => {
+    const rm = new Set([r.recapId]);
+    const results = await Promise.all(r.trxs.map((t) => supabase.from('qris_report_transactions')
+      .update(detachPatch(t, rm)).eq('id', t.id).eq('clinic_id', clinicId)));
+    const failed = results.find((x) => x.error);
+    if (failed) { toast({ variant: 'destructive', title: 'Gagal melepas', description: failed.error.message }); return; }
+    loadDay(date);
+  };
+
+  // Tambahkan pasien ini ke transaksi bank (mis. dibayar di muka di hari lain), tanpa melepas pasien lain di transaksi itu.
+  const addToTrx = async (t, key) => {
     const { error } = await supabase.from('qris_report_transactions')
-      .update(clearPatch())
-      .in('id', r.trxs.map((t) => t.id)).eq('clinic_id', clinicId);
-    if (error) { toast({ variant: 'destructive', title: 'Gagal melepas', description: error.message }); return; }
+      .update(linkPatch([...keysOfTrx(t), key], { userId: user?.id || null })).eq('id', t.id).eq('clinic_id', clinicId);
+    if (error) { toast({ variant: 'destructive', title: 'Gagal menyimpan', description: error.message }); return; }
     loadDay(date);
   };
 
@@ -501,17 +548,22 @@ const AdminQrisReconciliation = () => {
 
   // --- Turunan tampilan ------------------------------------------------------
   const view = useMemo(() => {
-    const { uploads, transactions, portions } = day;
+    const { uploads, transactions: dayTrx, portions, linkedOther } = day;
+    const transactions = dayTrx;
+    const allTrx = [...dayTrx, ...(linkedOther || [])];
     // Satu recap bisa punya beberapa transaksi bank (dibayar terpecah); satu transaksi bisa untuk beberapa recap.
     const trxsByRecap = {};
-    transactions.forEach((t) => {
+    allTrx.forEach((t) => {
       keysOfTrx(t).forEach((rid) => { (trxsByRecap[rid] ||= []).push(t); });
     });
     const cutoff = uploads.length
       ? new Date(Math.max(...uploads.map((u) => new Date(u.report_generated_at || u.created_at).getTime())))
       : null;
     // Status dihitung per kelompok tertaut (banyak transaksi <-> banyak pasien): jumlah bank vs jumlah recap.
-    const cover = coverageOf(transactions, portions);
+    // Pasien di hari lain yang ikut dibayar transaksi yang sama ikut dihitung (jumlah bank vs jumlah semua pasien).
+    const todayKeys = new Set(portions.map((p) => p.recapId));
+    const coverPortions = [...portions, ...day.pool.filter((p) => !todayKeys.has(p.key)).map((p) => ({ recapId: p.key, amount: p.amount }))];
+    const cover = coverageOf(allTrx, coverPortions);
     const rows = portions.map((p) => {
       const trxs = trxsByRecap[p.recapId] || [];
       const cv = cover[p.recapId];
@@ -545,6 +597,7 @@ const AdminQrisReconciliation = () => {
     const problems = unmatchedTrx.length + missing + partial;
     return { rows, unmatchedTrx, freeRows, payerGroups, adminGroups, bankTotal, expectedTotal, missing, partial, pending, problems, cutoff };
   }, [day]);
+  const trxPool = day.poolTrx;
 
   if (!isKaffah) {
     return <div className="p-6 text-sm text-slate-600">Fitur rekonsiliasi QRIS harian hanya tersedia untuk Kaffah Physiotherapy.</div>;
@@ -725,6 +778,7 @@ const AdminQrisReconciliation = () => {
             <div key={r.recapId} className="rounded-xl border border-red-200 bg-white p-3 shadow-sm flex flex-wrap justify-between gap-1 text-sm">
               <div><b>{r.name}</b> dicatat QRIS {formatRp(r.amount)}, tapi tidak ada di laporan bank</div>
               <div className="text-slate-500 flex items-center gap-1"><User className="w-3.5 h-3.5" /> {r.cashierName}</div>
+              <TrxPicker r={r} trxPool={trxPool} onPick={(t) => addToTrx(t, r.recapId)} />
             </div>
           ))}
           {view.rows.filter((r) => r.status === 'partial').map((r) => (
@@ -770,7 +824,7 @@ const AdminQrisReconciliation = () => {
                         <div className="min-w-0">
                           <div className="font-medium break-words leading-snug">{r.name}</div>
                           <div className="text-xs text-slate-400 break-words">
-                            {r.trxs.length ? r.trxs.map((t) => `${t.customer_name} · ${t.issuer} · ${t.trx_time}${r.trxs.length > 1 ? ` · ${formatRp(t.amount)}` : ''}${t.match_method === 'manual' ? ' · manual' : ''}${keysOfTrx(t).length > 1 ? ` · satu pembayaran ${formatRp(t.amount)} untuk ${keysOfTrx(t).length} item` : ''}`).join(' + ') : (r.time ? `Sesi ${r.time}` : '')}
+                            {r.trxs.length ? r.trxs.map((t) => `${t.customer_name} · ${t.issuer} · ${t.trx_date !== date ? `${fmtShort(t.trx_date)} ` : ''}${t.trx_time}${r.trxs.length > 1 ? ` · ${formatRp(t.amount)}` : ''}${t.match_method === 'manual' ? ' · manual' : ''}${keysOfTrx(t).length > 1 ? ` · satu pembayaran ${formatRp(t.amount)} untuk ${keysOfTrx(t).length} item` : ''}`).join(' + ') : (r.time ? `Sesi ${r.time}` : '')}
                           </div>
                         </div>
                         <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
