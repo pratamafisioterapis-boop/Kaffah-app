@@ -14,9 +14,9 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { confirmAction } from '@/lib/confirmAction';
 import { parseQrisReportPdf } from '@/utils/bsiQrisReportParser';
-import { autoMatchQris, autoMatchSplits, findCombos, qrisPortionOfRecap, rankCandidates } from '@/utils/qrisMatcher';
+import { autoMatchQris, autoMatchSplits, autoMatchGroups, findCombos, findGroupCombos, groupTrxByPayer, qrisPortionOfRecap, rankCandidates } from '@/utils/qrisMatcher';
 import { fetchRecapHandlerEvents } from '@/lib/recapCashier';
-import { isLinked, keysOfTrx, linkPatch, clearPatch, detachPatch, incomeKey, rankPool } from '@/utils/qrisLinks';
+import { isLinked, keysOfTrx, linkPatch, clearPatch, detachPatch, incomeKey, rankPool, coverageOf } from '@/utils/qrisLinks';
 
 // Catatan: komentar ini hanya untuk mengubah hash aset build (bukan perubahan fungsi).
 const formatRp = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
@@ -260,12 +260,24 @@ const AdminQrisReconciliation = () => {
     const splitTx = new Set(splitMatches.map((m) => m.transactionId));
     const splitRecaps = new Set(splitMatches.map((m) => m.recapId));
     const { matches: amountMatches } = autoMatchQris(freeTrx.filter((t) => !splitTx.has(t.id)), freePortions.filter((p) => !splitRecaps.has(p.recapId)));
+    // Satu pembayar scan beberapa kali untuk beberapa pasien sekaligus (banyak transaksi -> banyak pasien).
+    const doneTx = new Set([...splitMatches, ...amountMatches].map((m) => m.transactionId));
+    const doneKey = new Set([...splitMatches, ...amountMatches].map((m) => m.recapId));
+    const groupMatches = autoMatchGroups(freeTrx.filter((t) => !doneTx.has(t.id)), freePortions.filter((p) => !doneKey.has(p.recapId)));
     const matches = [...splitMatches, ...amountMatches];
-    if (!matches.length) return transactions;
+    if (!matches.length && !groupMatches.length) return transactions;
     await persistMatches(matches);
+    const now = new Date().toISOString();
+    await Promise.all(groupMatches.map((m) => supabase.from('qris_report_transactions')
+      .update({ matched_recap_id: m.recapIds[0], extra_recap_ids: m.recapIds.slice(1), match_method: 'auto', matched_at: now, matched_by: user?.id || null })
+      .eq('id', m.transactionId).eq('clinic_id', clinicId)));
     const byTx = Object.fromEntries(matches.map((m) => [m.transactionId, m.recapId]));
-    return transactions.map((t) => (byTx[t.id] ? { ...t, matched_recap_id: byTx[t.id], match_method: 'auto' } : t));
-  }, [persistMatches]);
+    const byGroup = Object.fromEntries(groupMatches.map((m) => [m.transactionId, m.recapIds]));
+    return transactions.map((t) => {
+      if (byGroup[t.id]) return { ...t, matched_recap_id: byGroup[t.id][0], extra_recap_ids: byGroup[t.id].slice(1), match_method: 'auto' };
+      return byTx[t.id] ? { ...t, matched_recap_id: byTx[t.id], match_method: 'auto' } : t;
+    });
+  }, [persistMatches, clinicId, user?.id]);
 
   const loadDay = useCallback(async (d) => {
     if (!clinicId) return;
@@ -438,13 +450,15 @@ const AdminQrisReconciliation = () => {
   // keys: satu kunci, array kunci (satu pembayaran untuk beberapa pasien/pemasukan), atau null untuk melepas.
   // Kunci = id recap, atau "inc:<id>" untuk pemasukan lain-lain. Item yang masih tertaut ke transaksi
   // lain dikeluarkan dari transaksi itu (dipindahkan).
+  // transactionId boleh berupa array: beberapa transaksi satu pembayar untuk beberapa pasien sekaligus.
   const setMatch = async (transactionId, keys) => {
     const list = [].concat(keys || []);
+    const trxIds = [].concat(transactionId);
     const patch = list.length ? linkPatch(list, { userId: user?.id || null }) : clearPatch();
     const moving = new Set(list);
-    const donors = day.poolTrx.filter((o) => o.id !== transactionId && keysOfTrx(o).some((k) => moving.has(k)));
+    const donors = day.poolTrx.filter((o) => !trxIds.includes(o.id) && keysOfTrx(o).some((k) => moving.has(k)));
     const writes = [
-      supabase.from('qris_report_transactions').update(patch).eq('id', transactionId).eq('clinic_id', clinicId),
+      supabase.from('qris_report_transactions').update(patch).in('id', trxIds).eq('clinic_id', clinicId),
       ...donors.map((o) => supabase.from('qris_report_transactions').update(detachPatch(o, moving)).eq('id', o.id).eq('clinic_id', clinicId)),
     ];
     const results = await Promise.all(writes);
@@ -493,18 +507,21 @@ const AdminQrisReconciliation = () => {
     const cutoff = uploads.length
       ? new Date(Math.max(...uploads.map((u) => new Date(u.report_generated_at || u.created_at).getTime())))
       : null;
+    // Status dihitung per kelompok tertaut (banyak transaksi <-> banyak pasien): jumlah bank vs jumlah recap.
+    const cover = coverageOf(transactions, portions);
     const rows = portions.map((p) => {
       const trxs = trxsByRecap[p.recapId] || [];
-      // Transaksi gabungan (beberapa pasien) dianggap menutup penuh tiap pasiennya.
-      const covered = trxs.reduce((s, t) => s + (keysOfTrx(t).length > 1 ? p.amount : Number(t.amount)), 0);
+      const cv = cover[p.recapId];
+      const covered = cv ? cv.covered : trxs.reduce((s, t) => s + Number(t.amount), 0);
+      const deficit = cv ? cv.deficit : 0;
       const status = trxs.length
-        ? (Math.round(covered) >= Math.round(p.amount) ? 'matched' : 'partial')
+        ? (cv ? (deficit > 0 ? 'partial' : 'matched') : (Math.round(covered) >= Math.round(p.amount) ? 'matched' : 'partial'))
         : (!cutoff || (p.payAt && p.payAt > cutoff)) ? 'pending' : 'missing';
-      return { ...p, trxs, covered, status };
+      return { ...p, trxs, covered, deficit, status };
     });
     const unmatchedTrx = transactions.filter((t) => !isLinked(t));
     // Pasien yang belum tertutup penuh; amount = sisa yang masih dicari di bank.
-    const freeRows = rows.filter((r) => r.covered < r.amount).map((r) => ({ ...r, amount: r.amount - r.covered }));
+    const freeRows = rows.filter((r) => r.trxs.length === 0 || r.covered < r.amount).map((r) => ({ ...r, amount: r.amount - r.covered }));
 
     const groups = {};
     rows.forEach((r) => {
@@ -515,13 +532,15 @@ const AdminQrisReconciliation = () => {
       count: (s) => g.items.filter((i) => i.status === s).length,
     })).sort((a, b) => b.count('missing') - a.count('missing') || a.name.localeCompare(b.name));
 
+    // Kelompok transaksi satu pembayar (mis. 330rb + 25rb) yang jumlahnya pas dengan beberapa pasien.
+    const payerGroups = groupTrxByPayer(unmatchedTrx).map((g) => ({ ...g, combos: findGroupCombos(g, freeRows) })).filter((g) => g.combos.length > 0);
     const bankTotal = transactions.reduce((s, t) => s + Number(t.amount), 0);
     const expectedTotal = rows.filter((r) => r.status !== 'pending').reduce((s, r) => s + r.amount, 0);
     const missing = rows.filter((r) => r.status === 'missing').length;
     const partial = rows.filter((r) => r.status === 'partial').length;
     const pending = rows.filter((r) => r.status === 'pending').length;
     const problems = unmatchedTrx.length + missing + partial;
-    return { rows, unmatchedTrx, freeRows, adminGroups, bankTotal, expectedTotal, missing, partial, pending, problems, cutoff };
+    return { rows, unmatchedTrx, freeRows, payerGroups, adminGroups, bankTotal, expectedTotal, missing, partial, pending, problems, cutoff };
   }, [day]);
 
   if (!isKaffah) {
@@ -615,6 +634,24 @@ const AdminQrisReconciliation = () => {
       {!loading && view.problems > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Perlu dicek</h2>
+          {view.payerGroups.map((g) => (
+            <div key={g.trxs.map((t) => t.id).join('+')} className="rounded-xl border border-emerald-300 bg-emerald-50/40 p-3 shadow-sm space-y-2 text-sm">
+              <div>
+                <b>{g.trxs[0].customer_name}</b> membayar {g.trxs.length}x di bank ({g.trxs.map((t) => formatRp(t.amount)).join(' + ')} = <b>{formatRp(g.combos[0].sum)}</b>). Jumlahnya pas dengan beberapa pasien:
+              </div>
+              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
+                {g.combos.map((c) => (
+                  <Button key={c.items.map((p) => p.recapId).join('+')} size="sm" variant="outline" onClick={() => setMatch(c.trxs.map((t) => t.id), c.items.map((p) => p.recapId))} className="gap-1.5 h-auto min-h-9 py-1.5 justify-start text-left whitespace-normal border-emerald-400 bg-white">
+                    <Link2 className="w-3.5 h-3.5 shrink-0" />
+                    <span className="min-w-0">
+                      <span className="block break-words">{c.items.map((p) => p.name).join(' + ')}</span>
+                      <span className="block text-xs text-slate-400 break-words">{c.items.map((p) => formatRp(p.amount)).join(' + ')} · tautkan {c.trxs.length} transaksi ke {c.items.length} pasien</span>
+                    </span>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          ))}
           {view.unmatchedTrx.map((t) => {
             const sameAmount = view.freeRows.filter((p) => Math.round(p.amount) === Math.round(t.amount));
             const cands = rankCandidates(t, sameAmount);
@@ -677,7 +714,7 @@ const AdminQrisReconciliation = () => {
           ))}
           {view.rows.filter((r) => r.status === 'partial').map((r) => (
             <div key={r.recapId} className="rounded-xl border border-amber-200 bg-white p-3 shadow-sm flex flex-wrap justify-between gap-1 text-sm">
-              <div><b>{r.name}</b> dicatat QRIS {formatRp(r.amount)}, baru ada {formatRp(r.covered)} di bank (kurang {formatRp(r.amount - r.covered)})</div>
+              <div><b>{r.name}</b> dicatat QRIS {formatRp(r.amount)}{r.trxs.length > 1 || r.deficit ? `, pembayaran bank terkait ${formatRp(r.trxs.reduce((a, t) => a + Number(t.amount), 0))}` : `, baru ada ${formatRp(r.covered)} di bank`} (kurang {formatRp(r.deficit || r.amount - r.covered)})</div>
               <div className="text-slate-500 flex items-center gap-1"><User className="w-3.5 h-3.5" /> {r.cashierName}</div>
             </div>
           ))}
