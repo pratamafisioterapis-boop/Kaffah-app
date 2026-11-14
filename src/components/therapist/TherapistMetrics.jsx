@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { getTherapistRecaps, getTherapistTargetProgress, getActiveTherapistTarget, getAppointments, getTherapistAnnualLeaveBalance, getTherapistTimeOff, getTherapistExtraShifts } from '@/lib/api';
+import { getTherapistRecaps, getTherapistTargetProgress, getActiveTherapistTarget, getAppointments, getTherapistAnnualLeaveBalance, getTherapistTimeOff, getTherapistExtraShifts, getTherapistApprovedSundaySwaps } from '@/lib/api';
 import { getUnfilledSOAPVisits } from '@/lib/therapistDataUtils';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -144,7 +144,8 @@ const [
   todayAppointmentsRes,
   leaveBalanceRes,
   timeOffRes,
-  extraShiftRes
+  extraShiftRes,
+  swapsRes
 ] = await Promise.all([
   getTherapistRecaps(therapist.id, { startDate: startMonth, endDate: endMonth }),
   getActiveTherapistTarget(therapist.id),  // ← pakai therapist.id bukan userId
@@ -153,7 +154,8 @@ const [
   getAppointments({ date: todayISO, therapistId: therapist.id }),
   getTherapistAnnualLeaveBalance(therapist.id),
   getTherapistTimeOff(therapist.id),
-  getTherapistExtraShifts(therapist.id)
+  getTherapistExtraShifts(therapist.id),
+  getTherapistApprovedSundaySwaps(therapist.id)
 ]);
 
 // Fetch target progress setelah dapat activeTarget (perlu start_date & end_date dulu)
@@ -199,11 +201,14 @@ const rawMonthlyRecaps = recapsRes.data || [];
       const categoryOf = { annual: 'cuti', sick: 'sakit', training: 'training', personal: 'izin', other: 'izin' };
       const izinEntries = [];
       const swapEntries = [];
+      const swaps = swapsRes?.data || [];
+      const swapById = new Map(swaps.map(w => [w.id, w]));
+      const swapByTimeOff = new Map(swaps.filter(w => w.time_off_id).map(w => [w.time_off_id, w]));
       (timeOffRes?.data || []).forEach(t => {
         // Tukar jadwal Minggu: hari tidak masuk dihitung libur (bukan izin); gantinya ada shift tambahan.
         const isSwapOff = !t.start_time && (t.reason || '').trim().startsWith('Tukar jadwal Minggu');
         if (isSwapOff && periodSet.has(t.start_date)) {
-          swapEntries.push({ id: `off-${t.id}`, date: t.start_date, type: 'libur', note: t.reason });
+          swapEntries.push({ id: `off-${t.id}`, date: t.start_date, type: 'libur', partner: swapByTimeOff.get(t.id)?.substitute_name, note: t.reason });
         }
         const isLiburEntry = isSwapOff || t.leave_type === 'weekly_off' || (t.reason || '').trim().startsWith('Libur');
         if (!isLiburEntry && (categoryOf[t.leave_type] || 'izin') === 'izin'
@@ -225,7 +230,7 @@ const rawMonthlyRecaps = recapsRes.data || [];
       // Pengganti izin parsial tidak: hari izin parsialnya sudah dihitung hari kerja.
       (extraShiftRes?.data || []).forEach(e => {
         if (e.sunday_swap_id && periodSet.has(e.shift_date)) {
-          swapEntries.push({ id: `on-${e.sunday_swap_id}`, date: e.shift_date, type: 'masuk', start: e.start_time, end: e.end_time });
+          swapEntries.push({ id: `on-${e.sunday_swap_id}`, date: e.shift_date, type: 'masuk', partner: swapById.get(e.sunday_swap_id)?.therapist_name, start: e.start_time, end: e.end_time });
         }
         if (!e.replaces_partial_leave && periodSet.has(e.shift_date)) liburDates.delete(e.shift_date);
       });
@@ -498,6 +503,11 @@ const rawMonthlyRecaps = recapsRes.data || [];
                 </p>
                 {e.type === 'masuk' && e.start && e.end && (
                   <p className="text-xs text-slate-500 mt-0.5">Pukul {e.start.slice(0, 5)} – {e.end.slice(0, 5)}</p>
+                )}
+                {e.partner && (
+                  <p className="text-xs text-slate-600 mt-1">
+                    {e.type === 'masuk' ? 'Menggantikan' : 'Digantikan oleh'}: <span className="font-semibold">{e.partner}</span>
+                  </p>
                 )}
                 {e.note && <p className="text-xs text-slate-500 mt-1">Catatan: {e.note}</p>}
               </div>
