@@ -56,9 +56,7 @@ CREATE TABLE IF NOT EXISTS public.cash_handovers (
     (to_type = 'admin'   AND to_user_id IS NOT NULL AND to_user_id <> from_user_id)
     OR (to_type = 'finance' AND to_user_id IS NULL)
   ),
-  CONSTRAINT chk_cash_handover_finance_proof CHECK (
-    to_type <> 'finance' OR proof_path IS NOT NULL
-  )
+  CONSTRAINT chk_cash_handover_proof CHECK (proof_path IS NOT NULL)
 );
 
 CREATE INDEX IF NOT EXISTS idx_cash_handovers_clinic_date ON public.cash_handovers (clinic_id, handover_date DESC);
@@ -234,8 +232,8 @@ $$;
 REVOKE ALL ON FUNCTION public.get_cash_received_detail(uuid, date) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.get_cash_received_detail(uuid, date) TO authenticated;
 
--- Buat setoran. Ke admin = pending (menunggu konfirmasi); ke keuangan = langsung
--- confirmed (cukup dicatat + foto bukti). Nominal tidak boleh melebihi saldo.
+-- Buat setoran. Foto bukti wajib. Ke admin = pending (menunggu konfirmasi); ke
+-- keuangan = langsung confirmed (cukup dicatat + foto bukti). Nominal tidak boleh melebihi saldo.
 CREATE OR REPLACE FUNCTION public.create_cash_handover(
   p_to_type  text,
   p_to_user  uuid,
@@ -267,6 +265,12 @@ BEGIN
   IF p_to_type NOT IN ('admin', 'finance') THEN
     RAISE EXCEPTION 'Tujuan setoran tidak valid';
   END IF;
+  IF p_proof IS NULL OR btrim(p_proof) = '' THEN
+    RAISE EXCEPTION 'Foto bukti wajib untuk setiap setoran';
+  END IF;
+  IF split_part(p_proof, '/', 1) <> v_clinic::text THEN
+    RAISE EXCEPTION 'Path bukti tidak valid';
+  END IF;
   IF p_to_type = 'admin' THEN
     IF p_to_user IS NULL OR p_to_user = v_uid THEN
       RAISE EXCEPTION 'Pilih admin penerima (bukan diri sendiri)';
@@ -276,12 +280,6 @@ BEGIN
     END IF;
   ELSE
     p_to_user := NULL;
-    IF p_proof IS NULL OR btrim(p_proof) = '' THEN
-      RAISE EXCEPTION 'Foto bukti wajib untuk setoran ke keuangan';
-    END IF;
-    IF split_part(p_proof, '/', 1) <> v_clinic::text THEN
-      RAISE EXCEPTION 'Path bukti tidak valid';
-    END IF;
   END IF;
 
   -- cegah dua setoran serentak melewati saldo

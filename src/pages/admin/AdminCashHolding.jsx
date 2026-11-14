@@ -127,7 +127,7 @@ const AdminCashHolding = () => {
     if (!(amount > 0)) return toast({ title: 'Nominal belum diisi', variant: 'destructive' });
     if (amount > myBalance) return toast({ title: 'Nominal melebihi cash yang dipegang', description: `Saldo Anda ${formatRp(myBalance)}`, variant: 'destructive' });
     if (form.toType === 'admin' && !form.toUser) return toast({ title: 'Pilih admin penerima', variant: 'destructive' });
-    if (form.toType === 'finance' && !form.file) return toast({ title: 'Foto bukti wajib untuk setoran ke keuangan', variant: 'destructive' });
+    if (!form.file) return toast({ title: 'Foto bukti wajib untuk setiap setoran', variant: 'destructive' });
 
     setBusy(true);
     try {
@@ -354,7 +354,7 @@ const AdminCashHolding = () => {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">Admin lain (perlu konfirmasi)</SelectItem>
-                  <SelectItem value="finance">Tim Keuangan (foto bukti wajib)</SelectItem>
+                  <SelectItem value="finance">Tim Keuangan (langsung tercatat)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -383,7 +383,7 @@ const AdminCashHolding = () => {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Foto bukti{form.toType === 'finance' ? <span className="text-red-500"> *</span> : ' (opsional)'}</Label>
+              <Label>Foto bukti <span className="text-red-500">*</span></Label>
               <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm text-slate-600">
                 <Upload className="h-4 w-4" />
                 <span className="truncate">{form.file ? form.file.name : 'Pilih foto / screenshot'}</span>
