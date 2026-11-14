@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
-import { Wallet, Loader2, HandCoins, Check, X, Upload, Eye, Undo2, AlertTriangle } from 'lucide-react';
+import { Wallet, Loader2, Check, X, Upload, Eye, Undo2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -212,7 +212,7 @@ const AdminCashHolding = () => {
         </div>
         {isAdmin && (
           <Button onClick={openDialog} disabled={loading || myBalance <= 0}>
-            <HandCoins className="mr-2 h-4 w-4" /> Setor Cash
+            <Wallet className="mr-2 h-4 w-4" /> Setor Cash
           </Button>
         )}
       </div>
