@@ -202,13 +202,13 @@ const rawMonthlyRecaps = recapsRes.data || [];
       const izinEntries = [];
       const swapEntries = [];
       const swaps = swapsRes?.data || [];
-      const swapById = new Map(swaps.map(w => [w.id, w]));
       const swapByTimeOff = new Map(swaps.filter(w => w.time_off_id).map(w => [w.time_off_id, w]));
       (timeOffRes?.data || []).forEach(t => {
         // Tukar jadwal Minggu: hari tidak masuk dihitung libur (bukan izin); gantinya ada shift tambahan.
         const isSwapOff = !t.start_time && (t.reason || '').trim().startsWith('Tukar jadwal Minggu');
+        // Hanya tukar jadwal yang diajukan terapis ini; hari masuk sebagai pengganti rekan tidak dihitung di sini.
         if (isSwapOff && periodSet.has(t.start_date)) {
-          swapEntries.push({ id: `off-${t.id}`, date: t.start_date, type: 'libur', partner: swapByTimeOff.get(t.id)?.substitute_name, note: t.reason });
+          swapEntries.push({ id: `off-${t.id}`, date: t.start_date, partner: swapByTimeOff.get(t.id)?.substitute_name, note: t.reason });
         }
         const isLiburEntry = isSwapOff || t.leave_type === 'weekly_off' || (t.reason || '').trim().startsWith('Libur');
         if (!isLiburEntry && (categoryOf[t.leave_type] || 'izin') === 'izin'
@@ -229,9 +229,6 @@ const rawMonthlyRecaps = recapsRes.data || [];
       // Hari libur yang diganti kerja (pengganti izin seharian) dihitung hari kerja.
       // Pengganti izin parsial tidak: hari izin parsialnya sudah dihitung hari kerja.
       (extraShiftRes?.data || []).forEach(e => {
-        if (e.sunday_swap_id && periodSet.has(e.shift_date)) {
-          swapEntries.push({ id: `on-${e.sunday_swap_id}`, date: e.shift_date, type: 'masuk', partner: swapById.get(e.sunday_swap_id)?.therapist_name, start: e.start_time, end: e.end_time });
-        }
         if (!e.replaces_partial_leave && periodSet.has(e.shift_date)) liburDates.delete(e.shift_date);
       });
       const workDays = periodDays.length - liburDates.size;
@@ -487,7 +484,7 @@ const rawMonthlyRecaps = recapsRes.data || [];
           <DialogHeader>
             <DialogTitle>Tukar Jadwal Minggu</DialogTitle>
             <DialogDescription>
-              Hari masuk bertambah / libur berpindah pada periode ini. Tidak dihitung izin.
+              Tukar jadwal Minggu yang diajukan terapis ini pada periode ini. Tidak dihitung izin.
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-[60vh] overflow-y-auto space-y-2">
@@ -496,17 +493,10 @@ const rawMonthlyRecaps = recapsRes.data || [];
                 <p className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
                   <CalendarDays className="w-3.5 h-3.5 text-sky-600" />
                   {format(new Date(`${e.date}T00:00:00`), 'dd MMM yyyy', { locale: idLocale })}
-                  <span className={cn("ml-auto text-[11px] font-semibold px-2 py-0.5 rounded-full",
-                    e.type === 'masuk' ? "bg-emerald-50 text-emerald-700" : "bg-slate-200 text-slate-600")}>
-                    {e.type === 'masuk' ? 'Masuk (+1 hari kerja)' : 'Libur (tukar)'}
-                  </span>
                 </p>
-                {e.type === 'masuk' && e.start && e.end && (
-                  <p className="text-xs text-slate-500 mt-0.5">Pukul {e.start.slice(0, 5)} – {e.end.slice(0, 5)}</p>
-                )}
                 {e.partner && (
                   <p className="text-xs text-slate-600 mt-1">
-                    {e.type === 'masuk' ? 'Menggantikan' : 'Digantikan oleh'}: <span className="font-semibold">{e.partner}</span>
+                    Digantikan oleh: <span className="font-semibold">{e.partner}</span>
                   </p>
                 )}
                 {e.note && <p className="text-xs text-slate-500 mt-1">Catatan: {e.note}</p>}
