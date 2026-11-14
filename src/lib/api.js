@@ -3663,6 +3663,7 @@ export const updateAdminExpense = async (id, payload) => {
         sub_category_id: payload.sub_category_id || null,
         description: payload.description || null,
         bank_account_id: payload.bank_account_id || null,
+        ...(payload.paid_from_petty !== undefined ? { paid_from_petty: !!payload.paid_from_petty } : {}),
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
@@ -3700,6 +3701,7 @@ export const createAdminExpense = async (payload) => {
         sub_category_id: payload.sub_category_id || null,
         description: payload.description || null,
         bank_account_id: payload.bank_account_id || null,
+        paid_from_petty: !!payload.paid_from_petty,
         created_by: payload.created_by || null,
         created_at: new Date().toISOString()
       })
