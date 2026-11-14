@@ -6824,6 +6824,16 @@ export const getTherapistSchedules = async (therapistId) => {
 };
 // Jadwal pengganti izin (therapist_extra_shifts) yang sudah disetujui; dipakai untuk menandai
 // hari libur mingguan yang diganti kerja.
+// Tukar jadwal Minggu yang disetujui milik terapis (sebagai yang izin maupun pengganti), untuk nama rekan.
+export const getTherapistApprovedSundaySwaps = async (therapistId) => {
+  const { data, error } = await supabase
+    .from('therapist_sunday_swap_requests')
+    .select('id, therapist_id, therapist_name, substitute_id, substitute_name, time_off_id')
+    .eq('status', 'approved')
+    .or(`therapist_id.eq.${therapistId},substitute_id.eq.${therapistId}`);
+  return { data: data || [], error };
+};
+
 export const getTherapistExtraShifts = async (therapistId) => {
   const { data, error } = await supabase
     .from('therapist_extra_shifts')
