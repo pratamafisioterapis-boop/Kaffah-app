@@ -1840,12 +1840,12 @@ export const getActiveReferralRewards = async (patientId) => {
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Makassar' });
   const { data, error } = await supabase
     .from('referral_rewards')
-    .select('id, code, expires_at, discount_value_type, discount_value, discount_label')
+    .select('id, code, expires_at, discount_value_type, discount_value, discount_label, referred:patients!referral_rewards_referred_patient_id_fkey(full_name)')
     .eq('referrer_patient_id', patientId)
     .eq('status', 'active')
     .gte('expires_at', today)
     .order('expires_at');
-  return { data: data || [], error };
+  return { data: (data || []).map(r => ({ ...r, referred_name: r.referred?.full_name || null })), error };
 };
 
 // Diskon ultah (Kaffah): status kelayakan + nilai diskon untuk tanggal rekap tertentu.
@@ -1892,10 +1892,10 @@ export const getReferralRewardById = async (id) => {
   if (!id) return { data: null, error: null };
   const { data, error } = await supabase
     .from('referral_rewards')
-    .select('id, code, expires_at, discount_value_type, discount_value, discount_label, status')
+    .select('id, code, expires_at, discount_value_type, discount_value, discount_label, status, referred:patients!referral_rewards_referred_patient_id_fkey(full_name)')
     .eq('id', id)
     .maybeSingle();
-  return { data, error };
+  return { data: data ? { ...data, referred_name: data.referred?.full_name || null } : data, error };
 };
 
 export const createDailyRecap = async (payload) => {
