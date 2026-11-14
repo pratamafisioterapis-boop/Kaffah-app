@@ -92,11 +92,13 @@ const TherapistMetrics = ({ therapist, userId }) => {
     workDays: 0,
     izinEntries: [],
     swapEntries: [],
+    workDayList: [],
     absence: { cuti: 0, izin: 0, sakit: 0, training: 0 }
   });
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
   const [izinDialogOpen, setIzinDialogOpen] = useState(false);
   const [swapDialogOpen, setSwapDialogOpen] = useState(false);
+  const [workDialogOpen, setWorkDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activePeriod, setActivePeriod] = useState({ start: null, end: null });
@@ -202,6 +204,7 @@ const rawMonthlyRecaps = recapsRes.data || [];
       const izinEntries = [];
       const swapEntries = [];
       const swaps = swapsRes?.data || [];
+      const swapById = new Map(swaps.map(w => [w.id, w]));
       const swapByTimeOff = new Map(swaps.filter(w => w.time_off_id).map(w => [w.time_off_id, w]));
       (timeOffRes?.data || []).forEach(t => {
         // Tukar jadwal Minggu: hari tidak masuk dihitung libur (bukan izin); gantinya ada shift tambahan.
@@ -228,10 +231,34 @@ const rawMonthlyRecaps = recapsRes.data || [];
       Object.values(absentByCategory).forEach(set => set.forEach(k => liburDates.delete(k)));
       // Hari libur yang diganti kerja (pengganti izin seharian) dihitung hari kerja.
       // Pengganti izin parsial tidak: hari izin parsialnya sudah dihitung hari kerja.
+      const extraByDate = new Map();
       (extraShiftRes?.data || []).forEach(e => {
+        if (periodSet.has(e.shift_date)) extraByDate.set(e.shift_date, e);
         if (!e.replaces_partial_leave && periodSet.has(e.shift_date)) liburDates.delete(e.shift_date);
       });
       const workDays = periodDays.length - liburDates.size;
+
+      // Daftar tanggal kerja + penanda (izin/cuti/sakit/training, tukar jadwal, pengganti jadwal)
+      const catLabel = { cuti: 'Cuti', izin: 'Izin', sakit: 'Sakit', training: 'Training' };
+      const workDayList = periodDays.filter(k => !liburDates.has(k)).map(k => {
+        const tags = [];
+        Object.entries(absentByCategory).forEach(([cat, set]) => {
+          if (set.has(k)) tags.push({ kind: 'absen', text: catLabel[cat] });
+        });
+        const ex = extraByDate.get(k);
+        if (ex && !ex.replaces_partial_leave) {
+          if (ex.sunday_swap_id) {
+            const partner = swapById.get(ex.sunday_swap_id)?.therapist_name;
+            tags.push({ kind: 'swap', text: partner ? `Tukar jadwal – menggantikan ${partner}` : 'Tukar jadwal – menggantikan rekan' });
+          } else if (ex.leave_request_id) {
+            tags.push({ kind: 'pengganti', text: 'Pengganti jadwal (hari libur diganti kerja)' });
+          } else {
+            tags.push({ kind: 'pengganti', text: 'Shift tambahan' });
+          }
+          if (ex.start_time && ex.end_time) tags.push({ kind: 'jam', text: `${ex.start_time.slice(0, 5)} – ${ex.end_time.slice(0, 5)}` });
+        }
+        return { date: k, tags };
+      });
 
       swapEntries.sort((a, b) => a.date.localeCompare(b.date));
       izinEntries.sort((a, b) => a.start_date.localeCompare(b.start_date));
@@ -240,6 +267,7 @@ const rawMonthlyRecaps = recapsRes.data || [];
         workDays,
         izinEntries,
         swapEntries,
+        workDayList,
         absence: {
           cuti: absentByCategory.cuti.size,
           izin: absentByCategory.izin.size,
@@ -280,7 +308,7 @@ const rawMonthlyRecaps = recapsRes.data || [];
   const progressCapped = Math.min(metrics.targetVisitsProgress, 100);
 
   const absenceCards = [
-    { key: 'workDays', label: 'Hari Kerja', value: metrics.workDays, sub: 'hari kerja periode ini', Icon: Briefcase, box: 'bg-app-soft', icon: 'text-app-accent', always: true },
+    { key: 'workDays', label: 'Hari Kerja', value: metrics.workDays, sub: 'hari kerja periode ini', onClick: () => setWorkDialogOpen(true), Icon: Briefcase, box: 'bg-app-soft', icon: 'text-app-accent', always: true },
     { key: 'cuti', label: 'Cuti', value: metrics.absence.cuti, sub: 'hari cuti periode ini', Icon: Umbrella, box: 'bg-teal-50', icon: 'text-teal-600' },
     { key: 'izin', label: 'Izin', value: metrics.absence.izin, sub: 'hari izin periode ini', onClick: () => setIzinDialogOpen(true), Icon: FileText, box: 'bg-amber-50', icon: 'text-amber-600' },
     { key: 'sakit', label: 'Sakit', value: metrics.absence.sakit, sub: 'hari sakit periode ini', Icon: Stethoscope, box: 'bg-rose-50', icon: 'text-rose-600' },
@@ -500,6 +528,40 @@ const rawMonthlyRecaps = recapsRes.data || [];
                   </p>
                 )}
                 {e.note && <p className="text-xs text-slate-500 mt-1">Catatan: {e.note}</p>}
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: daftar tanggal kerja periode ini */}
+      <Dialog open={workDialogOpen} onOpenChange={setWorkDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Hari Kerja</DialogTitle>
+            <DialogDescription>
+              {metrics.workDays} hari kerja pada periode ini. Tukar jadwal dan pengganti jadwal diberi tanda.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto space-y-1.5">
+            {metrics.workDayList.map(({ date, tags }) => (
+              <div key={date} className={cn("rounded-app border px-3 py-2", tags.length ? "border-sky-100 bg-sky-50/60" : "border-slate-100 bg-slate-50")}>
+                <p className="text-sm font-medium text-slate-800">
+                  {format(new Date(`${date}T00:00:00`), 'EEEE, dd MMM yyyy', { locale: idLocale })}
+                </p>
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {tags.map((t, i) => (
+                      <span key={i} className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full",
+                        t.kind === 'absen' ? "bg-amber-100 text-amber-700"
+                          : t.kind === 'swap' ? "bg-sky-100 text-sky-700"
+                          : t.kind === 'pengganti' ? "bg-emerald-100 text-emerald-700"
+                          : "bg-slate-200 text-slate-600")}>
+                        {t.text}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
