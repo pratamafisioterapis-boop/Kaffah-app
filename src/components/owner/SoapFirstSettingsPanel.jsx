@@ -125,35 +125,35 @@ const SoapFirstSettingsPanel = () => {
           </label>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label>Berlaku untuk rekap mulai tanggal</Label>
+              <Label className="sm:min-h-[2.5rem] flex items-end leading-tight">Berlaku untuk rekap mulai tanggal</Label>
               <Input type="date" value={form.start_date || ''} onChange={(e) => setF('start_date', e.target.value)} />
             </div>
             <div className="space-y-1">
-              <Label>Tambahan paket 2 keluhan (Rp per sesi)</Label>
+              <Label className="sm:min-h-[2.5rem] flex items-end leading-tight">Tambahan paket 2 keluhan (Rp per sesi)</Label>
               <Input type="number" value={num(form.two_complaint_package_surcharge)} onChange={(e) => setF('two_complaint_package_surcharge', e.target.value)} />
             </div>
             <div className="space-y-1">
-              <Label>Harga dasar nebulizer (Rp)</Label>
+              <Label className="sm:min-h-[2.5rem] flex items-end leading-tight">Harga dasar nebulizer (Rp)</Label>
               <Input type="number" min="0" value={num(form.nebulizer_base_price)} onChange={(e) => setF('nebulizer_base_price', e.target.value)} />
               <p className="text-[11px] text-slate-500">Tanpa masker & obat. Dipakai bila diagnosa hanya satu dan tindakan SOAP memuat Nebulizer. Kosong/0 = pakai harga tipe pasien biasa.</p>
             </div>
             <div className="space-y-1">
-              <Label>Harga masker nebulizer (Rp)</Label>
+              <Label className="sm:min-h-[2.5rem] flex items-end leading-tight">Harga masker nebulizer (Rp)</Label>
               <Input type="number" min="0" value={num(form.nebulizer_mask_price)} onChange={(e) => setF('nebulizer_mask_price', e.target.value)} />
               <p className="text-[11px] text-slate-500">Otomatis ditambahkan ke nominal Rekap Harian bila terapis memilih masker dari klinik di SOAP.</p>
             </div>
             <div className="space-y-1">
-              <Label>Harga obat nebulizer (Rp)</Label>
+              <Label className="sm:min-h-[2.5rem] flex items-end leading-tight">Harga obat nebulizer (Rp)</Label>
               <Input type="number" min="0" value={num(form.nebulizer_drug_price)} onChange={(e) => setF('nebulizer_drug_price', e.target.value)} />
               <p className="text-[11px] text-slate-500">Otomatis ditambahkan ke nominal Rekap Harian bila terapis memilih obat dari klinik di SOAP.</p>
             </div>
             <div className="space-y-1">
-              <Label>Toleransi SOAP setelah slot berakhir (menit)</Label>
+              <Label className="sm:min-h-[2.5rem] flex items-end leading-tight">Toleransi SOAP setelah slot berakhir (menit)</Label>
               <Input type="number" value={num(form.incentive_grace_minutes)} onChange={(e) => setF('incentive_grace_minutes', e.target.value)} />
               <p className="text-[11px] text-slate-500">Lewat batas ini jasa insentif sesi dihitung nol (tidak ditampilkan ke terapis).</p>
             </div>
             <div className="space-y-1">
-              <Label>Pengingat SOAP setelah slot mulai (menit)</Label>
+              <Label className="sm:min-h-[2.5rem] flex items-end leading-tight">Pengingat SOAP setelah slot mulai (menit)</Label>
               <Input type="number" value={num(form.reminder_after_minutes)} onChange={(e) => setF('reminder_after_minutes', e.target.value)} />
             </div>
           </div>
