@@ -5,7 +5,7 @@ import {
   Calendar, Loader2, Plus, Search, X, Clock, Play, Square,
   ChevronLeft, ChevronRight, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, BarChart3, CreditCard, Users, CheckCircle2
 } from 'lucide-react';
-import { getDailyRecaps, getDailyRecapsTotalAmount, getPhysiotherapists, getCachedClinicId } from '@/lib/api';
+import { getDailyRecaps, getDailyRecapsTotalAmount, getPackagePaymentsTotal, getPhysiotherapists, getCachedClinicId } from '@/lib/api';
 import InvoiceStatusButton from '@/components/admin/InvoiceStatusButton';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -140,6 +140,8 @@ const DailyRecap = ({ hideControls = false, showPaymentFilter = false }) => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [paymentMethodOptions, setPaymentMethodOptions] = useState([]);
   const [totalAmount, setTotalAmount] = useState(0);
+  // Pembayaran paket di awal (Praxis) dalam periode: uang masuk tanpa baris rekap.
+  const [pkgPaymentsTotal, setPkgPaymentsTotal] = useState(0);
   const therapistOptions = useMemo(() => {
   const map = new Map();
 
@@ -302,7 +304,18 @@ useEffect(() => {
         therapistId: selectedTherapist || null,
         paymentMethod: selectedPaymentMethod || null,
       });
-      if (isMounted.current) setTotalAmount(data || 0);
+      // Pembayaran paket tidak punya terapis/nama di rekap: ikut dihitung hanya bila filter terapis & cari kosong.
+      const pkgTotal = (selectedTherapist || debouncedSearch.trim())
+        ? 0
+        : await getPackagePaymentsTotal({
+            startDate: queryDateRange.start,
+            endDate: queryDateRange.end,
+            paymentMethod: selectedPaymentMethod || null,
+          });
+      if (isMounted.current) {
+        setTotalAmount(data || 0);
+        setPkgPaymentsTotal(pkgTotal || 0);
+      }
     };
     fetchTotal();
   }, [showPaymentFilter, queryDateRange, debouncedSearch, selectedTherapist, selectedPaymentMethod]);
@@ -943,7 +956,10 @@ const getPremiumPastelBadge = (text) => {
               <div className="w-full flex items-center gap-1.5 px-3 h-8 rounded-app bg-emerald-50 border border-emerald-100">
                 <BarChart3 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span className="text-xs sm:text-sm font-medium text-emerald-700 whitespace-nowrap">
-                  Total: <span className="font-bold">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount)}</span>
+                  Total: <span className="font-bold">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount + pkgPaymentsTotal)}</span>
+                  {pkgPaymentsTotal > 0 && (
+                    <span className="ml-1 font-normal text-emerald-600">(termasuk bayar paket di awal {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(pkgPaymentsTotal)})</span>
+                  )}
                 </span>
               </div>
             </>

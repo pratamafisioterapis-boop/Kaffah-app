@@ -2158,6 +2158,32 @@ export const getDailyRecaps = async ({
   }, 'getDailyRecaps', { retry: true });
 };
 
+// Pembayaran paket di awal (Praxis, tabel package_payments): uang masuk pada tanggal bayar (WITA),
+// tanpa rekap kunjungan. Klinik lain tidak punya baris sehingga hasilnya kosong.
+const nextDayYmd = (ymd) => new Date(new Date(`${ymd}T00:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10);
+const witaYmd = (iso) => new Date(new Date(iso).getTime() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+
+export const getPackagePaymentsInRange = async ({ startDate, endDate, paymentMethod = null } = {}) => {
+  return safeQuery(async () => {
+    let query = supabase
+      .from('package_payments')
+      .select('id, paid_at, amount, payment_method, package_name, receipt_number, patient:patients!patient_id(full_name)')
+      .eq('status', 'paid')
+      .order('paid_at', { ascending: false });
+    if (startDate) query = query.gte('paid_at', `${startDate}T00:00:00+08:00`);
+    if (endDate) query = query.lt('paid_at', `${nextDayYmd(endDate)}T00:00:00+08:00`);
+    if (paymentMethod) query = query.eq('payment_method', paymentMethod);
+    const { data, error } = await query;
+    if (error) return { error };
+    return { data: data || [], error: null };
+  }, 'getPackagePaymentsInRange', { retry: true });
+};
+
+export const getPackagePaymentsTotal = async (params = {}) => {
+  const { data } = await getPackagePaymentsInRange(params);
+  return (data || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
+};
+
 export const getDailyRecapsTotalAmount = async ({ startDate, endDate, search = '', therapistId = null, paymentMethod = null }) => {
   return safeQuery(async () => {
     
@@ -2932,7 +2958,7 @@ export const getAdminIncome = async ({ startDate, endDate } = {}) => {
 
   }, 'getAdminIncome', { retry: true });
 };
-export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) => {
+export const getPatientIncomeFromPackages = async ({ startDate, endDate, includePackagePayments = false } = {}) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
@@ -3097,6 +3123,27 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
         is_tips: true
       }];
     });
+
+    // Opt-in (laporan akuntansi): pembayaran paket di awal sebagai uang masuk pada tanggal bayar.
+    // amount = 0 (akrual tetap per sesi lewat nominal paket, jadi tidak dihitung dua kali);
+    // cash_amount = nominal yang diterima.
+    if (includePackagePayments) {
+      const { data: pays } = await getPackagePaymentsInRange({ startDate, endDate });
+      (pays || []).forEach(p => {
+        formatted.push({
+          id: `pkgpay-${p.id}`,
+          date: witaYmd(p.paid_at),
+          patient_name: p.patient?.full_name || 'Tanpa Nama',
+          patient_type: 'Pembayaran Paket (di awal)',
+          package_name: `Bayar di awal: ${p.package_name}`,
+          session_number: null,
+          payment_method: p.payment_method || '-',
+          amount: 0,
+          cash_amount: Number(p.amount) || 0,
+          is_package_payment: true
+        });
+      });
+    }
 
     return {
       data: formatted,
