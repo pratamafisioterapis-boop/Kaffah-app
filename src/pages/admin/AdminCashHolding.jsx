@@ -21,6 +21,8 @@ const todayStr = () => format(new Date(), 'yyyy-MM-dd');
 const fmtDate = (d) => { try { return format(parseISO(d), 'd MMM yyyy', { locale: localeId }); } catch { return d || '-'; } };
 const daysSince = (d) => { try { return Math.floor((Date.now() - parseISO(d).getTime()) / 86400000); } catch { return 0; } };
 const STALE_DAYS = 2;
+// Penanda setoran yang dicatat manual tanpa foto (pencatatan awal).
+const NO_PROOF = 'tanpa-foto';
 
 const STATUS = {
   pending: { label: 'Menunggu konfirmasi', cls: 'bg-amber-100 text-amber-700 border-amber-200' },
@@ -324,7 +326,7 @@ const AdminCashHolding = () => {
                       <p className="text-xs text-slate-500">{fmtDate(x.handover_date)}{x.note ? ` · ${x.note}` : ''}</p>
                     </div>
                     <div className="flex gap-2">
-                      {x.proof_path && <Button size="sm" variant="outline" onClick={() => viewProof(x.proof_path)}><Eye className="mr-1 h-3.5 w-3.5" />Bukti</Button>}
+                      {x.proof_path && x.proof_path !== NO_PROOF && <Button size="sm" variant="outline" onClick={() => viewProof(x.proof_path)}><Eye className="mr-1 h-3.5 w-3.5" />Bukti</Button>}
                       <Button size="sm" disabled={busy} onClick={() => confirm(x)}><Check className="mr-1 h-3.5 w-3.5" />Konfirmasi</Button>
                       <Button size="sm" variant="outline" disabled={busy} onClick={() => setRejectTarget(x)}><X className="mr-1 h-3.5 w-3.5" />Tolak</Button>
                     </div>
@@ -382,7 +384,7 @@ const AdminCashHolding = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className={st.cls}>{st.label}</Badge>
-                      {x.proof_path && <Button size="sm" variant="ghost" onClick={() => viewProof(x.proof_path)}><Eye className="h-4 w-4" /></Button>}
+                      {x.proof_path && x.proof_path !== NO_PROOF && <Button size="sm" variant="ghost" onClick={() => viewProof(x.proof_path)}><Eye className="h-4 w-4" /></Button>}
                       {isAdmin && mineOut && x.status === 'pending' && (
                         <Button size="sm" variant="ghost" disabled={busy} onClick={() => cancel(x)}><Undo2 className="mr-1 h-3.5 w-3.5" />Batalkan</Button>
                       )}
