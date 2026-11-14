@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { lazyRetry } from '@/lib/lazyRetry';
 
 // Pages
+const AdminCashHolding = React.lazy(lazyRetry(() => import('@/pages/admin/AdminCashHolding'), 'AdminCashHolding'));
 const OwnerAppointmentsPage = React.lazy(lazyRetry(() => import('@/pages/OwnerAppointmentsPage'), 'OwnerAppointmentsPage'));
 const OwnerPresentationPage = React.lazy(lazyRetry(() => import('@/pages/owner/OwnerPresentationPage'), 'OwnerPresentationPage'));
 const DatabasePatients = React.lazy(lazyRetry(() => import('@/pages/owner/DatabasePatients'), 'DatabasePatients'));
@@ -549,6 +550,7 @@ const OwnerDashboard = () => {
         <Route path="/clinical-documents" element={<ClinicalDocuments />} />
         <Route path="/decrees" element={<OwnerDecreesPage />} />
         <Route path="/review-latihan" element={<OwnerExerciseReviews />} />
+        <Route path="/cash-holding" element={<AdminCashHolding />} />
         
 
         {/* Fallback for old routes */}
