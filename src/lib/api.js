@@ -129,7 +129,8 @@ const cleanDailyRecapPayload = (data) => {
     'therapist_name',
     'is_auto_filled',
     'package_type_id',
-    'payment_splits'
+    'payment_splits',
+    'payment_proof_path'
   ];
 
   fieldsToRemove.forEach(field => {
@@ -1808,7 +1809,8 @@ const saveDailyRecapPaymentSplits = async (recapId, splits) => {
     .map(s => ({
       recap_id: recapId,
       payment_method: s.payment_method,
-      amount: parseFloat(s.amount)
+      amount: parseFloat(s.amount),
+      proof_path: s.proof_path || null
     }));
 
   if (rows.length === 0) return;
@@ -1930,6 +1932,15 @@ export const createDailyRecap = async (payload) => {
       if (tipsError) return { error: tipsError };
     }
 
+    // Bukti pembayaran (debit/transfer) juga lewat update terpisah.
+    if (payload.payment_proof_path) {
+      const { error: proofError } = await supabase
+        .from('daily_recaps')
+        .update({ payment_proof_path: payload.payment_proof_path })
+        .eq('id', data.recap_id);
+      if (proofError) return { error: proofError };
+    }
+
     // Barang dijual (goods_items) juga disimpan lewat update terpisah; total & stok dihitung trigger DB.
     if (Array.isArray(payload.goods_items) && payload.goods_items.length > 0) {
       const { error: goodsError } = await supabase
@@ -1969,6 +1980,7 @@ cleanedPayload.amount_original = payload.amount_original;
       .update({
         ...cleanedPayload,
         amount_original: payload.amount_original,
+        ...(payload.payment_proof_path !== undefined ? { payment_proof_path: payload.payment_proof_path || null } : {}),
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
@@ -2021,6 +2033,7 @@ export const getDailyRecaps = async ({
   tips_amount,
   goods_amount,
   payment_method,
+  payment_proof_path,
   discount_type,
   discount_value,
   discount_label,
@@ -2033,7 +2046,7 @@ export const getDailyRecaps = async ({
   revenue_date,
   special_type,
   appointment:appointments!appointment_id(appointment_date),
-  payment_splits:daily_recap_payment_splits(id, payment_method, amount),
+  payment_splits:daily_recap_payment_splits(id, payment_method, amount, proof_path),
   start_time,
   end_time,
   status,

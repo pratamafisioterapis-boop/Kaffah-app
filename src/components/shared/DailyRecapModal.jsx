@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar as CalendarIcon, Loader2, Save, Plus, Trash2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, Save, Plus, Trash2, Paperclip, ExternalLink } from 'lucide-react';
 import SearchableSelect from '@/components/ui/searchable-select';
 import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
 import DatePicker from '@/components/DatePicker';
@@ -243,6 +243,9 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
     // Split payment: satu recap dibayar dengan lebih dari 1 metode
     // (mis. QRIS 200rb + Cash 50rb untuk tagihan 250rb).
     const [useSplitPayment, setUseSplitPayment] = useState(false);
+    // Bukti pembayaran (debit/transfer): file baru + path bukti yang sudah tersimpan.
+    const [proofFile, setProofFile] = useState(null);
+    const [savedProofPath, setSavedProofPath] = useState('');
     const [paymentSplits, setPaymentSplits] = useState([{ payment_method: '', amount: '' }]);
 
     // DEBUG: Log initial data
@@ -421,11 +424,13 @@ setFormData({
                 const existingSplits = Array.isArray(initialData.payment_splits) ? initialData.payment_splits : [];
                 if (existingSplits.length > 1) {
                     setUseSplitPayment(true);
-                    setPaymentSplits(existingSplits.map(s => ({ payment_method: s.payment_method, amount: String(s.amount) })));
+                    setPaymentSplits(existingSplits.map(s => ({ payment_method: s.payment_method, amount: String(s.amount), proof_path: s.proof_path || '', proofFile: null })));
                 } else {
                     setUseSplitPayment(false);
                     setPaymentSplits([{ payment_method: '', amount: '' }]);
                 }
+                setProofFile(null);
+                setSavedProofPath(initialData.payment_proof_path || '');
 
                 // If editing, try to load current package status
                 if (initialData.patient_id) {
@@ -460,6 +465,8 @@ setFormData({
                 setRewardCode('');
                 setUseSplitPayment(false);
                 setPaymentSplits([{ payment_method: '', amount: '' }]);
+                setProofFile(null);
+                setSavedProofPath('');
             }
             setErrors({});
         } catch (err) {
@@ -1319,8 +1326,59 @@ setFormData({
         setPaymentSplits(prev => prev.map((row, i) => i === index ? { ...row, [field]: value } : row));
     };
 
+    // Metode yang butuh bukti: debit & transfer (label dari operational_options).
+    const methodLabel = (value) => {
+        const isUuidValue = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value || '');
+        return isUuidValue ? (paymentMethodOptions.find(o => o.value === value)?.label || '') : (value || '');
+    };
+    const methodNeedsProof = (value) => /debit|transfer|\btf\b/i.test(methodLabel(value));
+    const PROOF_MAX_BYTES = 5 * 1024 * 1024;
+    const pickProof = (file, apply) => {
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            toast({ variant: 'destructive', title: 'File tidak didukung', description: 'Bukti pembayaran harus berupa gambar.' });
+            return;
+        }
+        if (file.size > PROOF_MAX_BYTES) {
+            toast({ variant: 'destructive', title: 'Gambar terlalu besar', description: 'Maksimal 5 MB.' });
+            return;
+        }
+        apply(file);
+    };
+    const openSavedProof = async (path) => {
+        const { data, error } = await supabase.storage.from('payment-proofs').createSignedUrl(path, 600);
+        if (error || !data?.signedUrl) { toast({ variant: 'destructive', title: 'Gagal membuka bukti pembayaran' }); return; }
+        window.open(data.signedUrl, '_blank', 'noopener');
+    };
+    const uploadProof = async (file) => {
+        const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+        const path = `${userDetails.clinic_id}/${crypto.randomUUID()}.${ext}`;
+        const { error } = await supabase.storage.from('payment-proofs').upload(path, file, { contentType: file.type });
+        if (error) throw new Error(`Gagal mengunggah bukti pembayaran: ${error.message}`);
+        return path;
+    };
+    const renderProofPicker = ({ file, savedPath, onFile, error }) => (
+        <div className="space-y-1">
+            <Label className="text-xs">Bukti pembayaran <span className="text-red-500">*</span></Label>
+            <div className="flex items-center gap-2 flex-wrap">
+                <label className="inline-flex items-center gap-1.5 cursor-pointer rounded-app-sm border bg-white px-3 py-1.5 text-xs font-medium hover:bg-slate-50">
+                    <Paperclip className="h-3.5 w-3.5" />
+                    {file || savedPath ? 'Ganti gambar' : 'Upload gambar'}
+                    <input type="file" accept="image/*" className="hidden" onChange={e => { pickProof(e.target.files?.[0], onFile); e.target.value = ''; }} />
+                </label>
+                {file && <span className="text-xs text-slate-600 break-all">{file.name}</span>}
+                {!file && savedPath && (
+                    <button type="button" className="inline-flex items-center gap-1 text-xs text-blue-600 underline" onClick={() => openSavedProof(savedPath)}>
+                        <ExternalLink className="h-3 w-3" /> Lihat bukti tersimpan
+                    </button>
+                )}
+            </div>
+            {error && <p className="text-xs text-red-500">{error}</p>}
+        </div>
+    );
+
     const addSplitRow = () => {
-        setPaymentSplits(prev => [...prev, { payment_method: '', amount: '' }]);
+        setPaymentSplits(prev => [...prev, { payment_method: '', amount: '', proof_path: '', proofFile: null }]);
     };
 
     const removeSplitRow = (index) => {
@@ -1421,6 +1479,14 @@ setFormData({
             newErrors.payment_method = "Metode pembayaran wajib dipilih karena nominal sudah terisi";
         }
 
+        if (!useSplitPayment && formData.special_type !== 'free' && parseFloat(formData.amount) > 0
+            && methodNeedsProof(formData.payment_method) && !proofFile && !savedProofPath) {
+            newErrors.payment_proof = "Bukti pembayaran wajib diunggah untuk debit/transfer";
+        }
+        if (useSplitPayment && paymentSplits.some(row => methodNeedsProof(row.payment_method) && !row.proofFile && !row.proof_path)) {
+            newErrors.payment_proof_splits = "Unggah bukti untuk setiap baris split bermetode debit/transfer";
+        }
+
         if (useSplitPayment) {
             const incompleteRow = paymentSplits.some(row => !row.payment_method || !(parseFloat(row.amount) > 0));
             if (incompleteRow) {
@@ -1459,12 +1525,21 @@ setFormData({
 
             let resolvedPaymentMethod = resolvePaymentMethodLabel(formData.payment_method);
             let resolvedPaymentSplits = [];
+            let resolvedProofPath = null;
 
             if (useSplitPayment) {
-                resolvedPaymentSplits = paymentSplits.map(row => ({
-                    payment_method: resolvePaymentMethodLabel(row.payment_method),
-                    amount: parseFloat(row.amount) || 0
-                }));
+                resolvedPaymentSplits = [];
+                for (const row of paymentSplits) {
+                    const needsProof = methodNeedsProof(row.payment_method);
+                    const proofPath = needsProof
+                        ? (row.proofFile ? await uploadProof(row.proofFile) : (row.proof_path || null))
+                        : null;
+                    resolvedPaymentSplits.push({
+                        payment_method: resolvePaymentMethodLabel(row.payment_method),
+                        amount: parseFloat(row.amount) || 0,
+                        proof_path: proofPath
+                    });
+                }
                 // Ringkasan payment_method di daily_recaps dipakai oleh trigger fee
                 // bank, rekonsiliasi, dsb yang mengasumsikan 1 metode - pakai metode
                 // dgn nominal terbesar sebagai representasinya.
@@ -1472,8 +1547,13 @@ setFormData({
                 resolvedPaymentMethod = largestSplit?.payment_method || resolvedPaymentMethod;
             }
 
+            if (!useSplitPayment && methodNeedsProof(formData.payment_method)) {
+                resolvedProofPath = proofFile ? await uploadProof(proofFile) : (savedProofPath || null);
+            }
+
             const payload = {
                 ...formData,
+                payment_proof_path: resolvedProofPath,
                 recap_date: isoDate,
                 therapist_name: therapistName,
                 patient_type: resolvedPatientType,
@@ -1841,6 +1921,12 @@ setFormData({
                                         {errors.payment_method && <p className="text-xs text-red-500">{errors.payment_method}</p>}
                                     </div>
                                 </div>
+                                {!useSplitPayment && !isPackageSessionLocked && formData.special_type !== 'free' && methodNeedsProof(formData.payment_method) && renderProofPicker({
+                                    file: proofFile,
+                                    savedPath: savedProofPath,
+                                    onFile: setProofFile,
+                                    error: errors.payment_proof
+                                })}
                                 {isPackageSessionLocked && (
                                     <p className="text-xs text-slate-500 -mt-1">
                                         Sesi ini memakai kuota paket (Rp 0) sehingga nominal &amp; metode pembayaran dikunci. Kalau pasien batal memakai paket, ajukan “Lepas dari paket” ke owner lewat Detail recap > Pengajuan Perubahan.
@@ -1861,7 +1947,8 @@ setFormData({
                                 {useSplitPayment && (
                                     <div className="space-y-2 bg-slate-50 p-3 rounded-app-sm border">
                                         {paymentSplits.map((row, index) => (
-                                            <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-start">
+                                            <div key={index} className="space-y-1">
+                                            <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-start">
                                                 <SearchableSelect
                                                     options={paymentMethodOptions}
                                                     value={row.payment_method}
@@ -1885,6 +1972,13 @@ setFormData({
                                                 >
                                                     <Trash2 className="h-4 w-4 text-red-500" />
                                                 </Button>
+                                            </div>
+                                            {methodNeedsProof(row.payment_method) && renderProofPicker({
+                                                file: row.proofFile,
+                                                savedPath: row.proof_path,
+                                                onFile: f => handleSplitRowChange(index, 'proofFile', f),
+                                                error: errors.payment_proof_splits && !row.proofFile && !row.proof_path ? 'Bukti wajib diunggah' : null
+                                            })}
                                             </div>
                                         ))}
                                         <Button type="button" variant="outline" size="sm" onClick={addSplitRow}>
