@@ -51,6 +51,8 @@ const AdminCashHolding = () => {
   const [handovers, setHandovers] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [custodianId, setCustodianId] = useState(null);
+  const [petty, setPetty] = useState(null);
+  const [pettyExpenses, setPettyExpenses] = useState([]);
   const [names, setNames] = useState({});
   const [detail, setDetail] = useState([]);
   const [patientNames, setPatientNames] = useState({});
@@ -61,7 +63,7 @@ const AdminCashHolding = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const emptyForm = { toType: 'admin', toUser: '', amount: '', date: todayStr(), note: '', file: null };
+  const emptyForm = { toType: 'admin', toUser: '', amount: '', replenish: '', date: todayStr(), note: '', file: null };
   const [form, setForm] = useState(emptyForm);
 
   const me = holdings.find((h) => h.user_id === userDetails?.id);
@@ -71,12 +73,16 @@ const AdminCashHolding = () => {
     if (!userDetails?.id) return;
     setLoading(true);
     try {
-      const [h, ho, ad, cfg] = await Promise.all([
+      const [h, ho, ad, cfg, pt, pe] = await Promise.all([
         supabase.rpc('get_cash_holdings'),
         supabase.from('cash_handovers').select('*').order('created_at', { ascending: false }).limit(200),
         supabase.from('users').select('id, full_name, is_active').eq('clinic_id', userDetails.clinic_id).eq('role', 'admin'),
         supabase.from('cash_ledger_config').select('custodian_user_id').eq('clinic_id', userDetails.clinic_id).maybeSingle(),
+        supabase.rpc('get_petty_cash'),
+        supabase.from('admin_expenses').select('id, transaction_date, amount, sub_category, description, created_at').eq('paid_from_petty', true).order('transaction_date', { ascending: false }).order('created_at', { ascending: false }).limit(8),
       ]);
+      setPetty(pt.error ? null : (pt.data?.[0] || null));
+      setPettyExpenses(pe.error ? [] : (pe.data || []));
       if (h.error) throw h.error;
       if (ho.error) throw ho.error;
       setHoldings(h.data || []);
@@ -129,17 +135,30 @@ const AdminCashHolding = () => {
     [handovers, isAdmin, userDetails?.id]
   );
 
+  const pettyNeeded = Number(petty?.needed || 0);
+  // Default isi ulang kas kecil: sebesar yang dibutuhkan (maks. cash pendapatan yang dipegang);
+  // nominal setor = sisa cash pendapatan setelah isi ulang.
+  const defaultsFor = (toType) => {
+    const bal = Math.max(0, Math.round(myBalance));
+    const repl = toType === 'finance' ? Math.min(Math.round(pettyNeeded), bal) : 0;
+    return { amount: bal > 0 ? String(bal - repl) : '', replenish: repl > 0 ? String(repl) : '' };
+  };
+
   const openDialog = () => {
     const last = (() => { try { return localStorage.getItem('cashHandoverLastTo') || ''; } catch { return ''; } })();
     const preset = otherAdmins.find((a) => a.id === last)?.id || (otherAdmins.length === 1 ? otherAdmins[0].id : '');
-    setForm({ ...emptyForm, toType: canToAdmin ? 'admin' : 'finance', toUser: preset, amount: myBalance > 0 ? String(Math.round(myBalance)) : '' });
+    const type = canToAdmin ? 'admin' : 'finance';
+    setForm({ ...emptyForm, toType: type, toUser: preset, ...defaultsFor(type) });
     setDialogOpen(true);
   };
 
   const submit = async () => {
-    const amount = parseFloat(form.amount);
-    if (!(amount > 0)) return toast({ title: 'Nominal belum diisi', variant: 'destructive' });
-    if (amount > myBalance) return toast({ title: 'Nominal melebihi cash yang dipegang', description: `Saldo Anda ${formatRp(myBalance)}`, variant: 'destructive' });
+    const amount = parseFloat(form.amount) || 0;
+    const repl = form.toType === 'finance' ? (parseFloat(form.replenish) || 0) : 0;
+    if (amount < 0 || repl < 0 || amount + repl <= 0) return toast({ title: 'Nominal belum diisi', variant: 'destructive' });
+    if (form.toType === 'admin' && amount <= 0) return toast({ title: 'Nominal belum diisi', variant: 'destructive' });
+    if (repl > pettyNeeded) return toast({ title: 'Isi ulang kas kecil melebihi yang dibutuhkan', description: `Dibutuhkan ${formatRp(pettyNeeded)}`, variant: 'destructive' });
+    if (amount + repl > myBalance) return toast({ title: 'Total melebihi cash pendapatan yang dipegang', description: `Saldo Anda ${formatRp(myBalance)}`, variant: 'destructive' });
     if (form.toType === 'admin' && !form.toUser) return toast({ title: 'Pilih admin penerima', variant: 'destructive' });
     if (!form.file) return toast({ title: 'Foto bukti wajib untuk setiap setoran', variant: 'destructive' });
 
@@ -156,6 +175,7 @@ const AdminCashHolding = () => {
         p_to_type: form.toType,
         p_to_user: form.toType === 'admin' ? form.toUser : null,
         p_amount: amount,
+        p_petty_replenish: repl,
         p_date: form.date,
         p_note: form.note || null,
         p_proof: proofPath,
@@ -251,6 +271,37 @@ const AdminCashHolding = () => {
         <div className="rounded-xl border bg-white p-6 text-sm text-slate-500">Pencatatan cash belum aktif untuk klinik ini.</div>
       ) : (
         <>
+          {petty && (
+            <section className="rounded-xl border bg-white p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="flex items-center gap-2 text-sm font-semibold"><Wallet className="h-4 w-4" /> Kas Kecil</h2>
+                  <p className="text-xs text-slate-500">
+                    Modal dari keuangan untuk pembelian cash. Setelah setor pendapatan, kas kecil kembali ke {formatRp(petty.plafon)}; pembelian tadi dipotong dari setoran.
+                  </p>
+                </div>
+                {Number(petty.balance) < Number(petty.plafon) / 3 && (
+                  <Badge variant="outline" className="border-red-300 text-red-700"><AlertTriangle className="mr-1 h-3 w-3" />Sisa kas kecil menipis</Badge>
+                )}
+              </div>
+              <div className="mt-3 grid grid-cols-3 gap-3">
+                <Stat label="Sisa kas kecil" value={formatRp(petty.balance)} tone={Number(petty.balance) < 0 ? 'text-red-600' : 'text-emerald-700'} />
+                <Stat label="Plafon" value={formatRp(petty.plafon)} />
+                <Stat label="Belum diganti dari setoran" value={formatRp(petty.needed)} tone={pettyNeeded > 0 ? 'text-amber-700' : 'text-slate-900'} />
+              </div>
+              {pettyExpenses.length > 0 && (
+                <div className="mt-3 divide-y rounded-lg border text-sm">
+                  {pettyExpenses.map((e) => (
+                    <div key={e.id} className="flex items-center justify-between gap-2 px-3 py-2">
+                      <span className="min-w-0 truncate">{fmtDate(e.transaction_date)} · {e.sub_category || 'Pengeluaran'}{e.description ? ` · ${e.description}` : ''}</span>
+                      <span className="shrink-0 tabular-nums text-red-600">-{formatRp(e.amount)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
           {isAdmin ? (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               <Stat label="Cash yang saya pegang" value={formatRp(myBalance)} tone={myBalance < 0 ? 'text-red-600' : 'text-emerald-700'} hint={myBalance < 0 ? 'Negatif: cek rekap yang direvisi' : (myPendingOut > 0 ? `Belum termasuk ${formatRp(myPendingOut)} yang menunggu konfirmasi penerima` : undefined)} />
@@ -376,7 +427,7 @@ const AdminCashHolding = () => {
                   <div key={x.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
                     <div>
                       <p className="font-medium">
-                        {nameOf(x.from_user_id)} → {x.to_type === 'finance' ? 'Tim Keuangan' : nameOf(x.to_user_id)} · {formatRp(x.amount)}
+                        {nameOf(x.from_user_id)} → {x.to_type === 'finance' ? 'Tim Keuangan' : nameOf(x.to_user_id)} · {formatRp(x.amount)}{Number(x.petty_replenish) > 0 && ` + isi ulang kas kecil ${formatRp(x.petty_replenish)}`}
                       </p>
                       <p className="text-xs text-slate-500">
                         {fmtDate(x.handover_date)}{x.note ? ` · ${x.note}` : ''}{x.reject_reason ? ` · Ditolak: ${x.reject_reason}` : ''}
@@ -405,7 +456,7 @@ const AdminCashHolding = () => {
 
             <div className="space-y-1.5">
               <Label>Setor ke</Label>
-              <Select value={form.toType} onValueChange={(v) => setForm((f) => ({ ...f, toType: v }))}>
+              <Select value={form.toType} onValueChange={(v) => setForm((f) => ({ ...f, toType: v, ...defaultsFor(v) }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {canToAdmin && <SelectItem value="admin">Pemegang kas utama (perlu konfirmasi)</SelectItem>}
@@ -428,7 +479,7 @@ const AdminCashHolding = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Nominal (Rp)</Label>
+                <Label>{form.toType === 'finance' ? 'Disetor ke keuangan (Rp)' : 'Nominal (Rp)'}</Label>
                 <Input type="number" inputMode="numeric" value={form.amount} onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))} />
               </div>
               <div className="space-y-1.5">
@@ -436,6 +487,17 @@ const AdminCashHolding = () => {
                 <Input type="date" value={form.date} max={todayStr()} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
               </div>
             </div>
+
+            {form.toType === 'finance' && pettyNeeded > 0 && (
+              <div className="space-y-1.5 rounded-md border border-amber-200 bg-amber-50 p-3">
+                <Label>Isi ulang kas kecil dari pendapatan (Rp)</Label>
+                <Input type="number" inputMode="numeric" value={form.replenish} onChange={(e) => setForm((f) => ({ ...f, replenish: e.target.value }))} />
+                <p className="text-xs text-slate-600">
+                  Pembelian dari kas kecil yang belum diganti: <b>{formatRp(pettyNeeded)}</b>. Uang ini tidak disetor, tetap Anda pegang agar kas kecil kembali {formatRp(petty?.plafon)}.
+                  Total keluar dari cash pendapatan: <b>{formatRp((parseFloat(form.amount) || 0) + (parseFloat(form.replenish) || 0))}</b> dari {formatRp(myBalance)}.
+                </p>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <Label>Foto bukti <span className="text-red-500">*</span></Label>

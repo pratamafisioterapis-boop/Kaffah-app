@@ -7,9 +7,14 @@ import { Loader2 } from 'lucide-react';
 import { createAdminExpense, updateAdminExpense, getAccountingSubcategories, getBankAccounts } from '@/lib/api';
 import { format } from 'date-fns';
 import SearchableSelect from '@/components/ui/searchable-select';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 
 const AdminExpenseForm = ({ onSuccess, onCancel, initialData = null }) => {
   const { toast } = useToast();
+  const { userDetails } = useAuth();
+  const isKaffah = userDetails?.clinic_id === KAFFAH_CLINIC_ID;
+  const [bankNames, setBankNames] = useState({});
   const [loading, setLoading] = useState(false);
   const [subcategories, setSubcategories] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
@@ -23,7 +28,8 @@ const AdminExpenseForm = ({ onSuccess, onCancel, initialData = null }) => {
     sub_category_id: '',
     description: '',
     transaction_date: format(new Date(), 'yyyy-MM-dd'),
-    bank_account_id: ''
+    bank_account_id: '',
+    paid_from_petty: false
   });
 
   useEffect(() => {
@@ -41,7 +47,8 @@ const AdminExpenseForm = ({ onSuccess, onCancel, initialData = null }) => {
         sub_category_id: initialData.sub_category_id || '',
         description: initialData.description || '',
         transaction_date: initialData.transaction_date || format(new Date(), 'yyyy-MM-dd'),
-        bank_account_id: initialData.bank_account_id || ''
+        bank_account_id: initialData.bank_account_id || '',
+        paid_from_petty: !!initialData.paid_from_petty
       });
     }
   }, [initialData]);
@@ -73,6 +80,7 @@ const AdminExpenseForm = ({ onSuccess, onCancel, initialData = null }) => {
       const { data, error } = await getBankAccounts();
       if (error) throw error;
       if (data) {
+        setBankNames(Object.fromEntries(data.map(b => [b.id, b.bank_name || ''])));
         setBankAccounts(data.map(bank => ({
           label: `${bank.bank_name} - ${bank.account_number} (${bank.holder_name})`,
           value: bank.id
@@ -125,7 +133,8 @@ const AdminExpenseForm = ({ onSuccess, onCancel, initialData = null }) => {
           sub_category_id: '',
           description: '',
           transaction_date: format(new Date(), 'yyyy-MM-dd'),
-          bank_account_id: ''
+          bank_account_id: '',
+          paid_from_petty: false
         });
       }
       
@@ -193,12 +202,27 @@ const AdminExpenseForm = ({ onSuccess, onCancel, initialData = null }) => {
         <SearchableSelect
           options={bankAccounts}
           value={form.bank_account_id}
-          onChange={(val) => setForm({...form, bank_account_id: val})}
+          onChange={(val) => setForm({...form, bank_account_id: val, paid_from_petty: /cash|tunai/i.test(bankNames[val] || '') ? form.paid_from_petty : false})}
           placeholder="Select bank account..."
           allowCreate={false} 
           notFoundText="No bank account found."
         />
       </div>
+
+      {isKaffah && /cash|tunai/i.test(bankNames[form.bank_account_id] || '') && (
+        <label className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={!!form.paid_from_petty}
+            onChange={(e) => setForm({...form, paid_from_petty: e.target.checked})}
+          />
+          <span>
+            <span className="font-medium">Dibayar dari kas kecil</span>
+            <span className="block text-xs text-slate-600">Mengurangi sisa kas kecil, lalu dipotong dari setoran pendapatan berikutnya.</span>
+          </span>
+        </label>
+      )}
 
       <div className="space-y-2">
         <Label htmlFor="description">Description</Label>
