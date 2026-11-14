@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import SearchableSelect from '@/components/ui/searchable-select';
 import { rankDiagnosisOptions } from '@/lib/diagnosisSearch';
-import { Calendar as CalendarIcon, Loader2, RefreshCw, Trash2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, RefreshCw, Trash2, Paperclip, ExternalLink } from 'lucide-react';
 import { 
 fetchPhysiotherapists, 
 fetchOperationalOptions, 
@@ -108,6 +108,9 @@ discount_value: ''
 });
 
 const [errors, setErrors] = useState({});
+// Bukti pembayaran (debit/transfer)
+const [proofFile, setProofFile] = useState(null);
+const [savedProofPath, setSavedProofPath] = useState('');
 
 useEffect(() => {
 loadOptions();
@@ -305,6 +308,8 @@ setIsLoadingData(false);
 };
 
 const initializeForm = (data) => {
+setProofFile(null);
+setSavedProofPath(data.payment_proof_path || '');
 let diag = data.diagnosis || [];
 if (typeof diag === 'string') {
 try { diag = JSON.parse(diag); } catch { diag = [diag]; }
@@ -558,14 +563,55 @@ console.error("Failed to extend package", err);
 }
 };
 
+const paymentLabelNow = paymentMethods.find(p => p.value === formData.payment_method)?.label || formData.payment_method || '';
+const needsProof = /debit|transfer|\btf\b/i.test(paymentLabelNow) && (parseFloat(formData.amount) || 0) > 0;
+
+const pickProof = (file) => {
+if (!file) return;
+if (!file.type.startsWith('image/')) {
+toast({ variant: "destructive", title: "File tidak didukung", description: "Bukti pembayaran harus berupa gambar." });
+return;
+}
+if (file.size > 5 * 1024 * 1024) {
+toast({ variant: "destructive", title: "Gambar terlalu besar", description: "Maksimal 5 MB." });
+return;
+}
+setProofFile(file);
+setErrors(prev => ({ ...prev, payment_proof: null }));
+};
+
+const openSavedProof = async () => {
+const { data, error } = await supabase.storage.from('payment-proofs').createSignedUrl(savedProofPath, 600);
+if (error || !data?.signedUrl) {
+toast({ variant: "destructive", title: "Gagal membuka bukti pembayaran" });
+return;
+}
+window.open(data.signedUrl, '_blank', 'noopener');
+};
+
 const handleSubmit = async () => {
 const validation = validateDailyRecapForm(formData);
-if (!validation.isValid) {
-setErrors(validation.errors);
+const proofMissing = needsProof && !proofFile && !savedProofPath;
+if (!validation.isValid || proofMissing) {
+setErrors({
+...(validation.errors || {}),
+...(proofMissing ? { payment_proof: "Bukti pembayaran wajib diunggah untuk debit/transfer" } : {})
+});
 return;
 }
 setIsSubmitting(true);
 try {
+let proofPath = null;
+if (needsProof) {
+if (proofFile) {
+const ext = (proofFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+proofPath = `${userDetails.clinic_id}/${crypto.randomUUID()}.${ext}`;
+const { error: uploadError } = await supabase.storage.from('payment-proofs').upload(proofPath, proofFile, { contentType: proofFile.type });
+if (uploadError) throw new Error(`Gagal mengunggah bukti pembayaran: ${uploadError.message}`);
+} else {
+proofPath = savedProofPath || null;
+}
+}
 const isoDate = parseDateFromDisplay(formData.recap_date);
 const therapistName = therapists.find(t => t.value === formData.therapist_id)?.label || '';
 // NOTE: sessions_used < total_sessions must be compared in JS — PostgREST's
@@ -634,6 +680,7 @@ therapist_name: therapistName,
 amount_original: parseFloat(formData.amount) || 0,
 amount: parseFloat(formData.amount) || 0,
 payment_method: selectedPaymentMethodLabel,
+payment_proof_path: proofPath,
 bank_account_id: formData.bank_account_id || null,
 discount_type: formData.discount_type === 'none' ? null : formData.discount_type,
 discount_value: formData.discount_type === 'none' ? 0 : (parseFloat(formData.discount_value) || 0),
@@ -875,6 +922,25 @@ allowCreate={true}
 disabled={isPackageSessionLocked}
 />
 </div>
+{needsProof && !isPackageSessionLocked && (
+<div className="space-y-1 col-span-2">
+<Label className="text-xs">Bukti pembayaran <span className="text-red-500">*</span></Label>
+<div className="flex items-center gap-2 flex-wrap">
+<label className="inline-flex items-center gap-1.5 cursor-pointer rounded-md border bg-white px-3 py-1.5 text-xs font-medium hover:bg-slate-50">
+<Paperclip className="h-3.5 w-3.5" />
+{proofFile || savedProofPath ? 'Ganti gambar' : 'Upload gambar'}
+<input type="file" accept="image/*" className="hidden" onChange={e => { pickProof(e.target.files?.[0]); e.target.value = ''; }} />
+</label>
+{proofFile && <span className="text-xs text-slate-600 break-all">{proofFile.name}</span>}
+{!proofFile && savedProofPath && (
+<button type="button" className="inline-flex items-center gap-1 text-xs text-blue-600 underline" onClick={openSavedProof}>
+<ExternalLink className="h-3 w-3" /> Lihat bukti tersimpan
+</button>
+)}
+</div>
+{errors.payment_proof && <p className="text-xs text-red-500">{errors.payment_proof}</p>}
+</div>
+)}
 {isPackageSessionLocked && (
   <p className="text-xs text-slate-500 col-span-2 -mt-2">
     Sesi ini memakai kuota paket (Rp 0) sehingga nominal &amp; metode pembayaran dikunci. Kalau pasien batal memakai paket, ajukan “Lepas dari paket” ke owner lewat Detail recap > Pengajuan Perubahan.
