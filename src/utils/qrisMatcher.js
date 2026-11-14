@@ -159,6 +159,86 @@ export const autoMatchSplits = (transactions, portions, { maxParts = 3 } = {}) =
   return matches;
 };
 
+// ---------------------------------------------------------------------------
+// Pembayaran gabungan terpecah: satu pembayar scan QRIS lebih dari sekali (mis. 330rb lalu kurang,
+// ditambah 25rb) untuk melunasi BEBERAPA pasien sekaligus (mis. Yani 205rb + Alma 150rb = 355rb).
+// Tidak ada satu transaksi pun yang sama dengan satu recap, tetapi JUMLAH transaksi pembayar yang sama
+// pas dengan JUMLAH beberapa recap. Banyak-ke-banyak ini disimpan dengan memberi semua transaksi
+// kelompok itu daftar recap yang sama (lihat qrisLinks.coverageOf untuk perhitungan status).
+// ---------------------------------------------------------------------------
+
+const nameTokens = (s) => norm(s).filter((t) => !STOP.has(t));
+
+// Dua nama pelanggan bank dianggap pembayar yang sama bila semua token nama yang lebih pendek ada di yang lain.
+const samePayer = (a, b) => {
+  const need = Math.min(nameTokens(a).length, nameTokens(b).length);
+  return need > 0 && nameOverlap(a, b) >= need;
+};
+
+// Kelompokkan transaksi (tanggal sama) menurut pembayar. Hanya kelompok >= 2 transaksi yang dikembalikan.
+export const groupTrxByPayer = (transactions, { maxSize = 6 } = {}) => {
+  const groups = [];
+  transactions.forEach((t) => {
+    const g = groups.find((x) => x.date === t.trx_date && samePayer(x.trxs[0].customer_name, t.customer_name));
+    if (g) g.trxs.push(t); else groups.push({ date: t.trx_date, trxs: [t] });
+  });
+  return groups.filter((g) => g.trxs.length >= 2).map((g) => ({ ...g, trxs: g.trxs.slice(0, maxSize) }));
+};
+
+const subsetsOf = (items, minSize) => {
+  const out = [];
+  for (let mask = 1; mask < (1 << items.length); mask += 1) {
+    const sub = items.filter((_, i) => mask & (1 << i));
+    if (sub.length >= minSize) out.push(sub);
+  }
+  return out.sort((a, b) => b.length - a.length);
+};
+
+// Untuk satu kelompok transaksi satu pembayar, cari gabungan 2-4 pembayaran yang jumlahnya pas dengan
+// jumlah transaksi (seluruh kelompok dulu, lalu sebagian). Minimal satu pembayaran harus mirip nama pembayar
+// (kecuali `requireName: false`). Hasil: [{ trxs, items, sum }] — dihentikan di ukuran gabungan transaksi terbesar yang ada hasilnya.
+export const findGroupCombos = (group, portions, { maxItems = 4, limit = 5, requireName = true } = {}) => {
+  const cands = portions.filter((p) => Math.round(p.amount) > 0 && p.date === group.date).slice(0, 40);
+  const payerName = group.trxs[0].customer_name;
+  for (const trxs of subsetsOf(group.trxs, 2)) {
+    const sum = trxs.reduce((a, t) => a + Math.round(Number(t.amount)), 0);
+    const found = [];
+    const walk = (start, picked, acc) => {
+      if (picked.length >= 2 && acc === sum) { found.push([...picked]); return; }
+      if (picked.length >= maxItems) return;
+      for (let i = start; i < cands.length; i += 1) {
+        const next = acc + Math.round(cands[i].amount);
+        if (next <= sum) walk(i + 1, [...picked, cands[i]], next);
+      }
+    };
+    walk(0, [], 0);
+    const ok = found
+      .map((items) => ({ trxs, items, sum, name: items.reduce((a, p) => a + nameOverlap(payerName, p.name), 0) }))
+      .filter((c) => !requireName || c.name > 0)
+      .sort((a, b) => b.name - a.name);
+    if (ok.length) return ok.slice(0, limit);
+  }
+  return [];
+};
+
+// Otomatis hanya bila hasilnya tunggal (tidak ambigu) untuk kelompok pembayar itu.
+export const autoMatchGroups = (transactions, portions) => {
+  const takenTx = new Set();
+  const takenKey = new Set();
+  const matches = [];
+  groupTrxByPayer(transactions).forEach((g) => {
+    const trxs = g.trxs.filter((t) => !takenTx.has(t.id));
+    const free = portions.filter((p) => !takenKey.has(p.recapId));
+    const found = findGroupCombos({ ...g, trxs }, free);
+    if (found.length !== 1) return;
+    const { trxs: tt, items } = found[0];
+    tt.forEach((t) => { takenTx.add(t.id); });
+    items.forEach((p) => { takenKey.add(p.recapId); });
+    tt.forEach((t) => matches.push({ transactionId: t.id, recapIds: items.map((p) => p.recapId) }));
+  });
+  return matches;
+};
+
 /**
  * @param transactions [{ id, trx_date, trx_time, amount, customer_name }] yang belum dicocokkan
  * @param portions     [{ recapId, date, amount, name, time, payAt }] pembayaran QRIS di recap yang belum terpakai

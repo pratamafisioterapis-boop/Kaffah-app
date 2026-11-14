@@ -68,3 +68,44 @@ export const rankPool = (t, pool) =>
       || b.name - a.name
       || Number(b.p.isQris) - Number(a.p.isQris)
       || a.gap - b.gap);
+
+/**
+ * Status penutupan per pembayaran, dihitung per "kelompok tertaut" (transaksi dan item yang saling terhubung).
+ * Satu kelompok bisa banyak-ke-banyak: mis. 2 transaksi pembayar yang sama (330rb + 25rb) untuk 2 pasien
+ * (205rb + 150rb). Kelompok tertutup bila jumlah transaksi >= jumlah pembayaran di kelompok itu;
+ * bila kurang, semua pembayaran di kelompok itu berstatus "kurang" dengan kekurangan yang sama.
+ * Kelompok yang tertaut ke item di luar daftar (hari lain / pemasukan non-QRIS) dianggap tertutup.
+ * @returns { [key]: { trxs, covered, deficit } }
+ */
+export const coverageOf = (transactions, portions) => {
+  const parent = new Map();
+  const find = (x) => { while (parent.get(x) !== x) { parent.set(x, parent.get(parent.get(x))); x = parent.get(x); } return x; };
+  const add = (x) => { if (!parent.has(x)) parent.set(x, x); };
+  const union = (a, b) => { add(a); add(b); parent.set(find(a), find(b)); };
+  const inList = new Set(portions.map((p) => p.recapId));
+  transactions.forEach((t) => {
+    const keys = keysOfTrx(t);
+    if (!keys.length) return;
+    add(`t:${t.id}`);
+    keys.forEach((k) => union(`t:${t.id}`, `k:${k}`));
+  });
+  const comp = {};
+  transactions.forEach((t) => {
+    if (!isLinked(t)) return;
+    const c = (comp[find(`t:${t.id}`)] ||= { trxs: [], keys: new Set(), foreign: false });
+    c.trxs.push(t);
+    keysOfTrx(t).forEach((k) => { c.keys.add(k); if (!inList.has(k)) c.foreign = true; });
+  });
+  const amountOf = Object.fromEntries(portions.map((p) => [p.recapId, Math.round(p.amount)]));
+  const out = {};
+  Object.values(comp).forEach((c) => {
+    const bank = c.trxs.reduce((s, t) => s + Math.round(Number(t.amount)), 0);
+    const keys = [...c.keys].filter((k) => inList.has(k));
+    const need = keys.reduce((s, k) => s + amountOf[k], 0);
+    const deficit = c.foreign ? 0 : Math.max(0, need - bank);
+    keys.forEach((k) => {
+      out[k] = { trxs: c.trxs, covered: deficit ? Math.round(amountOf[k] * bank / need) : amountOf[k], deficit };
+    });
+  });
+  return out;
+};
