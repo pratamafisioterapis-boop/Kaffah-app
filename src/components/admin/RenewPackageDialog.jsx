@@ -137,7 +137,7 @@ const RenewPackageDialog = ({ isOpen, onClose, clinicId, previousPackage, onDone
 
           {selected && (
             <p className="rounded-md bg-slate-50 p-2 text-sm text-slate-700">
-              {selected.session_count} sesi · berlaku {selected.validity_days || 30} hari sejak hari ini. Sesi belum terpakai sampai pasien datang.
+              {selected.session_count} sesi · berlaku {selected.validity_days || 30} hari sejak sesi pertama. Masa berlaku dan sesi baru mulai saat pasien datang.
             </p>
           )}
         </div>

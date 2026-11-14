@@ -6,7 +6,7 @@ const TERMS = {
   [PRAXIS_CLINIC_ID]: {
     action: 'Perpanjang Paket',
     dialogTitle: 'Perpanjang Paket',
-    dialogDescription: 'Catat pembayaran paket baru. Kwitansi terbit sekarang; sesi baru terpakai saat pasien datang.',
+    dialogDescription: 'Catat pembayaran paket baru. Kwitansi terbit sekarang; masa berlaku dan sesi baru mulai saat pasien datang.',
     submit: 'Catat Pembayaran',
     receiptTitle: 'Kwitansi Perpanjangan Paket',
     receiptButton: 'Kwitansi',

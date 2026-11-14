@@ -6,7 +6,10 @@
 -- 'aktif' dengan sesi_terpakai = 0; sesi baru terhitung saat pasien datang (rekap kunjungan
 -- biasa tertaut otomatis lewat auto_assign_package_on_insert, atau lewat form rekap).
 --
--- Masa berlaku paket dihitung dari tanggal bayar (bukan dari sesi pertama).
+-- Masa berlaku paket dihitung dari SESI PERTAMA (bukan dari tanggal bayar). Selama belum
+-- dipakai, start_date = tanggal bayar dan end_date = batas aktivasi 1 tahun (penampung, supaya
+-- trigger auto-assign & form rekap tetap mengenali paket sebagai aktif); saat rekap pertama
+-- tertaut, trigger di bawah mengisi start_date/end_date/first_used_at yang sebenarnya.
 
 -- 1. Penanda paket yang dibeli lewat perpanjangan ---------------------------------------
 ALTER TABLE public.package_tracking
@@ -149,7 +152,7 @@ BEGIN
     payment_method, is_lifecycle_package, clinic_id, purchase_payment_id
   ) VALUES (
     v_pkg_id, p_patient_id, v_pkg.id, v_pkg.label, v_pkg.session_count, 0,
-    v_pkg.session_count, v_today, v_today + v_validity, v_validity, 'aktif', p_amount,
+    v_pkg.session_count, v_today, v_today + 365, v_validity, 'aktif', p_amount,
     v_pm_label, true, c_praxis, v_pay_id
   );
 
@@ -186,6 +189,33 @@ $function$;
 
 REVOKE ALL ON FUNCTION public.praxis_renew_package(uuid, text, text, numeric) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.praxis_renew_package(uuid, text, text, numeric) TO authenticated;
+
+-- 3b. Mulai masa berlaku saat sesi pertama tertaut ------------------------------------------
+CREATE OR REPLACE FUNCTION public.start_renewed_package_on_first_session()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  UPDATE package_tracking
+  SET start_date = NEW.recap_date,
+      end_date = NEW.recap_date + COALESCE(validity_days, 30),
+      first_used_at = NEW.recap_date,
+      updated_at = now()
+  WHERE id = NEW.package_tracking_id
+    AND purchase_payment_id IS NOT NULL
+    AND first_used_at IS NULL;
+  RETURN NEW;
+END;
+$function$;
+
+DROP TRIGGER IF EXISTS trg_start_renewed_package ON public.daily_recaps;
+CREATE TRIGGER trg_start_renewed_package
+  AFTER INSERT OR UPDATE OF package_tracking_id ON public.daily_recaps
+  FOR EACH ROW
+  WHEN (NEW.package_tracking_id IS NOT NULL AND NEW.recap_date IS NOT NULL)
+  EXECUTE FUNCTION public.start_renewed_package_on_first_session();
 
 -- 4. Batalkan pembayaran perpanjangan (owner, selama paket baru belum dipakai) -------------
 CREATE OR REPLACE FUNCTION public.praxis_void_package_renewal(p_payment_id uuid, p_reason text)

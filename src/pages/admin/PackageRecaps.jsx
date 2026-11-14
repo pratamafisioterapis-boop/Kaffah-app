@@ -159,7 +159,11 @@ export const PackageRecapsContent = () => {
     };
 
     // Sisa Hari Calculation
+    // Paket hasil perpanjangan yang belum dipakai: masa berlaku baru mulai di sesi pertama.
+    const isUnstarted = (item) => !!item.purchase_payment_id && !item.first_used_at;
+
     const calculateSisaHari = (item) => {
+        if (isUnstarted(item)) return null;
         const status = (item.status || '').toLowerCase();
         const isActive = status === 'aktif' || status === 'diperpanjang' || status === 'active';
         
@@ -541,7 +545,9 @@ export const PackageRecapsContent = () => {
                                             <td className="px-4 py-3 text-center font-bold text-slate-700">{pkg.sessions_remaining}</td>
                                             <td className="px-4 py-3 text-slate-500 text-center">{pkg.start_date ? formatDateIndonesian(pkg.start_date) : '-'}</td>
                                             <td className="px-4 py-3 text-slate-500 text-center">
-                                                {pkg.extended_until
+                                                {isUnstarted(pkg)
+                                                    ? <span className="text-slate-500">Mulai saat sesi pertama</span>
+                                                    : pkg.extended_until
                                                     ? <span className="text-orange-600 font-medium">{formatDateIndonesian(pkg.extended_until)}</span>
                                                     : (pkg.end_date ? formatDateIndonesian(pkg.end_date) : '-')
                                                 }
