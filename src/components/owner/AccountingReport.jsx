@@ -60,7 +60,7 @@ const AccountingReport = ({
       ] = await Promise.all([
           getOwnerIncome(dateRange),
           getAdminIncome(dateRange),
-          getPatientIncomeFromPackages(dateRange),
+          getPatientIncomeFromPackages({ ...dateRange, includePackagePayments: true }),
           getOwnerExpenditures(dateRange),
           getAdminExpenses(dateRange)
       ]);
@@ -142,7 +142,9 @@ const handleExportExcel = (mode = 'accrual') => {
     // Label kolom paket: sesi pertama tetap "Paket X", sesi ke-2 dst
     // ditulis "Sesi ke-N (Paket X)". Baris tanpa paket ("Visit") tidak
     // diubah.
-    ...data.patientIncome.map(item => {
+    // Pembayaran paket di awal hanya masuk mode kas (di mode akrual nominalnya sudah
+    // tersebar per sesi lewat nominal paket).
+    ...data.patientIncome.filter(item => isCashBasis || !item.is_package_payment).map(item => {
       const packageLabel = item.package_name || '-';
       const paket = item.session_number && item.session_number >= 2
         ? `Sesi ke-${item.session_number} (${packageLabel})`
@@ -474,7 +476,7 @@ combinedExpenses.sort((a, b) => {
             <TxSection tone="pos" icon={TrendingUp} title="Pemasukan Admin" kind="in" items={data.adminIncome.map(incomeRow)} emptyText="Tidak ada data" />
           )}
           {(!source || source === 'patient') && (
-            <TxSection tone="pos" icon={TrendingUp} title="Pendapatan Pasien (Paket/Visit)" kind="in" items={data.patientIncome.map(patientRow)} emptyText="Tidak ada data" />
+            <TxSection tone="pos" icon={TrendingUp} title="Pendapatan Pasien (Paket/Visit)" kind="in" items={data.patientIncome.filter(r => !r.is_package_payment).map(patientRow)} emptyText="Tidak ada data" />
           )}
         </>
       ) : (
