@@ -1047,7 +1047,11 @@ setFormData({
     useEffect(() => {
         const key = `${formData.patient_id}|${recapIso}`;
         if (birthdayKeyRef.current === key) return;
+        // Pasien/tanggal sebelumnya masih kosong = form baru terisi dari data rekap (mode edit),
+        // bukan perubahan oleh pengguna: jangan lepas diskon yang sudah tersimpan.
+        const wasUnloaded = birthdayKeyRef.current.startsWith('|') || birthdayKeyRef.current.endsWith('|null');
         birthdayKeyRef.current = key;
+        if (wasUnloaded) return;
         setBirthdayOwner(null);
         setShowBirthdayOwnerPicker(false);
         if (formData.birthday_reward_year) clearBirthdayReward();
@@ -1069,7 +1073,9 @@ setFormData({
     const welcomePatientRef = useRef(formData.patient_id);
     useEffect(() => {
         if (welcomePatientRef.current === formData.patient_id) return;
+        const wasUnloaded = !welcomePatientRef.current;
         welcomePatientRef.current = formData.patient_id;
+        if (wasUnloaded) return; // form baru terisi dari rekap yang diedit
         if (formData.welcome_reward_used) clearWelcomeReward();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [formData.patient_id]);
