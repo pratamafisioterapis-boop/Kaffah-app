@@ -32,9 +32,9 @@ const STATUS = {
 };
 
 const Stat = ({ label, value, tone = 'text-slate-900', hint }) => (
-  <div className="rounded-xl border bg-white p-4">
-    <p className="text-xs text-slate-500">{label}</p>
-    <p className={`mt-1 text-xl font-semibold tabular-nums ${tone}`}>{value}</p>
+  <div className="min-w-0 rounded-xl border bg-white p-4">
+    <p className="text-xs text-slate-500 leading-tight">{label}</p>
+    <p className={`mt-1 whitespace-nowrap text-lg font-semibold tabular-nums sm:text-xl ${tone}`}>{value}</p>
     {hint && <p className="mt-0.5 text-[11px] text-slate-400">{hint}</p>}
   </div>
 );
@@ -284,7 +284,7 @@ const AdminCashHolding = () => {
                   <Badge variant="outline" className="border-red-300 text-red-700"><AlertTriangle className="mr-1 h-3 w-3" />Sisa kas kecil menipis</Badge>
                 )}
               </div>
-              <div className="mt-3 grid grid-cols-3 gap-3">
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <Stat label="Sisa kas kecil" value={formatRp(petty.balance)} tone={Number(petty.balance) < 0 ? 'text-red-600' : 'text-emerald-700'} />
                 <Stat label="Plafon" value={formatRp(petty.plafon)} />
                 <Stat label="Belum diganti dari setoran" value={formatRp(petty.needed)} tone={pettyNeeded > 0 ? 'text-amber-700' : 'text-slate-900'} />
@@ -389,9 +389,9 @@ const AdminCashHolding = () => {
 
           {isAdmin && (
             <section className="rounded-xl border bg-white">
-              <button type="button" className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold" onClick={() => setShowDetail((v) => !v)}>
-                <span>Rincian cash yang saya terima dari pasien</span>
-                <span className="text-xs font-normal text-slate-500">{showDetail ? 'Sembunyikan' : 'Tampilkan'}</span>
+              <button type="button" className="flex w-full items-center justify-between px-4 py-3 pr-20 text-sm font-semibold sm:pr-4" onClick={() => setShowDetail((v) => !v)}>
+                <span className="text-left">Rincian cash yang saya terima dari pasien</span>
+                <span className="ml-3 shrink-0 text-xs font-normal text-slate-500">{showDetail ? 'Sembunyikan' : 'Tampilkan'}</span>
               </button>
               {showDetail && (
                 <div className="overflow-x-auto border-t">
