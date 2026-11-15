@@ -52,6 +52,7 @@ const getDiagnosisIds = (diagnosis) => {
 const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => {
     const { toast } = useToast();
     const [isDeleting, setIsDeleting] = useState(false);
+    const [discountInfo, setDiscountInfo] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     
     // Cache for options (diagnosa, service_type, etc.)
@@ -93,6 +94,39 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
     const invoiceLocked = !!quote?.invoice_locked;
     // Ubah paket (REGULER -> paket) setelah invoice terbit; hanya sesi yang belum tertaut paket.
     const showPackageChange = invoiceLocked && !recap?.package_tracking_id && recap?.special_type !== 'free';
+    // Rincian sumber diskon: ultah (milik siapa), welcome reward (direkomendasikan siapa), reward referral (merekomendasikan siapa).
+    useEffect(() => {
+        setDiscountInfo(null);
+        if (!isOpen || !recap?.id) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const info = {};
+                if (recap.birthday_reward_year) {
+                    const ownerId = recap.birthday_reward_patient_id;
+                    if (ownerId && ownerId !== recap.patient_id) {
+                        const { data } = await supabase.from('patients').select('full_name').eq('id', ownerId).maybeSingle();
+                        info.birthday = `Ultah ${data?.full_name || 'pasien lain'} (voucher pasien lain)`;
+                    } else {
+                        info.birthday = 'Ultah sendiri';
+                    }
+                }
+                if (recap.welcome_reward_used && recap.patient_id) {
+                    const { data } = await supabase.from('patients').select('referrer:patients!referred_by_patient_id(full_name)').eq('id', recap.patient_id).maybeSingle();
+                    info.welcome = `Direkomendasikan oleh ${data?.referrer?.full_name || 'pasien lain'}`;
+                }
+                if (recap.referral_reward_id) {
+                    const { data } = await supabase.from('referral_rewards')
+                        .select('code, referred:patients!referral_rewards_referred_patient_id_fkey(full_name)')
+                        .eq('id', recap.referral_reward_id).maybeSingle();
+                    info.referral = `Merekomendasikan ${data?.referred?.full_name || 'pasien lain'}${data?.code ? ` (${data.code})` : ''}`;
+                }
+                if (!cancelled) setDiscountInfo(info);
+            } catch (e) { console.error('Gagal memuat rincian diskon', e); }
+        })();
+        return () => { cancelled = true; };
+    }, [isOpen, recap?.id, recap?.birthday_reward_year, recap?.birthday_reward_patient_id, recap?.welcome_reward_used, recap?.referral_reward_id, recap?.patient_id]);
+
     const showDiscountRequest = invoiceLocked || !!quote?.homecare;
     // Lepas dari paket: sesi tertaut kuota paket (Rp 0) tapi pasien memutuskan bayar reguler.
     const showPackageRelease = !!recap?.package_tracking_id && !recap?.is_package_purchase && Number(recap?.amount_original ?? recap?.amount ?? 0) === 0 && recap?.special_type !== 'free';
@@ -391,6 +425,14 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                                             : formatCurrency(recap.discount_value)
                                         }
                                     </div>
+                                    {recap.discount_label && (
+                                        <div className="text-xs font-semibold text-slate-700">
+                                            {recap.birthday_reward_year ? '🎂 ' : recap.welcome_reward_used ? '🎁 ' : recap.referral_reward_id ? '🤝 ' : ''}{recap.discount_label}
+                                        </div>
+                                    )}
+                                    {discountInfo?.birthday && <div className="text-xs text-slate-500">{discountInfo.birthday}</div>}
+                                    {discountInfo?.welcome && <div className="text-xs text-slate-500">{discountInfo.welcome}</div>}
+                                    {discountInfo?.referral && <div className="text-xs text-slate-500">{discountInfo.referral}</div>}
                                 </div>
                             )}
                         </div>
