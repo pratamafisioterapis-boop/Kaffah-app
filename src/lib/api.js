@@ -5728,7 +5728,17 @@ const postPayrollToOwnerExpenditures = async (record, actingUserId) => {
   if (!clinicId) return;
 
   const therapistName = therapist?.name || 'Terapis';
-  const postDate = (record.payroll_period_end || record.created_at || new Date().toISOString()).slice(0, 10);
+  // Periode yang berakhir di akhir bulan (1-31) diposting di tanggal itu.
+  // Periode tengah bulan (mis. 28 -> 27) berakhir H-1 dari hari gajian, jadi
+  // diposting H+1 dari period_end (tgl 28), bukan tgl 27.
+  const postDate = (() => {
+    const end = record.payroll_period_end;
+    if (!end) return (record.created_at || new Date().toISOString()).slice(0, 10);
+    const [y, m, d] = end.slice(0, 10).split('-').map(Number);
+    if (d === new Date(y, m, 0).getDate()) return end.slice(0, 10);
+    const next = new Date(Date.UTC(y, m - 1, d + 1));
+    return next.toISOString().slice(0, 10);
+  })();
 
   const items = PAYROLL_EXPENSE_ITEMS
     .map(({ field, label, subcategoryNames }) => ({ amount: parseFloat(record[field]) || 0, label, subcategoryNames }))
