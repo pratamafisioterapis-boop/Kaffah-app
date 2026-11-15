@@ -372,11 +372,11 @@ const AdminCashHolding = () => {
               <div className="space-y-2">
                 {incomingPending.map((x) => (
                   <div key={x.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white p-3 text-sm">
-                    <div>
+                    <div className="min-w-0">
                       <p className="font-medium">{nameOf(x.from_user_id)} · {formatRp(x.amount)}</p>
                       <p className="text-xs text-slate-500">{fmtDate(x.handover_date)}{x.note ? ` · ${x.note}` : ''}</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {x.proof_path && x.proof_path !== NO_PROOF && <Button size="sm" variant="outline" onClick={() => viewProof(x.proof_path)}><Eye className="mr-1 h-3.5 w-3.5" />Bukti</Button>}
                       <Button size="sm" disabled={busy} onClick={() => confirm(x)}><Check className="mr-1 h-3.5 w-3.5" />Konfirmasi</Button>
                       <Button size="sm" variant="outline" disabled={busy} onClick={() => setRejectTarget(x)}><X className="mr-1 h-3.5 w-3.5" />Tolak</Button>
@@ -389,7 +389,7 @@ const AdminCashHolding = () => {
 
           {isAdmin && (
             <section className="rounded-xl border bg-white">
-              <button type="button" className="flex w-full items-center justify-between px-4 py-3 pr-20 text-sm font-semibold sm:pr-4" onClick={() => setShowDetail((v) => !v)}>
+              <button type="button" className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold" onClick={() => setShowDetail((v) => !v)}>
                 <span className="text-left">Rincian cash yang saya terima dari pasien</span>
                 <span className="ml-3 shrink-0 text-xs font-normal text-slate-500">{showDetail ? 'Sembunyikan' : 'Tampilkan'}</span>
               </button>
@@ -425,7 +425,7 @@ const AdminCashHolding = () => {
                 const mineOut = x.from_user_id === userDetails?.id;
                 return (
                   <div key={x.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
-                    <div>
+                    <div className="min-w-0">
                       <p className="font-medium">
                         {nameOf(x.from_user_id)} → {x.to_type === 'finance' ? 'Tim Keuangan' : nameOf(x.to_user_id)} · {formatRp(x.amount)}{Number(x.petty_replenish) > 0 && ` + isi ulang kas kecil ${formatRp(x.petty_replenish)}`}
                       </p>
@@ -433,7 +433,7 @@ const AdminCashHolding = () => {
                         {fmtDate(x.handover_date)}{x.note ? ` · ${x.note}` : ''}{x.reject_reason ? ` · Ditolak: ${x.reject_reason}` : ''}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="outline" className={st.cls}>{st.label}</Badge>
                       {x.proof_path && x.proof_path !== NO_PROOF && <Button size="sm" variant="ghost" onClick={() => viewProof(x.proof_path)}><Eye className="h-4 w-4" /></Button>}
                       {isAdmin && mineOut && x.status === 'pending' && (
