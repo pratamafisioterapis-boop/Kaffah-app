@@ -77,7 +77,7 @@ const InventoryPendingOrders = ({ onChanged }) => {
       {orders.map((o) => (
         <div key={o.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-slate-900 truncate">{o.inventory_items?.item_name}</p>
+            <p className="text-sm font-semibold text-slate-900 break-words">{o.inventory_items?.item_name}</p>
             <p className="text-xs text-slate-500">
               {Number(o.quantity).toLocaleString('id-ID', { maximumFractionDigits: 2 })} {o.inventory_items?.unit} · Rp {Number(o.total_price).toLocaleString('id-ID', { maximumFractionDigits: 0 })}
             </p>
@@ -86,7 +86,7 @@ const InventoryPendingOrders = ({ onChanged }) => {
             </p>
             {o.notes && <p className="text-xs text-slate-500">{o.notes}</p>}
           </div>
-          <div className="flex gap-2 shrink-0">
+          <div className="flex flex-wrap gap-2 sm:shrink-0">
             <Button size="sm" disabled={busyId === o.id} onClick={() => handleReceive(o)}>
               <PackageCheck className="w-4 h-4 mr-1.5" /> Barang Diterima
             </Button>
