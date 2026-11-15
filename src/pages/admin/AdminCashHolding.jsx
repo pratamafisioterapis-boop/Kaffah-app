@@ -32,9 +32,9 @@ const STATUS = {
 };
 
 const Stat = ({ label, value, tone = 'text-slate-900', hint }) => (
-  <div className="min-w-0 rounded-xl border bg-white p-4">
+  <div className="min-w-0 rounded-xl border bg-white p-3 sm:p-4">
     <p className="text-xs text-slate-500 leading-tight">{label}</p>
-    <p className={`mt-1 whitespace-nowrap text-lg font-semibold tabular-nums sm:text-xl ${tone}`}>{value}</p>
+    <p className={`mt-1 whitespace-nowrap text-base font-semibold tabular-nums sm:text-xl ${tone}`}>{value}</p>
     {hint && <p className="mt-0.5 text-[11px] text-slate-400">{hint}</p>}
   </div>
 );
@@ -293,7 +293,7 @@ const AdminCashHolding = () => {
                 <div className="mt-3 divide-y rounded-lg border text-sm">
                   {pettyExpenses.map((e) => (
                     <div key={e.id} className="flex items-center justify-between gap-2 px-3 py-2">
-                      <span className="min-w-0 truncate">{fmtDate(e.transaction_date)} · {e.sub_category || 'Pengeluaran'}{e.description ? ` · ${e.description}` : ''}</span>
+                      <span className="min-w-0 break-words">{fmtDate(e.transaction_date)} · {e.sub_category || 'Pengeluaran'}{e.description ? ` · ${e.description}` : ''}</span>
                       <span className="shrink-0 tabular-nums text-red-600">-{formatRp(e.amount)}</span>
                     </div>
                   ))}
