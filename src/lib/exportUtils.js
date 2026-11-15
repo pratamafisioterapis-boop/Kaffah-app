@@ -1,3 +1,4 @@
+import { parseLocalDate } from '@/lib/dateFormatHelpers';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -17,8 +18,8 @@ export const generateExcelReport = (incomeData, expenseData, dateRange) => {
     const totalExpenses = expenseData.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
     const netProfit = totalIncome - totalExpenses;
     
-    const startDate = dateRange.startDate ? format(new Date(dateRange.startDate), 'dd-MM-yyyy') : 'All_Time';
-    const endDate = dateRange.endDate ? format(new Date(dateRange.endDate), 'dd-MM-yyyy') : 'All_Time';
+    const startDate = dateRange.startDate ? format(parseLocalDate(dateRange.startDate), 'dd-MM-yyyy') : 'All_Time';
+    const endDate = dateRange.endDate ? format(parseLocalDate(dateRange.endDate), 'dd-MM-yyyy') : 'All_Time';
     const fileName = `Report_${startDate}_${endDate}.xlsx`;
 
     // 1. Summary Sheet
@@ -35,7 +36,7 @@ export const generateExcelReport = (incomeData, expenseData, dateRange) => {
 
     // 2. Income Sheet
     const incomeRows = incomeData.map(item => ({
-        Date: format(new Date(item.date), 'dd/MM/yyyy'),
+        Date: format(parseLocalDate(item.date), 'dd/MM/yyyy'),
         Source: item.source,
         Category: item.category,
         Description: item.description,
@@ -48,7 +49,7 @@ export const generateExcelReport = (incomeData, expenseData, dateRange) => {
 
     // 3. Expense Sheet
     const expenseRows = expenseData.map(item => ({
-        Date: format(new Date(item.date), 'dd/MM/yyyy'),
+        Date: format(parseLocalDate(item.date), 'dd/MM/yyyy'),
         Source: item.source,
         Category: item.category,
         Description: item.description,
@@ -140,8 +141,8 @@ export const generatePDFReport = (incomeData, expenseData, dateRange) => {
     const totalExpenses = expenseData.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
     const netProfit = totalIncome - totalExpenses;
 
-    const startDate = dateRange.startDate ? format(new Date(dateRange.startDate), 'dd MMM yyyy') : 'All Time';
-    const endDate = dateRange.endDate ? format(new Date(dateRange.endDate), 'dd MMM yyyy') : 'All Time';
+    const startDate = dateRange.startDate ? format(parseLocalDate(dateRange.startDate), 'dd MMM yyyy') : 'All Time';
+    const endDate = dateRange.endDate ? format(parseLocalDate(dateRange.endDate), 'dd MMM yyyy') : 'All Time';
 
     // Title
     doc.setFontSize(20);
@@ -178,7 +179,7 @@ export const generatePDFReport = (incomeData, expenseData, dateRange) => {
         startY: finalY + 5,
         head: [['Date', 'Source', 'Category', 'Description', 'Amount']],
         body: incomeData.map(item => [
-            format(new Date(item.date), 'dd/MM/yyyy'),
+            format(parseLocalDate(item.date), 'dd/MM/yyyy'),
             item.source,
             item.category,
             item.description || '-',
@@ -209,7 +210,7 @@ export const generatePDFReport = (incomeData, expenseData, dateRange) => {
         startY: finalY + 5,
         head: [['Date', 'Source', 'Category', 'Description', 'Amount']],
         body: expenseData.map(item => [
-            format(new Date(item.date), 'dd/MM/yyyy'),
+            format(parseLocalDate(item.date), 'dd/MM/yyyy'),
             item.source,
             item.category,
             item.description || '-',
@@ -234,6 +235,6 @@ export const generatePDFReport = (incomeData, expenseData, dateRange) => {
         doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width - 25, doc.internal.pageSize.height - 10);
     }
 
-    const fileNameDate = dateRange.startDate ? format(new Date(dateRange.startDate), 'dd-MM-yyyy') : 'Report';
+    const fileNameDate = dateRange.startDate ? format(parseLocalDate(dateRange.startDate), 'dd-MM-yyyy') : 'Report';
     doc.save(`Report_${fileNameDate}.pdf`);
 };

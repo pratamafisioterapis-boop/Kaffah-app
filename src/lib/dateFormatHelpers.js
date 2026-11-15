@@ -67,3 +67,15 @@ export const isValidDateFormat = (dateString) => {
 
 // Aliases for compatibility
 export const formatDateDisplay = displayDateID;
+// Parse tanggal tanpa pergeseran zona waktu. String 'YYYY-MM-DD' (kolom DATE di
+// DB) oleh `new Date()` dibaca sebagai UTC tengah malam, sehingga di zona waktu
+// di belakang UTC (atau saat diformat ulang) tampil mundur sehari (28 -> 27).
+// Untuk string tanggal murni kita bangun Date lokal; selain itu fallback normal.
+export const parseLocalDate = (value) => {
+  if (value instanceof Date) return value;
+  if (typeof value === 'string') {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+    if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  }
+  return new Date(value);
+};

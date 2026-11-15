@@ -1,3 +1,4 @@
+import { parseLocalDate } from '@/lib/dateFormatHelpers';
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, TrendingUp, TrendingDown, DollarSign, Download, ChevronDown } from 'lucide-react';
@@ -105,7 +106,7 @@ const AccountingReport = ({
   const formatDate = (dateStr) => {
   if (!dateStr) return '-';
 
-  const date = new Date(dateStr);
+  const date = parseLocalDate(dateStr);
   if (isNaN(date)) return '-';
 
   return format(date, 'dd/MM/yyyy');
