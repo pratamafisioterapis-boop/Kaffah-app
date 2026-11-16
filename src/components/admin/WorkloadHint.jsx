@@ -38,7 +38,7 @@ const WorkloadHint = () => {
 
   if (!low || low.length === 0) return null;
   return (
-    <div className="flex items-start gap-2 rounded-app-sm border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900">
+    <div className="mt-4 md:mt-0 flex items-start gap-2 rounded-app-sm border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900">
       <Scale className="mt-0.5 h-4 w-4 shrink-0" />
       <span>Pemerataan bulan ini: <b>{low.join(', ')}</b> kunjungannya masih di bawah rata-rata tim. Prioritaskan untuk pasien baru bila jadwalnya cocok.</span>
     </div>
