@@ -19,6 +19,12 @@ const INTERNAL_SECRET = Deno.env.get("TELEGRAM_INTERNAL_SECRET");
 // Hanya klinik ini yang boleh memicu notifikasi.
 const ALLOWED_CLINIC_ID = "bfdc3fd8-a052-4753-a5b7-229930b3237a";
 const MAX_LEN = 4000; // batas Telegram 4096
+const DEDUPE_SECONDS = 60; // teks identik dalam jendela ini dianggap dobel
+
+async function sha256Hex(text: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -76,10 +82,30 @@ Deno.serve(async (req) => {
 
   let allSent = true;
   let firstError: string | null = null;
+  let duplicates = 0;
 
   // Berurutan (await di dalam loop) supaya pesan 1/2 selalu tiba sebelum 2/2.
   for (const text of items) {
     const message = text.length > MAX_LEN ? text.slice(0, MAX_LEN) + "…" : text;
+
+    // Guard anti-dobel: teks yang sama dalam jendela DEDUPE_SECONDS hanya
+    // dikirim sekali. Penandanya atomik di database, jadi dua permintaan
+    // serentak (mis. dua jalur push untuk satu kejadian) tetap lolos satu.
+    // Kalau pengecekan itu sendiri gagal, pesan tetap dikirim (lebih baik
+    // dobel daripada hilang).
+    let dedupeKey: string | null = null;
+    try {
+      dedupeKey = await sha256Hex(message);
+      const { data: fresh, error: claimErr } = await supabase.rpc("tg_dedupe_claim", {
+        p_key: dedupeKey,
+        p_window_seconds: DEDUPE_SECONDS,
+        p_sample: message,
+      });
+      if (!claimErr && fresh === false) {
+        duplicates++;
+        continue;
+      }
+    } catch (_) { /* lanjut kirim */ }
 
     let status = "failed";
     let error: string | null = null;
@@ -103,6 +129,10 @@ Deno.serve(async (req) => {
     if (status !== "sent") {
       allSent = false;
       firstError = firstError ?? error;
+      // Pengiriman gagal: lepas penanda agar percobaan ulang tidak tertahan.
+      if (dedupeKey) {
+        try { await supabase.from("telegram_dedupe").delete().eq("key", dedupeKey); } catch (_) { /* abaikan */ }
+      }
     }
 
     // Catat hasil; kegagalan mencatat tidak boleh mengubah respons ke pemanggil.
@@ -117,5 +147,8 @@ Deno.serve(async (req) => {
     } catch (_) { /* abaikan */ }
   }
 
-  return json({ ok: allSent, sent: items.length, error: firstError }, allSent ? 200 : 502);
+  return json(
+    { ok: allSent, sent: items.length - duplicates, duplicates, error: firstError },
+    allSent ? 200 : 502,
+  );
 });
