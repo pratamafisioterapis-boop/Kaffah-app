@@ -18,6 +18,9 @@ import {
 } from "@/components/ui/dialog";
 import { confirmAction } from '@/lib/confirmAction';
 import { validatePassword } from '@/lib/passwordPolicy';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 
 const AdminManager = () => {
   const { toast } = useToast();
@@ -54,6 +57,11 @@ const AdminManager = () => {
   const [resetting, setResetting] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Pemegang kas utama (khusus Kaffah): penerima setoran cash antar admin.
+  const [custodianId, setCustodianId] = useState(null);
+  const [custodianBusy, setCustodianBusy] = useState(false);
+  const isKaffah = clinicId === KAFFAH_CLINIC_ID;
+
   useEffect(() => {
     fetchAdmins();
     fetchClinicId();
@@ -62,6 +70,37 @@ const AdminManager = () => {
   const fetchClinicId = async () => {
     const { data } = await getCurrentClinic();
     if (data) setClinicId(data.id);
+  };
+
+  const fetchCustodian = async (cid) => {
+    const { data } = await supabase
+      .from('cash_ledger_config').select('custodian_user_id').eq('clinic_id', cid).maybeSingle();
+    setCustodianId(data?.custodian_user_id || null);
+  };
+
+  useEffect(() => {
+    if (clinicId === KAFFAH_CLINIC_ID) fetchCustodian(clinicId);
+  }, [clinicId]);
+
+  const handleToggleCustodian = async (admin) => {
+    const releasing = custodianId === admin.id;
+    const current = admins.find((a) => a.id === custodianId);
+    const message = releasing
+      ? `Lepas peran pemegang kas utama dari ${admin.full_name}? Selama belum ada penanda, semua admin bisa saling menyetor dan menyetor ke keuangan.`
+      : current
+        ? `Jadikan ${admin.full_name} pemegang kas utama? ${current.full_name} tidak lagi menerima setoran dari admin lain dan tidak bisa menyetor ke keuangan. Admin lain mulai menyetor ke ${admin.full_name}.`
+        : `Jadikan ${admin.full_name} pemegang kas utama? Admin lain hanya bisa menyetor ke ${admin.full_name}, dan hanya ${admin.full_name} yang bisa menyetor ke keuangan.`;
+    if (!await confirmAction(message)) return;
+
+    setCustodianBusy(true);
+    const { error } = await supabase.rpc('set_cash_custodian', { p_user: releasing ? null : admin.id });
+    setCustodianBusy(false);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Gagal menyimpan pemegang kas utama', description: error.message });
+      return;
+    }
+    toast({ title: releasing ? 'Peran pemegang kas utama dilepas' : `${admin.full_name} sekarang pemegang kas utama` });
+    fetchCustodian(clinicId);
   };
 
   const fetchAdmins = async () => {
@@ -317,6 +356,9 @@ const AdminManager = () => {
                 
                 <div className="text-center">
                   <h3 className="font-bold text-lg text-slate-900">{admin.full_name}</h3>
+                  {isKaffah && admin.role === 'admin' && custodianId === admin.id && admin.is_active !== false && (
+                    <Badge variant="outline" className="mt-1 border-emerald-300 text-emerald-700">Pemegang kas utama</Badge>
+                  )}
                   <p className="text-slate-500 text-sm flex items-center justify-center gap-2 mt-1">
                       <Mail className="w-3 h-3" /> {admin.email}
                   </p>
@@ -327,6 +369,25 @@ const AdminManager = () => {
                   )}
                 </div>
                 
+                {isKaffah && admin.role === 'admin' && (
+                  <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-800">Pemegang kas utama</p>
+                      <p className="text-xs text-slate-500">
+                        {admin.is_active === false
+                          ? 'Admin nonaktif tidak bisa dipilih.'
+                          : 'Menerima setoran dari admin lain dan satu-satunya yang menyetor ke keuangan.'}
+                      </p>
+                    </div>
+                    <Switch
+                      aria-label={`Pemegang kas utama: ${admin.full_name}`}
+                      checked={custodianId === admin.id && admin.is_active !== false}
+                      disabled={custodianBusy || admin.is_active === false}
+                      onCheckedChange={() => handleToggleCustodian(admin)}
+                    />
+                  </div>
+                )}
+
                 <div className="mt-auto pt-4 border-t border-slate-100 flex justify-center gap-2">
                    <Button variant="ghost" size="sm" onClick={() => handleOpenEdit(admin)} className="text-app-accent hover:bg-app-soft hover:text-app-accent-hover">
                       <Edit2 className="w-4 h-4 mr-2" /> Edit
