@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
+import { Link } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { Wallet, Loader2, Check, X, Upload, Eye, Undo2, AlertTriangle } from 'lucide-react';
@@ -193,20 +194,6 @@ const AdminCashHolding = () => {
     }
   };
 
-  const saveCustodian = async (value) => {
-    setBusy(true);
-    try {
-      const { error } = await supabase.rpc('set_cash_custodian', { p_user: value === 'none' ? null : value });
-      if (error) throw error;
-      toast({ title: value === 'none' ? 'Penanda pemegang kas utama dihapus' : 'Pemegang kas utama disimpan' });
-      load();
-    } catch (e) {
-      toast({ title: 'Gagal menyimpan pemegang kas utama', description: e.message, variant: 'destructive' });
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const resolve = async (id, action, reason) => {
     setBusy(true);
     try {
@@ -248,6 +235,10 @@ const AdminCashHolding = () => {
     .reduce((s, x) => s + Number(x.amount || 0), 0);
   const totalHeld = holdings.reduce((s, h) => s + Number(h.balance || 0), 0);
   const totalToFinance = holdings.reduce((s, h) => s + Number(h.to_finance || 0), 0);
+  const pettyReplenished = handovers
+    .filter((x) => x.status !== 'rejected' && x.status !== 'cancelled' && x.to_type === 'finance')
+    .reduce((s, x) => s + Number(x.petty_replenish || 0), 0);
+  const custodianName = custodianId ? nameOf(custodianId) : null;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-4 md:p-6">
@@ -256,7 +247,7 @@ const AdminCashHolding = () => {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-xl font-semibold text-slate-900"><Wallet className="h-5 w-5" /> Cash Dipegang Admin</h1>
-          <p className="text-sm text-slate-500">Cash dari pembayaran pasien yang belum disetor ke keuangan. Cash tips terapis tidak dihitung.</p>
+          <p className="text-sm text-slate-500">Uang tunai dari pasien yang masih dipegang admin dan belum diserahkan ke keuangan. Tip terapis tidak ikut dihitung.</p>
         </div>
         {isAdmin && (
           <Button onClick={openDialog} disabled={loading || myBalance <= 0 || (!canToAdmin && !canToFinance)}>
@@ -277,7 +268,7 @@ const AdminCashHolding = () => {
                 <div>
                   <h2 className="flex items-center gap-2 text-sm font-semibold"><Wallet className="h-4 w-4" /> Kas Kecil</h2>
                   <p className="text-xs text-slate-500">
-                    Modal dari keuangan untuk pembelian cash. Setelah setor pendapatan, kas kecil kembali ke {formatRp(petty.plafon)}; pembelian tadi dipotong dari setoran.
+                    Uang pegangan untuk belanja tunai kecil. Saat admin setor pendapatan, belanja yang sudah terpakai dipotong dari setoran, lalu kas kecil kembali penuh {formatRp(petty.plafon)}.
                   </p>
                 </div>
                 {Number(petty.balance) < Number(petty.plafon) / 3 && (
@@ -286,8 +277,8 @@ const AdminCashHolding = () => {
               </div>
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <Stat label="Sisa kas kecil" value={formatRp(petty.balance)} tone={Number(petty.balance) < 0 ? 'text-red-600' : 'text-emerald-700'} />
-                <Stat label="Plafon" value={formatRp(petty.plafon)} />
-                <Stat label="Belum diganti dari setoran" value={formatRp(petty.needed)} tone={pettyNeeded > 0 ? 'text-amber-700' : 'text-slate-900'} />
+                <Stat label="Batas kas kecil (penuh)" value={formatRp(petty.plafon)} />
+                <Stat label="Belanja belum diganti" value={formatRp(petty.needed)} tone={pettyNeeded > 0 ? 'text-amber-700' : 'text-slate-900'} hint="Dipotong dari setoran berikutnya" />
               </div>
               {pettyExpenses.length > 0 && (
                 <div className="mt-3 divide-y rounded-lg border text-sm">
@@ -310,55 +301,58 @@ const AdminCashHolding = () => {
               <Stat label="Sudah saya setor" value={formatRp(me?.handover_out)} />
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-              <Stat label="Total cash di tangan admin" value={formatRp(totalHeld)} tone="text-emerald-700" />
-              <Stat label="Sudah disetor ke keuangan" value={formatRp(totalToFinance)} />
-              <Stat label="Dalam proses setor (pending)" value={formatRp(pendingTotal)} tone="text-amber-700" hint="Sudah keluar dari pengirim, belum dikonfirmasi penerima" />
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <Stat label="Uang tunai di tangan admin" value={formatRp(totalHeld)} tone="text-emerald-700" />
+              <Stat label="Sudah disetor ke keuangan" value={formatRp(totalToFinance)} hint={pettyReplenished > 0 ? `Belum termasuk ${formatRp(pettyReplenished)} untuk mengganti kas kecil` : undefined} />
+              <Stat label="Sedang diserahkan antar admin" value={formatRp(pendingTotal)} tone="text-amber-700" hint="Sudah keluar dari pengirim, menunggu penerima menekan Konfirmasi" />
             </div>
           )}
 
-          {role === 'owner' && (
-            <section className="rounded-xl border bg-white p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-sm font-semibold">Pemegang kas utama (Admin 1)</h2>
-                  <p className="text-xs text-slate-500">Admin lain hanya bisa setor ke akun ini. Setoran ke keuangan juga hanya oleh akun ini. Admin nonaktif tidak bisa dipilih.</p>
-                </div>
-                <Select value={custodianId || 'none'} onValueChange={saveCustodian} disabled={busy}>
-                  <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Belum ditandai (semua admin)</SelectItem>
-                    {activeAdmins.map((a) => <SelectItem key={a.id} value={a.id}>{a.full_name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </section>
-          )}
+          <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed bg-white p-4">
+            <div>
+              <h2 className="text-sm font-semibold">Penerima setoran utama: {custodianName || 'belum ditandai'}</h2>
+              <p className="text-xs text-slate-500">
+                {custodianName
+                  ? `Admin lain menyetor cash ke ${custodianName}. Hanya ${custodianName} yang bisa menyetor ke keuangan.`
+                  : 'Semua admin bisa saling menyetor dan menyetor ke keuangan.'}
+              </p>
+            </div>
+            {role === 'owner' && (
+              <Link to="/owner/admin-management" className="text-sm font-medium text-app-accent underline underline-offset-4">
+                Ubah di Manajemen Admin →
+              </Link>
+            )}
+          </section>
 
           {!isAdmin && (
-            <section className="rounded-xl border bg-white">
-              <h2 className="border-b px-4 py-3 text-sm font-semibold">Saldo per admin</h2>
-              <div className="divide-y">
+            <section>
+              <h2 className="mb-2 text-sm font-semibold">Uang tunai per admin</h2>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
                 {holdings.map((h) => {
                   const age = h.oldest_cash_date && Number(h.balance) > 0 ? daysSince(h.oldest_cash_date) : 0;
                   return (
-                    <div key={h.user_id ?? 'none'} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+                    <div key={h.user_id ?? 'none'} className="min-w-0 space-y-3 rounded-xl border bg-white p-4">
+                      <div className="flex flex-wrap items-center gap-1.5 font-medium">
+                        {h.full_name || 'Tanpa kasir tercatat'}
+                        {h.is_custodian && <Badge variant="outline" className="border-emerald-300 text-emerald-700">Penerima setoran utama</Badge>}
+                        {h.user_id && h.is_active === false && <Badge variant="outline" className="border-slate-300 text-slate-500">Nonaktif</Badge>}
+                      </div>
                       <div>
-                        <p className="font-medium">
-                          {h.full_name || 'Tanpa kasir tercatat'}
-                          {h.is_custodian && <Badge variant="outline" className="ml-2 border-emerald-300 text-emerald-700">Pemegang kas utama</Badge>}
-                          {h.user_id && h.is_active === false && <Badge variant="outline" className="ml-2 border-slate-300 text-slate-500">Nonaktif</Badge>}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          Terima {formatRp(h.cash_received)} · dari admin {formatRp(h.handover_in)} · disetor {formatRp(h.handover_out)}
-                          {Number(h.pending_in) > 0 && ` · menunggu konfirmasi ${formatRp(h.pending_in)}`}
-                        </p>
+                        <p className="text-xs text-slate-500">Sisa di tangan</p>
+                        <p className={`text-xl font-semibold tabular-nums ${Number(h.balance) < 0 ? 'text-red-600' : ''}`}>{formatRp(h.balance)}</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {h.is_active === false && Number(h.balance) !== 0 && <Badge variant="outline" className="border-red-300 text-red-700"><AlertTriangle className="mr-1 h-3 w-3" />akun nonaktif masih pegang uang</Badge>}
-                        {age > STALE_DAYS && <Badge variant="outline" className="border-amber-300 text-amber-700"><AlertTriangle className="mr-1 h-3 w-3" />cash tertua {age} hari</Badge>}
-                        <span className={`font-semibold tabular-nums ${Number(h.balance) < 0 ? 'text-red-600' : ''}`}>{formatRp(h.balance)}</span>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs tabular-nums">
+                        <div><span className="block text-[11px] text-slate-500">Dari pasien</span>{formatRp(h.cash_received)}</div>
+                        <div><span className="block text-[11px] text-slate-500">Dari admin lain</span>{formatRp(h.handover_in)}</div>
+                        <div><span className="block text-[11px] text-slate-500">Sudah disetor</span>{formatRp(h.handover_out)}</div>
+                        {Number(h.pending_in) > 0 && <div><span className="block text-[11px] text-slate-500">Menunggu dikonfirmasi</span><b className="text-amber-700">{formatRp(h.pending_in)}</b></div>}
                       </div>
+                      {(age > STALE_DAYS || (h.is_active === false && Number(h.balance) !== 0)) && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {h.is_active === false && Number(h.balance) !== 0 && <Badge variant="outline" className="border-red-300 text-red-700"><AlertTriangle className="mr-1 h-3 w-3" />akun nonaktif masih pegang uang</Badge>}
+                          {age > STALE_DAYS && <Badge variant="outline" className="border-amber-300 text-amber-700"><AlertTriangle className="mr-1 h-3 w-3" />cash tertua {age} hari</Badge>}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -459,7 +453,7 @@ const AdminCashHolding = () => {
               <Select value={form.toType} onValueChange={(v) => setForm((f) => ({ ...f, toType: v, ...defaultsFor(v) }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {canToAdmin && <SelectItem value="admin">Pemegang kas utama (perlu konfirmasi)</SelectItem>}
+                  {canToAdmin && <SelectItem value="admin">Penerima setoran utama (perlu konfirmasi)</SelectItem>}
                   {canToFinance && <SelectItem value="finance">Tim Keuangan (langsung tercatat)</SelectItem>}
                 </SelectContent>
               </Select>
@@ -467,7 +461,7 @@ const AdminCashHolding = () => {
 
             {form.toType === 'admin' && (
               <div className="space-y-1.5">
-                <Label>{custodianId ? 'Penerima (pemegang kas utama)' : 'Admin penerima'}</Label>
+                <Label>{custodianId ? 'Penerima (setoran utama)' : 'Admin penerima'}</Label>
                 <Select value={form.toUser} onValueChange={(v) => setForm((f) => ({ ...f, toUser: v }))}>
                   <SelectTrigger><SelectValue placeholder="Pilih admin" /></SelectTrigger>
                   <SelectContent>
