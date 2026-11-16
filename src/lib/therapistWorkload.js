@@ -72,6 +72,21 @@ export function computeWorkload(recaps, therapists) {
   };
 }
 
+// Periode tetap tanggal 28 s/d 27 yang memuat hari ini
+// (hari ke-28 ke atas -> 28 bulan ini s/d 27 bulan depan; selain itu 28 bulan lalu s/d 27 bulan ini).
+export const getCutoffPeriod = (now = new Date()) => {
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const startMonth = now.getDate() >= 28 ? m : m - 1;
+  const start = new Date(y, startMonth, 28);
+  const end = new Date(y, startMonth + 1, 27);
+  const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return { start, end, startDate: fmt(start), endDate: fmt(end) };
+};
+
+// Kekurangan kunjungan terhadap rata-rata tim (dibulatkan ke atas).
+export const visitsToAverage = (row, avg) => Math.max(0, Math.ceil(avg - row.visits));
+
 // Ambil seluruh baris (Supabase membatasi 1000 baris per query).
 export async function fetchRecapsForWorkload(supabase, clinicId, start, end) {
   const pageSize = 1000;

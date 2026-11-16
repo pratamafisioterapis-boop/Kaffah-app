@@ -5,7 +5,7 @@ import { id as idLocale } from 'date-fns/locale';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
-import { computeWorkload, fetchRecapsForWorkload } from '@/lib/therapistWorkload';
+import { computeWorkload, fetchRecapsForWorkload, getCutoffPeriod, visitsToAverage } from '@/lib/therapistWorkload';
 
 // Label sederhana per terapis, dibandingkan dengan rata-rata tim.
 const TAG = {
@@ -21,17 +21,6 @@ const verdict = (fairness, hasData) => {
   if (fairness >= 0.85) return { text: 'Pembagian sudah merata', cls: 'text-emerald-600' };
   if (fairness >= 0.7) return { text: 'Cukup merata', cls: 'text-amber-600' };
   return { text: 'Belum merata', cls: 'text-rose-600' };
-};
-
-// Periode tetap tanggal 28 s/d 27 yang memuat hari ini
-// (hari ke-28 ke atas -> 28 bulan ini s/d 27 bulan depan; selain itu 28 bulan lalu s/d 27 bulan ini).
-const getCutoffPeriod = (now = new Date()) => {
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  const startMonth = now.getDate() >= 28 ? m : m - 1;
-  const start = new Date(y, startMonth, 28);
-  const end = new Date(y, startMonth + 1, 27);
-  return { start, end, startDate: format(start, 'yyyy-MM-dd'), endDate: format(end, 'yyyy-MM-dd') };
 };
 
 const firstName = (n) => (n || '').split(',')[0].trim();
@@ -76,7 +65,9 @@ const TherapistWorkloadWidget = () => {
   const hasData = data.total > 0;
   const v = verdict(data.fairness, hasData);
   const maxVisits = Math.max(1, ...data.rows.map((r) => r.visits));
-  const needMore = data.rows.filter((r) => r.status === 'low' || r.status === 'low_alert').map((r) => firstName(r.name));
+  const needMore = data.rows
+    .filter((r) => r.status === 'low' || r.status === 'low_alert')
+    .map((r) => `${firstName(r.name)} (kurang ${visitsToAverage(r, data.avg)} kunjungan lagi)`);
 
   return (
     <div className="space-y-3">
