@@ -20,17 +20,17 @@ const VitalSignsFields = ({ value, onChange, bpRequired = true }) => {
         <Activity className="w-4 h-4" /> Tanda-Tanda Vital <span className="text-xs font-normal text-slate-500">(<span className="text-red-500">*</span> wajib diisi, terhubung ke SOAP)</span>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="space-y-1 col-span-2 md:col-span-1">
-          <Label className="text-xs">Tekanan Darah (mmHg){bpRequired && <span className="text-red-500"> *</span>}</Label>
-          <div className="flex items-center gap-1">
-            <Input inputMode="numeric" value={value.systolic} onChange={(e) => set('systolic', e.target.value)} placeholder="120" className="bg-white" />
+        <div className="space-y-1 col-span-2">
+          <Label className="text-xs whitespace-nowrap">Tekanan Darah (mmHg){bpRequired && <span className="text-red-500"> *</span>}</Label>
+          <div className="flex items-center gap-2">
+            <Input inputMode="numeric" value={value.systolic} onChange={(e) => set('systolic', e.target.value)} placeholder="120" className="bg-white min-w-0" />
             <span className="text-slate-400">/</span>
-            <Input inputMode="numeric" value={value.diastolic} onChange={(e) => set('diastolic', e.target.value)} placeholder="80" className="bg-white" />
+            <Input inputMode="numeric" value={value.diastolic} onChange={(e) => set('diastolic', e.target.value)} placeholder="80" className="bg-white min-w-0" />
           </div>
         </div>
         {FIELDS.map((f) => (
           <div key={f.key} className="space-y-1">
-            <Label className="text-xs">{f.label}{f.required && <span className="text-red-500"> *</span>}</Label>
+            <Label className="text-xs whitespace-nowrap">{f.label}{f.required && <span className="text-red-500"> *</span>}</Label>
             <Input inputMode={f.mode || 'decimal'} value={value[f.key]} onChange={(e) => set(f.key, e.target.value)} placeholder={f.ph} className="bg-white" />
           </div>
         ))}

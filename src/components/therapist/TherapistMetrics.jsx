@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { getTherapistRecaps, getTherapistTargetProgress, getActiveTherapistTarget, getAppointments, getTherapistAnnualLeaveBalance, getTherapistTimeOff, getTherapistExtraShifts } from '@/lib/api';
+import { getTherapistRecaps, getTherapistTargetProgress, getActiveTherapistTarget, getAppointments, getTherapistAnnualLeaveBalance, getTherapistTimeOff, getTherapistExtraShifts, getTherapistApprovedSundaySwaps } from '@/lib/api';
 import { getUnfilledSOAPVisits } from '@/lib/therapistDataUtils';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -90,9 +90,15 @@ const TherapistMetrics = ({ therapist, userId }) => {
     annualLeaveQuota: 0,
     annualLeaveEntries: [],
     workDays: 0,
+    izinEntries: [],
+    swapEntries: [],
+    workDayList: [],
     absence: { cuti: 0, izin: 0, sakit: 0, training: 0 }
   });
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
+  const [izinDialogOpen, setIzinDialogOpen] = useState(false);
+  const [swapDialogOpen, setSwapDialogOpen] = useState(false);
+  const [workDialogOpen, setWorkDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activePeriod, setActivePeriod] = useState({ start: null, end: null });
@@ -140,7 +146,8 @@ const [
   todayAppointmentsRes,
   leaveBalanceRes,
   timeOffRes,
-  extraShiftRes
+  extraShiftRes,
+  swapsRes
 ] = await Promise.all([
   getTherapistRecaps(therapist.id, { startDate: startMonth, endDate: endMonth }),
   getActiveTherapistTarget(therapist.id),  // ← pakai therapist.id bukan userId
@@ -149,7 +156,8 @@ const [
   getAppointments({ date: todayISO, therapistId: therapist.id }),
   getTherapistAnnualLeaveBalance(therapist.id),
   getTherapistTimeOff(therapist.id),
-  getTherapistExtraShifts(therapist.id)
+  getTherapistExtraShifts(therapist.id),
+  getTherapistApprovedSundaySwaps(therapist.id)
 ]);
 
 // Fetch target progress setelah dapat activeTarget (perlu start_date & end_date dulu)
@@ -193,9 +201,25 @@ const rawMonthlyRecaps = recapsRes.data || [];
       const liburDates = new Set();
       const absentByCategory = { cuti: new Set(), izin: new Set(), sakit: new Set(), training: new Set() };
       const categoryOf = { annual: 'cuti', sick: 'sakit', training: 'training', personal: 'izin', other: 'izin' };
+      const izinEntries = [];
+      const swapEntries = [];
+      const swaps = swapsRes?.data || [];
+      const swapById = new Map(swaps.map(w => [w.id, w]));
+      const swapByTimeOff = new Map(swaps.filter(w => w.time_off_id).map(w => [w.time_off_id, w]));
       (timeOffRes?.data || []).forEach(t => {
+        // Tukar jadwal Minggu: hari tidak masuk dihitung libur (bukan izin); gantinya ada shift tambahan.
+        const isSwapOff = !t.start_time && (t.reason || '').trim().startsWith('Tukar jadwal Minggu');
+        // Hanya tukar jadwal yang diajukan terapis ini; hari masuk sebagai pengganti rekan tidak dihitung di sini.
+        if (isSwapOff && periodSet.has(t.start_date)) {
+          swapEntries.push({ id: `off-${t.id}`, date: t.start_date, partner: swapByTimeOff.get(t.id)?.substitute_name, note: t.reason });
+        }
+        const isLiburEntry = isSwapOff || t.leave_type === 'weekly_off' || (t.reason || '').trim().startsWith('Libur');
+        if (!isLiburEntry && (categoryOf[t.leave_type] || 'izin') === 'izin'
+          && t.end_date >= startCustom && t.start_date <= endCustom) {
+          izinEntries.push(t);
+        }
         if (t.start_time) return; // izin parsial (jam tertentu) tidak menghilangkan satu hari penuh
-        const isLibur = t.leave_type === 'weekly_off' || (t.reason || '').trim().startsWith('Libur');
+        const isLibur = isSwapOff || t.leave_type === 'weekly_off' || (t.reason || '').trim().startsWith('Libur');
         const cat = categoryOf[t.leave_type] || 'izin';
         eachDayOfInterval({ start: parseISO(t.start_date), end: parseISO(t.end_date) }).forEach(d => {
           const key = format(d, 'yyyy-MM-dd');
@@ -207,13 +231,43 @@ const rawMonthlyRecaps = recapsRes.data || [];
       Object.values(absentByCategory).forEach(set => set.forEach(k => liburDates.delete(k)));
       // Hari libur yang diganti kerja (pengganti izin seharian) dihitung hari kerja.
       // Pengganti izin parsial tidak: hari izin parsialnya sudah dihitung hari kerja.
+      const extraByDate = new Map();
       (extraShiftRes?.data || []).forEach(e => {
+        if (periodSet.has(e.shift_date)) extraByDate.set(e.shift_date, e);
         if (!e.replaces_partial_leave && periodSet.has(e.shift_date)) liburDates.delete(e.shift_date);
       });
       const workDays = periodDays.length - liburDates.size;
 
+      // Daftar tanggal kerja + penanda (izin/cuti/sakit/training, tukar jadwal, pengganti jadwal)
+      const catLabel = { cuti: 'Cuti', izin: 'Izin', sakit: 'Sakit', training: 'Training' };
+      const workDayList = periodDays.filter(k => !liburDates.has(k)).map(k => {
+        const tags = [];
+        Object.entries(absentByCategory).forEach(([cat, set]) => {
+          if (set.has(k)) tags.push({ kind: 'absen', text: catLabel[cat] });
+        });
+        const ex = extraByDate.get(k);
+        if (ex && !ex.replaces_partial_leave) {
+          if (ex.sunday_swap_id) {
+            const partner = swapById.get(ex.sunday_swap_id)?.therapist_name;
+            tags.push({ kind: 'swap', text: partner ? `Tukar jadwal – menggantikan ${partner}` : 'Tukar jadwal – menggantikan rekan' });
+          } else if (ex.leave_request_id) {
+            tags.push({ kind: 'pengganti', text: 'Pengganti jadwal (hari libur diganti kerja)' });
+          } else {
+            tags.push({ kind: 'pengganti', text: 'Shift tambahan' });
+          }
+          if (ex.start_time && ex.end_time) tags.push({ kind: 'jam', text: `${ex.start_time.slice(0, 5)} – ${ex.end_time.slice(0, 5)}` });
+        }
+        return { date: k, tags };
+      });
+
+      swapEntries.sort((a, b) => a.date.localeCompare(b.date));
+      izinEntries.sort((a, b) => a.start_date.localeCompare(b.start_date));
+
       setMetrics({
         workDays,
+        izinEntries,
+        swapEntries,
+        workDayList,
         absence: {
           cuti: absentByCategory.cuti.size,
           izin: absentByCategory.izin.size,
@@ -254,10 +308,11 @@ const rawMonthlyRecaps = recapsRes.data || [];
   const progressCapped = Math.min(metrics.targetVisitsProgress, 100);
 
   const absenceCards = [
-    { key: 'workDays', label: 'Hari Kerja', value: metrics.workDays, sub: 'hari kerja periode ini', Icon: Briefcase, box: 'bg-app-soft', icon: 'text-app-accent', always: true },
+    { key: 'workDays', label: 'Hari Kerja', value: metrics.workDays, sub: 'hari kerja periode ini', onClick: () => setWorkDialogOpen(true), Icon: Briefcase, box: 'bg-app-soft', icon: 'text-app-accent', always: true },
     { key: 'cuti', label: 'Cuti', value: metrics.absence.cuti, sub: 'hari cuti periode ini', Icon: Umbrella, box: 'bg-teal-50', icon: 'text-teal-600' },
-    { key: 'izin', label: 'Izin', value: metrics.absence.izin, sub: 'hari izin periode ini', Icon: FileText, box: 'bg-amber-50', icon: 'text-amber-600' },
+    { key: 'izin', label: 'Izin', value: metrics.absence.izin, sub: 'hari izin periode ini', onClick: () => setIzinDialogOpen(true), Icon: FileText, box: 'bg-amber-50', icon: 'text-amber-600' },
     { key: 'sakit', label: 'Sakit', value: metrics.absence.sakit, sub: 'hari sakit periode ini', Icon: Stethoscope, box: 'bg-rose-50', icon: 'text-rose-600' },
+    { key: 'swap', label: 'Tukar Jadwal', value: metrics.swapEntries.length, sub: 'hari tukar jadwal Minggu', onClick: () => setSwapDialogOpen(true), Icon: CalendarDays, box: 'bg-sky-50', icon: 'text-sky-600' },
     { key: 'training', label: 'Training', value: metrics.absence.training, sub: 'hari training periode ini', Icon: GraduationCap, box: 'bg-violet-50', icon: 'text-violet-600' }
   ].filter(c => c.always || c.value > 0);
 
@@ -360,12 +415,13 @@ const rawMonthlyRecaps = recapsRes.data || [];
 
       {/* ── Row 2: hari kerja & ketidakhadiran periode (kartu absensi hanya muncul bila ada) ── */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        {absenceCards.map(({ key, label, value, sub, Icon, box, icon }, i) => (
+        {absenceCards.map(({ key, label, value, sub, Icon, box, icon, onClick }, i) => (
           <StatCard
             key={key}
             label={label}
             value={value}
-            sub={sub}
+            sub={onClick ? `${sub} →` : sub}
+            onClick={onClick}
             Icon={Icon}
             iconBox={box}
             iconColor={icon}
@@ -408,6 +464,106 @@ const rawMonthlyRecaps = recapsRes.data || [];
                 );
               })
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: daftar izin periode ini */}
+      <Dialog open={izinDialogOpen} onOpenChange={setIzinDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Riwayat Izin</DialogTitle>
+            <DialogDescription>
+              {metrics.absence.izin} hari izin pada periode ini
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto space-y-2">
+            {metrics.izinEntries.length === 0 ? (
+              <p className="text-sm text-slate-500 text-center py-6">Belum ada izin pada periode ini.</p>
+            ) : (
+              metrics.izinEntries.map((entry) => {
+                const sameDay = entry.start_date === entry.end_date;
+                const fmt = (d) => format(new Date(`${d}T00:00:00`), 'dd MMM yyyy', { locale: idLocale });
+                return (
+                  <div key={entry.id} className="rounded-app border border-slate-100 bg-slate-50 p-3">
+                    <p className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                      <CalendarDays className="w-3.5 h-3.5 text-amber-600" />
+                      {sameDay ? fmt(entry.start_date) : `${fmt(entry.start_date)} – ${fmt(entry.end_date)}`}
+                    </p>
+                    {entry.start_time && entry.end_time && (
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Pukul {entry.start_time.slice(0, 5)} – {entry.end_time.slice(0, 5)}
+                      </p>
+                    )}
+                    <p className="text-xs text-slate-500 mt-1">
+                      Catatan: {entry.reason || '-'}
+                    </p>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: tukar jadwal Minggu periode ini */}
+      <Dialog open={swapDialogOpen} onOpenChange={setSwapDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Tukar Jadwal Minggu</DialogTitle>
+            <DialogDescription>
+              Tukar jadwal Minggu yang diajukan terapis ini pada periode ini. Tidak dihitung izin.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto space-y-2">
+            {metrics.swapEntries.map((e) => (
+              <div key={e.id} className="rounded-app border border-slate-100 bg-slate-50 p-3">
+                <p className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                  <CalendarDays className="w-3.5 h-3.5 text-sky-600" />
+                  {format(new Date(`${e.date}T00:00:00`), 'dd MMM yyyy', { locale: idLocale })}
+                </p>
+                {e.partner && (
+                  <p className="text-xs text-slate-600 mt-1">
+                    Digantikan oleh: <span className="font-semibold">{e.partner}</span>
+                  </p>
+                )}
+                {e.note && <p className="text-xs text-slate-500 mt-1">Catatan: {e.note}</p>}
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: daftar tanggal kerja periode ini */}
+      <Dialog open={workDialogOpen} onOpenChange={setWorkDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Hari Kerja</DialogTitle>
+            <DialogDescription>
+              {metrics.workDays} hari kerja pada periode ini. Tukar jadwal dan pengganti jadwal diberi tanda.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto space-y-1.5">
+            {metrics.workDayList.map(({ date, tags }) => (
+              <div key={date} className={cn("rounded-app border px-3 py-2", tags.length ? "border-sky-100 bg-sky-50/60" : "border-slate-100 bg-slate-50")}>
+                <p className="text-sm font-medium text-slate-800">
+                  {format(new Date(`${date}T00:00:00`), 'EEEE, dd MMM yyyy', { locale: idLocale })}
+                </p>
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {tags.map((t, i) => (
+                      <span key={i} className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full",
+                        t.kind === 'absen' ? "bg-amber-100 text-amber-700"
+                          : t.kind === 'swap' ? "bg-sky-100 text-sky-700"
+                          : t.kind === 'pengganti' ? "bg-emerald-100 text-emerald-700"
+                          : "bg-slate-200 text-slate-600")}>
+                        {t.text}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </DialogContent>
       </Dialog>

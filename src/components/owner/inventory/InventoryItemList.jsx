@@ -201,18 +201,18 @@ const InventoryItemList = ({ items = [], onRefresh, onRestock, onViewHistory, on
                       </Button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                    <div className="min-w-0">
                       <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Stok</p>
-                      <p className="font-mono text-slate-700">{Number(item.current_stock).toLocaleString('id-ID', { maximumFractionDigits: 2 })} {item.unit}</p>
+                      <p className="font-mono break-words text-slate-700">{Number(item.current_stock).toLocaleString('id-ID', { maximumFractionDigits: 2 })} {item.unit}</p>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Harga/Satuan</p>
-                      <p className="font-mono text-slate-500">Rp {Number(item.price_per_unit).toLocaleString('id-ID', { maximumFractionDigits: 2 })}</p>
+                      <p className="font-mono break-words text-slate-500">Rp {Number(item.price_per_unit).toLocaleString('id-ID', { maximumFractionDigits: 2 })}</p>
                     </div>
-                    <div>
+                    <div className="col-span-2 sm:col-span-1">
                       <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Nilai Stok</p>
-                      <p className="font-mono font-bold text-slate-900">Rp {(item.current_stock * item.price_per_unit).toLocaleString('id-ID', { maximumFractionDigits: 0 })}</p>
+                      <p className="font-mono break-words font-bold text-slate-900">Rp {(item.current_stock * item.price_per_unit).toLocaleString('id-ID', { maximumFractionDigits: 0 })}</p>
                     </div>
                   </div>
                 </div>

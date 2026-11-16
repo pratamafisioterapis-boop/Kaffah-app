@@ -104,10 +104,10 @@ const TherapistHero = ({ therapistName, today }) => {
       />
 
       <div className="relative flex flex-col gap-[11px] lg:gap-3.5">
-        <div className="flex flex-col gap-[11px] lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-end lg:gap-6">
+        <div className="flex flex-col gap-[11px] lg:grid lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-end lg:gap-6">
           <div className="min-w-0">
             <span className="block text-xs font-bold uppercase tracking-[0.14em] opacity-80">{dateLabel(new Date(now))}</span>
-            <h1 className="tv2-display mt-1 break-words text-[clamp(1.375rem,6.1vw,2.375rem)] font-extrabold leading-[1.1] tracking-[-0.025em] lg:text-[38px]">
+            <h1 className="tv2-display mt-1 break-words text-[clamp(1.375rem,6.1vw,2.375rem)] font-extrabold leading-[1.1] tracking-[-0.025em] lg:truncate lg:text-[clamp(26px,2.9vw,38px)]" title={`${greeting}, ${shortName}`}>
               {greeting}, {shortName}
             </h1>
             <p className="mt-1 line-clamp-1 max-w-[48ch] text-[13px] opacity-90 lg:mt-2 lg:line-clamp-none lg:text-sm">{motivation}</p>

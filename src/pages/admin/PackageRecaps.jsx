@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
     Search, Package, Clock, CheckCircle, 
-    AlertTriangle, Loader2, Filter, ChevronLeft, ChevronRight
+    AlertTriangle, Loader2, Filter, ChevronLeft, ChevronRight, Plus, Receipt
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,11 +22,22 @@ import {
 } from "@/components/ui/select"
 import DashboardLayout from '@/components/DashboardLayout';
 import PageHero from '@/components/shared/PageHero';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { isRenewalEnabled, getRenewalTerms } from '@/lib/packageRenewalTerms';
+import RenewPackageDialog from '@/components/admin/RenewPackageDialog';
+import PackagePaymentReceiptModal from '@/components/admin/PackagePaymentReceiptModal';
 
 // Shared Logic Component
 export const PackageRecapsContent = () => {
     const { toast } = useToast();
+    const { userDetails } = useAuth();
+    const clinicId = userDetails?.clinic_id;
+    const renewalOn = isRenewalEnabled(clinicId);
+    const terms = getRenewalTerms(clinicId);
     const [packages, setPackages] = useState([]);
+    const [payments, setPayments] = useState([]);
+    const [renewOpen, setRenewOpen] = useState(false);
+    const [receiptPaymentId, setReceiptPaymentId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all'); // all, aktif, pending, expired, selesai
@@ -42,7 +53,8 @@ export const PackageRecapsContent = () => {
 
     useEffect(() => {
         fetchPackages();
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [renewalOn]);
 
     useEffect(() => {
         // Reset to first page whenever filters change
@@ -62,6 +74,17 @@ export const PackageRecapsContent = () => {
 
             if (error) throw error;
             setPackages(data || []);
+
+            // Pembayaran perpanjangan (kwitansi) — hanya untuk klinik yang memakai fitur ini.
+            if (renewalOn) {
+                const { data: pays } = await supabase
+                    .from('package_payments')
+                    .select('id, package_tracking_id, status')
+                    .eq('status', 'paid');
+                setPayments(pays || []);
+            } else {
+                setPayments([]);
+            }
         } catch (error) {
             console.error("Error fetching packages:", error);
             toast({ variant: "destructive", title: "Error", description: "Gagal memuat data paket." });
@@ -75,6 +98,25 @@ export const PackageRecapsContent = () => {
         setIsHistoryModalOpen(true);
     };
 
+    const paymentByPackage = React.useMemo(() => {
+        const m = {};
+        payments.forEach((p) => { if (p.package_tracking_id) m[p.package_tracking_id] = p.id; });
+        return m;
+    }, [payments]);
+
+    const receiptButton = (pkg, className = '') => (
+        paymentByPackage[pkg.id] ? (
+            <Button
+                size="sm"
+                variant="ghost"
+                className={className}
+                onClick={(e) => { e.stopPropagation(); setReceiptPaymentId(paymentByPackage[pkg.id]); }}
+            >
+                <Receipt className="mr-1.5 h-3.5 w-3.5" /> {terms.receiptButton}
+            </Button>
+        ) : null
+    );
+
     // Calculate Counts
     const counts = {
         all: packages.length,
@@ -85,7 +127,11 @@ export const PackageRecapsContent = () => {
     };
 
     // Sisa Hari Calculation
+    // Paket hasil perpanjangan yang belum dipakai: masa berlaku baru mulai di sesi pertama.
+    const isUnstarted = (item) => !!item.purchase_payment_id && !item.first_used_at;
+
     const calculateSisaHari = (item) => {
+        if (isUnstarted(item)) return null;
         const status = (item.status || '').toLowerCase();
         const isActive = status === 'aktif' || status === 'diperpanjang' || status === 'active';
         
@@ -296,6 +342,14 @@ export const PackageRecapsContent = () => {
         <div className="space-y-6">
             <PageHero image="/hero/clinara-package-hero.webp" title="Rekap" highlight="Paket" description="Kelola status dan riwayat paket pasien." />
 
+            {renewalOn && (
+                <div className="flex justify-end">
+                    <Button onClick={() => setRenewOpen(true)}>
+                        <Plus className="mr-2 h-4 w-4" /> {terms.action}
+                    </Button>
+                </div>
+            )}
+
 
             {/* Restructured Filter Section */}
             <div className="bg-white p-4 sm:p-5 rounded-app border border-slate-200 shadow-sm">
@@ -420,6 +474,11 @@ export const PackageRecapsContent = () => {
                                                 : (pkg.end_date ? formatDateIndonesian(pkg.end_date) : '-')
                                             }</span>
                                         </div>
+                                        {paymentByPackage[pkg.id] && (
+                                            <div className="flex flex-wrap gap-2">
+                                                {receiptButton(pkg)}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -440,14 +499,15 @@ export const PackageRecapsContent = () => {
                                 <th className="px-4 py-3 text-center">Tgl Selesai</th>
                                 <th className="px-4 py-3 text-center">Sisa Hari</th>
                                 <th className="px-4 py-3 text-center">Status</th>
+                                {renewalOn && <th className="px-4 py-3 text-center">Aksi</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {isLoading ? (
-                                <tr><td colSpan={8} className="p-8 text-center text-slate-500"><Loader2 className="animate-spin w-6 h-6 mx-auto mb-2" />Memuat data...</td></tr>
+                                <tr><td colSpan={renewalOn ? 9 : 8} className="p-8 text-center text-slate-500"><Loader2 className="animate-spin w-6 h-6 mx-auto mb-2" />Memuat data...</td></tr>
                             ) : paginatedPackages.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} className="p-8 text-center text-slate-500">Tidak ada data paket.</td>
+                                    <td colSpan={renewalOn ? 9 : 8} className="p-8 text-center text-slate-500">Tidak ada data paket.</td>
                                 </tr>
                             ) : (
                                 paginatedPackages.map((pkg) => {
@@ -460,7 +520,9 @@ export const PackageRecapsContent = () => {
                                             <td className="px-4 py-3 text-center font-bold text-slate-700">{pkg.sessions_remaining}</td>
                                             <td className="px-4 py-3 text-slate-500 text-center">{pkg.start_date ? formatDateIndonesian(pkg.start_date) : '-'}</td>
                                             <td className="px-4 py-3 text-slate-500 text-center">
-                                                {pkg.extended_until
+                                                {isUnstarted(pkg)
+                                                    ? <span className="text-slate-500">Mulai saat sesi pertama</span>
+                                                    : pkg.extended_until
                                                     ? <span className="text-orange-600 font-medium">{formatDateIndonesian(pkg.extended_until)}</span>
                                                     : (pkg.end_date ? formatDateIndonesian(pkg.end_date) : '-')
                                                 }
@@ -471,6 +533,11 @@ export const PackageRecapsContent = () => {
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-center">{getStatusBadge(pkg.status)}</td>
+                                            {renewalOn && (
+                                                <td className="px-4 py-3 text-center whitespace-nowrap">
+                                                    {receiptButton(pkg)}
+                                                </td>
+                                            )}
                                         </tr>
                                     );
                                 })
@@ -490,6 +557,28 @@ export const PackageRecapsContent = () => {
                 onClose={() => setIsHistoryModalOpen(false)}
                 packageData={selectedPackage}
             />
+
+            {renewalOn && (
+                <>
+                    <RenewPackageDialog
+                        isOpen={renewOpen}
+                        onClose={() => setRenewOpen(false)}
+                        clinicId={clinicId}
+                        onDone={(result) => {
+                            setRenewOpen(false);
+                            fetchPackages();
+                            if (result?.payment_id) setReceiptPaymentId(result.payment_id);
+                        }}
+                    />
+                    <PackagePaymentReceiptModal
+                        isOpen={!!receiptPaymentId}
+                        onClose={() => setReceiptPaymentId(null)}
+                        paymentId={receiptPaymentId}
+                        clinicId={clinicId}
+                        onChanged={fetchPackages}
+                    />
+                </>
+            )}
 
         </div>
     );

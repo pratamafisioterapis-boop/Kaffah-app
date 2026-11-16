@@ -109,17 +109,17 @@ const InventoryItemForm = ({ onSuccess }) => {
           </select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="quantity">{inTransit ? 'Kuantitas Dipesan' : 'Kuantitas Awal'}</Label>
+          <Label htmlFor="quantity" className="whitespace-nowrap">{inTransit ? 'Kuantitas Dipesan' : 'Kuantitas Awal'}</Label>
           <Input id="quantity" type="number" step="0.01" min="0" placeholder="0" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="total_price">Harga Total Pembelian (Rp)</Label>
+          <Label htmlFor="total_price" className="whitespace-nowrap">Total Pembelian (Rp)</Label>
           <Input id="total_price" type="number" min="0" placeholder="0" value={form.total_price} onChange={(e) => setForm({ ...form, total_price: e.target.value })} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="purchase_date">{inTransit ? 'Tanggal Bayar' : 'Tanggal Beli'}</Label>
+          <Label htmlFor="purchase_date" className="whitespace-nowrap">{inTransit ? 'Tanggal Bayar' : 'Tanggal Beli'}</Label>
           <Input id="purchase_date" type="date" value={form.purchase_date} onChange={(e) => setForm({ ...form, purchase_date: e.target.value })} />
         </div>
       </div>

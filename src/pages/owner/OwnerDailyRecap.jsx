@@ -93,6 +93,7 @@ const OwnerDailyRecap = () => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [paymentMethodOptions, setPaymentMethodOptions] = useState([]);
   const [totalAmount, setTotalAmount] = useState(0);
+  const [pkgPaymentsTotal, setPkgPaymentsTotal] = useState(0);
 
   // Date Pickers
   const [showStartCalendar, setShowStartCalendar] = useState(false);
@@ -281,7 +282,18 @@ const OwnerDailyRecap = () => {
       const { data, error } = await query;
       if (error) throw error;
       const sum = (data || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
-      if (isMounted.current) setTotalAmount(sum);
+      // Pembayaran paket di awal (Praxis): hanya bila filter cari kosong (tidak punya nama di rekap).
+      const pkgTotal = debouncedSearch.trim()
+        ? 0
+        : await getPackagePaymentsTotal({
+            startDate: queryDateRange.start,
+            endDate: queryDateRange.end,
+            paymentMethod: selectedPaymentMethod || null,
+          });
+      if (isMounted.current) {
+        setTotalAmount(sum);
+        setPkgPaymentsTotal(pkgTotal || 0);
+      }
     } catch (err) {
       console.error("❌ Error fetching total amount", err);
     }
@@ -424,7 +436,7 @@ const OwnerDailyRecap = () => {
         <div className="flex gap-2">
           <div className="flex-1 min-w-0 flex items-center gap-1.5 px-3 h-8 rounded-app bg-emerald-50 border border-emerald-100">
             <BarChart3 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span className="text-xs sm:text-sm font-medium text-emerald-700 whitespace-nowrap">Total: <span className="font-bold">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount)}</span></span>
+            <span className="text-xs sm:text-sm font-medium text-emerald-700 whitespace-nowrap">Total: <span className="font-bold">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount + pkgPaymentsTotal)}</span>{pkgPaymentsTotal > 0 && (<span className="ml-1 text-xs font-normal text-emerald-600">(termasuk bayar paket di awal {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(pkgPaymentsTotal)})</span>)}</span>
           </div>
           <Button onClick={handleAddClick} className="gap-1.5 bg-app-accent hover:bg-app-accent-hover h-8 rounded-app text-xs"><Plus className="w-4 h-4" /> Tambah Daily Recap</Button>
         </div>

@@ -3,10 +3,12 @@ import {
   UploadCloud, CheckCircle2, AlertTriangle, QrCode, Loader2, Trash2, Link2, Unlink,
   ChevronLeft, ChevronRight, ChevronDown, Clock, FileText, User, Hourglass,
 } from 'lucide-react';
-import { format, parseISO, addDays } from 'date-fns';
+import { format, parseISO, addDays, startOfMonth, endOfMonth } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { Helmet } from 'react-helmet';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -14,9 +16,9 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { confirmAction } from '@/lib/confirmAction';
 import { parseQrisReportPdf } from '@/utils/bsiQrisReportParser';
-import { autoMatchQris, autoMatchSplits, findCombos, qrisPortionOfRecap, rankCandidates } from '@/utils/qrisMatcher';
+import { nameOverlap, autoMatchQris, autoMatchSplits, autoMatchGroups, findCombos, findGroupCombos, groupTrxByPayer, qrisPortionOfRecap, rankCandidates } from '@/utils/qrisMatcher';
 import { fetchRecapHandlerEvents } from '@/lib/recapCashier';
-import { isLinked, keysOfTrx, linkPatch, clearPatch, detachPatch, incomeKey, rankPool } from '@/utils/qrisLinks';
+import { isLinked, keysOfTrx, linkPatch, clearPatch, detachPatch, incomeKey, rankPool, coverageOf } from '@/utils/qrisLinks';
 
 // Catatan: komentar ini hanya untuk mengubah hash aset build (bukan perubahan fungsi).
 const formatRp = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
@@ -77,7 +79,7 @@ const ManualPicker = ({ t, pool, poolTrx, onSubmit }) => {
 
   return (
     <details className="text-sm" open={picked.length > 0 || needle.length > 0}>
-      <summary className="cursor-pointer text-xs text-slate-500 hover:text-slate-700">Cari dan pilih sendiri (pasien atau pemasukan lain, metode apa pun)…</summary>
+      <summary className="cursor-pointer text-xs text-slate-500 hover:text-slate-700">Cari dan pilih sendiri (pasien atau pemasukan lain, metode apa pun, termasuk jadwal terapi di hari lain)…</summary>
       <div className="mt-2 space-y-2">
         <input
           type="search"
@@ -88,7 +90,7 @@ const ManualPicker = ({ t, pool, poolTrx, onSubmit }) => {
           className="w-full text-sm border border-slate-300 rounded-md bg-white px-2.5 py-2"
         />
         <div className="rounded-md border border-slate-200 divide-y divide-slate-100 max-h-64 overflow-y-auto">
-          {shown.length === 0 && <p className="px-2.5 py-3 text-xs text-slate-500">Tidak ada yang cocok. Yang ditampilkan hanya hari transaksi dan sehari sebelum/sesudahnya.</p>}
+          {shown.length === 0 && <p className="px-2.5 py-3 text-xs text-slate-500">Tidak ada yang cocok. Yang ditampilkan: 3 hari sebelum sampai 30 hari sesudah tanggal transaksi (untuk bayar di muka). Ketik nama untuk mencari.</p>}
           {shown.map(({ p }) => {
             const other = linkedBy[p.key];
             return (
@@ -119,6 +121,38 @@ const ManualPicker = ({ t, pool, poolTrx, onSubmit }) => {
   );
 };
 
+// Kebalikan ManualPicker: untuk pasien yang tercatat QRIS tetapi tidak ada di bank hari itu, pilih transaksi bank
+// (hari lain, mis. dibayar di muka) yang membayarnya. Transaksi yang sudah tertaut ke pasien lain tetap boleh dipilih:
+// pembayaran itu ditambahkan untuk pasien ini juga (satu pembayaran untuk beberapa pasien).
+const TrxPicker = ({ r, trxPool, onPick }) => {
+  const [q, setQ] = useState('');
+  const needle = q.trim().toLowerCase();
+  const ranked = useMemo(() => trxPool
+    .map((t) => ({ t, name: nameOverlap(t.customer_name, r.name), dist: Math.abs(parseISO(t.trx_date) - parseISO(r.date)) }))
+    .sort((a, b) => b.name - a.name || a.dist - b.dist), [trxPool, r.name, r.date]);
+  const shown = ranked.filter(({ t }) => !needle || String(t.customer_name).toLowerCase().includes(needle)).slice(0, needle ? 60 : 25);
+  return (
+    <details className="text-sm mt-2 w-full" open={needle.length > 0}>
+      <summary className="cursor-pointer text-xs text-slate-500 hover:text-slate-700">Sudah dibayar di hari lain? Cari transaksi bank…</summary>
+      <div className="mt-2 space-y-2">
+        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari nama pembayar di bank…" aria-label="Cari pembayar" className="w-full text-sm border border-slate-300 rounded-md bg-white px-2.5 py-2" />
+        <div className="rounded-md border border-slate-200 divide-y divide-slate-100 max-h-64 overflow-y-auto">
+          {shown.length === 0 && <p className="px-2.5 py-3 text-xs text-slate-500">Tidak ada transaksi bank di laporan yang terunggah (30 hari sebelum sampai 3 hari sesudah).</p>}
+          {shown.map(({ t }) => (
+            <button key={t.id} type="button" onClick={() => onPick(t)} className="w-full flex items-start justify-between gap-2 px-2.5 py-2 text-left hover:bg-slate-50">
+              <span className="min-w-0">
+                <span className="block break-words">{t.customer_name}</span>
+                <span className="block text-[11px] text-slate-500">{fmtShort(t.trx_date)} {String(t.trx_time || '').slice(0, 5)}{t.issuer ? ` · ${t.issuer}` : ''}{keysOfTrx(t).length ? ` · sudah tertaut ke ${keysOfTrx(t).length} item (akan dibagi)` : ''}</span>
+              </span>
+              <span className="tabular-nums shrink-0">{formatRp(t.amount)}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </details>
+  );
+};
+
 const AdminQrisReconciliation = () => {
   const { toast } = useToast();
   const { user, userDetails } = useAuth();
@@ -127,11 +161,14 @@ const AdminQrisReconciliation = () => {
   const fileInputRef = useRef(null);
 
   const [date, setDate] = useState(todayStr());
+  const [calOpen, setCalOpen] = useState(false);
+  const [calMonth, setCalMonth] = useState(() => new Date());
+  const [issueDays, setIssueDays] = useState([]); // tanggal (yyyy-MM-dd) di bulan kalender yang masih ada yang belum cocok
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false); // membaca/menyimpan PDF
   const [dragOver, setDragOver] = useState(false);
   const [pendingFile, setPendingFile] = useState(null); // { fileName, parsed, issues } menunggu konfirmasi
-  const [day, setDay] = useState({ uploads: [], transactions: [], portions: [], pool: [], poolTrx: [], userNames: {} });
+  const [day, setDay] = useState({ uploads: [], transactions: [], portions: [], pool: [], poolTrx: [], linkedOther: [], userNames: {} });
   const [openAdmins, setOpenAdmins] = useState({});
 
   // --- Data ------------------------------------------------------------------
@@ -139,8 +176,9 @@ const AdminQrisReconciliation = () => {
   //  portions: pembayaran QRIS pada tanggal d (recap + pemasukan lain QRIS) -> jadi baris rekonsiliasi.
   //  pool: semua pembayaran d-1..d+1 dengan metode apa pun -> pilihan di pemilih manual.
   const loadRecapData = useCallback(async (d) => {
-    const lo = shiftDate(d, -1);
-    const hi = shiftDate(d, 1);
+    // Jendela lebar: pasien bisa bayar di muka (jadwal terapi hari lain) atau sebaliknya.
+    const lo = shiftDate(d, -3);
+    const hi = shiftDate(d, 30);
     const { data: options } = await supabase
       .from('operational_options').select('id, label').eq('clinic_id', clinicId).eq('category', 'payment_method');
     const labelById = {};
@@ -240,6 +278,41 @@ const AdminQrisReconciliation = () => {
     return { portions: [...portions, ...incomePortions], pool };
   }, [clinicId]);
 
+  // Tanggal dalam satu bulan yang masih punya masalah: transaksi bank belum berpasangan, atau pembayaran QRIS di
+  // recap/pemasukan lain yang tidak ada di bank padahal laporannya sudah melewati jam bayarnya.
+  const loadMonthIssues = useCallback(async (monthDate) => {
+    const first = format(startOfMonth(monthDate), 'yyyy-MM-dd');
+    const last = format(endOfMonth(monthDate), 'yyyy-MM-dd');
+    const [{ data: options }, { data: trx }, { data: ups }, { data: recaps }, { data: incomes }] = await Promise.all([
+      supabase.from('operational_options').select('id, label').eq('clinic_id', clinicId).eq('category', 'payment_method'),
+      supabase.from('qris_report_transactions').select('trx_date, matched_recap_id, extra_recap_ids, extra_income_ids')
+        .eq('clinic_id', clinicId).gte('trx_date', shiftDate(first, -30)).lte('trx_date', shiftDate(last, 3)),
+      supabase.from('qris_report_uploads').select('report_date, report_generated_at, created_at').eq('clinic_id', clinicId).gte('report_date', first).lte('report_date', last),
+      supabase.from('daily_recaps')
+        .select('id, revenue_date, amount, goods_amount, tips_amount, payment_method, start_time, end_time, created_at, payment_splits:daily_recap_payment_splits(payment_method, amount)')
+        .eq('clinic_id', clinicId).gte('revenue_date', first).lte('revenue_date', last).or('status.is.null,status.neq.cancelled'),
+      supabase.from('admin_income').select('id, date, amount, payment_method, created_at').eq('clinic_id', clinicId).gte('date', first).lte('date', last),
+    ]);
+    const qrisIds = new Set((options || []).filter((o) => /^\s*qris\s*$/i.test(o.label || '')).map((o) => String(o.id)));
+    const isQrisMethod = (m) => !!m && (qrisIds.has(String(m)) || /^\s*qris\s*$/i.test(String(m)));
+    const linked = new Set((trx || []).flatMap((t) => keysOfTrx(t)));
+    const days = new Set();
+    (trx || []).forEach((t) => { if (t.trx_date >= first && t.trx_date <= last && !isLinked(t)) days.add(t.trx_date); });
+    const cutoffOf = {};
+    (ups || []).forEach((u) => {
+      const v = new Date(u.report_generated_at || u.created_at).getTime();
+      cutoffOf[u.report_date] = Math.max(cutoffOf[u.report_date] || 0, v);
+    });
+    const overdue = (date, at) => cutoffOf[date] && at && new Date(at).getTime() <= cutoffOf[date];
+    (recaps || []).forEach((r) => {
+      if (qrisPortionOfRecap(r, isQrisMethod) > 0 && !linked.has(r.id) && overdue(r.revenue_date, r.end_time || r.start_time || r.created_at)) days.add(r.revenue_date);
+    });
+    (incomes || []).forEach((i) => {
+      if (isQrisMethod(i.payment_method) && Number(i.amount) > 0 && !linked.has(incomeKey(i.id)) && overdue(i.date, i.created_at)) days.add(i.date);
+    });
+    return [...days];
+  }, [clinicId]);
+
   const persistMatches = useCallback(async (matches) => {
     const now = new Date().toISOString();
     await Promise.all(matches.map((m) => supabase.from('qris_report_transactions')
@@ -260,12 +333,24 @@ const AdminQrisReconciliation = () => {
     const splitTx = new Set(splitMatches.map((m) => m.transactionId));
     const splitRecaps = new Set(splitMatches.map((m) => m.recapId));
     const { matches: amountMatches } = autoMatchQris(freeTrx.filter((t) => !splitTx.has(t.id)), freePortions.filter((p) => !splitRecaps.has(p.recapId)));
+    // Satu pembayar scan beberapa kali untuk beberapa pasien sekaligus (banyak transaksi -> banyak pasien).
+    const doneTx = new Set([...splitMatches, ...amountMatches].map((m) => m.transactionId));
+    const doneKey = new Set([...splitMatches, ...amountMatches].map((m) => m.recapId));
+    const groupMatches = autoMatchGroups(freeTrx.filter((t) => !doneTx.has(t.id)), freePortions.filter((p) => !doneKey.has(p.recapId)));
     const matches = [...splitMatches, ...amountMatches];
-    if (!matches.length) return transactions;
+    if (!matches.length && !groupMatches.length) return transactions;
     await persistMatches(matches);
+    const now = new Date().toISOString();
+    await Promise.all(groupMatches.map((m) => supabase.from('qris_report_transactions')
+      .update({ matched_recap_id: m.recapIds[0], extra_recap_ids: m.recapIds.slice(1), match_method: 'auto', matched_at: now, matched_by: user?.id || null })
+      .eq('id', m.transactionId).eq('clinic_id', clinicId)));
     const byTx = Object.fromEntries(matches.map((m) => [m.transactionId, m.recapId]));
-    return transactions.map((t) => (byTx[t.id] ? { ...t, matched_recap_id: byTx[t.id], match_method: 'auto' } : t));
-  }, [persistMatches]);
+    const byGroup = Object.fromEntries(groupMatches.map((m) => [m.transactionId, m.recapIds]));
+    return transactions.map((t) => {
+      if (byGroup[t.id]) return { ...t, matched_recap_id: byGroup[t.id][0], extra_recap_ids: byGroup[t.id].slice(1), match_method: 'auto' };
+      return byTx[t.id] ? { ...t, matched_recap_id: byTx[t.id], match_method: 'auto' } : t;
+    });
+  }, [persistMatches, clinicId, user?.id]);
 
   const loadDay = useCallback(async (d) => {
     if (!clinicId) return;
@@ -277,15 +362,20 @@ const AdminQrisReconciliation = () => {
         loadRecapData(d),
         // Transaksi sehari sebelum/sesudahnya: untuk tahu item mana yang sudah tertaut ke transaksi lain.
         supabase.from('qris_report_transactions')
-          .select('id, trx_date, trx_time, customer_name, amount, matched_recap_id, extra_recap_ids, extra_income_ids')
-          .eq('clinic_id', clinicId).gte('trx_date', shiftDate(d, -1)).lte('trx_date', shiftDate(d, 1)),
+          .select('id, trx_date, trx_time, customer_name, issuer, amount, match_method, matched_recap_id, extra_recap_ids, extra_income_ids')
+          .eq('clinic_id', clinicId).gte('trx_date', shiftDate(d, -30)).lte('trx_date', shiftDate(d, 3)),
       ]);
       if (e1 || e2 || e3) throw e1 || e2 || e3;
       const { portions, pool } = recapData;
       let transactions = trx || [];
 
+      // Pembayaran dari hari lain (mis. bayar di muka) yang sudah tertaut ke pasien hari ini.
+      const todayKeys = new Set(portions.map((p) => p.recapId));
+      const linkedOther = (nearTrx || []).filter((t) => t.trx_date !== d && keysOfTrx(t).some((k) => todayKeys.has(k)));
+      const otherKeys = new Set(linkedOther.flatMap((t) => keysOfTrx(t)));
+
       // Cocokkan otomatis yang belum berpasangan (mis. admin baru melengkapi recap setelah PDF diunggah).
-      transactions = await autoMatchDay(transactions, portions);
+      transactions = await autoMatchDay(transactions, portions.filter((p) => !otherKeys.has(p.recapId)));
 
       const uploaderIds = [...new Set((ups || []).map((u) => u.uploaded_by).filter(Boolean))];
       const userNames = {};
@@ -295,7 +385,7 @@ const AdminQrisReconciliation = () => {
       }
       const byId = Object.fromEntries(transactions.map((t) => [t.id, t]));
       const poolTrx = (nearTrx || []).map((t) => byId[t.id] || t);
-      setDay({ uploads: ups || [], transactions, portions, pool, poolTrx, userNames });
+      setDay({ uploads: ups || [], transactions, portions, pool, poolTrx, linkedOther, userNames });
     } catch (e) {
       toast({ variant: 'destructive', title: 'Gagal memuat data', description: e.message });
     } finally {
@@ -304,6 +394,14 @@ const AdminQrisReconciliation = () => {
   }, [clinicId, loadRecapData, autoMatchDay, toast]);
 
   useEffect(() => { if (isKaffah) loadDay(date); }, [date, isKaffah, loadDay]);
+
+  // Tanda merah di kalender: dimuat saat kalender dibuka / ganti bulan, dan diperbarui setelah data hari ini berubah.
+  useEffect(() => {
+    if (!isKaffah || !calOpen || !clinicId) return undefined;
+    let cancelled = false;
+    loadMonthIssues(calMonth).then((d) => { if (!cancelled) setIssueDays(d); }).catch(() => { if (!cancelled) setIssueDays([]); });
+    return () => { cancelled = true; };
+  }, [isKaffah, calOpen, calMonth, clinicId, loadMonthIssues, day]);
 
   // --- Upload ----------------------------------------------------------------
   const saveParsed = async (parsed, fileName) => {
@@ -438,13 +536,15 @@ const AdminQrisReconciliation = () => {
   // keys: satu kunci, array kunci (satu pembayaran untuk beberapa pasien/pemasukan), atau null untuk melepas.
   // Kunci = id recap, atau "inc:<id>" untuk pemasukan lain-lain. Item yang masih tertaut ke transaksi
   // lain dikeluarkan dari transaksi itu (dipindahkan).
+  // transactionId boleh berupa array: beberapa transaksi satu pembayar untuk beberapa pasien sekaligus.
   const setMatch = async (transactionId, keys) => {
     const list = [].concat(keys || []);
+    const trxIds = [].concat(transactionId);
     const patch = list.length ? linkPatch(list, { userId: user?.id || null }) : clearPatch();
     const moving = new Set(list);
-    const donors = day.poolTrx.filter((o) => o.id !== transactionId && keysOfTrx(o).some((k) => moving.has(k)));
+    const donors = day.poolTrx.filter((o) => !trxIds.includes(o.id) && keysOfTrx(o).some((k) => moving.has(k)));
     const writes = [
-      supabase.from('qris_report_transactions').update(patch).eq('id', transactionId).eq('clinic_id', clinicId),
+      supabase.from('qris_report_transactions').update(patch).in('id', trxIds).eq('clinic_id', clinicId),
       ...donors.map((o) => supabase.from('qris_report_transactions').update(detachPatch(o, moving)).eq('id', o.id).eq('clinic_id', clinicId)),
     ];
     const results = await Promise.all(writes);
@@ -466,12 +566,21 @@ const AdminQrisReconciliation = () => {
     await setMatch(t.id, keys);
   };
 
-  // Lepas semua transaksi bank dari satu pasien (bisa lebih dari satu bila dibayar terpecah).
+  // Lepas pasien ini dari semua transaksi bank yang membayarnya. Transaksi gabungan tetap untuk pasien lainnya.
   const unlinkRow = async (r) => {
+    const rm = new Set([r.recapId]);
+    const results = await Promise.all(r.trxs.map((t) => supabase.from('qris_report_transactions')
+      .update(detachPatch(t, rm)).eq('id', t.id).eq('clinic_id', clinicId)));
+    const failed = results.find((x) => x.error);
+    if (failed) { toast({ variant: 'destructive', title: 'Gagal melepas', description: failed.error.message }); return; }
+    loadDay(date);
+  };
+
+  // Tambahkan pasien ini ke transaksi bank (mis. dibayar di muka di hari lain), tanpa melepas pasien lain di transaksi itu.
+  const addToTrx = async (t, key) => {
     const { error } = await supabase.from('qris_report_transactions')
-      .update(clearPatch())
-      .in('id', r.trxs.map((t) => t.id)).eq('clinic_id', clinicId);
-    if (error) { toast({ variant: 'destructive', title: 'Gagal melepas', description: error.message }); return; }
+      .update(linkPatch([...keysOfTrx(t), key], { userId: user?.id || null })).eq('id', t.id).eq('clinic_id', clinicId);
+    if (error) { toast({ variant: 'destructive', title: 'Gagal menyimpan', description: error.message }); return; }
     loadDay(date);
   };
 
@@ -484,27 +593,35 @@ const AdminQrisReconciliation = () => {
 
   // --- Turunan tampilan ------------------------------------------------------
   const view = useMemo(() => {
-    const { uploads, transactions, portions } = day;
+    const { uploads, transactions: dayTrx, portions, linkedOther } = day;
+    const transactions = dayTrx;
+    const allTrx = [...dayTrx, ...(linkedOther || [])];
     // Satu recap bisa punya beberapa transaksi bank (dibayar terpecah); satu transaksi bisa untuk beberapa recap.
     const trxsByRecap = {};
-    transactions.forEach((t) => {
+    allTrx.forEach((t) => {
       keysOfTrx(t).forEach((rid) => { (trxsByRecap[rid] ||= []).push(t); });
     });
     const cutoff = uploads.length
       ? new Date(Math.max(...uploads.map((u) => new Date(u.report_generated_at || u.created_at).getTime())))
       : null;
+    // Status dihitung per kelompok tertaut (banyak transaksi <-> banyak pasien): jumlah bank vs jumlah recap.
+    // Pasien di hari lain yang ikut dibayar transaksi yang sama ikut dihitung (jumlah bank vs jumlah semua pasien).
+    const todayKeys = new Set(portions.map((p) => p.recapId));
+    const coverPortions = [...portions, ...day.pool.filter((p) => !todayKeys.has(p.key)).map((p) => ({ recapId: p.key, amount: p.amount }))];
+    const cover = coverageOf(allTrx, coverPortions);
     const rows = portions.map((p) => {
       const trxs = trxsByRecap[p.recapId] || [];
-      // Transaksi gabungan (beberapa pasien) dianggap menutup penuh tiap pasiennya.
-      const covered = trxs.reduce((s, t) => s + (keysOfTrx(t).length > 1 ? p.amount : Number(t.amount)), 0);
+      const cv = cover[p.recapId];
+      const covered = cv ? cv.covered : trxs.reduce((s, t) => s + Number(t.amount), 0);
+      const deficit = cv ? cv.deficit : 0;
       const status = trxs.length
-        ? (Math.round(covered) >= Math.round(p.amount) ? 'matched' : 'partial')
+        ? (cv ? (deficit > 0 ? 'partial' : 'matched') : (Math.round(covered) >= Math.round(p.amount) ? 'matched' : 'partial'))
         : (!cutoff || (p.payAt && p.payAt > cutoff)) ? 'pending' : 'missing';
-      return { ...p, trxs, covered, status };
+      return { ...p, trxs, covered, deficit, status };
     });
     const unmatchedTrx = transactions.filter((t) => !isLinked(t));
     // Pasien yang belum tertutup penuh; amount = sisa yang masih dicari di bank.
-    const freeRows = rows.filter((r) => r.covered < r.amount).map((r) => ({ ...r, amount: r.amount - r.covered }));
+    const freeRows = rows.filter((r) => r.trxs.length === 0 || r.covered < r.amount).map((r) => ({ ...r, amount: r.amount - r.covered }));
 
     const groups = {};
     rows.forEach((r) => {
@@ -515,14 +632,17 @@ const AdminQrisReconciliation = () => {
       count: (s) => g.items.filter((i) => i.status === s).length,
     })).sort((a, b) => b.count('missing') - a.count('missing') || a.name.localeCompare(b.name));
 
+    // Kelompok transaksi satu pembayar (mis. 330rb + 25rb) yang jumlahnya pas dengan beberapa pasien.
+    const payerGroups = groupTrxByPayer(unmatchedTrx).map((g) => ({ ...g, combos: findGroupCombos(g, freeRows) })).filter((g) => g.combos.length > 0);
     const bankTotal = transactions.reduce((s, t) => s + Number(t.amount), 0);
     const expectedTotal = rows.filter((r) => r.status !== 'pending').reduce((s, r) => s + r.amount, 0);
     const missing = rows.filter((r) => r.status === 'missing').length;
     const partial = rows.filter((r) => r.status === 'partial').length;
     const pending = rows.filter((r) => r.status === 'pending').length;
     const problems = unmatchedTrx.length + missing + partial;
-    return { rows, unmatchedTrx, freeRows, adminGroups, bankTotal, expectedTotal, missing, partial, pending, problems, cutoff };
+    return { rows, unmatchedTrx, freeRows, payerGroups, adminGroups, bankTotal, expectedTotal, missing, partial, pending, problems, cutoff };
   }, [day]);
+  const trxPool = day.poolTrx;
 
   if (!isKaffah) {
     return <div className="p-6 text-sm text-slate-600">Fitur rekonsiliasi QRIS harian hanya tersedia untuk Kaffah Physiotherapy.</div>;
@@ -567,10 +687,28 @@ const AdminQrisReconciliation = () => {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1">
           <Button size="icon" variant="outline" onClick={() => setDate(shiftDate(date, -1))} aria-label="Hari sebelumnya"><ChevronLeft className="w-4 h-4" /></Button>
-          <label className="relative cursor-pointer">
-            <span className="block px-2 sm:px-3 py-1.5 text-base sm:text-lg font-bold text-slate-900 hover:bg-slate-100 rounded-md leading-tight">{fmtLong(date)}</span>
-            <input type="date" value={date} max={todayStr()} onChange={(e) => e.target.value && setDate(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full" />
-          </label>
+          <Popover open={calOpen} onOpenChange={(o) => { if (o) setCalMonth(parseISO(date)); setCalOpen(o); }}>
+            <PopoverTrigger asChild>
+              <button type="button" aria-label="Pilih tanggal" className="px-2 sm:px-3 py-1.5 text-base sm:text-lg font-bold text-slate-900 hover:bg-slate-100 rounded-md leading-tight text-left">{fmtLong(date)}</button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                locale={localeId}
+                selected={parseISO(date)}
+                month={calMonth}
+                onMonthChange={setCalMonth}
+                disabled={{ after: new Date() }}
+                modifiers={{ issue: issueDays.map((d) => parseISO(d)) }}
+                modifiersClassNames={{ issue: 'relative after:content-[""] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1.5 after:w-1.5 after:rounded-full after:bg-red-500' }}
+                onSelect={(d) => { if (d) { setDate(format(d, 'yyyy-MM-dd')); setCalOpen(false); } }}
+                initialFocus
+              />
+              <div className="flex items-center gap-1.5 border-t border-slate-100 px-3 py-2 text-xs text-slate-500">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-500" /> Ada yang belum cocok
+              </div>
+            </PopoverContent>
+          </Popover>
           <Button size="icon" variant="outline" onClick={() => setDate(shiftDate(date, 1))} disabled={date >= todayStr()} aria-label="Hari berikutnya"><ChevronRight className="w-4 h-4" /></Button>
           {date !== todayStr() && <Button size="sm" variant="ghost" onClick={() => setDate(todayStr())}>Hari ini</Button>}
         </div>
@@ -615,6 +753,24 @@ const AdminQrisReconciliation = () => {
       {!loading && view.problems > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Perlu dicek</h2>
+          {view.payerGroups.map((g) => (
+            <div key={g.trxs.map((t) => t.id).join('+')} className="rounded-xl border border-emerald-300 bg-emerald-50/40 p-3 shadow-sm space-y-2 text-sm">
+              <div>
+                <b>{g.trxs[0].customer_name}</b> membayar {g.trxs.length}x di bank ({g.trxs.map((t) => formatRp(t.amount)).join(' + ')} = <b>{formatRp(g.combos[0].sum)}</b>). Jumlahnya pas dengan beberapa pasien:
+              </div>
+              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
+                {g.combos.map((c) => (
+                  <Button key={c.items.map((p) => p.recapId).join('+')} size="sm" variant="outline" onClick={() => setMatch(c.trxs.map((t) => t.id), c.items.map((p) => p.recapId))} className="gap-1.5 h-auto min-h-9 py-1.5 justify-start text-left whitespace-normal border-emerald-400 bg-white">
+                    <Link2 className="w-3.5 h-3.5 shrink-0" />
+                    <span className="min-w-0">
+                      <span className="block break-words">{c.items.map((p) => p.name).join(' + ')}</span>
+                      <span className="block text-xs text-slate-400 break-words">{c.items.map((p) => formatRp(p.amount)).join(' + ')} · tautkan {c.trxs.length} transaksi ke {c.items.length} pasien</span>
+                    </span>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          ))}
           {view.unmatchedTrx.map((t) => {
             const sameAmount = view.freeRows.filter((p) => Math.round(p.amount) === Math.round(t.amount));
             const cands = rankCandidates(t, sameAmount);
@@ -673,11 +829,12 @@ const AdminQrisReconciliation = () => {
             <div key={r.recapId} className="rounded-xl border border-red-200 bg-white p-3 shadow-sm flex flex-wrap justify-between gap-1 text-sm">
               <div><b>{r.name}</b> dicatat QRIS {formatRp(r.amount)}, tapi tidak ada di laporan bank</div>
               <div className="text-slate-500 flex items-center gap-1"><User className="w-3.5 h-3.5" /> {r.cashierName}</div>
+              <TrxPicker r={r} trxPool={trxPool} onPick={(t) => addToTrx(t, r.recapId)} />
             </div>
           ))}
           {view.rows.filter((r) => r.status === 'partial').map((r) => (
             <div key={r.recapId} className="rounded-xl border border-amber-200 bg-white p-3 shadow-sm flex flex-wrap justify-between gap-1 text-sm">
-              <div><b>{r.name}</b> dicatat QRIS {formatRp(r.amount)}, baru ada {formatRp(r.covered)} di bank (kurang {formatRp(r.amount - r.covered)})</div>
+              <div><b>{r.name}</b> dicatat QRIS {formatRp(r.amount)}{r.trxs.length > 1 || r.deficit ? `, pembayaran bank terkait ${formatRp(r.trxs.reduce((a, t) => a + Number(t.amount), 0))}` : `, baru ada ${formatRp(r.covered)} di bank`} (kurang {formatRp(r.deficit || r.amount - r.covered)})</div>
               <div className="text-slate-500 flex items-center gap-1"><User className="w-3.5 h-3.5" /> {r.cashierName}</div>
             </div>
           ))}
@@ -718,7 +875,7 @@ const AdminQrisReconciliation = () => {
                         <div className="min-w-0">
                           <div className="font-medium break-words leading-snug">{r.name}</div>
                           <div className="text-xs text-slate-400 break-words">
-                            {r.trxs.length ? r.trxs.map((t) => `${t.customer_name} · ${t.issuer} · ${t.trx_time}${r.trxs.length > 1 ? ` · ${formatRp(t.amount)}` : ''}${t.match_method === 'manual' ? ' · manual' : ''}${keysOfTrx(t).length > 1 ? ` · satu pembayaran ${formatRp(t.amount)} untuk ${keysOfTrx(t).length} item` : ''}`).join(' + ') : (r.time ? `Sesi ${r.time}` : '')}
+                            {r.trxs.length ? r.trxs.map((t) => `${t.customer_name} · ${t.issuer} · ${t.trx_date !== date ? `${fmtShort(t.trx_date)} ` : ''}${t.trx_time}${r.trxs.length > 1 ? ` · ${formatRp(t.amount)}` : ''}${t.match_method === 'manual' ? ' · manual' : ''}${keysOfTrx(t).length > 1 ? ` · satu pembayaran ${formatRp(t.amount)} untuk ${keysOfTrx(t).length} item` : ''}`).join(' + ') : (r.time ? `Sesi ${r.time}` : '')}
                           </div>
                         </div>
                         <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">

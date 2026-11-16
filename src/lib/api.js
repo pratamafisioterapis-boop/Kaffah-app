@@ -129,7 +129,8 @@ const cleanDailyRecapPayload = (data) => {
     'therapist_name',
     'is_auto_filled',
     'package_type_id',
-    'payment_splits'
+    'payment_splits',
+    'payment_proof_path'
   ];
 
   fieldsToRemove.forEach(field => {
@@ -1808,7 +1809,8 @@ const saveDailyRecapPaymentSplits = async (recapId, splits) => {
     .map(s => ({
       recap_id: recapId,
       payment_method: s.payment_method,
-      amount: parseFloat(s.amount)
+      amount: parseFloat(s.amount),
+      proof_path: s.proof_path || null
     }));
 
   if (rows.length === 0) return;
@@ -1838,12 +1840,12 @@ export const getActiveReferralRewards = async (patientId) => {
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Makassar' });
   const { data, error } = await supabase
     .from('referral_rewards')
-    .select('id, code, expires_at, discount_value_type, discount_value, discount_label')
+    .select('id, code, expires_at, discount_value_type, discount_value, discount_label, referred:patients!referral_rewards_referred_patient_id_fkey(full_name)')
     .eq('referrer_patient_id', patientId)
     .eq('status', 'active')
     .gte('expires_at', today)
     .order('expires_at');
-  return { data: data || [], error };
+  return { data: (data || []).map(r => ({ ...r, referred_name: r.referred?.full_name || null })), error };
 };
 
 // Diskon ultah (Kaffah): status kelayakan + nilai diskon untuk tanggal rekap tertentu.
@@ -1890,10 +1892,10 @@ export const getReferralRewardById = async (id) => {
   if (!id) return { data: null, error: null };
   const { data, error } = await supabase
     .from('referral_rewards')
-    .select('id, code, expires_at, discount_value_type, discount_value, discount_label, status')
+    .select('id, code, expires_at, discount_value_type, discount_value, discount_label, status, referred:patients!referral_rewards_referred_patient_id_fkey(full_name)')
     .eq('id', id)
     .maybeSingle();
-  return { data, error };
+  return { data: data ? { ...data, referred_name: data.referred?.full_name || null } : data, error };
 };
 
 export const createDailyRecap = async (payload) => {
@@ -1928,6 +1930,15 @@ export const createDailyRecap = async (payload) => {
         .update({ tips_amount: Number(payload.tips_amount) })
         .eq('id', data.recap_id);
       if (tipsError) return { error: tipsError };
+    }
+
+    // Bukti pembayaran (debit/transfer) juga lewat update terpisah.
+    if (payload.payment_proof_path) {
+      const { error: proofError } = await supabase
+        .from('daily_recaps')
+        .update({ payment_proof_path: payload.payment_proof_path })
+        .eq('id', data.recap_id);
+      if (proofError) return { error: proofError };
     }
 
     // Barang dijual (goods_items) juga disimpan lewat update terpisah; total & stok dihitung trigger DB.
@@ -1969,6 +1980,7 @@ cleanedPayload.amount_original = payload.amount_original;
       .update({
         ...cleanedPayload,
         amount_original: payload.amount_original,
+        ...(payload.payment_proof_path !== undefined ? { payment_proof_path: payload.payment_proof_path || null } : {}),
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
@@ -2021,6 +2033,7 @@ export const getDailyRecaps = async ({
   tips_amount,
   goods_amount,
   payment_method,
+  payment_proof_path,
   discount_type,
   discount_value,
   discount_label,
@@ -2033,7 +2046,7 @@ export const getDailyRecaps = async ({
   revenue_date,
   special_type,
   appointment:appointments!appointment_id(appointment_date),
-  payment_splits:daily_recap_payment_splits(id, payment_method, amount),
+  payment_splits:daily_recap_payment_splits(id, payment_method, amount, proof_path),
   start_time,
   end_time,
   status,
@@ -2143,6 +2156,32 @@ export const getDailyRecaps = async ({
 
     return { data: enrichedData, count, error: null };
   }, 'getDailyRecaps', { retry: true });
+};
+
+// Pembayaran paket di awal (Praxis, tabel package_payments): uang masuk pada tanggal bayar (WITA),
+// tanpa rekap kunjungan. Klinik lain tidak punya baris sehingga hasilnya kosong.
+const nextDayYmd = (ymd) => new Date(new Date(`${ymd}T00:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10);
+const witaYmd = (iso) => new Date(new Date(iso).getTime() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+
+export const getPackagePaymentsInRange = async ({ startDate, endDate, paymentMethod = null } = {}) => {
+  return safeQuery(async () => {
+    let query = supabase
+      .from('package_payments')
+      .select('id, paid_at, amount, payment_method, package_name, receipt_number, patient:patients!patient_id(full_name)')
+      .eq('status', 'paid')
+      .order('paid_at', { ascending: false });
+    if (startDate) query = query.gte('paid_at', `${startDate}T00:00:00+08:00`);
+    if (endDate) query = query.lt('paid_at', `${nextDayYmd(endDate)}T00:00:00+08:00`);
+    if (paymentMethod) query = query.eq('payment_method', paymentMethod);
+    const { data, error } = await query;
+    if (error) return { error };
+    return { data: data || [], error: null };
+  }, 'getPackagePaymentsInRange', { retry: true });
+};
+
+export const getPackagePaymentsTotal = async (params = {}) => {
+  const { data } = await getPackagePaymentsInRange(params);
+  return (data || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
 };
 
 export const getDailyRecapsTotalAmount = async ({ startDate, endDate, search = '', therapistId = null, paymentMethod = null }) => {
@@ -2919,7 +2958,7 @@ export const getAdminIncome = async ({ startDate, endDate } = {}) => {
 
   }, 'getAdminIncome', { retry: true });
 };
-export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) => {
+export const getPatientIncomeFromPackages = async ({ startDate, endDate, includePackagePayments = false } = {}) => {
   return safeQuery(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
@@ -3084,6 +3123,27 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate } = {}) 
         is_tips: true
       }];
     });
+
+    // Opt-in (laporan akuntansi): pembayaran paket di awal sebagai uang masuk pada tanggal bayar.
+    // amount = 0 (akrual tetap per sesi lewat nominal paket, jadi tidak dihitung dua kali);
+    // cash_amount = nominal yang diterima.
+    if (includePackagePayments) {
+      const { data: pays } = await getPackagePaymentsInRange({ startDate, endDate });
+      (pays || []).forEach(p => {
+        formatted.push({
+          id: `pkgpay-${p.id}`,
+          date: witaYmd(p.paid_at),
+          patient_name: p.patient?.full_name || 'Tanpa Nama',
+          patient_type: 'Pembayaran Paket (di awal)',
+          package_name: `Bayar di awal: ${p.package_name}`,
+          session_number: null,
+          payment_method: p.payment_method || '-',
+          amount: 0,
+          cash_amount: Number(p.amount) || 0,
+          is_package_payment: true
+        });
+      });
+    }
 
     return {
       data: formatted,
@@ -3650,6 +3710,7 @@ export const updateAdminExpense = async (id, payload) => {
         sub_category_id: payload.sub_category_id || null,
         description: payload.description || null,
         bank_account_id: payload.bank_account_id || null,
+        ...(payload.paid_from_petty !== undefined ? { paid_from_petty: !!payload.paid_from_petty } : {}),
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
@@ -3687,6 +3748,7 @@ export const createAdminExpense = async (payload) => {
         sub_category_id: payload.sub_category_id || null,
         description: payload.description || null,
         bank_account_id: payload.bank_account_id || null,
+        paid_from_petty: !!payload.paid_from_petty,
         created_by: payload.created_by || null,
         created_at: new Date().toISOString()
       })
@@ -5666,7 +5728,17 @@ const postPayrollToOwnerExpenditures = async (record, actingUserId) => {
   if (!clinicId) return;
 
   const therapistName = therapist?.name || 'Terapis';
-  const postDate = (record.payroll_period_end || record.created_at || new Date().toISOString()).slice(0, 10);
+  // Periode yang berakhir di akhir bulan (1-31) diposting di tanggal itu.
+  // Periode tengah bulan (mis. 28 -> 27) berakhir H-1 dari hari gajian, jadi
+  // diposting H+1 dari period_end (tgl 28), bukan tgl 27.
+  const postDate = (() => {
+    const end = record.payroll_period_end;
+    if (!end) return (record.created_at || new Date().toISOString()).slice(0, 10);
+    const [y, m, d] = end.slice(0, 10).split('-').map(Number);
+    if (d === new Date(y, m, 0).getDate()) return end.slice(0, 10);
+    const next = new Date(Date.UTC(y, m - 1, d + 1));
+    return next.toISOString().slice(0, 10);
+  })();
 
   const items = PAYROLL_EXPENSE_ITEMS
     .map(({ field, label, subcategoryNames }) => ({ amount: parseFloat(record[field]) || 0, label, subcategoryNames }))
@@ -6824,10 +6896,20 @@ export const getTherapistSchedules = async (therapistId) => {
 };
 // Jadwal pengganti izin (therapist_extra_shifts) yang sudah disetujui; dipakai untuk menandai
 // hari libur mingguan yang diganti kerja.
+// Tukar jadwal Minggu yang disetujui milik terapis (sebagai yang izin maupun pengganti), untuk nama rekan.
+export const getTherapistApprovedSundaySwaps = async (therapistId) => {
+  const { data, error } = await supabase
+    .from('therapist_sunday_swap_requests')
+    .select('id, therapist_id, therapist_name, substitute_id, substitute_name, time_off_id')
+    .eq('status', 'approved')
+    .or(`therapist_id.eq.${therapistId},substitute_id.eq.${therapistId}`);
+  return { data: data || [], error };
+};
+
 export const getTherapistExtraShifts = async (therapistId) => {
   const { data, error } = await supabase
     .from('therapist_extra_shifts')
-    .select('shift_date, start_time, end_time, leave_request_id, therapist_leave_requests(is_partial)')
+    .select('shift_date, start_time, end_time, leave_request_id, sunday_swap_id, therapist_leave_requests(is_partial)')
     .eq('therapist_id', therapistId)
     .order('shift_date', { ascending: true });
   // `replaces_partial_leave`: pengganti dari izin parsial. Hari pengganti itu tidak dihitung hari masuk

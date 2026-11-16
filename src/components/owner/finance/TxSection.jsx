@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FinanceTile from '@/components/owner/finance/FinanceTile';
 import TxList from '@/components/owner/finance/TxList';
@@ -12,6 +12,7 @@ const ACTIVE_CHIP = { in: 'bg-emerald-600 text-white', out: 'bg-rose-600 text-wh
 // Kotak berisi daftar transaksi + jumlah entri, subtotal, filter metode pembayaran, dan tombol Tambah.
 const TxSection = ({ tone, icon, title, items = [], kind = 'neutral', loading, onAdd, onEdit, onDelete, emptyText, className }) => {
   const [method, setMethod] = useState('all');
+  const [search, setSearch] = useState('');
 
   // Daftar metode pembayaran (bank/akun) yang ada di data saat ini.
   const methods = useMemo(() => {
@@ -23,10 +24,14 @@ const TxSection = ({ tone, icon, title, items = [], kind = 'neutral', loading, o
   // Jika metode terpilih sudah tidak ada di data (mis. ganti periode), kembali ke "Semua".
   const activeMethod = method !== 'all' && !methods.includes(method) ? 'all' : method;
 
-  const filtered = useMemo(
-    () => (activeMethod === 'all' ? items : items.filter((i) => i.bank === activeMethod)),
-    [items, activeMethod]
-  );
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return items.filter((i) => {
+      if (activeMethod !== 'all' && i.bank !== activeMethod) return false;
+      if (!q) return true;
+      return [i.desc, i.cat, i.sub, i.badge].some((v) => v && String(v).toLowerCase().includes(q));
+    });
+  }, [items, activeMethod, search]);
 
   const subtotal = filtered.reduce((s, i) => s + (Number(i.amt) || 0), 0);
   const showFilter = methods.length > 0;
@@ -57,6 +62,22 @@ const TxSection = ({ tone, icon, title, items = [], kind = 'neutral', loading, o
         </div>
       }
     >
+      <div className="relative pb-3">
+        <Search className="absolute left-3 top-[11px] w-4 h-4 text-slate-400 pointer-events-none" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Cari deskripsi, kategori..."
+          aria-label="Cari transaksi"
+          className="w-full h-9 pl-9 pr-8 rounded-[10px] border border-slate-200 bg-white text-sm outline-none focus:border-slate-400"
+        />
+        {search && (
+          <button type="button" onClick={() => setSearch('')} aria-label="Hapus pencarian" className="absolute right-2 top-[7px] p-1 text-slate-400 hover:text-slate-600">
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
       {showFilter && (
         <div className="flex flex-wrap items-center gap-1.5 pb-3" role="group" aria-label="Filter metode pembayaran">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mr-1">Metode</span>

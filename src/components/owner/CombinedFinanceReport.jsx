@@ -1,3 +1,4 @@
+import { parseLocalDate } from '@/lib/dateFormatHelpers';
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -57,7 +58,7 @@ const DetailedTable = ({ title, data, type }) => {
                             <div key={`${item.source}-${idx}`} className="p-4 space-y-2">
                                 <div className="flex items-start justify-between gap-2">
                                     <span className="font-mono text-slate-600 text-sm">
-                                        {format(new Date(item.date), 'dd/MM/yyyy')}
+                                        {format(parseLocalDate(item.date), 'dd/MM/yyyy')}
                                     </span>
                                     <span className={cn(
                                         "px-2 py-0.5 rounded text-xs font-bold border shrink-0",
@@ -112,7 +113,7 @@ const DetailedTable = ({ title, data, type }) => {
                                 data.map((item, idx) => (
                                     <tr key={`${item.source}-${idx}`} className="hover:bg-slate-50/50 transition-colors">
                                         <td className="px-6 py-3 font-mono text-slate-600">
-                                            {format(new Date(item.date), 'dd/MM/yyyy')}
+                                            {format(parseLocalDate(item.date), 'dd/MM/yyyy')}
                                         </td>
                                         <td className="px-6 py-3">
                                             <span className={cn(
@@ -205,8 +206,8 @@ const CombinedFinanceReport = ({ dateRange }) => {
         }));
 
         // 5. Combine
-        const allIncome = [...cleanOwnerInc, ...cleanAdminInc, ...patientIncome].sort((a,b) => new Date(b.date) - new Date(a.date));
-        const allExpenses = [...cleanOwnerExp, ...cleanAdminExp].sort((a,b) => new Date(b.date) - new Date(a.date));
+        const allIncome = [...cleanOwnerInc, ...cleanAdminInc, ...patientIncome].sort((a,b) => parseLocalDate(b.date) - parseLocalDate(a.date));
+        const allExpenses = [...cleanOwnerExp, ...cleanAdminExp].sort((a,b) => parseLocalDate(b.date) - parseLocalDate(a.date));
 
         setData({ income: allIncome, expenses: allExpenses });
 
@@ -268,7 +269,7 @@ const CombinedFinanceReport = ({ dateRange }) => {
                     <FileText className="w-6 h-6 text-indigo-600" />
                     Reports
                 </h2>
-                <p className="text-slate-500 mt-1">Comprehensive financial overview for {format(new Date(dateRange.startDate), 'dd MMM yyyy')} - {format(new Date(dateRange.endDate), 'dd MMM yyyy')}</p>
+                <p className="text-slate-500 mt-1">Comprehensive financial overview for {format(parseLocalDate(dateRange.startDate), 'dd MMM yyyy')} - {format(parseLocalDate(dateRange.endDate), 'dd MMM yyyy')}</p>
             </div>
             <div className="flex gap-2">
                 <Button 

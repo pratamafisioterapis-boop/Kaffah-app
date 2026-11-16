@@ -26,6 +26,7 @@ import { id as idLocale } from 'date-fns/locale';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
+import WorkloadHint from '@/components/admin/WorkloadHint';
 
 import {
   getActivePhysiotherapists,
@@ -469,6 +470,8 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
 
   return (
     <div className="w-full px-4 md:px-6 xl:px-8 2xl:px-12 space-y-6 pb-12">
+
+      <WorkloadHint />
 
       {/* HEADER */}
 <div data-drag-header className="bg-white rounded-app shadow-sm border border-slate-100 p-4 sm:p-6 sticky top-2 sm:top-4 z-20 overflow-hidden space-y-4">

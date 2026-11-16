@@ -43,6 +43,7 @@ export const OWNER_NAV_ITEMS = [
     submenu: [
       { label: 'Accounting System', path: '/owner/accounting', icon: 'BriefcaseMedical' },
       { label: 'Rekonsiliasi BSI', path: '/owner/bsi-reconciliation', icon: 'FileSearch' },
+      { label: 'Cash Dipegang Admin', path: '/owner/cash-holding', icon: 'Wallet', clinicOnly: KAFFAH_CLINIC_ID },
     ],
   },
   { label: 'Modal Awal', path: '/owner/modal-awal', icon: 'Wallet' },
@@ -82,6 +83,7 @@ export const ADMIN_NAV_ITEMS = [
       { label: 'Accounting System', path: '/admin/accounting', icon: 'DollarSign' },
       { label: 'Check Transaksi', path: '/admin/check-transaksi', icon: 'FileSearch' },
       { label: 'Rekonsiliasi QRIS', path: '/admin/qris-reconciliation', icon: 'QrCode', clinicOnly: KAFFAH_CLINIC_ID },
+      { label: 'Cash Dipegang', path: '/admin/cash-holding', icon: 'Wallet', clinicOnly: KAFFAH_CLINIC_ID },
     ],
   },
   { label: 'Setup Akun', path: '/admin/settings', icon: 'Settings' },

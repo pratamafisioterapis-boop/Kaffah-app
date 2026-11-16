@@ -9,9 +9,13 @@ import { Loader2, Save } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { updateAdminExpense, getAccountingSubcategories, getBankAccounts } from '@/lib/api';
 import SearchableSelect from '@/components/ui/searchable-select';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 
 const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
   const { toast } = useToast();
+  const { userDetails } = useAuth();
+  const isKaffah = userDetails?.clinic_id === KAFFAH_CLINIC_ID;
   const [loading, setLoading] = useState(false);
   const [subCategories, setSubCategories] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
@@ -24,7 +28,8 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
     sub_category_id: '',
     bank_account_id: '',
     amount: '',
-    description: ''
+    description: '',
+    paid_from_petty: false
   });
 
   // Fetch options on mount
@@ -56,7 +61,8 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
         sub_category_id: expense.sub_category_id || '',
         bank_account_id: expense.bank_account_id || '',
         amount: expense.amount || '',
-        description: expense.description || ''
+        description: expense.description || '',
+        paid_from_petty: !!expense.paid_from_petty
       });
     }
   }, [expense, isOpen]);
@@ -187,7 +193,12 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
             <Label className="text-xs font-semibold text-slate-500 uppercase">Akun Bank / Sumber Dana</Label>
             <Select 
               value={formData.bank_account_id || "cash"} 
-              onValueChange={(val) => setFormData({...formData, bank_account_id: val === "cash" ? "" : val})}
+              onValueChange={(val) => {
+                const id = val === "cash" ? "" : val;
+                const name = bankAccounts.find(b => b.id === id)?.bank_name || '';
+                const isCashLike = id === '' || /cash|tunai/i.test(name);
+                setFormData({...formData, bank_account_id: id, paid_from_petty: isCashLike ? formData.paid_from_petty : false});
+              }}
             >
               <SelectTrigger className="bg-slate-50 border-slate-200">
                 <SelectValue placeholder="Pilih Akun Bank" />
@@ -200,6 +211,21 @@ const AdminExpenseEditModal = ({ isOpen, onClose, expense, onSuccess }) => {
               </SelectContent>
             </Select>
           </div>
+
+          {isKaffah && (formData.bank_account_id === '' || /cash|tunai/i.test(bankAccounts.find(b => b.id === formData.bank_account_id)?.bank_name || '')) && (
+            <label className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={!!formData.paid_from_petty}
+                onChange={(e) => setFormData({...formData, paid_from_petty: e.target.checked})}
+              />
+              <span>
+                <span className="font-medium">Dibayar dari kas kecil</span>
+                <span className="block text-xs text-slate-600">Mengurangi sisa kas kecil, lalu dipotong dari setoran pendapatan berikutnya.</span>
+              </span>
+            </label>
+          )}
 
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-500 uppercase">Deskripsi</Label>

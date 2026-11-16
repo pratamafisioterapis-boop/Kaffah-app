@@ -5,7 +5,7 @@ import {
   Calendar, Loader2, Plus, Search, X, Clock, Play, Square,
   ChevronLeft, ChevronRight, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, BarChart3, CreditCard, Users, CheckCircle2
 } from 'lucide-react';
-import { getDailyRecaps, getDailyRecapsTotalAmount, getPhysiotherapists, getCachedClinicId } from '@/lib/api';
+import { getDailyRecaps, getDailyRecapsTotalAmount, getPackagePaymentsTotal, getPhysiotherapists, getCachedClinicId } from '@/lib/api';
 import InvoiceStatusButton from '@/components/admin/InvoiceStatusButton';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -140,6 +140,8 @@ const DailyRecap = ({ hideControls = false, showPaymentFilter = false }) => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [paymentMethodOptions, setPaymentMethodOptions] = useState([]);
   const [totalAmount, setTotalAmount] = useState(0);
+  // Pembayaran paket di awal (Praxis) dalam periode: uang masuk tanpa baris rekap.
+  const [pkgPaymentsTotal, setPkgPaymentsTotal] = useState(0);
   const therapistOptions = useMemo(() => {
   const map = new Map();
 
@@ -302,7 +304,18 @@ useEffect(() => {
         therapistId: selectedTherapist || null,
         paymentMethod: selectedPaymentMethod || null,
       });
-      if (isMounted.current) setTotalAmount(data || 0);
+      // Pembayaran paket tidak punya terapis/nama di rekap: ikut dihitung hanya bila filter terapis & cari kosong.
+      const pkgTotal = (selectedTherapist || debouncedSearch.trim())
+        ? 0
+        : await getPackagePaymentsTotal({
+            startDate: queryDateRange.start,
+            endDate: queryDateRange.end,
+            paymentMethod: selectedPaymentMethod || null,
+          });
+      if (isMounted.current) {
+        setTotalAmount(data || 0);
+        setPkgPaymentsTotal(pkgTotal || 0);
+      }
     };
     fetchTotal();
   }, [showPaymentFilter, queryDateRange, debouncedSearch, selectedTherapist, selectedPaymentMethod]);
@@ -943,7 +956,10 @@ const getPremiumPastelBadge = (text) => {
               <div className="w-full flex items-center gap-1.5 px-3 h-8 rounded-app bg-emerald-50 border border-emerald-100">
                 <BarChart3 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span className="text-xs sm:text-sm font-medium text-emerald-700 whitespace-nowrap">
-                  Total: <span className="font-bold">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount)}</span>
+                  Total: <span className="font-bold">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount + pkgPaymentsTotal)}</span>
+                  {pkgPaymentsTotal > 0 && (
+                    <span className="ml-1 font-normal text-emerald-600">(termasuk bayar paket di awal {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(pkgPaymentsTotal)})</span>
+                  )}
                 </span>
               </div>
             </>
@@ -1183,7 +1199,15 @@ const getPremiumPastelBadge = (text) => {
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center">
                        <div className="font-semibold text-slate-800">Rp {(parseFloat(recap.amount || 0) + parseFloat(recap.goods_amount || 0)).toLocaleString('id-ID')}</div>
                        <PaidOnNote recap={recap} />
-                       {recap.payment_method && (
+                       {Array.isArray(recap.payment_splits) && recap.payment_splits.length > 1 ? (
+                         <div className="mt-0.5 space-y-0.5">
+                           {recap.payment_splits.map((s, i) => (
+                             <div key={s.id || i} className="text-xs text-slate-500 font-medium capitalize whitespace-nowrap">
+                               {s.payment_method} {parseFloat(s.amount || 0).toLocaleString('id-ID')}
+                             </div>
+                           ))}
+                         </div>
+                       ) : recap.payment_method && (
                          <div className="text-xs text-slate-500 font-medium mt-0.5 capitalize">{recap.payment_method}</div>
                        )}
                        {parseFloat(recap.amount) > 0 && !recap.payment_method && recap.special_type !== 'free' && (

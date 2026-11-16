@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet';
 const OwnerPackageRecap = React.lazy(lazyRetry(() => import('@/pages/owner/PackageRecaps'), 'OwnerPackageRecap'));
 const AdminCheckTransaksi = React.lazy(lazyRetry(() => import('@/pages/admin/AdminCheckTransaksi'), 'AdminCheckTransaksi'));
 const AdminQrisReconciliation = React.lazy(lazyRetry(() => import('@/pages/admin/AdminQrisReconciliation'), 'AdminQrisReconciliation'));
+const AdminCashHolding = React.lazy(lazyRetry(() => import('@/pages/admin/AdminCashHolding'), 'AdminCashHolding'));
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
@@ -39,6 +40,7 @@ const ClinicalDocuments = React.lazy(lazyRetry(() => import('@/pages/admin/Clini
 const AdminPhysiotherapistManagementPage = React.lazy(lazyRetry(() => import('@/pages/admin/AdminPhysiotherapistManagementPage'), 'AdminPhysiotherapistManagementPage'));
 const AdminAccountSettings = React.lazy(lazyRetry(() => import('@/components/admin/AdminAccountSettings'), 'AdminAccountSettings'));
 const AttendanceManagement = React.lazy(lazyRetry(() => import('@/pages/admin/AttendanceManagement'), 'AttendanceManagement'));
+import TherapistWorkloadWidget from '@/components/admin/TherapistWorkloadWidget';
 import { ADMIN_NAV_ITEMS } from '@/lib/navItems';
 import { isLightLoadModeEnabled } from '@/lib/lightLoadMode';
 import { getCachedClinicId } from '@/lib/api';
@@ -661,6 +663,8 @@ await Promise.all([loadSlots(), loadStats()]);
 
 </div>
 </div>
+             {isKaffahClinic && <TherapistWorkloadWidget />}
+
              {/* Middle Section: Recap Metrics & Evaluation Report */}
              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-3 space-y-3">
@@ -711,6 +715,7 @@ return (
         <Route path="/accounting" element={<AdminAccountingDashboard />} />
         <Route path="/check-transaksi" element={<AdminCheckTransaksi />} />
         <Route path="/qris-reconciliation" element={<AdminQrisReconciliation />} />
+        <Route path="/cash-holding" element={<AdminCashHolding />} />
         <Route path="/attendance" element={<AttendanceManagement />} />
         <Route path="/settings" element={<AdminAccountSettings />} />
 
