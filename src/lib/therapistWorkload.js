@@ -80,7 +80,7 @@ export async function fetchRecapsForWorkload(supabase, clinicId, start, end) {
   for (;;) {
     const { data, error } = await supabase
       .from('daily_recaps')
-      .select('id, therapist_id, patient_id, actual_patient_id, guest_name, is_homecare, recap_date')
+      .select('id, therapist_id, patient_id, actual_patient_id, guest_name, appointment_id, recap_date')
       .eq('clinic_id', clinicId)
       .gte('recap_date', start)
       .lte('recap_date', end)
@@ -92,5 +92,19 @@ export async function fetchRecapsForWorkload(supabase, clinicId, start, end) {
     if (!data || data.length < pageSize) break;
     from += pageSize;
   }
-  return all;
+
+  // is_homecare ada di appointments (bukan di daily_recaps): ambil per potongan id.
+  const apptIds = [...new Set(all.map((r) => r.appointment_id).filter(Boolean))];
+  const homecareIds = new Set();
+  const chunk = 150;
+  for (let i = 0; i < apptIds.length; i += chunk) {
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('id')
+      .in('id', apptIds.slice(i, i + chunk))
+      .eq('is_homecare', true);
+    if (error) throw error;
+    (data || []).forEach((a) => homecareIds.add(a.id));
+  }
+  return all.map((r) => ({ ...r, is_homecare: homecareIds.has(r.appointment_id) }));
 }
