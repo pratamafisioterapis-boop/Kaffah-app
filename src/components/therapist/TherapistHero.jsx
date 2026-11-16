@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { fmtClock, reminderLevel } from '@/lib/soapReminder';
+import { fmtClock, fmtRemaining, reminderLevel } from '@/lib/soapReminder';
 
 const MOTIVATIONS = [
   'Setiap sentuhan menyembuhkan, setiap kata memberi harapan. Semangat!',
@@ -141,7 +141,7 @@ const TherapistHero = ({ therapistName, today }) => {
             <div className="-mx-0.5 flex snap-x snap-mandatory gap-2 overflow-x-auto px-0.5 pb-1.5 pt-1 [scrollbar-width:none] lg:gap-2.5 lg:overflow-visible [&::-webkit-scrollbar]:hidden">
               {rows.map((s, i) => {
                 const live = s.st === 'now' || s.st === 'late';
-                const remaining = s.slot ? Math.ceil((s.slot.end - now) / 60000) : null;
+                const remaining = s.slot ? Math.ceil(((s.deadline ?? s.slot.end) - now) / 60000) : null;
                 const showSoap = soapActive && s.st !== 'next' && s.st !== 'done';
                 const lvl = remaining === null ? 'info' : reminderLevel(remaining);
                 return (
@@ -167,7 +167,7 @@ const TherapistHero = ({ therapistName, today }) => {
                       {s.slot ? `${fmtClock(s.slot.start)}–${fmtClock(s.slot.end)}` : 'Tanpa jadwal'}
                       {showSoap && !s.soapDone && remaining !== null && (
                         <span className={cn('ml-auto shrink-0 rounded-full px-[7px] py-0.5 font-sans text-[11px] font-bold', lvl === 'crit' ? 'bg-[#C5432F] text-white' : 'bg-[#F2A93B] text-[#3A2504]')}>
-                          {remaining > 0 ? `${remaining} mnt` : 'habis'}
+                          {remaining > 0 ? fmtRemaining(remaining) : 'habis'}
                         </span>
                       )}
                     </span>

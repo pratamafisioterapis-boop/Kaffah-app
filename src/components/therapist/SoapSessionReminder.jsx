@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { fmtClock, pickReminder } from '@/lib/soapReminder';
+import { fmtClock, fmtRemaining, pickReminder } from '@/lib/soapReminder';
 
 const LEVEL_STYLE = {
   info: { bar: 'bg-[#E0F0F8] border-[#DCE7EE]', icon: 'bg-[#0B6FA4] text-white', fill: 'bg-[#0B6FA4]', btn: 'bg-[#0B6FA4] hover:brightness-110 text-white', sub: 'text-[#53697A]' },
@@ -22,7 +22,7 @@ const SoapSessionReminder = ({ today }) => {
   const { session, remainingMin, level, progress } = reminder;
   const style = LEVEL_STYLE[level];
   const firstName = session.name.split(' ')[0];
-  const sisa = remainingMin > 0 ? `sisa ${remainingMin} menit` : 'waktu sesi sudah habis';
+  const sisa = remainingMin > 0 ? `sisa ${fmtRemaining(remainingMin)}` : 'waktu sesi sudah habis';
   const open = () => navigate(session.patientId
     ? `/therapist/records/new/${session.patientId}?date=${today.today}&dailyRecapId=${session.id}`
     : '/therapist/records');
@@ -35,7 +35,7 @@ const SoapSessionReminder = ({ today }) => {
       <div className="min-w-0 flex-1">
         <p className="text-[13.5px] font-bold leading-tight text-[#10242F] lg:text-[15px]">Isi SOAP {firstName} sebelum sesi berakhir</p>
         <p className={cn('mt-0.5 text-xs leading-snug', style.sub)}>
-          Sesi {fmtClock(session.slot.start)}–{fmtClock(session.slot.end)} · {sisa}
+          Sesi {fmtClock(session.slot.start)}–{fmtClock(session.slot.end)} · {session.homecare ? `homecare, batas 23.59 · ${sisa}` : sisa}
         </p>
       </div>
       <button type="button" onClick={open} className={cn('h-9 shrink-0 rounded-xl px-3.5 text-sm font-bold transition', style.btn)}>

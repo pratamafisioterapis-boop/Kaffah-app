@@ -34,11 +34,16 @@ export const reminderLevel = (remainingMin) => {
 export const pickReminder = (sessions, now) => {
   const open = (sessions || []).filter((s) => s.slot && !s.soapDone && s.apptOpen && now >= s.slot.start);
   if (open.length === 0) return null;
-  const ongoing = open.filter((s) => now < s.slot.end).sort((a, b) => a.slot.end - b.slot.end);
-  const session = ongoing[0] || open.sort((a, b) => a.slot.end - b.slot.end)[0];
-  const remainingMin = Math.ceil((session.slot.end - now) / 60000);
-  const elapsed = Math.min(1, Math.max(0, (now - session.slot.start) / (session.slot.end - session.slot.start)));
+  // Homecare memakai batas 23.59 WITA (deadline), sesi lain akhir slot.
+  const endOf = (s) => s.deadline ?? s.slot.end;
+  const ongoing = open.filter((s) => now < endOf(s)).sort((a, b) => endOf(a) - endOf(b));
+  const session = ongoing[0] || open.sort((a, b) => endOf(a) - endOf(b))[0];
+  const remainingMin = Math.ceil((endOf(session) - now) / 60000);
+  const elapsed = Math.min(1, Math.max(0, (now - session.slot.start) / (endOf(session) - session.slot.start)));
   return { session, remainingMin, level: reminderLevel(remainingMin), progress: elapsed };
 };
+
+// Teks sisa waktu: homecare dalam jam/menit, sesi biasa dalam menit.
+export const fmtRemaining = (min) => (min >= 120 ? `${Math.floor(min / 60)} jam ${min % 60} mnt` : `${min} mnt`);
 
 export const isApptOpen = (status) => OPEN_STATUSES.includes(status);

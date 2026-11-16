@@ -22,9 +22,15 @@ const firstDiagnosis = (d, labels) => {
   return UUID_RE.test(first) ? '' : String(first);
 };
 
-const normalize = (r, labels) => {
+// Homecare: batas SOAP sampai 23.59 WITA pada hari sesi (sama dengan aturan server), bukan akhir slot.
+const endOfDayWita = (isoDate) => new Date(`${isoDate}T23:59:59+08:00`).getTime();
+
+const normalize = (r, labels, today) => {
   const slot = slotOf(r.appointment);
+  const homecare = !!r.appointment?.is_homecare;
   return {
+    homecare,
+    deadline: homecare ? endOfDayWita(today) : (slot ? slot.end : null),
     id: r.id,
     patientId: r.actual_patient_id || r.patient_id || null,
     name: r.actual_patients?.full_name || r.patients?.full_name || r.full_name || r.guest_name || 'Pasien',
@@ -65,7 +71,7 @@ export const useTherapistToday = (therapistId) => {
         start_time, end_time, soap_completed_at,
         patients!patient_id(full_name),
         actual_patients:patients!actual_patient_id(full_name),
-        appointment:appointments!appointment_id(appointment_date, duration_minutes, status)
+        appointment:appointments!appointment_id(appointment_date, duration_minutes, status, is_homecare)
       `)
       .eq('recap_date', today)
       .eq('therapist_id', therapistId)
@@ -77,7 +83,7 @@ export const useTherapistToday = (therapistId) => {
         const { data: opts } = await supabase.from('operational_options').select('id, label').in('id', ids);
         (opts || []).forEach((o) => { labels[o.id] = o.label; });
       }
-      const list = (data || []).map((r) => normalize(r, labels));
+      const list = (data || []).map((r) => normalize(r, labels, today));
       list.sort((a, b) => (a.slot?.start ?? Infinity) - (b.slot?.start ?? Infinity));
       setSessions(list);
     }
