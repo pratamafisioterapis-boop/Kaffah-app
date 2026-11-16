@@ -663,7 +663,7 @@ await Promise.all([loadSlots(), loadStats()]);
 
 </div>
 </div>
-             {isKaffahClinic && <TherapistWorkloadWidget dateRange={dateRange} />}
+             {isKaffahClinic && <TherapistWorkloadWidget />}
 
              {/* Middle Section: Recap Metrics & Evaluation Report */}
              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Users, Home, Building2, Loader2 } from 'lucide-react';
+import { Users, Home, Building2, Loader2, CalendarRange } from 'lucide-react';
+import { format } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
@@ -21,9 +23,20 @@ const verdict = (fairness, hasData) => {
   return { text: 'Belum merata', cls: 'text-rose-600' };
 };
 
+// Periode tetap tanggal 28 s/d 27 yang memuat hari ini
+// (hari ke-28 ke atas -> 28 bulan ini s/d 27 bulan depan; selain itu 28 bulan lalu s/d 27 bulan ini).
+const getCutoffPeriod = (now = new Date()) => {
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const startMonth = now.getDate() >= 28 ? m : m - 1;
+  const start = new Date(y, startMonth, 28);
+  const end = new Date(y, startMonth + 1, 27);
+  return { start, end, startDate: format(start, 'yyyy-MM-dd'), endDate: format(end, 'yyyy-MM-dd') };
+};
+
 const firstName = (n) => (n || '').split(',')[0].trim();
 
-const TherapistWorkloadWidget = ({ dateRange }) => {
+const TherapistWorkloadWidget = () => {
   const { userDetails } = useAuth();
   const clinicId = userDetails?.clinic_id;
   const [recaps, setRecaps] = useState([]);
@@ -31,8 +44,9 @@ const TherapistWorkloadWidget = ({ dateRange }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const start = dateRange?.startDate;
-  const end = dateRange?.endDate;
+  const period = useMemo(() => getCutoffPeriod(), []);
+  const start = period.startDate;
+  const end = period.endDate;
 
   useEffect(() => {
     if (clinicId !== KAFFAH_CLINIC_ID || !start || !end) return undefined;
@@ -66,7 +80,13 @@ const TherapistWorkloadWidget = ({ dateRange }) => {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-lg font-semibold text-slate-800 tracking-tight">Pembagian Pasien Terapis</h3>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-lg font-semibold text-slate-800 tracking-tight">Pembagian Pasien Terapis</h3>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-3 py-1 text-xs text-slate-600 ring-1 ring-slate-200">
+          <CalendarRange className="h-3.5 w-3.5" />
+          {format(period.start, 'd MMM', { locale: idLocale })} – {format(period.end, 'd MMM yyyy', { locale: idLocale })}
+        </span>
+      </div>
       <div className="bg-white rounded-app-lg border shadow-sm p-5 space-y-5">
         {/* Ringkasan */}
         <div className="flex flex-wrap items-end justify-between gap-3">
@@ -121,7 +141,7 @@ const TherapistWorkloadWidget = ({ dateRange }) => {
         )}
 
         <p className="text-xs text-slate-400">
-          Garis hitam = rata-rata tim. Angka besar = jumlah kunjungan pada periode di atas; pasien paket dihitung per sesi yang terlaksana.
+          Garis hitam = rata-rata tim. Angka besar = jumlah kunjungan pada periode 28–27; pasien paket dihitung per sesi yang terlaksana.
           <Building2 className="mx-1 inline h-3 w-3" />klinik, <Home className="mx-1 inline h-3 w-3" />homecare.
         </p>
       </div>
