@@ -31,13 +31,18 @@ const STATUS = {
   cancelled: { label: 'Dibatalkan', cls: 'bg-slate-100 text-slate-600 border-slate-200' },
 };
 
-const Stat = ({ label, value, tone = 'text-slate-900', hint }) => (
-  <div className="min-w-0 rounded-xl border bg-white p-3 sm:p-4">
-    <p className="text-xs text-slate-500 leading-tight">{label}</p>
-    <p className={`mt-1 whitespace-nowrap text-base font-semibold tabular-nums sm:text-xl ${tone}`}>{value}</p>
-    {hint && <p className="mt-0.5 text-[11px] text-slate-400">{hint}</p>}
-  </div>
-);
+const Stat = ({ label, value, tone = 'text-slate-900', hint, onClick }) => {
+  const body = (
+    <div className={`min-w-0 rounded-xl border bg-white p-3 sm:p-4 ${onClick ? 'transition-colors hover:border-slate-400' : ''}`}>
+      <p className="text-xs text-slate-500 leading-tight">{label}</p>
+      <p className={`mt-1 whitespace-nowrap text-base font-semibold tabular-nums sm:text-xl ${tone}`}>{value}</p>
+      {hint && <p className="mt-0.5 text-[11px] text-slate-400">{hint}</p>}
+    </div>
+  );
+  return onClick
+    ? <button type="button" onClick={onClick} className="block w-full rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400">{body}</button>
+    : body;
+};
 
 const AdminCashHolding = () => {
   const { userDetails } = useAuth();
@@ -57,6 +62,7 @@ const AdminCashHolding = () => {
   const [detail, setDetail] = useState([]);
   const [patientNames, setPatientNames] = useState({});
   const [showDetail, setShowDetail] = useState(false);
+  const [showSetor, setShowSetor] = useState(false);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [rejectTarget, setRejectTarget] = useState(null);
@@ -115,7 +121,7 @@ const AdminCashHolding = () => {
     }
   }, [isAdmin, userDetails?.id, toast]);
 
-  useEffect(() => { if (showDetail) loadDetail(); }, [showDetail, loadDetail]);
+  useEffect(() => { if (showDetail || showSetor) loadDetail(); }, [showDetail, showSetor, loadDetail]);
 
   const nameOf = (id) => names[id] || holdings.find((h) => h.user_id === id)?.full_name || 'Admin';
   // Admin nonaktif tidak muncul sebagai penerima. Bila pemegang kas utama sudah ditandai,
@@ -133,6 +139,36 @@ const AdminCashHolding = () => {
   const visibleHandovers = useMemo(
     () => (isAdmin ? handovers.filter((x) => x.from_user_id === userDetails?.id || x.to_user_id === userDetails?.id) : handovers),
     [handovers, isAdmin, userDetails?.id]
+  );
+
+  // Rincian "Sudah saya setor": uang yang masuk ke saya (cash pasien + setoran dari admin lain)
+  // dicocokkan dari yang paling lama, sebesar total yang sudah keluar.
+  const setorBreakdown = useMemo(() => {
+    const sources = [
+      ...detail.map((d) => ({
+        key: `r${d.recap_id}`, date: d.cash_date, amount: Number(d.cash_amount || 0),
+        label: d.patient_id ? (patientNames[d.patient_id] || 'Pasien') : 'Pemasukan lain (bukan pasien)',
+        sub: 'Cash dari pasien',
+      })),
+      ...handovers
+        .filter((x) => x.status === 'confirmed' && x.to_user_id === userDetails?.id)
+        .map((x) => ({
+          key: `h${x.id}`, date: x.handover_date, amount: Number(x.amount || 0),
+          label: `Setoran dari ${names[x.from_user_id] || 'admin lain'}`, sub: 'Dari admin lain',
+        })),
+    ].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    let left = Number(me?.handover_out || 0);
+    const items = sources.map((s) => { const used = Math.min(left, s.amount); left -= used; return { ...s, used }; });
+    return {
+      paid: items.filter((i) => i.used > 0).reverse(),
+      held: items.filter((i) => i.used < i.amount),
+      unmatched: Math.max(0, Math.round(left)),
+    };
+  }, [detail, patientNames, handovers, names, me?.handover_out, userDetails?.id]);
+
+  const myOutgoing = useMemo(
+    () => handovers.filter((x) => x.from_user_id === userDetails?.id && (x.status === 'pending' || x.status === 'confirmed')),
+    [handovers, userDetails?.id]
   );
 
   const pettyNeeded = Number(petty?.needed || 0);
@@ -296,7 +332,7 @@ const AdminCashHolding = () => {
               <Stat label="Cash yang saya pegang" value={formatRp(myBalance)} tone={myBalance < 0 ? 'text-red-600' : 'text-emerald-700'} hint={myBalance < 0 ? 'Negatif: cek rekap yang direvisi' : (myPendingOut > 0 ? `Belum termasuk ${formatRp(myPendingOut)} yang menunggu konfirmasi penerima` : undefined)} />
               <Stat label="Diterima dari pasien" value={formatRp(me?.cash_received)} />
               <Stat label="Diterima dari admin lain" value={formatRp(me?.handover_in)} />
-              <Stat label="Sudah saya setor" value={formatRp(me?.handover_out)} />
+              <Stat label="Sudah saya setor" value={formatRp(me?.handover_out)} hint="Klik untuk lihat rinciannya" onClick={() => setShowSetor(true)} />
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -423,6 +459,54 @@ const AdminCashHolding = () => {
           </section>
         </>
       )}
+
+      <Dialog open={showSetor} onOpenChange={setShowSetor}>
+        <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
+          <DialogHeader><DialogTitle>Rincian yang sudah saya setor</DialogTitle></DialogHeader>
+          <div className="space-y-4 text-sm">
+            <p className="text-slate-500">Total sudah disetor: <b className="text-slate-900">{formatRp(me?.handover_out)}</b></p>
+
+            <div>
+              <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Disetor ke mana</h3>
+              <div className="divide-y rounded-lg border">
+                {myOutgoing.length === 0 && <p className="px-3 py-3 text-slate-400">Belum ada setoran.</p>}
+                {myOutgoing.map((x) => (
+                  <div key={x.id} className="flex items-start justify-between gap-2 px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="font-medium">{x.to_type === 'finance' ? 'Tim Keuangan' : nameOf(x.to_user_id)}{x.status === 'pending' && <span className="ml-2 text-xs font-normal text-amber-700">menunggu konfirmasi</span>}</p>
+                      <p className="text-xs text-slate-500">{fmtDate(x.handover_date)}{Number(x.petty_replenish) > 0 ? ` · termasuk isi ulang kas kecil ${formatRp(x.petty_replenish)}` : ''}</p>
+                    </div>
+                    <span className="shrink-0 tabular-nums">{formatRp(Number(x.amount) + Number(x.petty_replenish || 0))}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Asal uang yang sudah disetor</h3>
+              <div className="divide-y rounded-lg border">
+                {setorBreakdown.paid.length === 0 && <p className="px-3 py-3 text-slate-400">Belum ada.</p>}
+                {setorBreakdown.paid.map((i) => (
+                  <div key={i.key} className="flex items-start justify-between gap-2 px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="break-words font-medium">{i.label}</p>
+                      <p className="text-xs text-slate-500">{fmtDate(i.date)} · {i.sub}{i.used < i.amount ? ` · sebagian dari ${formatRp(i.amount)}` : ''}</p>
+                    </div>
+                    <span className="shrink-0 tabular-nums">{formatRp(i.used)}</span>
+                  </div>
+                ))}
+              </div>
+              {setorBreakdown.unmatched > 0 && (
+                <p className="mt-1.5 text-xs text-slate-500">Sisa {formatRp(setorBreakdown.unmatched)} berasal dari catatan di luar daftar ini (sebelum pencatatan atau lebih dari 300 transaksi terakhir).</p>
+              )}
+              {setorBreakdown.held.length > 0 && (
+                <p className="mt-1.5 text-xs text-amber-700">Masih dipegang: {setorBreakdown.held.length} transaksi, total {formatRp(setorBreakdown.held.reduce((t, i) => t + (i.amount - i.used), 0))}.</p>
+              )}
+              <p className="mt-1.5 text-xs text-slate-400">Dicocokkan dari cash yang paling lama masuk. Cash tips terapis tidak dihitung.</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
