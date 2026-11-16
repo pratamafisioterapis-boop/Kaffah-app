@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
-import { Link } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { Wallet, Loader2, Check, X, Upload, Eye, Undo2, AlertTriangle } from 'lucide-react';
@@ -238,7 +237,6 @@ const AdminCashHolding = () => {
   const pettyReplenished = handovers
     .filter((x) => x.status !== 'rejected' && x.status !== 'cancelled' && x.to_type === 'finance')
     .reduce((s, x) => s + Number(x.petty_replenish || 0), 0);
-  const custodianName = custodianId ? nameOf(custodianId) : null;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-4 md:p-6">
@@ -307,22 +305,6 @@ const AdminCashHolding = () => {
               <Stat label="Sedang diserahkan antar admin" value={formatRp(pendingTotal)} tone="text-amber-700" hint="Sudah keluar dari pengirim, menunggu penerima menekan Konfirmasi" />
             </div>
           )}
-
-          <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed bg-white p-4">
-            <div>
-              <h2 className="text-sm font-semibold">Penerima setoran utama: {custodianName || 'belum ditandai'}</h2>
-              <p className="text-xs text-slate-500">
-                {custodianName
-                  ? `Admin lain menyetor cash ke ${custodianName}. Hanya ${custodianName} yang bisa menyetor ke keuangan.`
-                  : 'Semua admin bisa saling menyetor dan menyetor ke keuangan.'}
-              </p>
-            </div>
-            {role === 'owner' && (
-              <Link to="/owner/admin-management" className="text-sm font-medium text-app-accent underline underline-offset-4">
-                Ubah di Manajemen Admin →
-              </Link>
-            )}
-          </section>
 
           {!isAdmin && (
             <section>
