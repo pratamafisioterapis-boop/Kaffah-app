@@ -74,7 +74,6 @@ export const ADMIN_NAV_ITEMS = [
     submenu: [
       { label: 'Physiotherapist Management', path: '/admin/physiotherapist-management', icon: 'Users' },
       { label: 'Absensi Karyawan', path: '/admin/attendance', icon: 'Clock' },
-      { label: 'Pemerataan Pasien', path: '/admin/workload', icon: 'Scale', clinicOnly: KAFFAH_CLINIC_ID },
     ],
   },
   {
