@@ -40,6 +40,7 @@ const ClinicalDocuments = React.lazy(lazyRetry(() => import('@/pages/admin/Clini
 const AdminPhysiotherapistManagementPage = React.lazy(lazyRetry(() => import('@/pages/admin/AdminPhysiotherapistManagementPage'), 'AdminPhysiotherapistManagementPage'));
 const AdminAccountSettings = React.lazy(lazyRetry(() => import('@/components/admin/AdminAccountSettings'), 'AdminAccountSettings'));
 const AttendanceManagement = React.lazy(lazyRetry(() => import('@/pages/admin/AttendanceManagement'), 'AttendanceManagement'));
+const TherapistWorkload = React.lazy(lazyRetry(() => import('@/pages/admin/TherapistWorkload'), 'TherapistWorkload'));
 import { ADMIN_NAV_ITEMS } from '@/lib/navItems';
 import { isLightLoadModeEnabled } from '@/lib/lightLoadMode';
 import { getCachedClinicId } from '@/lib/api';
@@ -714,6 +715,7 @@ return (
         <Route path="/qris-reconciliation" element={<AdminQrisReconciliation />} />
         <Route path="/cash-holding" element={<AdminCashHolding />} />
         <Route path="/attendance" element={<AttendanceManagement />} />
+        <Route path="/workload" element={<TherapistWorkload />} />
         <Route path="/settings" element={<AdminAccountSettings />} />
 
         {/* Redirects for legacy routes */}
