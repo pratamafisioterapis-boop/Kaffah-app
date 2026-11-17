@@ -28,11 +28,11 @@ const PageHero = ({
     >
       {/* Gambar hero adalah elemen LCP dashboard: minta dengan prioritas tinggi.
           Atribut huruf kecil dipakai karena React 18 belum mengenali fetchPriority. */}
-      {/* eslint-disable-next-line react/no-unknown-property */}
       <img
         src={image}
         alt=""
         decoding="async"
+        // eslint-disable-next-line react/no-unknown-property
         fetchpriority="high"
         style={{ objectPosition }}
         className="absolute inset-0 w-full h-full object-cover"
