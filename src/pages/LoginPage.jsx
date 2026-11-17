@@ -9,6 +9,8 @@ import { toast } from '@/components/ui/use-toast';
 import { Loader2, AlertCircle, Mail, Lock, ArrowRight, CheckCircle2, Eye, EyeOff, ShieldCheck, BarChart3 } from 'lucide-react';
 import { getUser, getPhysiotherapistByUserId } from '@/lib/api';
 import { normalizeRole } from '@/lib/roles';
+import { loadCaveatFont } from '@/lib/loadFont';
+loadCaveatFont();
 
 // Served from /public rather than bundled, so swapping the brand asset
 // later is a file replace, not a code change. Only rendered on APP_DOMAIN

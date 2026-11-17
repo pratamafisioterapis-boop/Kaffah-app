@@ -1,8 +1,10 @@
 import React, { useEffect, Suspense } from 'react';
 import PageSEO from '@/components/seo/PageSEO';
 import { lazyRetry } from '@/lib/lazyRetry';
-const Navbar = React.lazy(lazyRetry(() => import('@/components/landing/Navbar'), 'Navbar'));
-const HeroSection = React.lazy(lazyRetry(() => import('@/components/landing/HeroSection'), 'HeroSection'));
+// Navbar + Hero (di atas lipatan) diimpor statis: tidak perlu rantai fetch chunk lazy
+// sebelum H1/LCP bisa dirender. Section di bawahnya tetap lazy.
+import Navbar from '@/components/landing/Navbar';
+import HeroSection from '@/components/landing/HeroSection';
 const AboutSection = React.lazy(lazyRetry(() => import('@/components/landing/AboutSection'), 'AboutSection'));
 const ServicesSection = React.lazy(lazyRetry(() => import('@/components/landing/ServicesSection'), 'ServicesSection'));
 const AdvantagesSection = React.lazy(lazyRetry(() => import('@/components/landing/AdvantagesSection'), 'AdvantagesSection'));
@@ -47,11 +49,11 @@ const LandingPage = () => {
         description="Klinik fisioterapi di Balikpapan Utara dengan terapis bersertifikat SIPF dan pendekatan evidence-based. Tangani nyeri otot & sendi, cedera olahraga, rehabilitasi pasca operasi, hingga stroke. Booking online sekarang."
         path="/"
       />
-<Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
-      <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-kaffah-blue selection:text-white">
+<div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-kaffah-blue selection:text-white">
         <SafeSection><Navbar /></SafeSection>
         <main>
           <SafeSection><HeroSection /></SafeSection>
+          <Suspense fallback={null}>
           <SafeSection><AboutSection /></SafeSection>
           <SafeSection><ServicesSection /></SafeSection>
           <SafeSection><AdvantagesSection /></SafeSection>
@@ -60,10 +62,12 @@ const LandingPage = () => {
           <SafeSection><PricingTeaser /></SafeSection>
           <SafeSection><CTASection /></SafeSection>
           <SafeSection><LocationSection /></SafeSection>
+          </Suspense>
         </main>
-        <SafeSection><Footer /></SafeSection>
+        <Suspense fallback={null}>
+          <SafeSection><Footer /></SafeSection>
+        </Suspense>
         </div>
-      </Suspense>
     </>
   );
 };

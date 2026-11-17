@@ -2,7 +2,9 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import AppointmentSyncService, { debouncedSync } from '@/lib/AppointmentSyncService';
-import { updateAppointment as apiUpdateAppointment, deleteAppointment as apiDeleteAppointment } from '@/lib/api';
+// api.js (±340 kB) dimuat dinamis: hanya dibutuhkan saat appointment diubah/dihapus.
+const apiUpdateAppointment = async (...a) => (await import('@/lib/api')).updateAppointment(...a);
+const apiDeleteAppointment = async (...a) => (await import('@/lib/api')).deleteAppointment(...a);
 
 const AppointmentStateContext = createContext(null);
 

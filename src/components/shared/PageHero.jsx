@@ -1,6 +1,8 @@
 import React from 'react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { cn } from '@/lib/utils';
+import { loadCaveatFont } from '@/lib/loadFont';
+loadCaveatFont();
 
 // Banner at the top of the owner/admin pages. One component instead of a copy per
 // page, so spacing, type and theme colors change in one place. Colors come from the
@@ -24,10 +26,14 @@ const PageHero = ({
         className
       )}
     >
+      {/* Gambar hero adalah elemen LCP dashboard: minta dengan prioritas tinggi.
+          Atribut huruf kecil dipakai karena React 18 belum mengenali fetchPriority. */}
       <img
         src={image}
         alt=""
         decoding="async"
+        // eslint-disable-next-line react/no-unknown-property
+        fetchpriority="high"
         style={{ objectPosition }}
         className="absolute inset-0 w-full h-full object-cover"
       />

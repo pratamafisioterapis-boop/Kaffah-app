@@ -37,15 +37,15 @@ import TargetFillReminder from '@/components/owner/TargetFillReminder';
 
 // Operational Components
 import OperationalDashboardUI from '@/components/owner/operational/OperationalDashboardUI';
-import SessionTimelinessChart from '@/components/owner/operational/SessionTimelinessChart';
-import TrendSessionChart from '@/components/owner/operational/TrendSessionChart';
+const SessionTimelinessChart = React.lazy(lazyRetry(() => import('@/components/owner/operational/SessionTimelinessChart'), 'SessionTimelinessChart'));
+const TrendSessionChart = React.lazy(lazyRetry(() => import('@/components/owner/operational/TrendSessionChart'), 'TrendSessionChart'));
 import TherapistStatusCards from '@/components/owner/operational/TherapistStatusCards';
-import CapacityVsDemandChart from '@/components/owner/operational/CapacityVsDemandChart';
-import BulletChartTargetVsRealization from '@/components/owner/operational/BulletChartTargetVsRealization';
-import ServiceDistributionChart from '@/components/owner/operational/ServiceDistributionChart';
-import PatientSourceChart from '@/components/owner/operational/PatientSourceChart';
-import PromoUsageWidget from '@/components/owner/operational/PromoUsageWidget';
-import SoapViolationWidget from '@/components/owner/operational/SoapViolationWidget';
+const CapacityVsDemandChart = React.lazy(lazyRetry(() => import('@/components/owner/operational/CapacityVsDemandChart'), 'CapacityVsDemandChart'));
+const BulletChartTargetVsRealization = React.lazy(lazyRetry(() => import('@/components/owner/operational/BulletChartTargetVsRealization'), 'BulletChartTargetVsRealization'));
+const ServiceDistributionChart = React.lazy(lazyRetry(() => import('@/components/owner/operational/ServiceDistributionChart'), 'ServiceDistributionChart'));
+const PatientSourceChart = React.lazy(lazyRetry(() => import('@/components/owner/operational/PatientSourceChart'), 'PatientSourceChart'));
+const PromoUsageWidget = React.lazy(lazyRetry(() => import('@/components/owner/operational/PromoUsageWidget'), 'PromoUsageWidget'));
+const SoapViolationWidget = React.lazy(lazyRetry(() => import('@/components/owner/operational/SoapViolationWidget'), 'SoapViolationWidget'));
 import { OWNER_NAV_ITEMS } from '@/lib/navItems';
 const AttendanceManagement = React.lazy(lazyRetry(() => import('@/pages/admin/AttendanceManagement'), 'AttendanceManagement'));
 const OwnerDecreesPage = React.lazy(lazyRetry(() => import('@/pages/owner/OwnerDecreesPage'), 'OwnerDecreesPage'));
@@ -63,6 +63,7 @@ const MedicalRecordForm = React.lazy(lazyRetry(() => import('@/components/therap
 import { fetchTotalSessions, fetchTotalPatients, fetchTotalPackages, fetchTodaySessions, fetchOngoingSessions, fetchCompletedSessions, fetchCancelledAppointments, fetchActiveTherapists, fetchEmptySlots, fetchTodayNewPatients, fetchTodayReturningPatients, fetchAllTherapists, fetchTodaySessionsByTherapist, getClinicTherapistsSoapLockStatus, getCachedClinicId, getPhysiotherapistByUserId, fetchPackageSessionsCount } from '@/lib/api';
 import { getTherapistsPatientMetrics } from '@/lib/therapistDataUtils';
 import PageHero from '@/components/shared/PageHero';
+import LazyOnVisible from '@/components/shared/LazyOnVisible';
 import HeroClock from '@/components/shared/HeroClock';
 import PageSkeleton from '@/components/shared/PageSkeleton';
 import DateRangePicker from '@/components/ui/date-range-picker';
@@ -461,14 +462,30 @@ setTherapists(enrichedTherapists);
                 dateRange={dateRange}
               />
 
-              <TrendSessionChart className="col-span-2 md:col-span-2 lg:col-span-3" />
-              <CapacityVsDemandChart className="col-span-2 md:col-span-2 lg:col-span-3" />
-              <SessionTimelinessChart dateRange={dateRange} className="col-span-2 md:col-span-2 lg:col-span-3" />
-              <BulletChartTargetVsRealization dateRange={dateRange} className="col-span-2 md:col-span-2 lg:col-span-3" />
-              <ServiceDistributionChart dateRange={dateRange} className="col-span-2 md:col-span-2 lg:col-span-2" />
-              <PatientSourceChart dateRange={dateRange} className="col-span-2 md:col-span-2 lg:col-span-2" />
-              <PromoUsageWidget dateRange={dateRange} className="col-span-2 md:col-span-4 lg:col-span-2" />
-              <SoapViolationWidget dateRange={dateRange} className="col-span-2 md:col-span-4 lg:col-span-6" />
+              <LazyOnVisible className="col-span-2 md:col-span-2 lg:col-span-3">
+                <TrendSessionChart className="col-span-2 md:col-span-2 lg:col-span-3" />
+              </LazyOnVisible>
+              <LazyOnVisible className="col-span-2 md:col-span-2 lg:col-span-3">
+                <CapacityVsDemandChart className="col-span-2 md:col-span-2 lg:col-span-3" />
+              </LazyOnVisible>
+              <LazyOnVisible className="col-span-2 md:col-span-2 lg:col-span-3">
+                <SessionTimelinessChart dateRange={dateRange} className="col-span-2 md:col-span-2 lg:col-span-3" />
+              </LazyOnVisible>
+              <LazyOnVisible className="col-span-2 md:col-span-2 lg:col-span-3">
+                <BulletChartTargetVsRealization dateRange={dateRange} className="col-span-2 md:col-span-2 lg:col-span-3" />
+              </LazyOnVisible>
+              <LazyOnVisible className="col-span-2 md:col-span-2 lg:col-span-2">
+                <ServiceDistributionChart dateRange={dateRange} className="col-span-2 md:col-span-2 lg:col-span-2" />
+              </LazyOnVisible>
+              <LazyOnVisible className="col-span-2 md:col-span-2 lg:col-span-2">
+                <PatientSourceChart dateRange={dateRange} className="col-span-2 md:col-span-2 lg:col-span-2" />
+              </LazyOnVisible>
+              <LazyOnVisible className="col-span-2 md:col-span-4 lg:col-span-2">
+                <PromoUsageWidget dateRange={dateRange} className="col-span-2 md:col-span-4 lg:col-span-2" />
+              </LazyOnVisible>
+              <LazyOnVisible className="col-span-2 md:col-span-4 lg:col-span-6">
+                <SoapViolationWidget dateRange={dateRange} className="col-span-2 md:col-span-4 lg:col-span-6" />
+              </LazyOnVisible>
             </div>
           </TabsContent>
 

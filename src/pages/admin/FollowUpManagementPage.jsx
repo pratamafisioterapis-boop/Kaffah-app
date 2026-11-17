@@ -14,6 +14,7 @@ import { RefreshCw, CheckCircle2, AlertCircle, Loader2, Info, MessageCircle, Gif
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { confirmAction } from '@/lib/confirmAction';
+import { visibleInterval } from '@/lib/visibleInterval';
 
 const FollowUpManagementPage = () => {
     const [queueItems, setQueueItems] = useState([]);
@@ -46,8 +47,7 @@ const FollowUpManagementPage = () => {
     // Initial load & Auto-refresh
     useEffect(() => {
         fetchQueue();
-        const interval = setInterval(fetchQueue, 30000); // 30s auto-refresh
-        return () => clearInterval(interval);
+        return visibleInterval(fetchQueue, 30000); // 30s auto-refresh, hanya saat tab terlihat
     }, [fetchQueue]);
 
     const handleRefresh = () => {

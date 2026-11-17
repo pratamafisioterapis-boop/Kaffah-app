@@ -4,6 +4,7 @@ import { AlertTriangle } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
 import { isSoapFirstActiveOn, todayWita } from '@/lib/soapFirst';
+import { visibleInterval } from '@/lib/visibleInterval';
 
 const fmtClock = (v) => {
   try { return new Date(v).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Makassar' }); } catch { return '-'; }
@@ -39,8 +40,7 @@ const SoapPendingBanner = ({ therapistId = null, role = 'therapist' }) => {
   useEffect(() => {
     load();
     if (!active) return undefined;
-    const timer = setInterval(load, 60000);
-    return () => clearInterval(timer);
+    return visibleInterval(load, 60000);
   }, [load, active]);
 
   if (!active || items.length === 0) return null;
