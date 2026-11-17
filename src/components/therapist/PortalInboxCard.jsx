@@ -4,6 +4,7 @@ import { MessageCircle, ClipboardList, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { usePortalEnabled } from '@/hooks/usePortalEnabled';
 import { fetchTherapistPatientIds } from '@/lib/portalScope';
+import { visibleInterval } from '@/lib/visibleInterval';
 
 // Ringkasan di dashboard terapis: chat dan keluhan baru dari aplikasi pasien (Clinara) untuk pasien terapis ini.
 // Hanya tampil bila klinik mengaktifkan fitur Clinara pasien. Detail dan balasan ada di /therapist/clinara-pasien.
@@ -28,8 +29,7 @@ const PortalInboxCard = ({ therapistId }) => {
   useEffect(() => {
     if (!enabled) return undefined;
     load();
-    const t = setInterval(load, 30000);
-    return () => clearInterval(t);
+    return visibleInterval(load, 30000);
   }, [enabled, load]);
 
   if (!enabled || !counts) return null;

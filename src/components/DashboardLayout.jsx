@@ -88,15 +88,6 @@ const ROLE_DEFAULT_NAMES = { owner: 'Owner', admin: 'Admin', therapist: 'Terapis
 
 const DashboardLayout = ({ children, navItems = [], role, userName: userNameProp, topSlot = null }) => {
   const userName = typeof userNameProp === 'string' && userNameProp ? userNameProp : (ROLE_DEFAULT_NAMES[role] || 'User');
-  const [currentTime, setCurrentTime] = useState(new Date());
-
-useEffect(() => {
-  const interval = setInterval(() => {
-    setCurrentTime(new Date());
-  }, 1000);
-
-  return () => clearInterval(interval);
-}, []);
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut, userDetails } = useAuth();

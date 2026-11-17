@@ -3,6 +3,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
 import { isSoapFirstActiveOn, todayWita } from '@/lib/soapFirst';
 import { isApptOpen, slotOf } from '@/lib/soapReminder';
+import { visibleInterval } from '@/lib/visibleInterval';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -86,7 +87,7 @@ export const useTherapistToday = (therapistId) => {
 
   useEffect(() => {
     load();
-    const t = setInterval(load, 60000);
+    const stopPoll = visibleInterval(load, 60000);
     // Setelah SOAP disimpan / tab kembali aktif, muat ulang segera supaya status "SOAP terisi"
     // langsung tampil tanpa menunggu interval. Muat ulang kedua menutup jeda trigger database.
     let retry;
@@ -100,7 +101,7 @@ export const useTherapistToday = (therapistId) => {
     window.addEventListener('focus', refresh);
     document.addEventListener('visibilitychange', onVisible);
     return () => {
-      clearInterval(t);
+      stopPoll();
       clearTimeout(retry);
       window.removeEventListener('medical-record-updated', refresh);
       window.removeEventListener('focus', refresh);

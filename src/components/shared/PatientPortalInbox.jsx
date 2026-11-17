@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { fetchTherapistPatientIds } from '@/lib/portalScope';
+import { visibleInterval } from '@/lib/visibleInterval';
 
 // Kotak masuk staf untuk aplikasi pasien Clinara: membalas chat dan menandai keluhan yang sudah ditinjau.
 // Dipakai oleh halaman admin, owner, dan terapis. Akses data dibatasi RLS per klinik.
@@ -66,12 +67,12 @@ const PatientPortalInboxContent = ({ therapistId = null }) => {
   useEffect(() => {
     if (therapistId && !scope) return undefined; // tunggu daftar pasien terapis
     load();
-    const poll = setInterval(load, 20000);
+    const stopPoll = visibleInterval(load, 20000);
     const channel = supabase.channel('portal-inbox')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'patient_portal_messages' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'patient_portal_feedback' }, load)
       .subscribe();
-    return () => { clearInterval(poll); supabase.removeChannel(channel); };
+    return () => { stopPoll(); supabase.removeChannel(channel); };
   }, [load]);
 
   const threads = useMemo(() => {
