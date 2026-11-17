@@ -9,7 +9,6 @@ import { Toaster } from '@/components/ui/toaster';
 import ConfirmHost from '@/components/shared/ConfirmHost';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { supabase } from '@/lib/customSupabaseClient';
-import DashboardLayout from '@/components/DashboardLayout';
 import ImpersonationBanner from '@/components/ImpersonationBanner';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import RotasiProtectedRoute from '@/components/RotasiProtectedRoute';
@@ -28,6 +27,9 @@ import { isStaleChunkError, reloadForStaleChunk, hardRefresh, consumeSkipSplash 
 // rather than replay the launch splash.
 const SKIPS_SPLASH_THIS_LOAD = consumeSkipSplash();
 import { PUBLIC_DOMAIN, APP_DOMAIN, isAppOnlyPath, staysOnAppDomain, isOnAppDomain, isOnPublicDomain, isTenantHost } from '@/lib/domainRouting';
+// DashboardLayout (framer-motion + topbar) hanya dipakai setelah login: lazy supaya
+// pengunjung halaman publik tidak mengunduhnya di bundle awal.
+const DashboardLayout = React.lazy(lazyRetry(() => import('@/components/DashboardLayout'), 'DashboardLayout'));
 const ClinicTenantSitePage = React.lazy(lazyRetry(() => import('@/pages/clinic/ClinicTenantSitePage'), 'ClinicTenantSitePage'));
 const ClinicBookingPage = React.lazy(lazyRetry(() => import('@/pages/clinic/ClinicBookingPage'), 'ClinicBookingPage'));
 

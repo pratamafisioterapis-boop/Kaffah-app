@@ -13,10 +13,8 @@ const HeroSection = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           
           {/* Text Content */}
-          <motion.div initial={{
-          opacity: 0,
-          x: -50
-        }} animate={{
+          {/* initial={false}: H1 adalah LCP, jangan mulai dari opacity 0 (menunda paint ~0,8 dtk). */}
+          <motion.div initial={false} animate={{
           opacity: 1,
           x: 0
         }} transition={{

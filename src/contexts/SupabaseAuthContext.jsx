@@ -1,9 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
-import {
-  registerPushNotifications,
-  listenForegroundNotifications
-} from '@/lib/pushNotifications';
+// pushNotifications (firebase messaging ±230 kB) dimuat dinamis agar tidak masuk bundle awal.
+const loadPush = () => import('@/lib/pushNotifications');
 import { useToast } from '@/components/ui/use-toast';
 import { normalizeRole } from '@/lib/roles';
 import { initLightLoadMode, refreshLightLoadMode, isLightLoadModeEnabled } from '@/lib/lightLoadMode';
@@ -568,7 +566,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (foregroundListenerAttached.current) return;
     foregroundListenerAttached.current = true;
-    listenForegroundNotifications();
+    loadPush().then((m) => m.listenForegroundNotifications()).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -577,7 +575,7 @@ export const AuthProvider = ({ children }) => {
     // to the real signed-in user (the owner); registering it for the viewed
     // account would delete the owner's token and stop their notifications.
     if (isImpersonating) return;
-    registerPushNotifications(user.id);
+    loadPush().then((m) => m.registerPushNotifications(user.id)).catch(() => {});
   }, [user?.id, isImpersonating]);
   const value = useMemo(() => ({
     user,
