@@ -1,10 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 import { lightLoadFetch, configureLightLoadMode } from '@/lib/lightLoadMode';
 import { dedupeFetch } from '@/lib/dedupeFetch';
+import { createProxyFallbackFetch } from '@/lib/supabaseProxyFallback';
 
 // Nilai publik (anon key tunduk pada RLS). Bisa di-override lewat env VITE_*.
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://dqkejdamagvlhqvxaqej.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxa2VqZGFtYWd2bGhxdnhhcWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3MjU1NjYsImV4cCI6MjA4MTMwMTU2Nn0.Fcp8V1AKY9ugjChUZC_b1zPpVw4BJTlMYCD3N16sXH8';
+
+// Jalur langsung ke Supabase; beralih ke proxy same-origin hanya bila host tidak terjangkau.
+const proxyFallbackFetch = createProxyFallbackFetch({ supabaseUrl, anonKey: supabaseAnonKey });
 
 const customSupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -20,6 +24,7 @@ const customSupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
 })
 
 configureLightLoadMode({
+  fetchImpl: proxyFallbackFetch,
   authProvider: async () => {
     const { data } = await customSupabaseClient.auth.getSession();
     const accessToken = data?.session?.access_token;

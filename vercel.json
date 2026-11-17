@@ -12,6 +12,10 @@
       "destination": "/api/invoice-og?id=:id"
     },
     {
+      "source": "/supabase-proxy/:path*",
+      "destination": "https://dqkejdamagvlhqvxaqej.supabase.co/:path*"
+    },
+    {
       "source": "/r/:id([a-z0-9]{6,16})",
       "destination": "https://dqkejdamagvlhqvxaqej.supabase.co/storage/v1/object/public/invoices/resume-medis/:id.pdf"
     },
