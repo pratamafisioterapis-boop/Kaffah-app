@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { fetchClinicRow } from '@/lib/clinicRow';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -122,7 +123,13 @@ const DashboardLayout = ({ children, navItems = [], role, userName: userNameProp
     }
     const fetchClinicInfo = async () => {
       try {
-        const { data } = await supabase.from('clinics').select('name, logo_url, disabled_features_by_role, patient_portal_enabled').eq('id', clinicId).single();
+        const { data: row } = await fetchClinicRow(clinicId);
+        const data = row && {
+          name: row.name,
+          logo_url: row.logo_url,
+          disabled_features_by_role: row.disabled_features_by_role,
+          patient_portal_enabled: row.patient_portal_enabled,
+        };
         if (active && data) {
           setClinicInfo(data);
           writeClinicInfoCache(clinicId, data);

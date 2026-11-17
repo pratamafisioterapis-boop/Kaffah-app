@@ -115,11 +115,19 @@ const OnboardingChecklist = () => {
   const [status, setStatus] = useState({});
   const [open, setOpen] = useState(false);
 
+  const userId = user?.id;
+  const clinicIdDep = userDetails?.clinic_id;
   useEffect(() => {
     let active = true;
     const load = async () => {
-      if (!userDetails?.clinic_id || !user?.id) return;
-      const clinicId = userDetails.clinic_id;
+      if (!clinicIdDep || !userId) return;
+      const clinicId = clinicIdDep;
+      // Klinik yang sudah lengkap tidak perlu 8 query tiap dashboard dibuka: cek ulang sehari sekali.
+      const doneKey = `onboarding-done:${clinicId}`;
+      try {
+        const at = Number(localStorage.getItem(doneKey));
+        if (at && Date.now() - at < 24 * 60 * 60 * 1000) { setLoading(false); setStatus({ __done: true }); return; }
+      } catch { /* abaikan */ }
 
       const [
         { data: clinic },
@@ -132,7 +140,7 @@ const OnboardingChecklist = () => {
         { count: bankAccountCount },
       ] = await Promise.all([
         supabase.from('clinics').select('logo_url, stamp_url, address, phone').eq('id', clinicId).single(),
-        supabase.from('users').select('avatar_url').eq('id', user.id).single(),
+        supabase.from('users').select('avatar_url').eq('id', userId).single(),
         supabase.from('physiotherapists').select('id', { count: 'exact', head: true }).eq('clinic_id', clinicId),
         supabase.from('therapist_schedules').select('id', { count: 'exact', head: true }).eq('clinic_id', clinicId).eq('is_active', true),
         supabase.from('users').select('id', { count: 'exact', head: true }).eq('clinic_id', clinicId).eq('role', 'admin'),
@@ -160,17 +168,18 @@ const OnboardingChecklist = () => {
 
       const requiredDone = STEPS.filter((s) => s.required).every((s) => next[s.key]);
       setOpen(!requiredDone);
+      if (requiredDone) { try { localStorage.setItem(doneKey, String(Date.now())); } catch { /* abaikan */ } }
       setLoading(false);
     };
     load();
     return () => { active = false; };
-  }, [user, userDetails]);
+  }, [userId, clinicIdDep]);
 
   if (loading) return null;
 
   const requiredSteps = STEPS.filter((s) => s.required);
   const requiredDoneCount = requiredSteps.filter((s) => status[s.key]).length;
-  const allRequiredDone = requiredDoneCount === requiredSteps.length;
+  const allRequiredDone = status.__done || requiredDoneCount === requiredSteps.length;
 
   if (allRequiredDone) return null;
 

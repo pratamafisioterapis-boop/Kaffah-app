@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { DESIGN_THEMES, DEFAULT_THEME_KEY } from '@/config/designThemes';
+import { fetchClinicRow, invalidateClinicRow } from '@/lib/clinicRow';
 
 const ThemeContext = createContext(null);
 
@@ -135,11 +136,7 @@ export const ThemeProvider = ({ children }) => {
 
   const fetchTheme = useCallback(async () => {
     if (!clinicId) { setLoading(false); return; }
-    const { data, error } = await supabase
-      .from('clinics')
-      .select('design_style')
-      .eq('id', clinicId)
-      .single();
+    const { data, error } = await fetchClinicRow(clinicId);
     if (!error && data?.design_style) {
       setThemeKey(data.design_style);
       applyThemeVars(data.design_style);
@@ -158,6 +155,7 @@ export const ThemeProvider = ({ children }) => {
       .update({ design_style: newKey })
       .eq('id', clinicId);
     if (!error) {
+      invalidateClinicRow(clinicId);
       setThemeKey(newKey);
       applyThemeVars(newKey);
     }

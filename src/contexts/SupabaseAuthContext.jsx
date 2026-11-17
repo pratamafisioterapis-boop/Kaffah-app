@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { fetchClinicRow } from '@/lib/clinicRow';
 // pushNotifications (firebase messaging ±230 kB) dimuat dinamis agar tidak masuk bundle awal.
 const loadPush = () => import('@/lib/pushNotifications');
 import { useToast } from '@/components/ui/use-toast';
@@ -546,7 +547,7 @@ export const AuthProvider = ({ children }) => {
     let active = true;
     const fetchClinicName = async () => {
       if (!userDetails?.clinic_id) { if (active) setClinicName(null); return; }
-      const { data } = await supabase.from('clinics').select('name').eq('id', userDetails.clinic_id).single();
+      const { data } = await fetchClinicRow(userDetails.clinic_id);
       if (active) setClinicName(data?.name || null);
     };
     fetchClinicName();
