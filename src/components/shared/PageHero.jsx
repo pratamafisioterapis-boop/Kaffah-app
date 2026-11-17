@@ -1,6 +1,8 @@
 import React from 'react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { cn } from '@/lib/utils';
+import { loadCaveatFont } from '@/lib/loadFont';
+loadCaveatFont();
 
 // Banner at the top of the owner/admin pages. One component instead of a copy per
 // page, so spacing, type and theme colors change in one place. Colors come from the

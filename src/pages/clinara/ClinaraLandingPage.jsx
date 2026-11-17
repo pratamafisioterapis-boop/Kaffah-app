@@ -10,6 +10,8 @@ import {
   FileText, CalendarClock, Calculator, User, CreditCard,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { loadCaveatFont } from '@/lib/loadFont';
+loadCaveatFont();
 
 // ---------------------------------------------------------------------------
 // Content — mirrors the Clinara brand book verbatim so copy stays a single

@@ -17,6 +17,7 @@ import KonversiDokterProtectedRoute from '@/components/KonversiDokterProtectedRo
 import PemilihRelawanProtectedRoute from '@/components/PemilihRelawanProtectedRoute';
 import PemilihDpcProtectedRoute from '@/components/PemilihDpcProtectedRoute';
 import { lazyRetry } from '@/lib/lazyRetry';
+import { loadSplashFonts } from '@/lib/loadFont';
 // Halaman publik untuk pasien (tautan WhatsApp, browser apa pun): diimpor statis agar tidak
 // bergantung pada pengambilan chunk lazy yang bisa gagal di browser tertentu.
 import InvoiceViewPage from '@/pages/InvoiceViewPage';
@@ -270,6 +271,9 @@ const AppSplashGate = () => {
       return false;
     }
   }, []);
+
+  // Font splash (Inter Tight / Instrument Serif / DM Sans) hanya dipakai di PWA.
+  useEffect(() => { if (isPWA) loadSplashFonts(); }, [isPWA]);
 
   useEffect(() => {
     if (!isPWA || authLoading) return;
