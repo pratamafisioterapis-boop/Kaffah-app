@@ -619,12 +619,26 @@ if (isCreate) {
          }
          const recapUpdate = { diagnosis, updated_at: new Date().toISOString() };
          if (serviceParent) recapUpdate.service_type = serviceParent;
-         const { error: diagError } = await supabase
-           .from('daily_recaps')
-           .update(recapUpdate)
-           .eq('id', linkedRecapId);
+         // Coba ulang sampai 3x (jaringan putus-putus / update 0 baris tanpa error). SOAP sudah
+         // tersimpan; tanpa diagnosa di rekap, SOAP tidak tercatat selesai dan pembayaran terkunci.
+         let diagError = null;
+         for (let attempt = 0; attempt < 3; attempt += 1) {
+           if (attempt > 0) await new Promise((r) => setTimeout(r, 600 * attempt));
+           const { data: updated, error } = await supabase
+             .from('daily_recaps')
+             .update(recapUpdate)
+             .eq('id', linkedRecapId)
+             .select('id');
+           diagError = error || (!updated || updated.length === 0 ? new Error('Rekap sesi tidak ditemukan atau tidak bisa diubah.') : null);
+           if (!diagError) break;
+         }
          if (diagError) {
-           toast({ variant: "destructive", title: "SOAP tersimpan, diagnosa gagal", description: diagError.message });
+           toast({
+             variant: "destructive",
+             title: "SOAP tersimpan, tapi diagnosa BELUM masuk ke rekap",
+             description: `${diagError.message} Buka SOAP ini lagi, pilih diagnosa, lalu simpan ulang agar SOAP tercatat selesai.`,
+             duration: 15000,
+           });
          } else if (askOutside && outsideChoice === 'outside') {
            try {
              await setRecoveryOutsidePackage({ recapId: linkedRecapId, outside: true });
