@@ -1947,7 +1947,8 @@ export const createDailyRecap = async (payload) => {
         .from('daily_recaps')
         .update({
           goods_items: payload.goods_items,
-          ...(payload.goods_payment_method ? { goods_payment_method: payload.goods_payment_method } : {})
+          ...(payload.goods_payment_method ? { goods_payment_method: payload.goods_payment_method } : {}),
+          ...(payload.goods_payment_proof_path ? { goods_payment_proof_path: payload.goods_payment_proof_path } : {})
         })
         .eq('id', data.recap_id);
       if (goodsError) return { error: goodsError };

@@ -73,6 +73,8 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
     const [savedGoodsItems, setSavedGoodsItems] = useState([]);
     // Metode bayar barang khusus sesi paket (metode recap 'Package' bukan pembayaran riil).
     const [goodsPaymentMethod, setGoodsPaymentMethod] = useState('');
+    const [goodsProofFile, setGoodsProofFile] = useState(null);
+    const [savedGoodsProofPath, setSavedGoodsProofPath] = useState('');
 
     useEffect(() => {
         if (!isOpen || !userDetails?.clinic_id) { setIsKwitansi(false); return; }
@@ -84,9 +86,9 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
 
     useEffect(() => {
         if (!isOpen) return;
-        if (mode !== 'edit' || !initialData?.id) { setInvoiceItems([]); setSavedInvoiceItems([]); setGoodsItems([]); setSavedGoodsItems([]); setGoodsPaymentMethod(''); return; }
+        if (mode !== 'edit' || !initialData?.id) { setInvoiceItems([]); setSavedInvoiceItems([]); setGoodsItems([]); setSavedGoodsItems([]); setGoodsPaymentMethod(''); setGoodsProofFile(null); setSavedGoodsProofPath(''); return; }
         let cancelled = false;
-        supabase.from('daily_recaps').select('invoice_items, goods_items, goods_payment_method').eq('id', initialData.id).maybeSingle()
+        supabase.from('daily_recaps').select('invoice_items, goods_items, goods_payment_method, goods_payment_proof_path').eq('id', initialData.id).maybeSingle()
             .then(({ data }) => {
                 if (cancelled) return;
                 const loaded = Array.isArray(data?.invoice_items) ? data.invoice_items : [];
@@ -96,6 +98,8 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
                 setGoodsItems(goods);
                 setSavedGoodsItems(goods);
                 setGoodsPaymentMethod(data?.goods_payment_method || '');
+                setGoodsProofFile(null);
+                setSavedGoodsProofPath(data?.goods_payment_proof_path || '');
             });
         return () => { cancelled = true; };
     }, [isOpen, mode, initialData?.id]);
@@ -1485,6 +1489,7 @@ setFormData({
         if (itemsNetTotal(goodsItems) > 0) {
             if (goodsUsesOwnMethod) {
                 if (!goodsPaymentMethod) newErrors.goods = "Pilih metode pembayaran barang";
+                else if (methodNeedsProof(goodsPaymentMethod) && !goodsProofFile && !savedGoodsProofPath) newErrors.goods = "Bukti pembayaran barang wajib diunggah untuk debit/transfer";
             } else if (!useSplitPayment && !formData.payment_method) {
                 newErrors.goods = "Pilih metode pembayaran dulu karena barang dibayar dengan metode pembayaran recap";
             }
@@ -1566,6 +1571,12 @@ setFormData({
                 resolvedProofPath = proofFile ? await uploadProof(proofFile) : (savedProofPath || null);
             }
 
+            const goodsOwnPaid = goodsUsesOwnMethod && itemsNetTotal(goodsItems) > 0;
+            let resolvedGoodsProofPath = null;
+            if (goodsOwnPaid && methodNeedsProof(goodsPaymentMethod)) {
+                resolvedGoodsProofPath = goodsProofFile ? await uploadProof(goodsProofFile) : (savedGoodsProofPath || null);
+            }
+
             const payload = {
                 ...formData,
                 payment_proof_path: resolvedProofPath,
@@ -1590,7 +1601,7 @@ setFormData({
                 tips_amount: Math.max(parseFloat(formData.tips_amount) || 0, 0),
                 // Hanya dikirim bila ada/pernah ada barang, supaya simpan biasa tidak tergantung kolom baru.
                 ...((!isKwitansi && (goodsItems.length > 0 || savedGoodsItems.length > 0))
-                    ? { goods_items: goodsItems, goods_payment_method: goodsUsesOwnMethod && itemsNetTotal(goodsItems) > 0 ? goodsPaymentMethod : null }
+                    ? { goods_items: goodsItems, goods_payment_method: goodsOwnPaid ? goodsPaymentMethod : null, goods_payment_proof_path: resolvedGoodsProofPath }
                     : {}),
                 // Tanpa tipe potongan = tanpa diskon: nilai & label ikut dikosongkan
                 // supaya diskon lama benar-benar terhapus di DB dan invoice.
@@ -1912,6 +1923,12 @@ setFormData({
                         isLoading={loadingPaymentMethods}
                     />
                     <p className="text-[11px] text-slate-500">Sesi paket tidak ada pembayaran terapi, jadi barang dibayar dengan metode ini.</p>
+                    {goodsPaymentMethod && methodNeedsProof(goodsPaymentMethod) && renderProofPicker({
+                        file: goodsProofFile,
+                        savedPath: savedGoodsProofPath,
+                        onFile: setGoodsProofFile,
+                        error: null
+                    })}
                 </div>
             )}
             {errors.goods && <p className="text-xs text-red-500">{errors.goods}</p>}
