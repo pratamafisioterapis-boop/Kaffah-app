@@ -183,7 +183,7 @@ const TherapistHero = ({ therapistName, today }) => {
                     >
                       {s.st === 'done' && <Check className="h-3 w-3" />}
                       {showSoap
-                        ? (s.soapDone ? 'SOAP terisi' : 'SOAP belum diisi')
+                        ? (s.soapDone ? 'SOAP terisi' : s.soapMissing ? `${s.soapMissing} belum diisi` : 'SOAP belum diisi')
                         : s.st === 'done' ? 'Selesai' : s.st === 'late' ? 'Belum diakhiri' : s.st === 'now' ? 'Berlangsung' : 'Menunggu'}
                     </span>
                   </motion.button>

@@ -32,9 +32,11 @@ const normalize = (r, labels, soapRecapIds) => {
     diagnosis: firstDiagnosis(r.diagnosis, labels),
     startedAt: r.start_time || null,
     endedAt: r.end_time || null,
-    // Penanda server (soap_completed_at) bisa tertunda/kosong; rekam medis S-O-A-P lengkap yang sudah
-    // tersimpan untuk sesi ini juga dihitung selesai supaya tampilan terapis tidak salah.
-    soapDone: !!r.soap_completed_at || soapRecapIds.has(r.id),
+    soapDone: !!r.soap_completed_at,
+    // SOAP sudah ditulis tapi belum tercatat selesai: sebutkan apa yang kurang (diagnosa / TTV).
+    soapMissing: r.soap_completed_at || !soapRecapIds.has(r.id)
+      ? null
+      : (diagnosisIds(r.diagnosis).length === 0 ? 'diagnosa' : 'TTV'),
     slot,
     apptOpen: isApptOpen(r.appointment?.status),
   };
