@@ -27,6 +27,7 @@ const TherapistCard = ({
   date,
   leaveStatus = 'aktif',
   leaveReason = '',
+  swapPartner = null, // nama rekan tukar jadwal Minggu (jika hari ini hasil tukar jadwal)
   replacement = false, // hari libur mingguan yang diganti jadwal pengganti izin
   partialLeaves, // izin jam tertentu di hari ini: [{ start, end, label }]
   soapStatus = null // { unfilled_count, threshold_count, period_start, period_end, locked }
@@ -172,8 +173,8 @@ const TherapistCard = ({
         </CardTitle>
 
                 {replacement && !isLeave && (
-          <span className="px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide border whitespace-nowrap bg-blue-100 text-blue-700 border-blue-200">
-            Pengganti izin
+          <span className="px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide border bg-blue-100 text-blue-700 border-blue-200">
+            {swapPartner ? `Tukar jadwal Minggu dengan ${swapPartner}` : 'Pengganti izin'}
           </span>
         )}
 

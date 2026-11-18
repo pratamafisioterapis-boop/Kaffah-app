@@ -67,6 +67,7 @@ const AdminAppointmentBooking = () => {
   const [therapistLeaveStatus, setTherapistLeaveStatus] = useState({});
   const [therapistLeaveReason, setTherapistLeaveReason] = useState({});
   const [therapistReplacement, setTherapistReplacement] = useState({});
+  const [therapistSwapPartner, setTherapistSwapPartner] = useState({});
   const [therapistPartialLeave, setTherapistPartialLeave] = useState({});
   const [soapStatusByTherapist, setSoapStatusByTherapist] = useState({});
   const [schedulesMap, setSchedulesMap] = useState({});
@@ -270,6 +271,18 @@ const formattedDateFull = date
         .eq('shift_date', dateStr);
       const hasExtraShift = new Set((extraShiftRows || []).map(r => r.therapist_id));
 
+      // Tukar jadwal Minggu yang disetujui: tiap terapis ditandai dengan nama rekan tukarnya.
+      const swapPartnerMap = {};
+      const { data: swapRows } = await supabase
+        .from('therapist_sunday_swap_requests')
+        .select('therapist_id, therapist_name, substitute_id, substitute_name')
+        .eq('swap_date', dateStr)
+        .eq('status', 'approved');
+      (swapRows || []).forEach(r => {
+        swapPartnerMap[r.therapist_id] = r.substitute_name;
+        swapPartnerMap[r.substitute_id] = r.therapist_name;
+      });
+
       (timeOffRows || []).forEach(row => {
         // Izin parsial (jam tertentu): hanya slot di jam itu yang ditutup (sudah
         // berstatus 'cuti' dari RPC dan tidak ditampilkan sebagai slot kosong).
@@ -312,6 +325,7 @@ const formattedDateFull = date
       setTherapistLeaveStatus(statusMap);
       setTherapistLeaveReason(reasonMap);
       setTherapistReplacement(replacementMap);
+      setTherapistSwapPartner(swapPartnerMap);
       setTherapistPartialLeave(partialMap);
 
     } catch (err) {
@@ -766,6 +780,7 @@ const handleViewHistory = async (patientId, guestName, guestPhone) => {
                 leaveStatus={leaveStatus}
                 leaveReason={therapistLeaveReason[therapist.id]}
                 replacement={!!therapistReplacement[therapist.id]}
+                swapPartner={therapistSwapPartner[therapist.id] || null}
                 partialLeaves={therapistPartialLeave[therapist.id]}
                 soapStatus={soapStatusByTherapist[therapist.id]}
                 onSlotClick={(slot, t) => setActiveModal({ type: 'slot', data: { slot, therapist: t } })}
