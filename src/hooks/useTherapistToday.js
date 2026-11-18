@@ -23,7 +23,7 @@ const firstDiagnosis = (d, labels) => {
   return UUID_RE.test(first) ? '' : String(first);
 };
 
-const normalize = (r, labels) => {
+const normalize = (r, labels, soapRecapIds) => {
   const slot = slotOf(r.appointment);
   return {
     id: r.id,
@@ -32,7 +32,9 @@ const normalize = (r, labels) => {
     diagnosis: firstDiagnosis(r.diagnosis, labels),
     startedAt: r.start_time || null,
     endedAt: r.end_time || null,
-    soapDone: !!r.soap_completed_at,
+    // Penanda server (soap_completed_at) bisa tertunda/kosong; rekam medis S-O-A-P lengkap yang sudah
+    // tersimpan untuk sesi ini juga dihitung selesai supaya tampilan terapis tidak salah.
+    soapDone: !!r.soap_completed_at || soapRecapIds.has(r.id),
     slot,
     apptOpen: isApptOpen(r.appointment?.status),
   };
@@ -78,7 +80,20 @@ export const useTherapistToday = (therapistId) => {
         const { data: opts } = await supabase.from('operational_options').select('id, label').in('id', ids);
         (opts || []).forEach((o) => { labels[o.id] = o.label; });
       }
-      const list = (data || []).map((r) => normalize(r, labels));
+      const recapIds = (data || []).map((r) => r.id);
+      const soapRecapIds = new Set();
+      if (recapIds.length) {
+        const { data: mrs } = await supabase
+          .from('medical_records')
+          .select('daily_recap_id, subjective, objective, assessment, plan')
+          .in('daily_recap_id', recapIds);
+        (mrs || []).forEach((m) => {
+          if ([m.subjective, m.objective, m.assessment, m.plan].every((v) => String(v || '').trim())) {
+            soapRecapIds.add(m.daily_recap_id);
+          }
+        });
+      }
+      const list = (data || []).map((r) => normalize(r, labels, soapRecapIds));
       list.sort((a, b) => (a.slot?.start ?? Infinity) - (b.slot?.start ?? Infinity));
       setSessions(list);
     }
