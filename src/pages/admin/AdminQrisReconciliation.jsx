@@ -190,7 +190,7 @@ const AdminQrisReconciliation = () => {
     const [{ data: recaps, error }, { data: incomes, error: incErr }] = await Promise.all([
       supabase
         .from('daily_recaps')
-        .select('id, revenue_date, amount, goods_amount, tips_amount, payment_method, patient_id, actual_patient_id, full_name, guest_name, start_time, end_time, created_at, cashier_id, created_by, status, payment_splits:daily_recap_payment_splits(payment_method, amount)')
+        .select('id, revenue_date, amount, goods_amount, goods_payment_method, tips_amount, payment_method, patient_id, actual_patient_id, full_name, guest_name, start_time, end_time, created_at, cashier_id, created_by, status, payment_splits:daily_recap_payment_splits(payment_method, amount)')
         .eq('clinic_id', clinicId).gte('revenue_date', lo).lte('revenue_date', hi).or('status.is.null,status.neq.cancelled'),
       supabase
         .from('admin_income')
@@ -289,7 +289,7 @@ const AdminQrisReconciliation = () => {
         .eq('clinic_id', clinicId).gte('trx_date', shiftDate(first, -30)).lte('trx_date', shiftDate(last, 3)),
       supabase.from('qris_report_uploads').select('report_date, report_generated_at, created_at').eq('clinic_id', clinicId).gte('report_date', first).lte('report_date', last),
       supabase.from('daily_recaps')
-        .select('id, revenue_date, amount, goods_amount, tips_amount, payment_method, start_time, end_time, created_at, payment_splits:daily_recap_payment_splits(payment_method, amount)')
+        .select('id, revenue_date, amount, goods_amount, goods_payment_method, tips_amount, payment_method, start_time, end_time, created_at, payment_splits:daily_recap_payment_splits(payment_method, amount)')
         .eq('clinic_id', clinicId).gte('revenue_date', first).lte('revenue_date', last).or('status.is.null,status.neq.cancelled'),
       supabase.from('admin_income').select('id, date, amount, payment_method, created_at').eq('clinic_id', clinicId).gte('date', first).lte('date', last),
     ]);

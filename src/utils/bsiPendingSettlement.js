@@ -109,9 +109,16 @@ export const buildUnits = ({ recaps = [], splits = [], incomes = [] }) => {
     }
     // Total yang benar-benar dibayar pasien = terapi + penjualan barang + tips (semuanya mengikuti
     // metode bayar recap), bukan hanya kolom amount.
+    const goods = Number(r.goods_amount) || 0;
+    const goodsMethod = methodOf(r.goods_payment_method) || methodOf(r.payment_method);
     const method = methodOf(r.payment_method);
-    const amount = (Number(r.amount) || 0) + (Number(r.goods_amount) || 0) + (Number(r.tips_amount) || 0);
-    if (method && amount > 0) units.push({ id: r.id, recapId: r.id, kind: 'pasien', date, time, tBank, method, amount, name });
+    const amount = (Number(r.amount) || 0) + (Number(r.tips_amount) || 0);
+    if (goodsMethod && goodsMethod === method) {
+      if (amount + goods > 0) units.push({ id: r.id, recapId: r.id, kind: 'pasien', date, time, tBank, method, amount: amount + goods, name });
+    } else {
+      if (method && amount > 0) units.push({ id: r.id, recapId: r.id, kind: 'pasien', date, time, tBank, method, amount, name });
+      if (goodsMethod && goods > 0) units.push({ id: `${r.id}:goods`, recapId: r.id, kind: 'pasien', date, time, tBank, method: goodsMethod, amount: goods, name });
+    }
   });
 
   incomes.forEach((i) => {
