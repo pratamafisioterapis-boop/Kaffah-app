@@ -53,6 +53,7 @@ const OwnerBookingCalendar = () => {
   const [therapistLeaveStatus, setTherapistLeaveStatus] = useState({});
   const [therapistLeaveReason, setTherapistLeaveReason] = useState({});
   const [therapistReplacement, setTherapistReplacement] = useState({});
+  const [therapistSwapPartner, setTherapistSwapPartner] = useState({});
   const [therapistPartialLeave, setTherapistPartialLeave] = useState({});
   const [soapStatusByTherapist, setSoapStatusByTherapist] = useState({});
 
@@ -223,6 +224,18 @@ const OwnerBookingCalendar = () => {
         .eq('shift_date', dateStr);
       const hasExtraShift = new Set((extraShiftRows || []).map(r => r.therapist_id));
 
+      // Tukar jadwal Minggu yang disetujui: tiap terapis ditandai dengan nama rekan tukarnya.
+      const swapPartnerMap = {};
+      const { data: swapRows } = await supabase
+        .from('therapist_sunday_swap_requests')
+        .select('therapist_id, therapist_name, substitute_id, substitute_name')
+        .eq('swap_date', dateStr)
+        .eq('status', 'approved');
+      (swapRows || []).forEach(r => {
+        swapPartnerMap[r.therapist_id] = r.substitute_name;
+        swapPartnerMap[r.substitute_id] = r.therapist_name;
+      });
+
       (timeOffRows || []).forEach(row => {
         // Izin parsial (jam tertentu): hanya slot di jam itu yang ditutup (status
         // 'cuti' dari RPC); terapis tetap aktif di jam lain, jangan tutup seharian.
@@ -264,6 +277,7 @@ const OwnerBookingCalendar = () => {
       setTherapistLeaveStatus(statusMap);
       setTherapistLeaveReason(reasonMap);
       setTherapistReplacement(replacementMap);
+      setTherapistSwapPartner(swapPartnerMap);
       setTherapistPartialLeave(partialMap);
 
     } catch (error) {
@@ -580,6 +594,7 @@ const OwnerBookingCalendar = () => {
                 leaveStatus={leaveStatus}
                 leaveReason={therapistLeaveReason[therapist.id]}
                 replacement={!!therapistReplacement[therapist.id]}
+                swapPartner={therapistSwapPartner[therapist.id] || null}
                 partialLeaves={therapistPartialLeave[therapist.id]}
                 soapStatus={soapStatusByTherapist[therapist.id]}
                 onSlotClick={(slot, t) => setActiveModal({ type: 'slot', data: { slot, therapist: t } })}
