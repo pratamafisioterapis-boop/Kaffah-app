@@ -25,7 +25,7 @@ const SoapPendingBanner = ({ therapistId = null, role = 'therapist' }) => {
     if (!active) { setItems([]); return; }
     let q = supabase
       .from('daily_recaps')
-      .select('id, patient_id, full_name, guest_name, therapist_name, therapist_id, appointment:appointments!appointment_id(appointment_date, duration_minutes, status)')
+      .select('id, patient_id, actual_patient_id, full_name, guest_name, therapist_name, therapist_id, actual_patients:patients!actual_patient_id(full_name), appointment:appointments!appointment_id(appointment_date, duration_minutes, status)')
       .eq('recap_date', today)
       .is('soap_completed_at', null);
     if (therapistId) q = q.eq('therapist_id', therapistId);
@@ -55,14 +55,17 @@ const SoapPendingBanner = ({ therapistId = null, role = 'therapist' }) => {
       </div>
       <div className="space-y-1">
         {items.map((r) => {
-          const name = r.full_name || r.guest_name || 'Pasien';
-          const canOpen = role === 'therapist' && r.patient_id;
+          // Sesi yang memakai paket orang lain: patient_id = pemilik paket, actual_patient_id = pasien
+          // yang benar-benar diterapi. Tampilkan dan buka SOAP atas nama pasien sebenarnya.
+          const name = r.actual_patients?.full_name || r.full_name || r.guest_name || 'Pasien';
+          const soapPatientId = r.actual_patient_id || r.patient_id;
+          const canOpen = role === 'therapist' && soapPatientId;
           return (
             <button
               key={r.id}
               type="button"
               disabled={!canOpen}
-              onClick={() => canOpen && navigate(`/therapist/records/new/${r.patient_id}?date=${today}&dailyRecapId=${r.id}`)}
+              onClick={() => canOpen && navigate(`/therapist/records/new/${soapPatientId}?date=${today}&dailyRecapId=${r.id}`)}
               className={`w-full flex items-center justify-between rounded-xl bg-white px-3 py-2 text-left text-sm border border-[#F2A93B]/40 ${canOpen ? 'hover:bg-[#FDF0D8]' : 'cursor-default'}`}
             >
               <span className="font-medium text-slate-800">{name}</span>
