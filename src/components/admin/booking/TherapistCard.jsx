@@ -174,7 +174,7 @@ const TherapistCard = ({
 
                 {replacement && !isLeave && (
           <span className="px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide border bg-blue-100 text-blue-700 border-blue-200">
-            {swapPartner ? `Tukar jadwal Minggu dengan ${swapPartner}` : 'Pengganti izin'}
+            {swapPartner ? `Tukar jadwal Minggu dengan ${String(swapPartner).trim().split(/\s+/)[0]}` : 'Pengganti izin'}
           </span>
         )}
 
