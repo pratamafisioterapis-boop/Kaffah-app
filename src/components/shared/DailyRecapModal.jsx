@@ -71,6 +71,8 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
     // Barang gudang yang dijual di sesi ini (klinik non-Kwitansi). Total terpisah dari nominal terapi.
     const [goodsItems, setGoodsItems] = useState([]);
     const [savedGoodsItems, setSavedGoodsItems] = useState([]);
+    // Metode bayar barang khusus sesi paket (metode recap 'Package' bukan pembayaran riil).
+    const [goodsPaymentMethod, setGoodsPaymentMethod] = useState('');
 
     useEffect(() => {
         if (!isOpen || !userDetails?.clinic_id) { setIsKwitansi(false); return; }
@@ -82,9 +84,9 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
 
     useEffect(() => {
         if (!isOpen) return;
-        if (mode !== 'edit' || !initialData?.id) { setInvoiceItems([]); setSavedInvoiceItems([]); setGoodsItems([]); setSavedGoodsItems([]); return; }
+        if (mode !== 'edit' || !initialData?.id) { setInvoiceItems([]); setSavedInvoiceItems([]); setGoodsItems([]); setSavedGoodsItems([]); setGoodsPaymentMethod(''); return; }
         let cancelled = false;
-        supabase.from('daily_recaps').select('invoice_items, goods_items').eq('id', initialData.id).maybeSingle()
+        supabase.from('daily_recaps').select('invoice_items, goods_items, goods_payment_method').eq('id', initialData.id).maybeSingle()
             .then(({ data }) => {
                 if (cancelled) return;
                 const loaded = Array.isArray(data?.invoice_items) ? data.invoice_items : [];
@@ -93,6 +95,7 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
                 const goods = Array.isArray(data?.goods_items) ? data.goods_items : [];
                 setGoodsItems(goods);
                 setSavedGoodsItems(goods);
+                setGoodsPaymentMethod(data?.goods_payment_method || '');
             });
         return () => { cancelled = true; };
     }, [isOpen, mode, initialData?.id]);
@@ -1338,6 +1341,9 @@ setFormData({
         return isUuidValue ? (paymentMethodOptions.find(o => o.value === value)?.label || '') : (value || '');
     };
     const methodNeedsProof = (value) => /debit|transfer|\btf\b/i.test(methodLabel(value));
+    // Sesi paket (terkunci Rp 0 / metode 'Package'): barang dibayar dengan metode sendiri.
+    const goodsUsesOwnMethod = !isKwitansi && (isPackageSessionLocked || formData.payment_method === 'Package');
+    const goodsMethodOptions = paymentMethodOptions.filter(o => methodLabel(o.value).trim().toLowerCase() !== 'package');
     const PROOF_MAX_BYTES = 5 * 1024 * 1024;
     const pickProof = (file, apply) => {
         if (!file) return;
@@ -1476,9 +1482,12 @@ setFormData({
             newErrors.tips_amount = "Pilih metode pembayaran dulu karena tips mengikuti metode pembayaran terapi";
         }
         // Barang dijual dibayar dengan metode recap (seperti tips), jadi metode wajib ada.
-        if (itemsNetTotal(goodsItems) > 0 && !useSplitPayment
-            && (!formData.payment_method || formData.payment_method === 'Package')) {
-            newErrors.goods = "Pilih metode pembayaran dulu karena barang dibayar dengan metode pembayaran recap";
+        if (itemsNetTotal(goodsItems) > 0) {
+            if (goodsUsesOwnMethod) {
+                if (!goodsPaymentMethod) newErrors.goods = "Pilih metode pembayaran barang";
+            } else if (!useSplitPayment && !formData.payment_method) {
+                newErrors.goods = "Pilih metode pembayaran dulu karena barang dibayar dengan metode pembayaran recap";
+            }
         }
         // Ada nominal tapi metode kosong = pembayaran tidak tercatat (termasuk Recovery di luar paket).
         if (!useSplitPayment && formData.special_type !== 'free' && !formData.payment_method && parseFloat(formData.amount) > 0) {
@@ -1580,7 +1589,9 @@ setFormData({
                 // pemasukan akuntansi & komponen tips di payroll terapis.
                 tips_amount: Math.max(parseFloat(formData.tips_amount) || 0, 0),
                 // Hanya dikirim bila ada/pernah ada barang, supaya simpan biasa tidak tergantung kolom baru.
-                ...((!isKwitansi && (goodsItems.length > 0 || savedGoodsItems.length > 0)) ? { goods_items: goodsItems } : {}),
+                ...((!isKwitansi && (goodsItems.length > 0 || savedGoodsItems.length > 0))
+                    ? { goods_items: goodsItems, goods_payment_method: goodsUsesOwnMethod && itemsNetTotal(goodsItems) > 0 ? goodsPaymentMethod : null }
+                    : {}),
                 // Tanpa tipe potongan = tanpa diskon: nilai & label ikut dikosongkan
                 // supaya diskon lama benar-benar terhapus di DB dan invoice.
                 discount_value: formData.discount_type === 'none' || discountBlockedByPackage ? 0 : (parseFloat(formData.discount_value) || 0),
@@ -1885,10 +1896,24 @@ setFormData({
     );
 
     const goodsTotal = Math.round(itemsNetTotal(goodsItems));
-    const fGoods = (!isKwitansi && !isPackageSessionLocked) ? (
+    const fGoods = !isKwitansi ? (
         <div className="space-y-2 bg-slate-50 p-3 rounded-app-sm border">
             <Label className="text-sm font-bold text-slate-800">Barang Dijual</Label>
             <RecapInvoiceItems goodsOnly clinicId={userDetails?.clinic_id} items={goodsItems} onChange={setGoodsItems} savedItems={savedGoodsItems} />
+            {goodsUsesOwnMethod && goodsTotal > 0 && (
+                <div className="space-y-1">
+                    <Label className="text-xs">Metode Pembayaran Barang <span className="text-red-500">*</span></Label>
+                    <SearchableSelect
+                        options={goodsMethodOptions}
+                        value={goodsPaymentMethod}
+                        onChange={v => setGoodsPaymentMethod(v)}
+                        onSearch={setPaymentMethodSearch}
+                        placeholder="Cari metode..."
+                        isLoading={loadingPaymentMethods}
+                    />
+                    <p className="text-[11px] text-slate-500">Sesi paket tidak ada pembayaran terapi, jadi barang dibayar dengan metode ini.</p>
+                </div>
+            )}
             {errors.goods && <p className="text-xs text-red-500">{errors.goods}</p>}
             {goodsTotal > 0 && (
                 <div className="text-xs text-slate-600 space-y-0.5 pt-1">

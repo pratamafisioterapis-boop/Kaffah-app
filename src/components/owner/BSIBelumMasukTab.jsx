@@ -87,7 +87,7 @@ const BSIBelumMasukTab = ({ clinicId }) => {
         fetchAll(() =>
           supabase
             .from('daily_recaps')
-            .select('id, recap_date, revenue_date, payment_method, amount, goods_amount, tips_amount, full_name, guest_name, end_time, status')
+            .select('id, recap_date, revenue_date, payment_method, amount, goods_amount, goods_payment_method, tips_amount, full_name, guest_name, end_time, status')
             .eq('clinic_id', clinicId)
             .gte('revenue_date', from)
             .lte('revenue_date', to)

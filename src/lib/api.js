@@ -1945,7 +1945,10 @@ export const createDailyRecap = async (payload) => {
     if (Array.isArray(payload.goods_items) && payload.goods_items.length > 0) {
       const { error: goodsError } = await supabase
         .from('daily_recaps')
-        .update({ goods_items: payload.goods_items })
+        .update({
+          goods_items: payload.goods_items,
+          ...(payload.goods_payment_method ? { goods_payment_method: payload.goods_payment_method } : {})
+        })
         .eq('id', data.recap_id);
       if (goodsError) return { error: goodsError };
     }
@@ -2032,6 +2035,7 @@ export const getDailyRecaps = async ({
   amount_original,
   tips_amount,
   goods_amount,
+  goods_payment_method,
   payment_method,
   payment_proof_path,
   discount_type,
@@ -2974,6 +2978,7 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate, include
         amount_package,
         tips_amount,
         goods_amount,
+        goods_payment_method,
         package_type,
         package_tracking_id,
         patient_type,
@@ -3109,6 +3114,10 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate, include
         session_number: null,
         amount: goods,
         cash_amount: goods,
+        // Sesi paket: barang dibayar dengan metode sendiri, bukan 'Package'.
+        payment_method: item.goods_payment_method
+          ? (optionsMap[item.goods_payment_method] || item.goods_payment_method)
+          : row.payment_method,
         is_goods: true
       }] : [];
       if (tips <= 0) return [row, ...goodsRows];
