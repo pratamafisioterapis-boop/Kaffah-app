@@ -111,6 +111,26 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     record_type: 'DAILY_EVALUATION'
   });
 
+  // SOAP untuk sesi ini sudah ada (mis. diagnosa belum masuk ke rekap): buka sebagai edit,
+  // bukan buat baru, supaya simpan tidak ditolak "SOAP sudah ada untuk recap ini".
+  useEffect(() => {
+    if (recordId || !dailyRecapId || !isValidUUID(dailyRecapId)) return undefined;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('medical_records')
+        .select('id')
+        .eq('daily_recap_id', dailyRecapId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (cancelled || !data?.[0]?.id) return;
+      const next = new URLSearchParams(searchParams);
+      next.set('recordId', data[0].id);
+      navigate({ search: `?${next.toString()}` }, { replace: true });
+    })();
+    return () => { cancelled = true; };
+  }, [recordId, dailyRecapId]);
+
   useEffect(() => {
     if (therapist?.id) {
        loadPatients();
