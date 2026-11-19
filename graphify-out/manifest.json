@@ -5417,6 +5417,2016 @@
     "ast_hash": "ef51bd641afa4dad57ed55cfc1d8c21e",
     "semantic_hash": ""
   },
+  ".agents/skills/impeccable/scripts/data/font-index.json": {
+    "mtime": 1794987257.1556568,
+    "seen": 1795072585.9792366,
+    "ast_hash": "4a4426c85ec12df1d9a487a39d656ff4",
+    "semantic_hash": ""
+  },
+  "supabase/manual/10_portal_pasien_pengetatan.sql": {
+    "mtime": 1794987257.2445686,
+    "seen": 1795072585.9801254,
+    "ast_hash": "d86559192ed9689db3b3a27e3a072635",
+    "semantic_hash": ""
+  },
+  "supabase/manual/10_portal_tautan_bisa_dikirim_ulang.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.9801269,
+    "ast_hash": "6ac5bc676994927333ccc218853fe6e2",
+    "semantic_hash": ""
+  },
+  "supabase/manual/10_prepay_guards_and_refund.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.980128,
+    "ast_hash": "9a21a9af491b79baec849571d8f7cc82",
+    "semantic_hash": ""
+  },
+  "supabase/manual/11_inbox_whatsapp_watzap.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.9801288,
+    "ast_hash": "36a48b7ea4dcda4517f5b24af4c86f55",
+    "semantic_hash": ""
+  },
+  "supabase/manual/11_portal_goal_treatment.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.9801295,
+    "ast_hash": "39ea8c7010eeae0f11d7af1cfb2dbac9",
+    "semantic_hash": ""
+  },
+  "supabase/manual/12_perf_cleanup_index_ganda_dan_log_cron.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.9801307,
+    "ast_hash": "38befde3ebb4b710a17768e7e2c047b9",
+    "semantic_hash": ""
+  },
+  "supabase/manual/13_perf_index_audit_logs.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.9801314,
+    "ast_hash": "4c2c410c23fb2fddcc76ff2a6a69bd6c",
+    "semantic_hash": ""
+  },
+  "supabase/manual/14_archive_old_audit_logs.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.980132,
+    "ast_hash": "2362e21e4fcd2c7a21b84f9c369ce00d",
+    "semantic_hash": ""
+  },
+  "supabase/manual/14_perf_index_diagnosis_soap_bell.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.980133,
+    "ast_hash": "988f6b3748ea235ce2abfa313322f536",
+    "semantic_hash": ""
+  },
+  "supabase/manual/1_copot_validasi_sementara.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.9801338,
+    "ast_hash": "d0f00226b8732eba62b147198924ea3a",
+    "semantic_hash": ""
+  },
+  "supabase/manual/2_fungsi_kode_referral.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.980135,
+    "ast_hash": "6059d91d1e535713ea1b3019efb5ea92",
+    "semantic_hash": ""
+  },
+  "supabase/manual/3_sunday_weekly_off_rules_sisa.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.9801357,
+    "ast_hash": "06f19a1aed69cf1b2dfc15dec1d1d66e",
+    "semantic_hash": ""
+  },
+  "supabase/manual/4_revoke_leave_restore_weekly_off.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.9801364,
+    "ast_hash": "7da47f6309f6bcd115b12b257d47dc09",
+    "semantic_hash": ""
+  },
+  "supabase/manual/5_storage_lockdown.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.980137,
+    "ast_hash": "ad4dc6c6d1e332ee9dc0b560c7b77678",
+    "semantic_hash": ""
+  },
+  "supabase/manual/6_views_security_invoker.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.980138,
+    "ast_hash": "39886e63444ac032ffddc723fe5145ea",
+    "semantic_hash": ""
+  },
+  "supabase/manual/7_public_rpc_hardening.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.9801388,
+    "ast_hash": "84ccf056fa32c2c034982360dc7804f4",
+    "semantic_hash": ""
+  },
+  "supabase/manual/8_create_appointment_safe_hardening.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.98014,
+    "ast_hash": "d26342dccd61e49903ee8dd5d40aa92e",
+    "semantic_hash": ""
+  },
+  "supabase/manual/9_portal_pasien_clinara.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.9801407,
+    "ast_hash": "3b88aebee22f8c6058d7004b6d86952a",
+    "semantic_hash": ""
+  },
+  "supabase/manual/rollback_invoice_wa_server_tracking.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.9801416,
+    "ast_hash": "07d8cbe69030b75a0b4c7cabc4ecbdd9",
+    "semantic_hash": ""
+  },
+  "supabase/manual/rollback_rls_audit_2026-10.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.9801424,
+    "ast_hash": "03f8a846c68e3f42db3a7c7b93be3b2b",
+    "semantic_hash": ""
+  },
+  "supabase/manual/rollback_rls_merge_hot_tables.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.9801433,
+    "ast_hash": "65ca886c1f653d76f4e61611ae783d39",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260704221204_make_medical_record_number_unique_per_clinic.sql": {
+    "mtime": 1794987257.2447448,
+    "seen": 1795072585.9801438,
+    "ast_hash": "4210099dc6ff813c9ef73c3e9596e6e8",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260704222101_drop_duplicate_global_rm_number_index.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801447,
+    "ast_hash": "a9932cadfcf20200128fe2f2f983b295",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260728232454_kaffah_expense_category_restructure.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801457,
+    "ast_hash": "cea20dfd32643bc796914c96537cf825",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260728234500_inventory_item_category_columns.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801462,
+    "ast_hash": "d965019f94d988928a566910189b8301",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260728234550_admin_expenses_sub_category_id.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980147,
+    "ast_hash": "fa89237b460c97300e9680862c192de0",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260728234600_take_inventory_stock_category_lookup.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801476,
+    "ast_hash": "2428b3ff8f4e4ea43b6112c35637fab0",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260729000000_kaffah_finance_framework_subcategories.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801486,
+    "ast_hash": "358420c28a1001f4d9f51cb802a8f402",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260729000000_soap_completion_owner_notifications.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801493,
+    "ast_hash": "4c5ff35c2ef92edd0a7657ecef91ef35",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260729000100_merge_accounting_subcategory_rpc.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.98015,
+    "ast_hash": "69dfcce02095f81fbd41b761e8713929",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260729010000_move_accounting_subcategory_rpc.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980151,
+    "ast_hash": "55b80f4068a9097f8972f6ad66aa4836",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260729020000_payroll_posted_to_accounting.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980152,
+    "ast_hash": "410cfccc8e1985f1aba1917954588f7a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260729030000_clinic_fixed_costs_subcategory_and_auto_post.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801526,
+    "ast_hash": "a8ea07cb9f891a3db080cb8b92bc8bb5",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260729040000_backfill_owner_expenditures_subcategory.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801533,
+    "ast_hash": "f2f9701f70ea9877dbef4993a9b79c94",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260729074500_fix_stok_gudang_uncategorized_admin_expenses.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980154,
+    "ast_hash": "5ff9adf6e44f2f1be2a6b791ee0b5547",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260729075500_align_stok_gudang_expenses_with_item_category.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980155,
+    "ast_hash": "7fbfb64dfa9ff866e2e76fb5d4a8d692",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260730120000_auto_assign_package_on_recap_update.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980156,
+    "ast_hash": "0fe8bf6eed3097b9bd457bd8477da92b",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260730140000_owner_expenditures_payroll_link.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801567,
+    "ast_hash": "98085830e8c54bfb51df2c489806af75",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260730160000_fix_manual_fixed_cost_flag.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801574,
+    "ast_hash": "9eb3b0234da85295d00b404c619be0c9",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260730180000_enforce_package_payment_zero_amount.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980158,
+    "ast_hash": "1183e92fdfdce733379ff4e93ca895c6",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260731000000_remove_rogue_fixed_cost_cron.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980159,
+    "ast_hash": "f9d4836c1ac2c8afca72b566077fa49f",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260731010000_align_grand_physio_accounting_categories_with_kaffah.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801598,
+    "ast_hash": "3f7855ac27172d679677e04ef13849ab",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260801100000_recalc_package_sessions_on_recap_insert.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801605,
+    "ast_hash": "b6f722d9bfee0c947fd87008c43d3aae",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260801110000_block_amount_edit_on_locked_package_session.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801614,
+    "ast_hash": "a6a181f744c5f53b44c7c5302ac932c0",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260801120000_add_leave_type_to_therapist_time_off.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801624,
+    "ast_hash": "cd97f2da4361e4f2f06af1d0d3521ff8",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260804120000_pemilih_caleg_master.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980163,
+    "ast_hash": "0a744d0c5a6fe72810c04d1613c45039",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260804130000_pemilih_dpc_accounts.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801638,
+    "ast_hash": "4b070f22b28a0ef72173bbfb691a7e5b",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260804140000_pemilih_suara_tps_count_per_year.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801645,
+    "ast_hash": "1eca755cc104592e60a02f9a13c44444",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260804140100_tighten_pemilih_suara_tps_discover_grants.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801655,
+    "ast_hash": "8a228ebe89bb066830cb914f8f84970d",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260804150000_fix_admin_income_bank_account_fk.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801662,
+    "ast_hash": "ff0871a5e31e0ff9ff7fc918f33493f9",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260805120000_reschedule_patient_whatsapp.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980167,
+    "ast_hash": "e558263de4d108d9cc4a59950f13e1cb",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260806120000_inventory_stock_out_edit_delete.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801676,
+    "ast_hash": "055fe3cc80ed1adb572c19d6f0b745b2",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260808120000_owner_initial_capital_quantity_asset.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801688,
+    "ast_hash": "ed6a3e942ed4104d8057c26cd2378fe7",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260808150000_notify_pemilih_admin_on_relawan_ktp_input.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801695,
+    "ast_hash": "4920b48538b29c26763ada3fde791e9b",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260810070000_fix_daily_recap_therapist_name_on_reschedule.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801702,
+    "ast_hash": "6b3d6edcb44429f60e3ba4503c721cd1",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260810080000_fix_kalfari_recap_therapist_data_corruption.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980171,
+    "ast_hash": "70e02b51b8c4c899fefb97a75b87eac5",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260810160000_match_patient_for_new_registration.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980172,
+    "ast_hash": "e27d062899d80e2be682130665289f0d",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260810170000_fix_reschedule_appointment_delete_bug.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801729,
+    "ast_hash": "dd2fc47107e8181f2db1a8c1cd9b341d",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260812000000_fix_soap_lock_notify_rls_violation.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801733,
+    "ast_hash": "3b7622f9f53db81112a3047822d00b6a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260812010000_soap_lock_age_based_rule.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980174,
+    "ast_hash": "6f085e51c21983ae123b1b24b51ad349",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260812020000_fix_terisi_status_priority_over_soap_lock.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801748,
+    "ast_hash": "6fd49b892fdba58c2488fcb81f4592c1",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260812103000_disable_auto_send_follow_up_queue_cron.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801757,
+    "ast_hash": "fabb65f67771735f7bdb117ff3e9968c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260812110000_referral_reward_whatsapp.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801762,
+    "ast_hash": "6dbe861b686c30ed691c625a291f0c23",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260812130000_referral_reward_time_greeting.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980177,
+    "ast_hash": "95c2b8844edb6d464b20cea7575fabac",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260812140000_discount_type_value.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801776,
+    "ast_hash": "a94c7e8f8cbe0d7efb2cf543a5daf804",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260812220000_referral_reward_validity_period.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801784,
+    "ast_hash": "24d4cb7522f8ae5a9325e75abcf59289",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260813100000_referral_reward_on_patient_save.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801793,
+    "ast_hash": "7d6fc7d1ea7ed070acf0a6ccb7e262e8",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260813120000_fix_discount_label_uuid_backfill.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.98018,
+    "ast_hash": "6cfbedd722d8764057e19ec3253783d2",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260821020000_therapist_warning_letters.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801807,
+    "ast_hash": "0e079b94a3826d7dfc953ac3a47166e4",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260821030000_fix_reschedule_same_day_duplicate_followup.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801817,
+    "ast_hash": "4fb8b16ea63810a5b91d2bb656037720",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260821090000_employee_attendance.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980183,
+    "ast_hash": "7900205c82126ed51a33a91187299294",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260824080000_therapist_schedule_overrides.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801836,
+    "ast_hash": "4e129427d42eb811e26dcf3ac3aaeb48",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260824090000_attendance_employee_aliases.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801843,
+    "ast_hash": "e9a94de75a3bab430c94b20e92855b58",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260824100000_attendance_records_expected_checkin.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980185,
+    "ast_hash": "97f4e2050f6d05610d61eed677704091",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260825020000_journal_knowledge_base.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801857,
+    "ast_hash": "0b67105248f02bccc3feae0792f1b03a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260825021000_journal_documents_progress_percent.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980187,
+    "ast_hash": "323d638eab309cdde35ef8d0f3cced4b",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260825022000_journal_documents_bucket_size_limit.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801877,
+    "ast_hash": "8fbf06131d2f602c097c57562f003c07",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260825023000_journal_knowledge_base_fulltext_search.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801884,
+    "ast_hash": "ba5aac406078dae4949b5536ba814516",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260825024000_journal_document_scope.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980189,
+    "ast_hash": "6562338721a15f76bfac0daeef7844e8",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260825030000_fix_match_journal_chunks_search_path.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.98019,
+    "ast_hash": "510f96f6105e2aa19c1c72bd71f5f0aa",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260825040000_medical_records_complaint_onset_date.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801908,
+    "ast_hash": "9bffe6087703bf5d1d8e0d66128ed67e",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260825050000_atomic_medical_record_number_generation.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801917,
+    "ast_hash": "378a48d66685993334d682ce061eec96",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260825110000_backfill_journal_document_language.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801924,
+    "ast_hash": "a05f481229c5853eca95583fe3c8326c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260828120000_payroll_tips.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801934,
+    "ast_hash": "5969e338d91437fa9e594be11653c987",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260828130000_warning_letter_multi_violation.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801943,
+    "ast_hash": "af849ea433e7f19b33d6bebfaaff2af3",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260828140000_warning_letter_optional_violation_date.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980195,
+    "ast_hash": "cd472b94432b0f8de418be0131e75288",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260907120000_pemilih_multi_partai_dpc.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801958,
+    "ast_hash": "83c0740006e60b8bc80d863b9bf50369",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260907130000_pemilih_partai_table.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980197,
+    "ast_hash": "cb84bd1a1a8216c4a57785fb0fc90602",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260907140000_daily_recap_payment_splits.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801977,
+    "ast_hash": "cd5909c2dfd971a37f041f123b2339d2",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260909100000_clinic_custom_domain.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9801984,
+    "ast_hash": "d33464051a1eecdc831edfb12aa0b1b8",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260910090000_backfill_clinic_subdomains.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980199,
+    "ast_hash": "dea61fc315416d1e9f538dee87860f77",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260910120000_clinic_landing_page.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802,
+    "ast_hash": "fb9eebe01c592d54d565eaa5b514b14c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260910130000_clinic_landing_prestige_template.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802008,
+    "ast_hash": "b1712b9098e540746629382955af0080",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260910155300_activity_center_mark_read.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802017,
+    "ast_hash": "80f15813846e42a4c7a086defcb0326b",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260912100000_patient_feedback_links.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802024,
+    "ast_hash": "f812720cd1b7d56c824f29a4bc9d670d",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260912110000_feedback_google_review_click_tracking.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802032,
+    "ast_hash": "8e5031579d35ae89b21e4b84bacf938a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260913000000_owner_admin_notification_preferences.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980204,
+    "ast_hash": "f533ca5f251251da3b746ef15fc9fa17",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260913010000_restrict_service_role_only_policies.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802048,
+    "ast_hash": "9f789abe4fc3c9a865bd6b59f4771546",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260915103000_payment_method_bank_account_link.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802055,
+    "ast_hash": "1f7114773a208a7c528f08ae3ec2395f",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260915120000_wa_schedule_logs_clinic_isolation.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802063,
+    "ast_hash": "e34ea6b0294757b9c0bdeda12d2e5795",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260916060000_therapist_schedule_slot_capacity.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802072,
+    "ast_hash": "ed4661d2ccd1c3f622c749c23bc4a543",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260916090000_impersonation_logs.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802077,
+    "ast_hash": "674a387ce6552f10594b1d2fdcf66829",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260916101500_scope_schedule_change_slot_regen_to_therapist.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802084,
+    "ast_hash": "f250a86961020db19e086adb0de0725c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260916110000_fix_recap_delete_wrongly_cascades_to_active_appointments.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980209,
+    "ast_hash": "0e0f89e51ca24416fbdef5ef24a65c1f",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260918010000_schedule_overrides_affect_slots.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802098,
+    "ast_hash": "ed7714499cc96bebf5ecd4c4c5310339",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260918020000_schedule_override_slot_slicing.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802105,
+    "ast_hash": "fa42173946ea9b155adaa816ebcb1356",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260918030000_schedule_override_regen_clears_stale_overlapping_slots.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802113,
+    "ast_hash": "c74cb10eef48a8be2bdd0df9c7939f9b",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260919010000_stop_cancelled_appointments_self_destructing.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802122,
+    "ast_hash": "ccd7cdf51ee882fc01fa4778aae13cf5",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260920120000_inventory_stock_in_edit_delete.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980213,
+    "ast_hash": "91c4e32bc9c61c3048a563d8e979dd9c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260923120000_konversi_dokter_admins.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802136,
+    "ast_hash": "98fa91860d5b3a525fc45ca6aac00bda",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260924010000_remove_konversi_dokter_admins_default_seed.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802146,
+    "ast_hash": "dcbd28dd62b6bbe3b0f2dbe6d16e6301",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260924020000_decouple_konversi_dokter_from_clinics.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980215,
+    "ast_hash": "4702c838eadfe9bf369cf5dd6870aa3a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260924030000_allow_konversi_dokter_role.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802158,
+    "ast_hash": "e3eb090791e29109b770e7b1194fde54",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260924040000_insentif_bulanan_system.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802165,
+    "ast_hash": "82bb78655473b4e1af405f030da3ffa1",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260924050000_tabungan_pajak_penarikan_roster_link.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802175,
+    "ast_hash": "dde506cec9fa1b44d8d013106d9b822a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260924060000_seed_konversi_dokter_roster.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802184,
+    "ast_hash": "1747bb258a2013febab5493d60f736b7",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260928070000_patient_type_ids_refactor.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802194,
+    "ast_hash": "9a83463450bff414958b1ecfce3e75dd",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260928090000_payroll_prev_month_shortfall.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.98022,
+    "ast_hash": "83eebc3cb9e8be79068099213921d30a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260928100000_payroll_notes.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980221,
+    "ast_hash": "e8545b137cab8759330742b491574b05",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260928110000_payroll_bonus.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802217,
+    "ast_hash": "ea5639b0ed4e684674ba4a3bf8262787",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260928120000_service_rates_per_therapist.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802225,
+    "ast_hash": "6f63ce236b0d08faa5ec19ca3e9dc9c7",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260930000000_clinic_medical_records_filled_by.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802232,
+    "ast_hash": "5f0d5c59b2e1b8c68eb5ed220a2c9973",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260930090000_sync_therapist_login_skip_owner.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980224,
+    "ast_hash": "e492da2d69b15c73cf5ee200a1fa62e0",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260930100000_mirror_auth_email_to_public_users.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802248,
+    "ast_hash": "93a465544e1b98cccde5ae63153d8c39",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260930120000_super_admin_read_pemilih_accounts.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802253,
+    "ast_hash": "bb160e400864655c5968fcd8a874d300",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261001000000_clinic_invoice_signature_settings.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980226,
+    "ast_hash": "97621d1f74ecc65d1089f454dbcfae9b",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261001010000_admin_signature_and_recap_creator.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802268,
+    "ast_hash": "a77a8cf398728447c946fc4138464b05",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261001090000_owner_update_clinic_admins.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.980228,
+    "ast_hash": "7ad5a9c317afba43baeed9fd83ddf30f",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261001120000_patient_ktp_occupation_religion.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802287,
+    "ast_hash": "fe8fdf9fe539c877c150b9626c9a4ebe",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002000000_price_catalog_items.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.9802294,
+    "ast_hash": "c05d5e48aae054f1296e0bcd46bbd881",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002000001_diagnosis_subjective_templates.sql": {
+    "mtime": 1794987257.2461307,
+    "seen": 1795072585.98023,
+    "ast_hash": "c21d91679f233198f3eb5cd25ce8c7ca",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002010000_subjective_templates_v2.sql": {
+    "mtime": 1794987257.2476568,
+    "seen": 1795072585.9802308,
+    "ast_hash": "1e111f6b65c78446a26640fc70fb0d44",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002020000_subjective_variables.sql": {
+    "mtime": 1794987257.2476568,
+    "seen": 1795072585.9802318,
+    "ast_hash": "39c67c6cdb9665f6b98fe11a8ba7331f",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002030000_objective_templates.sql": {
+    "mtime": 1794987257.2476568,
+    "seen": 1795072585.9802325,
+    "ast_hash": "3c0606a1b75d601fb33879df761320d2",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002040000_more_functional_forms.sql": {
+    "mtime": 1794987257.2476568,
+    "seen": 1795072585.9802332,
+    "ast_hash": "f4d3c477fa179fb7d0dd29d8e8757cdf",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002050000_more_functional_forms_2.sql": {
+    "mtime": 1794987257.2476568,
+    "seen": 1795072585.980234,
+    "ast_hash": "8048b195cd51e0372ff5becd9f85b8eb",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002060000_chaq_form.sql": {
+    "mtime": 1794987257.2476568,
+    "seen": 1795072585.9802349,
+    "ast_hash": "e7521e36649268e51edd06b45e5e4123",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002070000_more_functional_forms_3.sql": {
+    "mtime": 1794987257.2476568,
+    "seen": 1795072585.9802356,
+    "ast_hash": "6e01a611e1d8b2248ab1cea8fbe7e7c7",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002080000_move_pain_scale_to_objective.sql": {
+    "mtime": 1794987257.2476568,
+    "seen": 1795072585.9802363,
+    "ast_hash": "e730c3f53501562009f10457e1ad3c4e",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002100000_invoice_template_choice.sql": {
+    "mtime": 1794987257.2476568,
+    "seen": 1795072585.9802368,
+    "ast_hash": "40014e394a863bedf48bca9c696166b8",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002110000_recap_admission_number.sql": {
+    "mtime": 1794987257.2476568,
+    "seen": 1795072585.9802375,
+    "ast_hash": "a86342aba50d18e61f53ccfa612d0560",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002120000_icf_catalog.sql": {
+    "mtime": 1794987257.2476568,
+    "seen": 1795072585.9802384,
+    "ast_hash": "5938104da0f5e5b3418d454bace6c321",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002130000_medical_records_plan_data.sql": {
+    "mtime": 1794987257.2476568,
+    "seen": 1795072585.9802392,
+    "ast_hash": "7696945c47b7439c65e0939eb73f2ed4",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002130000_sync_therapist_profile_to_users.sql": {
+    "mtime": 1794987257.2476568,
+    "seen": 1795072585.9802399,
+    "ast_hash": "9fd7c431bcea79fff22a6ce2b797f305",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002140000_plan_exercises.sql": {
+    "mtime": 1794987257.2476568,
+    "seen": 1795072585.9802408,
+    "ast_hash": "558fa4c3bf5345b9297b668546080336",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002150000_plan_options.sql": {
+    "mtime": 1794987257.2476568,
+    "seen": 1795072585.9802413,
+    "ast_hash": "12cc9dc0fbf1d9376b1c19adeacea9ea",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002160000_patient_education.sql": {
+    "mtime": 1794987257.2476568,
+    "seen": 1795072585.9802423,
+    "ast_hash": "661133b75af5bcfbb712253d2140645e",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002170000_auto_carry_over_therapist_targets.sql": {
+    "mtime": 1794987257.2476568,
+    "seen": 1795072585.980243,
+    "ast_hash": "2fceb9bce9fed549bfa422b71323b460",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002170000_plan_dry_needling.sql": {
+    "mtime": 1794987257.2476568,
+    "seen": 1795072585.9802437,
+    "ast_hash": "0ba4f50c711de06844e3ea80b9da4f90",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002180000_medical_records_lab_radiology.sql": {
+    "mtime": 1794987257.2476568,
+    "seen": 1795072585.9802442,
+    "ast_hash": "ae7bea0ecac6367732cdd4eb39506aaf",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002190000_subjective_templates_narasi.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802449,
+    "ast_hash": "c41e3b529d9d22851b3eb8bd24d6e980",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261002200000_objective_templates_resume.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802458,
+    "ast_hash": "9ac9b6fcc0d107147793a44fa49b4921",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261003000000_education_advice.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802465,
+    "ast_hash": "8a8ee6110e3b2a12c5589865108b9bdd",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261003000000_objective_kekuatan_otot_mmt_per_gerakan.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802473,
+    "ast_hash": "ca182e5a11f2d13c402d6d2fa3b9617e",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261003010000_subjective_templates_dedupe.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.980248,
+    "ast_hash": "ca9911c2f730d3f3e2ed5f7104e99514",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261003020000_clinic_assessment_mode.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.980249,
+    "ast_hash": "69dbabaf2cfd53cef40a0893c359f1f1",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261003060000_fix_therapy_reminder_dedupe_per_date.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802496,
+    "ast_hash": "4b42571603fff436738374899a8b97b8",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261003100000_medical_records_filled_by_admin.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802504,
+    "ast_hash": "ba274c2746c5a2e653fe93d68ca15c6d",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261003110000_physiotherapists_admin_soap_enabled.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802513,
+    "ast_hash": "77213145d22fcf064c2a4b151f6dc439",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261003120000_remove_recovery_treatment_diagnosis.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802523,
+    "ast_hash": "fe17e567efd9dd5d29dfa264af9a5896",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261003130000_subjective_perjalanan_naik_turun.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.980253,
+    "ast_hash": "b00dfd7a838312c0184237ab7f269875",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261003140000_subjective_perjalanan_hilang_timbul.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802537,
+    "ast_hash": "e7d1454748375bfd21e03cc5b326c718",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261003150000_subjective_bertambah_free_text.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802544,
+    "ast_hash": "d5ef29534ffcb28048544469e39e40c8",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261005100000_plan_option_recovery_pump.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802551,
+    "ast_hash": "216efd5a7fb1b597af1f7f6d5cfeecc2",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261006100000_referral_reward_codes.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.980256,
+    "ast_hash": "704ab9bab8d65dc4a2b42cdc5e9b63ce",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261007100000_therapist_soap_template_requests.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802568,
+    "ast_hash": "8f166d360d7f61ac45c089d92fcf9f9b",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261007110000_physiotherapists_is_head_therapist.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802575,
+    "ast_hash": "c5425abe2e41b59f6b20a265372ad961",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261008100000_therapist_leave_requests.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802582,
+    "ast_hash": "237fccb8dc12a1dd5a4742665fa545ff",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261008110000_leave_request_applies_to_slots.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802592,
+    "ast_hash": "4b197ae5753dd0449ba702487a7b82ef",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261008120000_extra_shift_ignores_weekly_off.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.98026,
+    "ast_hash": "2763a392820de9de8e1960fcad360f04",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261008130000_block_annual_leave_first_year.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802606,
+    "ast_hash": "8017fcc39a7e06e81a8748a118b6b386",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261008140000_therapist_work_shift.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802616,
+    "ast_hash": "906b0b251eab0a7865dfdd1d5d0a686c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261008150000_leave_request_sick_proof.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802625,
+    "ast_hash": "446d38a7d95c55571ef1ab7400026451",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261008160000_therapist_shift_swap.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802632,
+    "ast_hash": "28c1a6b753e1169cf2d1bd8a0cd1a1df",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261008170000_shift_swap_block_when_booked.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.980264,
+    "ast_hash": "dbd5b340e1bdfb2e44a2b9a1e667755e",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261008180000_approval_notification_links.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802647,
+    "ast_hash": "0813c0b55540f9d1d6b0605b10e6710f",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261009100000_leave_type_organization.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802654,
+    "ast_hash": "c623bf30262258811117ca61b6a8f81c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261009110000_sunday_schedule_swap.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802666,
+    "ast_hash": "d6c05081474eb827596ae817c8679654",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261009120000_weekend_leave_sunday_replacement.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802673,
+    "ast_hash": "b98d87df50fc7e44d15284ef6ab35982",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261009130000_revoke_approved_leave_request.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802678,
+    "ast_hash": "5f19e4d1f92b39dde732a3941541f2dd",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261009140000_revoke_approved_swaps.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802685,
+    "ast_hash": "e62776d2efbf440ee5df949a5c997ee6",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261009150000_leave_sunday_check_pending_only.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802692,
+    "ast_hash": "667aebf4d38caa2a20f479931595cda0",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261010100000_leave_type_event.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802701,
+    "ast_hash": "bbc1d3fe73a8d95362c2e105902ec8b3",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261010110000_sunday_weekly_off_rules.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802709,
+    "ast_hash": "5e4bb7b98c061f3bb87eae004d8f839d",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261011100000_clinic_operating_hours.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802716,
+    "ast_hash": "1c99b53835c949801c8f92fc90585070",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261011110000_hnp_subjective_variants.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802723,
+    "ast_hash": "825fa3bae80924d0d55f99b5f8f6ec8b",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261011120000_hnp_objective_variants.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802732,
+    "ast_hash": "7814b654e1f5fa728466ebcc1f4c86ba",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261012100000_leave_revoke_restore_weekly_off.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.980274,
+    "ast_hash": "f5365be3d42d904d12296bdaf2bb2885",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261013100000_soap_daily_deadline_trial.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802747,
+    "ast_hash": "9e39276d75cbab3587868fe1caf6718b",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261013110000_soap_daily_deadline_period_exempt.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802752,
+    "ast_hash": "d10416922b6d3e5a9cb2d7060ccb72d3",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261013120000_clinic_leadership_decrees.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802759,
+    "ast_hash": "288214722c9477b46df5d66f2e005c97",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261013130000_clinic_decrees_signer.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802768,
+    "ast_hash": "4dfb55982e11a62c78ffb905f3be5b34",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261013140000_soap_deadline_wita.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802775,
+    "ast_hash": "6b40dbfbb6fad410323979b8f5a3fb62",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261013150000_decree_signer_signature_rpc.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802783,
+    "ast_hash": "5e59b4a0630950a0f5cf31bdde94cab3",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261013160000_plan_option_nebulizer.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.980279,
+    "ast_hash": "dc835514f2f922af0acc832faadc11f0",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261013170000_soap_count_skip_guest_and_unstarted.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.98028,
+    "ast_hash": "27715ecb667719cd4fd95371ce34df96",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261014090000_kaffah_pending_inventory_orders.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802806,
+    "ast_hash": "95d90ec0d6fe6ce62192bd9507b96547",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261014100000_shift_swap_slot_duration.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802816,
+    "ast_hash": "db977521e43e5e983aee659115df441b",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261014110000_shift_swap_copy_shift_pattern.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802823,
+    "ast_hash": "2b829fca063bfaedfb74f6eac23121f0",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261015100000_satusehat_foundation.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.980283,
+    "ast_hash": "d380ef5e0865c5ed762e889adfb5304e",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261017080000_delete_clinic_rpc.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802837,
+    "ast_hash": "ecbe4da2b1affc4369a9d82aa68ec189",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261017090000_index_fk_for_delete_clinic.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802847,
+    "ast_hash": "2dee99ecae777ae3b632f51947b7e39e",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261017090000_security_lockdown_anon_exposure.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802854,
+    "ast_hash": "bcdd85abc973501fcc363fee00342a24",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261017100000_portal_staff_push.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802864,
+    "ast_hash": "ebef266c3c4c9713cca606d3e5e2662f",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261017120000_revoke_anon_internal_functions.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802873,
+    "ast_hash": "dca6874d6edf9b48333215946b6b96a4",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261017130000_portal_current_data_and_booking.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802878,
+    "ast_hash": "9d7deb812c0017e37d42f2ac675a1b26",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261017140000_portal_diagnosis_episodes.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802885,
+    "ast_hash": "5758bfce873ca3f88a3fd25ae1e89d73",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261018000000_patients_search_indexes.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.980289,
+    "ast_hash": "c169e5566087368c9928919d5c2143ad",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261018120000_audit_logs_activity_feed_perf.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.98029,
+    "ast_hash": "2e90958ee9356b429dd6acde8fc31580",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261018130000_rls_policies_initplan.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.980291,
+    "ast_hash": "01ad079a16232e006c4cf2b4bced6869",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261018130100_fk_covering_indexes.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802916,
+    "ast_hash": "848a3979a6eecfdea3b8ca945b974774",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261018140000_portal_home_education.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802926,
+    "ast_hash": "4b22cbb095ac72649e7f7c0423f6077f",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261018200000_soap_first_1_foundation.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.980293,
+    "ast_hash": "b238da7056c498efa88842428ae993c0",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261018200100_soap_first_2_functions.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.980294,
+    "ast_hash": "e4c36a9cb7c9e5da692ed829a97b59ef",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261018200200_soap_first_3_triggers.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.980295,
+    "ast_hash": "e512d57d7cece2fd30fcf5af4dccf88e",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261018200300_soap_first_4_overrides_reminders.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802954,
+    "ast_hash": "ab8cc4c47800571996e2603ea1cd8270",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261018200400_soap_first_5_cron_realtime.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802961,
+    "ast_hash": "41e4fcc900c69e95d3bf7e00b5cc161e",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261018200500_soap_first_6_manual_discount.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802973,
+    "ast_hash": "d7501b57d008a041dd2a485eee091862",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261018210000_recap_vital_signs.sql": {
+    "mtime": 1794987257.2516568,
+    "seen": 1795072585.9802983,
+    "ast_hash": "498b5208313bf38a5620e6ba1e5fd99e",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261018220000_exercise_reviews.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9802988,
+    "ast_hash": "bb9434294aff763ef711ff738f7b720e",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261019000000_recap_vitals_locked_override.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9802997,
+    "ast_hash": "17f3cd8223225ec3a10921dbb5382443",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261019100000_recovery_outside_package.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803004,
+    "ast_hash": "1e9cbf91f33f786b3697fe917b37268f",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261019110000_recovery_outside_package_autolink.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803011,
+    "ast_hash": "cb86bc71064c5eb5e295d0098ccbea3d",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261019120000_package_followup_doms_not_recovery.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803019,
+    "ast_hash": "1121b43565c1952453c8f742a9a2e8ff",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261019130000_alkes_sales.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803026,
+    "ast_hash": "36d8c3b8417c36ff560b7a1f296ec562",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261019130000_homecare_time_auto.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803033,
+    "ast_hash": "ebf54c06d7c42ccdc93790266cefa027",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261019140000_discount_adjust_override.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803042,
+    "ast_hash": "cf22550387258f157d751c33dcaa07df",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261019150000_discount_adjust_no_amount_write.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980305,
+    "ast_hash": "d656d0c7f1fed5a42bdf941a8e1ac7d3",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261019160000_amount_adjust_clears_discount.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803057,
+    "ast_hash": "fd641d5baf75ee638606486678662504",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261020000000_kaffah_vitals_required_for_invoice.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803064,
+    "ast_hash": "485e7409fe886583d6b027d91e50aa4c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261020010000_incentive_restore_from_therapist.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980307,
+    "ast_hash": "ff3efcc2b71dd14a02f225a948d5d84b",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261020020000_package_single_complaint_guard.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803083,
+    "ast_hash": "9d7f659fbd98c215a61a20eca0e8d1e7",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261020100000_require_payment_method_when_amount.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980309,
+    "ast_hash": "d116d597d0fc6bd5df248450ddfeac3b",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261020120000_harden_anon_security_definer_functions.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803095,
+    "ast_hash": "0a2402df5eae2d6da210f85907b1e752",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261020120000_ttv_part_of_soap.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803102,
+    "ast_hash": "e67aabad82ec258409fcc844a516414a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261020130000_ttv_soap_cutoff.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803112,
+    "ast_hash": "e68fd464265d64cdd5537dd206543848",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261020130000_views_security_invoker.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980312,
+    "ast_hash": "92398b479abfdcf14f86bd7c362b5486",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261020140000_vital_signs_required_fields.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803126,
+    "ast_hash": "367159304e039b324bbac1a9354a49a2",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261021000000_remove_therapist_wa_notifications.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803135,
+    "ast_hash": "875a5a535e6e910f27ae7feab736718a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261021010000_remove_therapist_h10_reminder.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803143,
+    "ast_hash": "a17d04bc71116fe3b7dcdabe46ae3e0c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261021020000_fix_duplicate_receipt_numbers.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803152,
+    "ast_hash": "c8de9ad0f8b3b4cbc0318cd075b224eb",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261021030000_kaffah_block_delete_invoiced_recap.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803162,
+    "ast_hash": "ce256c5c9c662f75f9122af1706a965a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261021040000_homecare_package_price.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803169,
+    "ast_hash": "2e7c53ccb5d9ecd42f7e96e8f9f23190",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261021050000_revenue_date.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803176,
+    "ast_hash": "5348aa3566de7df9835d084f819e7acf",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261021060000_prepay_package.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803185,
+    "ast_hash": "f8cf737dd7ad608d6c2fcc90bf4cfebd",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261022100000_exercise_review_editable.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803193,
+    "ast_hash": "aedfd16c23da69e6b667a575ed8b50ce",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261022110000_owner_exercise_review_view.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803202,
+    "ast_hash": "403a564ab859c38fe1163df95faabdb5",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261023100000_invoice_cashier_for_clinic_admin.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980321,
+    "ast_hash": "5584567f48b6ffde3fbd5c6d6038de7d",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261023110000_daily_recaps_cashier_id.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803221,
+    "ast_hash": "442101dac2849b53b451fd12a40727d7",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261026000000_fix_guest_homecare_recap_patient_id.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980323,
+    "ast_hash": "12d7e4ac2a1b84878ac3bdc1c227ed1b",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261027000000_daily_recaps_discount_referral_code.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803236,
+    "ast_hash": "66fa076ec07ff2b06b72b8323fa8c719",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261027100000_payroll_annual_leave_payout.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803243,
+    "ast_hash": "c23536bf80727b2193b03cd023a8e7c6",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261028000000_homecare_time_required_no_fallback.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803255,
+    "ast_hash": "f9e131714ce2e74a2dac8d6d4fbd22b9",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261028000000_mou_period_guard.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803262,
+    "ast_hash": "e90a782256fddc62246d0dd69d19bdac",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261028010000_homecare_time_shift_sync_audit.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980327,
+    "ast_hash": "30cf2823f35e2da75103fb169a546d03",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261028100000_kaffah_birthday_reward.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803276,
+    "ast_hash": "144dda373936ada5565ea8dd2b4e8a2e",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261028200000_kaffah_welcome_reward.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803288,
+    "ast_hash": "cac0da4320c057e892bd4a5f871cd201",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261028200000_unify_admin_role.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803295,
+    "ast_hash": "402c8467b7a1f9f11ea020d4076a27e2",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261029000000_vital_signs_bp_optional_kaffah.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803302,
+    "ast_hash": "1391725d09d84e649351e2a9c621220b",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261029100000_fix_referral_reward_amount.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803312,
+    "ast_hash": "3492b9cc3633edacbbe9da64ca7770c8",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261029100000_package_change_override.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803321,
+    "ast_hash": "84275f93b3102a4da3b5c2ac6ea22b1a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261029110000_package_change_reissue_invoice.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803329,
+    "ast_hash": "b456fad1411a3ba6d338e3c34caba741",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261029200000_wa_cloud_api.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803336,
+    "ast_hash": "1bd278bf4a82cc3b918096ae55601491",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261030000000_watzap_response_reconcile.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803345,
+    "ast_hash": "796251d1065abf473ff21c473009ec2f",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261030100000_watzap_webhook_capture.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803355,
+    "ast_hash": "20aa98e1fc14ae014976620b2f0d39ab",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261030200000_watzap_inbox_flag.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803362,
+    "ast_hash": "6a3007dd968a764df3dec11b8719e56c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261030300000_lock_legacy_wa_bot_tables_rls.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980337,
+    "ast_hash": "6c7ffe32be580e83bf26f899e656b3bf",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261030400000_birthday_reward_existing_patients_only.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803376,
+    "ast_hash": "b0b54c8d17475d3c43974d05a3f9586a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261031000000_rls_audit_tahap1.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803386,
+    "ast_hash": "25d527d0142ad5b28750314ba63ac900",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261031010000_rls_audit_tahap2.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803393,
+    "ast_hash": "2e890f7d5291a43bfc3b5b8fe2b05d9d",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261031020000_rls_audit_tahap3.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.98034,
+    "ast_hash": "0d600a203132a7fe7942ae6d5e143e3c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261031030000_patients_booking_online_clinic.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803407,
+    "ast_hash": "1ba58e4f1eac7195c516e0cbbc4b03b0",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261031040000_invoice_wa_window_check.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803417,
+    "ast_hash": "e6a282a4cd27c06bba4bb20a4a69e348",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261031040000_package_release_override.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803426,
+    "ast_hash": "99aebc124dc43288cbc6b209b2f6350f",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261031050000_send_invoice_whatsapp_wait.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980343,
+    "ast_hash": "8b90145fd1d72edc1508f9635026cf4c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261101010000_invoice_wa_poll.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803438,
+    "ast_hash": "e7cf85653a7c0a4478f12e4ac10cf9c3",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261101020000_free_patient_override.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803445,
+    "ast_hash": "8d43ff75c0cccb8bcf29145147edc7eb",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261102010000_invoice_wa_server_tracking.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803455,
+    "ast_hash": "3bba206a97b7e280a66a8e9cd77f251a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261103010000_qris_daily_report_reconciliation.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803464,
+    "ast_hash": "6c54615d2d708e7e41fce88c695533f4",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261103020000_qris_report_multi_upload.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803474,
+    "ast_hash": "ccd8a31f126129bb541b47a19fe5440e",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261103030000_invoice_signer_from.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980348,
+    "ast_hash": "75ae244c4364f87c04b1d430dbf905f3",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261103040000_kaffah_receipt_number.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803488,
+    "ast_hash": "a465921fe8efe91f7e508486ee9ed1ce",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261103050000_kaffah_receipt_number_continue.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.98035,
+    "ast_hash": "fd79a135dcc3ae32190c3a8daed7dd2e",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261103060000_invoice_desc_style.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803505,
+    "ast_hash": "cb175ffeaf973693b8ca67a4206e07be",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261103070000_invoice_layout.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803512,
+    "ast_hash": "d82a9f333a4b95395177590f9eebb920",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261104010000_exercise_illustrations.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980352,
+    "ast_hash": "26dc4a940e07aad9b5b68cae835a0daf",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261104010000_kaffah_receipt_replace_placeholder.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803529,
+    "ast_hash": "49523547d2861cd63a91155145bd914c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261104020000_portal_exercise_illustrations.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803536,
+    "ast_hash": "7cd07650953eac16249012408bae92e5",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261104030000_nebulizer_supplies_pricing.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803545,
+    "ast_hash": "a00702dece7ff3257a1a34e7a3b78938",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261104040000_nebulizer_base_price.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980355,
+    "ast_hash": "fd04d1ae7f9c3f5f05c688261311f5c9",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261104050000_kaffah_owner_appointment_discount.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803557,
+    "ast_hash": "caee7a1ac7185405402330ef23d1a1c6",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261104060000_kaffah_owner_discount_pending.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980357,
+    "ast_hash": "428e4a245af16d1b2d62ca5414e3628f",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261104070000_kaffah_owner_discount_trigger_fix.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803576,
+    "ast_hash": "790ba0674761388438e91c40d6751b35",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261105175837_atomic_exercise_illustration_publication.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803584,
+    "ast_hash": "9aebda80ab2685dee74dcdff8e0cb4a1",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261105190000_anatomy_3d_bucket.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980359,
+    "ast_hash": "ba8b1e094e20763bd3c9ef99004e600f",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261106010000_clinic_registration_invites.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.98036,
+    "ast_hash": "e38577f9b33a4b408d68e4380b91efc6",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261106020000_quote_konsultasi_preview.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803607,
+    "ast_hash": "391c82ffe546b6216c3b95f8f68ff0cc",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261107010000_daily_recap_tips.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803615,
+    "ast_hash": "98e82128921184b11c3b7061993dc120",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261107020000_inventory_sellable_items.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803622,
+    "ast_hash": "796df8bf77271e38861244551d348556",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261107030000_recap_goods_items.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980363,
+    "ast_hash": "4c5397dd4ed44acfd73d01cc0cbcb3ce",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261111010000_qris_multi_patient_match.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803638,
+    "ast_hash": "dc135da2f088fe20ab8f0c6b85f30f52",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261111100000_birthday_reward_transferable.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803646,
+    "ast_hash": "701bd109c228061ee83ad77f9b13ff1c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261111100100_fix_abdi_birthday_voucher.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803653,
+    "ast_hash": "fbd3ee7a8874ff63903652dc4283130a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261112010000_qris_auto_match_blocked.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803662,
+    "ast_hash": "85bbb2e2c69bfc5d9269da8fdcd0f2d8",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261112020000_qris_match_income_links.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803672,
+    "ast_hash": "ad52c0c514c5073dd1a351955bbf9aa1",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261114000000_telegram_logs.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980368,
+    "ast_hash": "0cccf28f0adb7d72ffde799ea01124c3",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261114010000_telegram_nightly_report.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803686,
+    "ast_hash": "800f82e5542c7a2d0a8e4f8ade3b6fce",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261114020000_telegram_free_slots.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803693,
+    "ast_hash": "c207479ec308af8c422874ebd3bc273b",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261114100000_recap_payment_proof.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803703,
+    "ast_hash": "09741555d40cd28e8a2cc342290a1810",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261114200000_kaffah_cash_handovers.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980371,
+    "ast_hash": "ca8da110fb7bc9136cc3f86bd532b293",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261114210000_cash_custodian.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803717,
+    "ast_hash": "536cf62a6db103f370ba3d9ee5a52fc0",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261114220000_petty_cash.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803724,
+    "ast_hash": "b61370f31fd61e7cd64f177247c1c7d0",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261114230000_kaffah_auto_cashier.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980373,
+    "ast_hash": "515d5c0c0facaaa7b1188c46f70bc019",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261114230000_lookup_referral_reward_referred_name.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803739,
+    "ast_hash": "2c6734adeeca2bb45c6539a072597b66",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261114240000_cashier_first_admin_save.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803746,
+    "ast_hash": "a631f660f1b4748e0d568852dfb3897d",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261114260000_praxis_package_renewal_payment.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803753,
+    "ast_hash": "a00724555199c1df2cce2ac19a562291",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261115010000_telegram_extra_shifts.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980376,
+    "ast_hash": "c7da690cb2eaa3de0b78f756e552d496",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261115020000_telegram_therapist_value.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803772,
+    "ast_hash": "251517f4354c1618e18e7967c73e9389",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261115030000_telegram_discount_kinds.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803777,
+    "ast_hash": "385e10d8521d21567e778b1a6f2bfce3",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261115220000_audit_logs_disk_io_indexes.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803784,
+    "ast_hash": "a16ced2fcaa54d7e475279e85e7f1aab",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261116010000_payroll_post_date_payday.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803793,
+    "ast_hash": "9987e3120e6ab9cd3fda793651e4f132",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261116010000_telegram_owner_own_booking.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.98038,
+    "ast_hash": "bf1d39e587223c76e8f9cd10e75654af",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261116020000_telegram_dedupe.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980381,
+    "ast_hash": "eca02893fc5d97a34f6e2e9b8364dbf8",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261116030000_telegram_cash_block.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.980382,
+    "ast_hash": "094919b35afd51b544ec58cb73e3d18e",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261116040000_soap_first_single_push.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803827,
+    "ast_hash": "a06f801e5d148791916237f77f570849",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261116050000_praxis_pending_package_activation.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803834,
+    "ast_hash": "36a67ea4c529d805a7ede3387e5a5742",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261117010000_soap_completed_after_invoice.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803843,
+    "ast_hash": "8a0ff1a665f1ce4326e39e52ed1ac67c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261117020000_merge_permissive_policies_hot_tables.sql": {
+    "mtime": 1794987257.2556567,
+    "seen": 1795072585.9803848,
+    "ast_hash": "d1fa9104257122110fa885d6c804fb2a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261118010000_recap_goods_payment_method.sql": {
+    "mtime": 1795072275.9542367,
+    "seen": 1795072585.9803855,
+    "ast_hash": "ac8d1f4d136305f8462a4d57e76c48eb",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261118020000_recap_goods_payment_proof.sql": {
+    "mtime": 1795072275.9542367,
+    "seen": 1795072585.9803865,
+    "ast_hash": "13418b20dcac684bd65fcd797f3bf017",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261119030000_inventory_sale_logs.sql": {
+    "mtime": 1795072275.9542367,
+    "seen": 1795072585.9803872,
+    "ast_hash": "d7dfabc3cc2e1a2aa09359c36e7997df",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261119100000_slot_display_matches_booking_overlap.sql": {
+    "mtime": 1795072275.9542367,
+    "seen": 1795072585.9803882,
+    "ast_hash": "ab23273bef7728d5d76efc87a67fdecd",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261119110000_booking_check_follows_slot_grid.sql": {
+    "mtime": 1795072275.9542367,
+    "seen": 1795072585.9803889,
+    "ast_hash": "7e1c15f18c08d799dbf90c55e0b7fc1f",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20261119120000_ru_package_doms_stays_recovery.sql": {
+    "mtime": 1795072275.9542367,
+    "seen": 1795072585.9803896,
+    "ast_hash": "3f2d00587b3c66e2f30d5741eb515c15",
+    "semantic_hash": ""
+  },
   "package-lock.json": {
     "mtime": 1794987257.1643314,
     "seen": 1795072574.2411542,
