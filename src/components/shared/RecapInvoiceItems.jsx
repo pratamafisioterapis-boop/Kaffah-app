@@ -30,6 +30,7 @@ const stockStatus = (inv, qty, savedQty = 0) => {
 const RecapInvoiceItems = ({ clinicId, items, onChange, allowManual = false, defaultCategory = 'procedure', savedItems = [], goodsOnly = false }) => {
   const [catalog, setCatalog] = useState([]);
   const [pick, setPick] = useState('');
+  const [pickQty, setPickQty] = useState('1');
 
   useEffect(() => {
     if (!clinicId) return;
@@ -55,14 +56,15 @@ const RecapInvoiceItems = ({ clinicId, items, onChange, allowManual = false, def
     const c = catalog.find((x) => x.id === pick);
     if (!c) return;
     const price = c.selling_price ?? c.base_price ?? 0;
-    onChange([...items, { category: c.category, name: c.name, qty: 1, price: Number(price), discount: 0, ...(c.inventory_item_id ? { catalog_item_id: c.id } : {}) }]);
+    onChange([...items, { category: c.category, name: c.name, qty: Math.max(1, Math.floor(Number(pickQty)) || 1), price: Number(price), discount: 0, ...(c.inventory_item_id ? { catalog_item_id: c.id } : {}) }]);
     setPick('');
+    setPickQty('1');
   };
 
   return (
     <div className="space-y-2">
-      <div className="flex gap-2">
-        <select className="flex-1 min-w-0 border rounded-md h-9 px-2 text-sm bg-white" value={pick} onChange={(e) => setPick(e.target.value)}>
+      <div className="flex flex-wrap items-end gap-2">
+        <select className="w-full min-w-0 border rounded-md h-9 px-2 text-sm bg-white" value={pick} onChange={(e) => setPick(e.target.value)}>
           <option value="">{goodsOnly ? '+ Pilih barang…' : '+ Pilih item dari katalog…'}</option>
           {KWITANSI_CATEGORIES.map((cat) => (
             <optgroup key={cat.value} label={cat.label}>
@@ -72,6 +74,12 @@ const RecapInvoiceItems = ({ clinicId, items, onChange, allowManual = false, def
             </optgroup>
           ))}
         </select>
+        <div className="w-20 shrink-0">
+          <Label className="text-xs text-slate-500">Jumlah</Label>
+          <Input className="h-9 text-sm" type="number" inputMode="numeric" min="1" step="1" value={pickQty}
+            onChange={(e) => setPickQty(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addFromCatalog(); } }} />
+        </div>
         <Button type="button" size="sm" variant="outline" onClick={addFromCatalog} disabled={!pick}>
           <Plus className="w-4 h-4 mr-1" />Tambah
         </Button>
