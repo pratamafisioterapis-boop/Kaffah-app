@@ -197,7 +197,7 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
     if (!linkedRecapId || !isValidUUID(linkedRecapId)) return;
     supabase
       .from('daily_recaps')
-      .select('diagnosis, recap_date, invoice_created_at, soap_completed_at, package_tracking_id, bypass_package_id, amount, amount_original, start_time, created_at, appointment:appointments!appointment_id(appointment_date)')
+      .select('diagnosis, recap_date, invoice_created_at, soap_completed_at, package_tracking_id, package_tracking:package_tracking_id(package_name), bypass_package_id, amount, amount_original, start_time, created_at, appointment:appointments!appointment_id(appointment_date)')
       .eq('id', linkedRecapId)
       .maybeSingle()
       .then(({ data }) => {
@@ -271,7 +271,9 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
   const domsSelected = isKaffahClinic && diagnosis.some((d) => (
     String(diagnosisOptions.find((o) => o.id === d || o.value === d)?.label || '').toLowerCase().startsWith('doms')
   ));
-  const packageFollowup = !!recapInfo?.package_tracking_id && !(Number(recapInfo?.amount_original ?? recapInfo?.amount ?? 0) > 0);
+  // Paket RU: DOMS otomatis dihitung Recovery, jadi tidak perlu memilih "di luar paket".
+  const isRuPackage = /\sRU$/i.test(String(recapInfo?.package_tracking?.package_name || '').trim());
+  const packageFollowup = !!recapInfo?.package_tracking_id && !isRuPackage && !(Number(recapInfo?.amount_original ?? recapInfo?.amount ?? 0) > 0);
   const isOutsidePackage = isKaffahClinic && !!recapInfo?.bypass_package_id;
   const askOutside = sfActive && domsSelected && packageFollowup && !sfLocked;
   const templatesOf = (key) => (key === 'subjective' ? subjectiveTemplates : key === 'objective' ? objectiveTemplates : []);
