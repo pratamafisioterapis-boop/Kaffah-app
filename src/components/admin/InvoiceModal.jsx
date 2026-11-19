@@ -332,8 +332,19 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       pdfGeneratedAt = rec?.generated_at || null;
     }
 
+    // Cicilan paket (Kaffah): DP tampil "belum lunas" dengan sisa tagihan; pelunasan tampil "lunas".
+    // Sisa dihitung saat invoice terbit (total - DP) sehingga kwitansi lama tidak berubah setelah pelunasan.
+    let installment = null;
+    if (recap.package_installment_total != null) {
+      installment = { kind: 'purchase', total: Number(recap.package_installment_total), paidBefore: 0 };
+    } else if (recap.installment_payoff) {
+      const { data: st } = await supabase.rpc('package_installment_status', { p_recap_id: recap.id });
+      if (st?.kind === 'payoff') installment = { kind: 'payoff', total: Number(st.total), paidBefore: Number(st.paid) };
+    }
+
     setDetailData({
       ...recap,
+      installment,
       pdf_generated_at: pdfGeneratedAt,
       use_modern_layout: useModernLayout,
       tiered_line: tieredLine,
@@ -866,8 +877,14 @@ const handleSendManualWA = async () => {
 
   const clinicName = detailData?.clinic?.name || '';
   const invoiceLink = `${window.location.origin}/i/${data.id}`;
+  const inst = templateData.installment;
+  const docName = inst?.kind === 'purchase' ? 'Kwitansi DP Paket' : inst?.kind === 'payoff' ? 'Kwitansi Pelunasan Paket' : 'Kwitansi Terapi';
+  const instNote = inst?.kind === 'purchase'
+    ? `Pembayaran ini adalah DP. Sisa pembayaran paket *Rp ${Math.max(inst.total - (Number(templateData.amount) || 0), 0).toLocaleString('id-ID')}* belum lunas.\n\n`
+    : inst?.kind === 'payoff' ? `Paket ini sudah *lunas*.\n\n` : '';
   const message =
-    `Berikut *Kwitansi Terapi* ${receiptDayPhrase(data?.recap_date, (templateData.clinic?.id || detailData?.clinic?.id) === KAFFAH_CLINIC_ID)}.\n\n` +
+    `Berikut *${docName}* ${receiptDayPhrase(data?.recap_date, (templateData.clinic?.id || detailData?.clinic?.id) === KAFFAH_CLINIC_ID)}.\n\n` +
+    instNote +
     `Terima kasih telah mempercayakan pemulihan di *${clinicName}*.\n` +
     `Semoga lekas membaik dan sehat selalu.\n\n` +
     (isOneOff ? '' : `Lihat/unduh kwitansi:\n${invoiceLink}\n\n`) +
