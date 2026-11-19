@@ -7427,18 +7427,6 @@
     "ast_hash": "3f2d00587b3c66e2f30d5741eb515c15",
     "semantic_hash": ""
   },
-  "graphify/docs/superpowers/plans/2026-05-04-incremental-updates-dedup.md": {
-    "mtime": 1795072296.5162048,
-    "seen": 1795072698.256538,
-    "ast_hash": "406850f6e314f4e027fa94fb8fead3b7",
-    "semantic_hash": ""
-  },
-  "graphify/docs/superpowers/specs/2026-05-04-incremental-updates-dedup-design.md": {
-    "mtime": 1795072296.5162048,
-    "seen": 1795072698.25654,
-    "ast_hash": "47f54fcf05613642ca88b77988c777a6",
-    "semantic_hash": ""
-  },
   "package-lock.json": {
     "mtime": 1794987257.1643314,
     "seen": 1795072574.2411542,
