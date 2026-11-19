@@ -3982,6 +3982,19 @@ export const getInventoryStockIns = async ({ itemId } = {}) => {
   }, 'getInventoryStockIns');
 };
 
+export const getInventorySaleLogs = async ({ itemId } = {}) => {
+  return safeQuery(async () => {
+    let query = supabase
+      .from('inventory_sale_logs')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (itemId) query = query.eq('item_id', itemId);
+    const { data, error } = await query;
+    if (error) return { error };
+    return { data, success: true, error: null };
+  }, 'getInventorySaleLogs');
+};
+
 export const updateInventoryStockIn = async (id, { quantity, total_price, purchase_date, notes }) => {
   return safeQuery(async () => {
     const { data, error } = await supabase.rpc('update_inventory_stock_in', {

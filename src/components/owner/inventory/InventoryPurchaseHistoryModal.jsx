@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { getInventoryStockIns, deleteInventoryStockIn, getInventoryStockOuts } from '@/lib/api';
+import { getInventoryStockIns, deleteInventoryStockIn, getInventoryStockOuts, getInventorySaleLogs } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 import { format, isValid } from 'date-fns';
-import { Loader2, PackagePlus, ShoppingBag, Pencil, Trash2, ClipboardList } from 'lucide-react';
+import { Loader2, PackagePlus, ShoppingBag, Pencil, Trash2, ClipboardList, Receipt } from 'lucide-react';
 import InventoryStockInEditModal from './InventoryStockInEditModal';
 import { confirmAction } from '@/lib/confirmAction';
 
@@ -23,6 +23,8 @@ const InventoryPurchaseHistoryModal = ({ isOpen, onClose, item, onItemsChange })
   const [activeTab, setActiveTab] = useState('pembelian');
   const [loadingOuts, setLoadingOuts] = useState(true);
   const [takeOuts, setTakeOuts] = useState([]);
+  const [loadingSales, setLoadingSales] = useState(true);
+  const [sales, setSales] = useState([]);
 
   const fetchHistory = useCallback(async () => {
     if (!item) return;
@@ -46,12 +48,26 @@ const InventoryPurchaseHistoryModal = ({ isOpen, onClose, item, onItemsChange })
     setLoadingOuts(false);
   }, [item, toast]);
 
+  const fetchSales = useCallback(async () => {
+    if (!item) return;
+    setLoadingSales(true);
+    const { data, error } = await getInventorySaleLogs({ itemId: item.id });
+    // Tidak memunculkan toast: tab ini tidak boleh mengganggu riwayat lain bila tabel belum tersedia.
+    if (error) { console.warn('Gagal memuat riwayat penjualan', error); setSales([]); }
+    else setSales(data || []);
+    setLoadingSales(false);
+  }, [item]);
+
   useEffect(() => {
     if (isOpen && item) {
       setActiveTab('pembelian');
       fetchTakeOuts();
+      fetchSales();
     }
-  }, [isOpen, item, fetchTakeOuts]);
+  }, [isOpen, item, fetchTakeOuts, fetchSales]);
+
+  const totalSoldQty = sales.reduce((acc, r) => acc + Number(r.qty || 0), 0);
+  const totalSoldAmount = sales.reduce((acc, r) => acc + Number(r.amount || 0), 0);
 
   const totalTakeOutQty = takeOuts.reduce((acc, r) => acc + Number(r.quantity || 0), 0);
   const totalTakeOutCost = takeOuts.reduce((acc, r) => acc + Number(r.total_cost || 0), 0);
@@ -82,10 +98,11 @@ const InventoryPurchaseHistoryModal = ({ isOpen, onClose, item, onItemsChange })
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-app text-sm">
+        <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-app text-sm">
           {[
             { value: 'pembelian', label: 'Pembelian', Icon: ShoppingBag, count: history.length },
             { value: 'pengambilan', label: 'Pengambilan', Icon: ClipboardList, count: takeOuts.length },
+            { value: 'penjualan', label: 'Penjualan', Icon: Receipt, count: sales.length },
           ].map(({ value, label, Icon, count }) => (
             <button
               key={value}
@@ -98,7 +115,47 @@ const InventoryPurchaseHistoryModal = ({ isOpen, onClose, item, onItemsChange })
           ))}
         </div>
 
-        {activeTab === 'pengambilan' ? (
+        {activeTab === 'penjualan' ? (
+          <div className="flex-1 overflow-y-auto -mx-1 px-1">
+            {loadingSales ? (
+              <div className="flex items-center justify-center py-12 text-slate-500">
+                <Loader2 className="w-6 h-6 animate-spin" />
+              </div>
+            ) : sales.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="bg-slate-100 p-4 rounded-full mb-3"><Receipt className="w-8 h-8 text-slate-500" /></div>
+                <h3 className="text-sm font-medium text-slate-900">Belum ada riwayat penjualan</h3>
+                <p className="text-slate-500 text-xs mt-1">Riwayat akan muncul setelah barang dijual ke pasien.</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between gap-2 text-xs bg-slate-50 border border-slate-100 rounded-app-sm px-3 py-2 mb-1">
+                  <span className="text-slate-500">Total terjual (bersih): <span className="font-mono font-semibold text-slate-700">{totalSoldQty.toLocaleString('id-ID', { maximumFractionDigits: 2 })} {item?.unit}</span></span>
+                  <span className="font-mono font-bold text-emerald-600">Rp {totalSoldAmount.toLocaleString('id-ID', { maximumFractionDigits: 0 })}</span>
+                </div>
+                <div className="divide-y divide-slate-100">
+                  {sales.map(row => {
+                    const neg = Number(row.qty) < 0;
+                    return (
+                      <div key={row.id} className="py-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="min-w-0 break-words text-sm font-medium text-slate-900">{row.patient_name || 'Pasien tidak diketahui'}</span>
+                          <span className={`shrink-0 text-sm font-bold ${neg ? 'text-rose-600' : 'text-emerald-600'}`}>
+                            {neg ? '-' : ''}Rp {Math.abs(Number(row.amount || 0)).toLocaleString('id-ID', { maximumFractionDigits: 0 })}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {formatDate(row.sale_date || row.created_at)} · {neg ? 'Dikoreksi/dibatalkan' : 'Terjual'} {Math.abs(Number(row.qty)).toLocaleString('id-ID', { maximumFractionDigits: 2 })} {item?.unit}
+                          {' · '}{row.source_type === 'alkes_sale' ? 'Penjualan alkes' : 'Rekap harian'}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        ) : activeTab === 'pengambilan' ? (
           <div className="flex-1 overflow-y-auto -mx-1 px-1">
             {loadingOuts ? (
               <div className="flex items-center justify-center py-12 text-slate-500">
