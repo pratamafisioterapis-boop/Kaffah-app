@@ -1,30 +1,30 @@
 # Graph Report - Kaffah-app  (2026-11-19)
 
 ## Corpus Check
-- 1180 files · ~1,232,411 words
+- 1182 files · ~1,237,519 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 18 file(s) not represented in the graph (top: (none) 6, .toml 4, .css 4)
+- Unclassified: 19 file(s) not represented in the graph (top: (none) 7, .toml 4, .css 4)
 
 ## Summary
-- 6215 nodes · 24934 edges · 224 communities (209 shown, 15 thin omitted)
-- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 173 edges (avg confidence: 0.87)
+- 6243 nodes · 24963 edges · 259 communities (235 shown, 24 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 176 edges (avg confidence: 0.87)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `a89a52a2`
+- Built from commit: `46ffed65`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- Input
+- button.jsx
 - api.js
 - live-browser.js
 - Button
 - date-fns
-- lucide-react
+- TabsList
 - App.jsx
 - cn
-- package.json
+- dependencies
 - PemilihSuaraPks.jsx
 - connectSSE
 - OwnerFinanceDashboard.jsx
@@ -36,11 +36,11 @@
 - SuperAdminClinics.jsx
 - TherapistLeaveRequests.jsx
 - PatientDialog.jsx
-- AdminAppointmentBooking.jsx
+- DateRangePicker
 - pipeline.py
 - functionalFormsExtra.js
 - AdminQrisReconciliation.jsx
-- ManualBookingForm.jsx
+- ResumeMedisForm.jsx
 - toast
 - WarningLetterManagerModal.jsx
 - OwnerDecreesPage.jsx
@@ -51,9 +51,9 @@
 - initPageChat
 - SupabaseAuthContext.jsx
 - framer-motion
-- Card
+- lucide-react
 - field.jsx
-- components/admin/DailyRecap.jsx
+- shared/DailyRecapDetailModal.jsx
 - OwnerDashboard.jsx
 - initGlobalBar
 - subjectiveTemplate.js
@@ -77,7 +77,7 @@
 - MedicalRecordForm.jsx
 - Animation Recipes
 - PayrollManagerModal.jsx
-- booking/TherapistCard.jsx
+- ClinicBookingPage.jsx
 - ClinaraLandingPage.jsx
 - Worst-Case Catalog
 - DailyRecapModal.jsx
@@ -87,16 +87,16 @@
 - DashboardTopbar.jsx
 - Animation Standards Reference
 - KonversiDokterConverter.jsx
-- LandingPage.jsx
+- package.json
 - functionalForms.js
 - BSIMutasiReconciliation.jsx
 - The Fixes
 - devDependencies
 - generate-clinara-shell.js
-- TherapistMetrics.jsx
+- TherapistDashboardWidget.jsx
 - Animation Audit Playbook
 - SplashScreen.jsx
-- soapFirst.js
+- ManualBookingForm.jsx
 - handleManualEditActivity
 - AttendanceManagement.jsx
 - onboard.md
@@ -110,7 +110,7 @@
 - ref_jsr_supabase
 - showToast
 - components.json
-- LandingPageManager.jsx
+- confirmAction
 - wa.ts
 - Glossary
 - actOnAgentTarget
@@ -126,20 +126,20 @@
 - createLiveBrowserSessionState
 - vite.config.js
 - TherapistManager.jsx
-- SubjectiveTemplateBuilder.jsx
+- components/admin/DailyRecap.jsx
 - therapistMonthlyReportPdf.js
 - Finding Animation Opportunities
 - TherapistWorkloadWidget.jsx
-- GoogleSheetsSettings.jsx
+- ResumeMedisTemplate.jsx
 - SoapFirstOverrides.jsx
-- SmartBookingPage.jsx
+- AdminDashboard.jsx
 - MonthlyReportWidget.jsx
 - animate.md
 - Handle `generate`
 - attendanceExcelParser.js
-- TooltipContent
+- AdminAppointmentBooking.jsx
 - InvoiceTemplateKwitansi.jsx
-- CapacityVsDemandChart.jsx
+- PatientManagement.jsx
 - MouAuthGate.jsx
 - Generate Report
 - New visual work
@@ -155,7 +155,7 @@
 - Simplify the Design
 - measure-authed.mjs
 - install-missing-components.js
-- TherapistTodayPatientHistory.jsx
+- Design: Incremental Updates + Entity Deduplication
 - clarify.md
 - Nielsen's 10 Heuristics
 - Generate Combined Critique Report
@@ -166,12 +166,12 @@
 - The list
 - Anatomy3DExplorer.jsx
 - toast.jsx
-- AppointmentStateContext.jsx
+- lazyRetry.js
 - goalSuggestions.js
 - spineScene.js
 - register-clinic/index.ts
 - adapt.md
-- clamp
+- PemilihApp.jsx
 - Init flow
 - manifest.json
 - ObjectiveProgressUpdate.jsx
@@ -184,9 +184,9 @@
 - Shape
 - invoice-og.js
 - 🔍 Detailed File Audit
-- AlkesInvoiceModal.jsx
-- PremiumClinicLanding.jsx
-- chart.jsx
+- PemilihSetup.jsx
+- react-helmet
+- ImportPatientExcelModal.jsx
 - diagnosisSearch.js
 - manage-clinic-domain/index.ts
 - Component Building Principles
@@ -204,7 +204,7 @@
 - WhatsApp Cloud API (Meta) langsung
 - 2. Database Schema Analysis
 - AdminChecklistHistory.jsx
-- toggle-group.jsx
+- class-variance-authority
 - dedupeFetch.js
 - The Animation Decision Framework
 - clip-path for Animation
@@ -213,7 +213,7 @@
 - Diagnostic Scan
 - Visualize: Direction Comps & Asset Production
 - InventoryPendingOrders.jsx
-- PackageHistoryService.js
+- PemilihDpcApp.jsx
 - CSS Transform Mastery
 - The Sonner Principles (Building Loved Components)
 - Spring Animations
@@ -224,7 +224,7 @@
 - Debugging Animations
 - Heuristics Scoring Guide
 - 1. Verifikasi Kode (Code Audit)
-- DailyEvaluationAdmin.jsx
+- whatsappScheduler.js
 - Clinara illustration worker
 - firebase-messaging-sw.js
 - vercel.json
@@ -232,6 +232,40 @@
 - .claude/CLAUDE.md
 - sw.js
 - chartMotion.js
+- qrisMatcher.js
+- Analisis Logika Package Recap (Admin vs Owner)
+- admin/PackageRecaps.jsx
+- getPhysiotherapists
+- bsiQrisReportParser.js
+- PemilihSelect
+- usePatientList.js
+- BSIBelumMasukTab.jsx
+- numScale
+- Incremental Updates + Entity Deduplication Implementation Plan
+- carousel.jsx
+- WeeklyScheduleView.jsx
+- form.jsx
+- pushNotifications.js
+- input-group.jsx
+- empty.jsx
+- PemilihSuaraPksSetup.jsx
+- AdminCashHolding.jsx
+- PriceCatalogManager.jsx
+- AdminCheckTransaksi.jsx
+- KonversiDokterApp.jsx
+- TherapistStatusCards.jsx
+- Checklist Verifikasi Sinkronisasi Data Pasien
+- OwnerFinanceDashboardWidget.jsx
+- readExerciseIllustrationZip
+- @radix-ui/react-aspect-ratio
+- @radix-ui/react-collapsible
+- prop-types
+- @radix-ui/react-avatar
+- @radix-ui/react-context-menu
+- @radix-ui/react-hover-card
+- @radix-ui/react-menubar
+- @radix-ui/react-radio-group
+- @radix-ui/react-toggle
 
 ## God Nodes (most connected - your core abstractions)
 1. `Button` - 596 edges
@@ -246,61 +280,61 @@
 10. `DialogTitle` - 267 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `4. PART 4 & 5: RBAC & DATA INTEGRITY AUDIT` --references--> `ProtectedRoute()`  [INFERRED]
-  AUDIT_REPORT_MEDICAL_RECORDS_2026.md → src/components/ProtectedRoute.jsx
-- `A. API Layer (`src/lib/api.js`)` --references--> `getPatients()`  [INFERRED]
-  INVESTIGATION_REPORT_RM00995.md → src/lib/api.js
-- `2. Kinerja (Performance)` --references--> `getDailyRecaps()`  [INFERRED]
-  ANALISIS_PACKAGE_RECAP.md → src/lib/api.js
-- `3. Keamanan & Multi-Tenancy (Data Leak Risk)` --references--> `getAllPackageTrackings()`  [INFERRED]
-  ANALISIS_PACKAGE_RECAP.md → src/lib/api.js
-- `API Calls` --references--> `getAllPackageTrackings()`  [INFERRED]
-  ANALISIS_PACKAGE_RECAP.md → src/lib/api.js
+- `File Map` --references--> `build()`  [INFERRED]
+  graphify/docs/superpowers/plans/2026-05-04-incremental-updates-dedup.md → src/lib/hnp3d/spineScene.js
+- `Task 3: Wire dedup into `build.py`` --references--> `build()`  [INFERRED]
+  graphify/docs/superpowers/plans/2026-05-04-incremental-updates-dedup.md → src/lib/hnp3d/spineScene.js
+- `Self-Review` --references--> `build()`  [INFERRED]
+  graphify/docs/superpowers/plans/2026-05-04-incremental-updates-dedup.md → src/lib/hnp3d/spineScene.js
+- `Pitfalls` --references--> `Layout`  [INFERRED]
+  .agents/skills/impeccable/reference/document.md → src/lib/soapPatientPdf.js
+- `Layout Adaptation Techniques` --references--> `clamp()`  [INFERRED]
+  .agents/skills/impeccable/reference/adapt.md → src/lib/hnp3d/spineScene.js
 
 ## Import Cycles
 - 2-file cycle: `src/components/therapist/PatientClinicalHistoryDrawer.jsx -> src/components/therapist/TherapistTodayPatientHistory.jsx -> src/components/therapist/PatientClinicalHistoryDrawer.jsx`
 
-## Communities (224 total, 15 thin omitted)
+## Communities (259 total, 24 thin omitted)
 
-### Community 0 - "Input"
-Cohesion: 0.05
-Nodes (131): AdminExpenseEditModal(), AdminExpenseForm(), AdminExpenseList(), AdminIncomeEditModal(), AdminIncomeForm(), computeFeePreview(), AdminIncomeList(), AdminAccountingDashboard() (+123 more)
+### Community 0 - "button.jsx"
+Cohesion: 0.06
+Nodes (67): AdminExpenseEditModal(), AdminExpenseForm(), AdminExpenseList(), AdminIncomeEditModal(), AdminIncomeForm(), computeFeePreview(), AdminIncomeList(), AdminAccountingDashboard() (+59 more)
 
 ### Community 1 - "api.js"
 Cohesion: 0.03
-Nodes (159): AccountingCategoryManager(), computeFeePreview(), OwnerFinanceForm(), OptionManager(), FinanceInput(), ANNUAL_LEAVE_PAYOUT_PER_DAY, ANNUAL_LEAVE_QUOTA_DAYS, bulkCreatePatients() (+151 more)
+Nodes (173): DEFAULT_ENABLED, formatDateTime(), GoogleSheetsSettings(), computeFeePreview(), OwnerFinanceForm(), OptionManager(), FinanceInput(), ANNUAL_LEAVE_PAYOUT_PER_DAY (+165 more)
 
 ### Community 2 - "live-browser.js"
 Cohesion: 0.03
 Nodes (145): applyGlobalBarLabelState(), applyLiveBarPreference(), applyPlaceholderDimensions(), applyPlaceholderSizingStyles(), averageRgb01(), beginEditPin(), bindEditBadgeProxy(), bufferToBase64() (+137 more)
 
 ### Community 3 - "Button"
-Cohesion: 0.08
-Nodes (97): AdminExpenseDeleteConfirmationModal(), AdminIncomeDeleteConfirmationModal(), AlkesSalesDialog(), idr(), PAYMENT_METHODS, todayWITA(), RescheduleSlotPickerDialog(), ChangePackageNominalForm() (+89 more)
+Cohesion: 0.07
+Nodes (97): AdminExpenseDeleteConfirmationModal(), AdminIncomeDeleteConfirmationModal(), BookedSlotDetailModal(), addMinutesToTime(), dayKey(), parseDayKey(), RescheduleConfirmDialog(), RescheduleSlotPickerDialog() (+89 more)
 
 ### Community 4 - "date-fns"
-Cohesion: 0.08
-Nodes (91): API Calls, date-fns, AttendanceUploadModal(), STATUS_LABEL, DailyEvaluationReportWidget(), DailyRecapsDetailModal(), DebugPackagePanel(), ListViewAppointments() (+83 more)
+Cohesion: 0.07
+Nodes (107): API Calls, AttendanceUploadModal(), STATUS_LABEL, SlotGrid(), DailyEvaluationReportWidget(), DailyRecapsDetailModal(), DebugPackagePanel(), EditPackageStatusModal() (+99 more)
 
-### Community 5 - "lucide-react"
-Cohesion: 0.06
-Nodes (88): lucide-react, ClinicalDocumentHistory(), formatDate(), FollowUpCard(), FollowUpCategory(), FollowUpManagementPage(), TAB_CONFIG, InventoryStockOverview() (+80 more)
+### Community 5 - "TabsList"
+Cohesion: 0.15
+Nodes (32): CalendarView(), ClinicalDocumentHistory(), formatDate(), InventoryStockOverview(), AdminManagementPage(), TABS, getMonthRange(), InventoryMonthlyTakeOut() (+24 more)
 
 ### Community 6 - "App.jsx"
-Cohesion: 0.04
-Nodes (86): react-router-dom, AboutPage, AdminAsTherapist, AdminDashboard, App(), AppSplashGate(), AuthErrorBoundary, BlogArticlePage (+78 more)
+Cohesion: 0.05
+Nodes (72): AboutPage, AdminAsTherapist, AdminDashboard, App(), AppSplashGate(), BlogArticlePage, BlogIndexPage, ClinaraLandingPage (+64 more)
 
 ### Community 7 - "cn"
-Cohesion: 0.03
-Nodes (84): Breadcrumb, BreadcrumbEllipsis(), BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator(), ContextMenuCheckboxItem (+76 more)
+Cohesion: 0.05
+Nodes (57): Breadcrumb, BreadcrumbEllipsis(), BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator(), ContextMenuCheckboxItem (+49 more)
 
-### Community 8 - "package.json"
-Cohesion: 0.03
-Nodes (92): dependencies, clsx@^2.1.0, cmdk@^0.2.0, date-fns@^3.3.1, embla-carousel-react@^8.6.0, @emotion/is-prop-valid@^1.4.0, file-saver@^2.0.5, framer-motion@^10.16.4 (+84 more)
+### Community 8 - "dependencies"
+Cohesion: 0.04
+Nodes (46): dependencies, class-variance-authority@^0.7.0, clsx@^2.1.0, cmdk@^0.2.0, date-fns@^3.3.1, file-saver@^2.0.5, framer-motion@^10.16.4, html2canvas@^1.4.1 (+38 more)
 
 ### Community 9 - "PemilihSuaraPks.jsx"
-Cohesion: 0.06
-Nodes (73): BALIKPAPAN_KECAMATAN_DEFAULTS, PKS_ELECTION_YEARS, bumpTpsCountIfNeeded(), fetchAllRows(), PemilihDpcApp(), PemilihApp(), CardHeader(), KATEGORI_LABEL (+65 more)
+Cohesion: 0.14
+Nodes (23): callOcrHalf(), canvasToBase64(), chunkArray(), COMPARE_YEARS, computeDelta(), DeltaBadge(), describeFunctionError(), mergePageHalves() (+15 more)
 
 ### Community 10 - "connectSSE"
 Cohesion: 0.06
@@ -308,43 +342,43 @@ Nodes (93): abortSvelteComponentInjection(), applyParamDefaults(), applyParamVal
 
 ### Community 11 - "OwnerFinanceDashboard.jsx"
 Cohesion: 0.08
-Nodes (68): AccountingReport(), BreakEvenPointWidget(), formatCurrency(), ExpenseCategoryWidget(), AnimatedNumber(), Donut(), Ring(), Spark() (+60 more)
+Nodes (61): BreakEvenPointWidget(), formatCurrency(), ExpenseCategoryWidget(), AnimatedNumber(), Donut(), Ring(), Spark(), CATEGORY_TONES (+53 more)
 
 ### Community 12 - "react"
 Cohesion: 0.05
-Nodes (47): react, @supabase/supabase-js, PricingCard(), PricingSection(), valueProps, AccountClinicManager(), ClinicOperatingHoursSettings(), callDomainFn() (+39 more)
+Nodes (80): react, AdminAccountSettings(), AppointmentDetailModal(), idr(), MODES, OwnerDiscountPanel(), STATUS_ORDER, fmtDate() (+72 more)
 
 ### Community 13 - "PatientPortalPage.jsx"
 Cohesion: 0.06
 Nodes (70): fmt(), SendClinaraDialog(), STATUS_LABEL, ExerciseIllustrationViewer(), formatOnsetAgo(), buildPortalUrl(), buildWhatsAppLink(), buildWhatsAppMessage() (+62 more)
 
 ### Community 14 - "AdminDashboard.jsx"
-Cohesion: 0.06
-Nodes (55): DashboardLayout(), iconMap, readClinicInfoCache(), ROLE_DEFAULT_NAMES, writeClinicInfoCache(), DesignStyleManager(), HeroClock(), DEFAULT_THEME_KEY (+47 more)
+Cohesion: 0.08
+Nodes (37): DashboardLayout(), iconMap, readClinicInfoCache(), ROLE_DEFAULT_NAMES, writeClinicInfoCache(), fmtTime(), nameOf(), PatientPortalInboxContent() (+29 more)
 
 ### Community 15 - "soapPatientPdf.js"
 Cohesion: 0.06
 Nodes (57): Component translation rules, Narrative mapping, Scan mode (approach C: auto-extract, then confirm descriptive language), Schema, Step 1: Find the design assets, Step 2: Auto-extract what can be auto-extracted, Step 2b: Stage the frontmatter, Step 3: Ask the user for qualitative language (+49 more)
 
 ### Community 16 - "customSupabaseClient.js"
-Cohesion: 0.05
-Nodes (38): DebugTherapistBooking(), PROBLEM_LABEL, VALUE_LABEL, fmtTime(), nameOf(), PatientPortalInboxContent(), PortalInboxCard(), generateFollowUpQueue() (+30 more)
+Cohesion: 0.06
+Nodes (29): @supabase/supabase-js, PROBLEM_LABEL, VALUE_LABEL, PortalInboxCard(), apiDeleteAppointment(), apiUpdateAppointment(), AppointmentStateContext, AppointmentStateProvider() (+21 more)
 
 ### Community 17 - "SuperAdminClinics.jsx"
 Cohesion: 0.08
-Nodes (59): EMPTY_FORM, ExerciseFields(), ExerciseVideoManager(), fmtDur(), fmtSize(), nz(), readDuration(), uploadPoster() (+51 more)
+Nodes (64): EMPTY_FORM, ExerciseFields(), ExerciseVideoManager(), fmtDur(), fmtSize(), nz(), readDuration(), uploadPoster() (+56 more)
 
 ### Community 18 - "TherapistLeaveRequests.jsx"
 Cohesion: 0.09
-Nodes (60): LeaveRequestCard(), LeaveRequestReview(), ShiftSwapCard(), shiftText(), SUNDAY_STATUS_META, SundaySwapCard(), emptyForm(), LeaveForm() (+52 more)
+Nodes (57): LeaveRequestCard(), ShiftSwapCard(), shiftText(), SUNDAY_STATUS_META, SundaySwapCard(), emptyForm(), LeaveForm(), minutesToTime() (+49 more)
 
 ### Community 19 - "PatientDialog.jsx"
-Cohesion: 0.05
-Nodes (58): 1. Konsistensi Data (Inconsistency Risk), 2. Kinerja (Performance), 3. Keamanan & Multi-Tenancy (Data Leak Risk), Analisis Logika Package Recap (Admin vs Owner), API Calls, BAGIAN 1: ADMIN PACKAGE RECAP (`src/components/admin/PackageRecap.jsx`), BAGIAN 2: OWNER PACKAGE RECAP (`src/components/owner/OwnerPackageRecap.jsx`), BAGIAN 3: PERBANDINGAN API CALLS (+50 more)
+Cohesion: 0.12
+Nodes (32): calculatePackageSessionsFromRecaps(), PatientDialog(), RELIGION_OPTIONS, PatientModal(), Command, CommandDialog(), CommandEmpty, CommandGroup (+24 more)
 
-### Community 20 - "AdminAppointmentBooking.jsx"
-Cohesion: 0.09
-Nodes (50): AdminAppointmentBooking(), BookedSlotDetailModal(), addMinutesToTime(), DayDropStrip(), dayKey(), DragGhost(), parseDayKey(), RescheduleConfirmDialog() (+42 more)
+### Community 20 - "DateRangePicker"
+Cohesion: 0.28
+Nodes (12): DateRangeFilter(), GlobalDateRangeFilter(), Calendar(), buildPresets(), DateRangePicker(), fmtShort(), getDefaultDateRange(), parseDay() (+4 more)
 
 ### Community 21 - "pipeline.py"
 Cohesion: 0.07
@@ -352,31 +386,31 @@ Nodes (13): interface, default_prompt, display_name, short_description, digest()
 
 ### Community 22 - "functionalFormsExtra.js"
 Cohesion: 0.04
-Nodes (59): band(), BASDAI, BASFI, BASFI_ITEMS, BEIGHTON, BRADEN, CAT, CHALDER (+51 more)
+Nodes (50): BASDAI, BASFI, BASFI_ITEMS, BEIGHTON, BRADEN, CAT, CHALDER, CHALDER_SCALE (+42 more)
 
 ### Community 23 - "AdminQrisReconciliation.jsx"
-Cohesion: 0.08
-Nodes (59): asNumber(), fetchRecapHandlerEvents(), AdminQrisReconciliation(), fmtClock(), fmtLong(), fmtShort(), formatRp(), getIssues() (+51 more)
+Cohesion: 0.15
+Nodes (33): asNumber(), fetchRecapHandlerEvents(), AdminQrisReconciliation(), fmtClock(), fmtLong(), fmtShort(), formatRp(), getIssues() (+25 more)
 
-### Community 24 - "ManualBookingForm.jsx"
-Cohesion: 0.08
-Nodes (49): AppointmentManagement(), hhmm(), homecareExpected(), HomecareShiftHint(), useHomecareShift(), ManualBookingForm(), SlotBookingForm(), ClinicalDocumentPreviewModal() (+41 more)
+### Community 24 - "ResumeMedisForm.jsx"
+Cohesion: 0.17
+Nodes (20): ClinicalDocumentPreviewModal(), collectLineRects(), normalizeClone(), waitForImages(), isBlank(), resolveTherapists(), ResumeMedisCpptDialog(), emptyForm (+12 more)
 
 ### Community 25 - "toast"
 Cohesion: 0.08
-Nodes (54): BroadcastRow(), BroadcastTab(), ConnectionTab(), fail(), STATUS_STYLE, TemplatesTab(), getClinicInitials(), WhatsAppMessagePreview() (+46 more)
+Nodes (55): BroadcastRow(), BroadcastTab(), ConnectionTab(), fail(), STATUS_STYLE, TemplatesTab(), WhatsAppCloudPanel(), getClinicInitials() (+47 more)
 
 ### Community 26 - "WarningLetterManagerModal.jsx"
-Cohesion: 0.06
-Nodes (55): emptyForm(), LEVEL_BADGE_CLASS, newViolationRow(), nextLetterNumber(), STATUS_BADGE_CLASS, STATUS_LABEL, WarningLetterManagerModal(), PdfPreviewModal() (+47 more)
+Cohesion: 0.11
+Nodes (30): emptyForm(), LEVEL_BADGE_CLASS, newViolationRow(), nextLetterNumber(), STATUS_BADGE_CLASS, STATUS_LABEL, WarningLetterManagerModal(), LEVEL_BADGE_CLASS (+22 more)
 
 ### Community 27 - "OwnerDecreesPage.jsx"
-Cohesion: 0.07
-Nodes (48): formatDate(), PROGRAM_TERAPI_LABELS, ResumeMedisTemplateDefault, cell, fmtAge(), fmtDate(), pad(), parseDate() (+40 more)
+Cohesion: 0.11
+Nodes (30): NewDecreeBanner(), deleteClinicDecree(), getClinicDecrees(), setClinicDecreeStatus(), upsertClinicDecree(), decreeFileName(), fmtLong(), generateDecreePDF() (+22 more)
 
 ### Community 28 - "functionalFormsMore.js"
 Cohesion: 0.04
-Nodes (54): formHelpers, AMB, BCT, BCT_FSS, BCT_FSS_OPTS, BCT_SSS, CAIT, CHAQ (+46 more)
+Nodes (52): formHelpers, AMB, BCT, BCT_FSS, BCT_FSS_OPTS, BCT_SSS, CAIT, CHAQ (+44 more)
 
 ### Community 29 - "modern-screenshot.umd.js"
 Cohesion: 0.09
@@ -388,43 +422,43 @@ Nodes (55): actionLabel(), applyConfigureBarChrome(), bindConfigureCountPillTool
 
 ### Community 31 - "RotasiSetup.jsx"
 Cohesion: 0.07
-Nodes (45): generateSchedule(), isWithinWorkingHours(), timeToMinutes(), RotasiApp(), RotasiDailySchedule(), todayStr(), RotasiHistory(), THERAPIST_COLORS (+37 more)
+Nodes (46): generateSchedule(), isWithinWorkingHours(), timeToMinutes(), RotasiApp(), RotasiDailySchedule(), todayStr(), RotasiHistory(), THERAPIST_COLORS (+38 more)
 
 ### Community 32 - "initPageChat"
 Cohesion: 0.08
 Nodes (52): agentHasWorkInFlight(), armPageChatForTyping(), attachSteerFocusDebug(), attachSteerFocusGuard(), buildSteerQueueHint(), clearSteerAwaitTimer(), clearSteerFocusRecoverTimer(), collapsePageChat() (+44 more)
 
 ### Community 33 - "SupabaseAuthContext.jsx"
-Cohesion: 0.07
-Nodes (40): AdminAccountSettings(), NOTIFICATION_CATALOG, NotificationPreferencesCard(), AuthContext, AuthProvider(), loadPush(), readImpersonationOrigin(), withTimeout() (+32 more)
+Cohesion: 0.12
+Nodes (25): adjustPackage(), capFor(), computeHidden(), configureLightLoadMode(), ensureIdSelected(), fetchAllRaw(), FILTERED_TABLES, getAuth() (+17 more)
 
 ### Community 34 - "framer-motion"
-Cohesion: 0.13
-Nodes (29): framer-motion, Footer(), LocationSection(), Navbar(), localBusinessSchema, PageSEO(), ARTICLES, getArticleBySlug() (+21 more)
+Cohesion: 0.07
+Nodes (56): framer-motion, react-router-dom, advantages, CTASection(), Footer(), HeroSection(), LocationSection(), Navbar() (+48 more)
 
-### Community 35 - "Card"
-Cohesion: 0.14
-Nodes (34): react-helmet, AdminAccountingReport(), AdminAppointmentScheduler(), AdminDashboardMetrics(), MetricCard(), AdminMetrics(), PackageSessionDisplay(), OverviewCard() (+26 more)
+### Community 35 - "lucide-react"
+Cohesion: 0.06
+Nodes (84): date-fns, lucide-react, AdminAccountingReport(), AdminAppointmentScheduler(), AdminDashboardMetrics(), MetricCard(), AdminMetrics(), emptyForm (+76 more)
 
 ### Community 36 - "field.jsx"
-Cohesion: 0.06
-Nodes (43): class-variance-authority@^0.7.0, @radix-ui/react-separator@^1.0.3, @radix-ui/react-slot@^1.0.2, class-variance-authority, @radix-ui/react-separator, @radix-ui/react-slot, ButtonGroup(), ButtonGroupSeparator() (+35 more)
+Cohesion: 0.08
+Nodes (30): @radix-ui/react-slot, ButtonGroup(), ButtonGroupSeparator(), ButtonGroupText(), buttonGroupVariants, Field(), FieldContent(), FieldDescription() (+22 more)
 
-### Community 37 - "components/admin/DailyRecap.jsx"
-Cohesion: 0.12
-Nodes (40): DailyRecap(), formatShortDate(), getMakassarDateForOffset(), getMakassarDateStringForOffset(), getMakassarDayLabel(), getPortalPatient(), getTherapistName(), MONTH_SHORT_ID (+32 more)
+### Community 37 - "shared/DailyRecapDetailModal.jsx"
+Cohesion: 0.17
+Nodes (28): DatePicker(), DailyRecapDetailModal(), DetailItem(), getDiagnosisIds(), isUuid(), PaidOnNote(), useAppointmentState(), useRecapQuote() (+20 more)
 
 ### Community 38 - "OwnerDashboard.jsx"
-Cohesion: 0.09
-Nodes (45): LazyOnVisible(), Block(), PageSkeleton(), fetchAllTherapists, fetchCancelledAppointments(), fetchCompletedSessions(), fetchEmptySlots(), fetchOngoingSessions() (+37 more)
+Cohesion: 0.07
+Nodes (53): BulletChartTargetVsRealization(), getCurrentPeriod(), TargetFillReminder(), LazyOnVisible(), Block(), PageSkeleton(), fetchAllTherapists, fetchCancelledAppointments() (+45 more)
 
 ### Community 39 - "initGlobalBar"
 Cohesion: 0.08
 Nodes (45): agentStatusText(), barPaletteForTheme(), brandMarkSvg(), buildDesignHeader(), cursorForInsertAxis(), designPanelCss(), detectPageTheme(), own() (+37 more)
 
 ### Community 40 - "subjectiveTemplate.js"
-Cohesion: 0.09
-Nodes (44): annotate(), applySectionKind(), ASHWORTH, countProgress(), EXCLUSIVE_WORDS, FLAG_SETS, flattenNested(), FORM_WORDS (+36 more)
+Cohesion: 0.07
+Nodes (60): ChoiceChips(), DateInput(), DurationInput(), FormButtons(), FreeInput(), hasValue(), renderToken(), ScaleChips() (+52 more)
 
 ### Community 41 - "new-work.md"
 Cohesion: 0.05
@@ -436,11 +470,11 @@ Nodes (43): beginNewLiveConfiguration(), cancelEditing(), cancelEditingToPicking
 
 ### Community 43 - "OwnerPresentationPage.jsx"
 Cohesion: 0.13
-Nodes (29): recharts, formatPercent(), formatShortCurrency(), PresentationFullscreen(), AppointmentSlide(), STATUS_COLORS, STATUS_LABELS, CoverSlide() (+21 more)
+Nodes (29): recharts, formatPercent(), formatShortCurrency(), AppointmentSlide(), STATUS_COLORS, STATUS_LABELS, CoverSlide(), FinanceSlide() (+21 more)
 
 ### Community 44 - "DailyRecapForm.jsx"
-Cohesion: 0.13
-Nodes (31): computeFeePreview(), DailyRecapForm(), isUUID(), resolvePackageTypeValue(), ExtendPackageModal(), PatientAddModal(), RELIGION_OPTIONS, PatientEditModal() (+23 more)
+Cohesion: 0.21
+Nodes (18): computeFeePreview(), DailyRecapForm(), isUUID(), resolvePackageTypeValue(), cleanDailyRecapPayload(), createDailyRecap(), saveDailyRecapPaymentSplits(), updateDailyRecap() (+10 more)
 
 ### Community 45 - "InsentifBulananPage.jsx"
 Cohesion: 0.11
@@ -455,8 +489,8 @@ Cohesion: 0.07
 Nodes (41): addManualContextText(), applyEditing(), buildLocatorForLeaf(), canRestoreManualEditElement(), collectEditableTextRows(), visit(), collectManualContextPieces(), walk() (+33 more)
 
 ### Community 48 - "CombinedFinanceReport.jsx"
-Cohesion: 0.14
-Nodes (33): CombinedFinanceReport(), DetailedTable(), SummaryCard(), FinanceReportSection(), useMonthlyFinance(), resolveClinicId(), sumAmount(), usePresentationData() (+25 more)
+Cohesion: 0.09
+Nodes (51): AccountingReport(), CombinedFinanceReport(), DetailedTable(), SummaryCard(), FinanceReportSection(), ADMIN_SUBTABS, MAIN_TABS, mapAdminExpense() (+43 more)
 
 ### Community 49 - "insentifDokterParser.js"
 Cohesion: 0.10
@@ -467,8 +501,8 @@ Cohesion: 0.06
 Nodes (33): Apply at system scale, Audit before choosing, Choose a strategy, Contrast and perception, Live-mode signature params, Verify, Visitor mode, Step 1: Parse the request (+25 more)
 
 ### Community 51 - "sidebar.jsx"
-Cohesion: 0.08
-Nodes (33): SheetContent, SheetDescription, SheetFooter(), SheetHeader(), SheetOverlay, SheetTitle, sheetVariants, Sidebar (+25 more)
+Cohesion: 0.07
+Nodes (35): TherapistSharedMedia(), SheetContent, SheetDescription, SheetFooter(), SheetHeader(), SheetOverlay, SheetTitle, sheetVariants (+27 more)
 
 ### Community 52 - "impeccable/SKILL.md"
 Cohesion: 0.06
@@ -479,84 +513,84 @@ Cohesion: 0.10
 Nodes (35): acceptedDomAlreadyClean(), applyOriginalAttrsToSvelteAnchor(), clearHandledWrapperReloadStamp(), commitAcceptedSvelteComponentToDom(), componentModuleCandidates(), deferredRecoverySuperseded(), describeMountFailure(), detectDevServerBase() (+27 more)
 
 ### Community 54 - "RecapVitalsDialog.jsx"
-Cohesion: 0.18
-Nodes (29): VitalSignsFields(), AdminChecklistManager(), ConfirmHost(), RecapVitalsDialog(), AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription (+21 more)
+Cohesion: 0.17
+Nodes (30): VitalSignsFields(), AdminChecklistManager(), ConfirmHost(), RecapVitalsDialog(), AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription (+22 more)
 
 ### Community 55 - "utils.js"
 Cohesion: 0.08
-Nodes (24): BepItemDetailModal(), formatCurrency(), formatDate(), COLOR_PALETTE, PromoUsageWidget(), formatName(), formatShortDate(), isPWA (+16 more)
+Nodes (18): PanelGroupDirectionContext, ResizableHandle(), ResizablePanelGroup(), Slider, Spinner(), calculateDurationMinutes(), calculateMaxPatientCapacity(), calculateScheduledWorkDays() (+10 more)
 
 ### Community 56 - "BSIBelumMasukTab.jsx"
-Cohesion: 0.12
-Nodes (33): BSIBelumMasukTab(), fetchAll(), fmtDate(), fmtDateTimeWita(), formatRp(), METHOD_LABEL, MONTHS, Stat() (+25 more)
+Cohesion: 0.17
+Nodes (22): addMinutes(), applyGatewayReport(), buildUnits(), byDateTime(), dayNum(), daysBetween(), DEBIT_MDR_RATE, feasible() (+14 more)
 
 ### Community 57 - "TherapistDashboard.jsx"
-Cohesion: 0.11
-Nodes (27): useMedicalRecordsFilledBy(), useTherapistSoapTemplateEdit(), getClinicDetails(), getPhysiotherapistByUserId(), read16(), read32(), readExerciseIllustrationZip(), isReviewExempt() (+19 more)
+Cohesion: 0.16
+Nodes (20): useMedicalRecordsFilledBy(), useTherapistSoapTemplateEdit(), isReviewExempt(), Anatomy3DExplorer, ClinicDecreesViewer, ExerciseIllustrations, ExerciseReview, MedicalRecordForm (+12 more)
 
 ### Community 58 - "MedicalRecordForm.jsx"
-Cohesion: 0.12
-Nodes (29): LabRadiologyUpload(), openFile(), Section(), SECTIONS, MedicalRecordForm(), normalizeDiagnosis(), applyProgressNote(), buildNoteLine() (+21 more)
+Cohesion: 0.13
+Nodes (27): LabRadiologyUpload(), MedicalRecordForm(), normalizeDiagnosis(), applyProgressNote(), buildNoteLine(), formatDay(), PROGRESS_NOTE_RE, SoapContinuationPrompt() (+19 more)
 
 ### Community 59 - "Animation Recipes"
 Cohesion: 0.06
 Nodes (31): Accordion / collapse, Animation Recipes, Button press, Drag to dismiss, Drawer / sheet, Dropdown, popover, menu, select, Hold to confirm, Masking a crossfade that won't settle (+23 more)
 
 ### Community 60 - "PayrollManagerModal.jsx"
-Cohesion: 0.17
-Nodes (30): HomecareTimeAudit(), emptyForm(), formatCurrency(), PayrollManagerModal(), STATUS_BADGE_CLASS, STATUS_LABEL, SalaryCalculator(), TargetFillReminder() (+22 more)
+Cohesion: 0.10
+Nodes (43): HomecareTimeAudit(), emptyForm(), formatCurrency(), PayrollManagerModal(), STATUS_BADGE_CLASS, STATUS_LABEL, SalaryCalculator(), STATUS_BADGE_CLASS (+35 more)
 
-### Community 61 - "booking/TherapistCard.jsx"
-Cohesion: 0.15
-Nodes (22): TherapistCard(), SlotGrid(), containerVariants, TherapistCardSkeleton(), TherapistsSection(), SmartResultsStep(), TherapistProfileCard(), Avatar (+14 more)
+### Community 61 - "ClinicBookingPage.jsx"
+Cohesion: 0.06
+Nodes (52): SlotGrid(), ADVANTAGE_ICONS, ClinicLandingRenderer(), DOT_PATTERN, formatPrice(), SERVICE_ICONS, ADVANTAGE_ICONS, fadeUp (+44 more)
 
 ### Community 62 - "ClinaraLandingPage.jsx"
-Cohesion: 0.09
-Nodes (28): GROUP_ORDER, groupOf(), initialsOf(), PRIMARY_TABS, SHORT_LABEL, TherapistShell(), CAVEAT_FONT_HREF, loadCaveatFont() (+20 more)
+Cohesion: 0.08
+Nodes (32): AuthProvider(), loadPush(), readImpersonationOrigin(), withTimeout(), CAVEAT_FONT_HREF, loadCaveatFont(), loadFontStylesheet(), SPLASH_FONT_HREF (+24 more)
 
 ### Community 63 - "Worst-Case Catalog"
 Cohesion: 0.06
 Nodes (29): Collections, Emails, URLs, identifiers, Environment, Images and media, Labels, titles, and copy from data, Numbers and money, People and names, States (+21 more)
 
 ### Community 64 - "DailyRecapModal.jsx"
-Cohesion: 0.15
-Nodes (28): 3. API/Query Investigation (`src/lib/api.js` & `src/lib/dailyRecapHelpers.js`), DailyRecapDetailModal(), DetailItem(), getDiagnosisIds(), isUuid(), DailyRecapModal(), useDebounce(), itemLineTotal() (+20 more)
+Cohesion: 0.17
+Nodes (24): 3. API/Query Investigation (`src/lib/api.js` & `src/lib/dailyRecapHelpers.js`), KWITANSI_CATEGORIES, DailyRecapModal(), useDebounce(), PackageInfoCard(), itemLineTotal(), itemsNetTotal(), RecapInvoiceItems() (+16 more)
 
 ### Community 65 - "MouManagerModal.jsx"
-Cohesion: 0.13
-Nodes (29): buildDefaultPatientTypeRates(), computeNextPeriod(), daysBetween(), emptyForm(), MouManagerModal(), periodForNumber(), STATUS_BADGE_CLASS, STATUS_LABEL (+21 more)
+Cohesion: 0.11
+Nodes (33): buildDefaultPatientTypeRates(), computeNextPeriod(), daysBetween(), emptyForm(), MouManagerModal(), periodForNumber(), STATUS_BADGE_CLASS, STATUS_LABEL (+25 more)
 
 ### Community 66 - "RemunerationManager"
-Cohesion: 0.11
-Nodes (27): RemunerationManager(), CircularScore(), MANUAL_METRICS, ManualMetricUploader(), TherapistRemuneration(), createRemunerationCriteria(), deleteRemunerationCriteria(), getClinicStaffQualitySummary() (+19 more)
+Cohesion: 0.16
+Nodes (19): CircularScore(), MANUAL_METRICS, ManualMetricUploader(), TherapistRemuneration(), getRemunerationCriteria(), getRemunerationRealizations(), getRemunerationReport(), getWarningLettersForTherapist() (+11 more)
 
 ### Community 67 - "icfAssessment.js"
 Cohesion: 0.13
 Nodes (29): ACTIVITY_RULES, addTo(), analyzeIcf(), ashworthQualifier(), clean(), collectAshworth(), collectFunctional(), collectMmt() (+21 more)
 
 ### Community 68 - "DashboardTopbar.jsx"
-Cohesion: 0.14
-Nodes (26): react-dom, AdminTherapistSwitcher(), APPROVAL_LINKS, DashboardTopbar(), DetailField(), flattenNavItems(), formatActivityDateTime(), formatApptDate() (+18 more)
+Cohesion: 0.11
+Nodes (29): AdminTherapistSwitcher(), APPROVAL_LINKS, DashboardTopbar(), DetailField(), flattenNavItems(), formatActivityDateTime(), formatApptDate(), formatClock() (+21 more)
 
 ### Community 69 - "Animation Standards Reference"
 Cohesion: 0.07
 Nodes (26): Aggressive Escalation Triggers, Guidelines, Initial Response, Operating Posture, Part 1 — Findings table (REQUIRED), Part 2 — Verdict (REQUIRED), Remedial Preference Hierarchy, Required Output Format (+18 more)
 
 ### Community 70 - "KonversiDokterConverter.jsx"
-Cohesion: 0.16
-Nodes (24): buildMonthOptions(), MONTH_NAMES_ID, MonthYearSelect(), KonversiDokterApp(), AsuransiPanel(), BiayaTerapiSection(), BpjsTable(), CATEGORY_THEME (+16 more)
+Cohesion: 0.18
+Nodes (23): buildMonthOptions(), MONTH_NAMES_ID, MonthYearSelect(), AsuransiPanel(), BiayaTerapiSection(), BpjsTable(), CATEGORY_THEME, CategoryPanel() (+15 more)
 
-### Community 71 - "LandingPage.jsx"
-Cohesion: 0.13
-Nodes (20): advantages, CTASection(), HeroSection(), PricingTeaser(), initials(), TestimonialsSection(), FEATURED_TESTIMONIALS, GOOGLE_RATING_SUMMARY (+12 more)
+### Community 71 - "package.json"
+Cohesion: 0.05
+Nodes (38): embla-carousel-react@^8.6.0, @emotion/is-prop-valid@^1.4.0, @radix-ui/react-alert-dialog@^1.0.5, @radix-ui/react-dialog@^1.0.5, @radix-ui/react-dropdown-menu@^2.0.6, @radix-ui/react-navigation-menu@^1.2.14, @radix-ui/react-popover@^1.0.7, @radix-ui/react-progress@^1.0.3 (+30 more)
 
 ### Community 72 - "functionalForms.js"
-Cohesion: 0.08
-Nodes (21): answered(), BARTHEL, BERG_ITEMS, DASH_ITEMS, dashForm(), FESI_ITEMS, LEFS_ITEMS, NDI_ITEMS (+13 more)
+Cohesion: 0.07
+Nodes (23): answered(), BARTHEL, BERG_ITEMS, DASH_ITEMS, dashForm(), FESI_ITEMS, FORM_LIST, FUNCTIONAL_FORMS (+15 more)
 
 ### Community 73 - "BSIMutasiReconciliation.jsx"
-Cohesion: 0.14
-Nodes (22): AdminCheckTransaksi(), BSIMutasiLazy, ErrorCatcher, BSIMutasiReconciliation(), DebitSettlementDetail(), detectType(), extractQrisTransactionDate(), findMatchingCombo() (+14 more)
+Cohesion: 0.22
+Nodes (18): BSIMutasiReconciliation(), DebitSettlementDetail(), detectType(), extractQrisTransactionDate(), findMatchingCombo(), formatRp(), generateMonthList(), MONTH_NAMES (+10 more)
 
 ### Community 74 - "The Fixes"
 Cohesion: 0.09
@@ -570,37 +604,37 @@ Nodes (25): devDependencies, autoprefixer@^10.4.16, eslint@^8.57.1, eslint-impor
 Cohesion: 0.10
 Nodes (16): EDIT_MODE_STYLES, POPUP_STYLES, __dirname, __filename, dist, src, __dirname, distDir (+8 more)
 
-### Community 77 - "TherapistMetrics.jsx"
-Cohesion: 0.18
-Nodes (20): AvailableSlotsWidget(), TherapistDashboardWidget(), StatCard(), TherapistMetrics(), TherapistPatientTypeDistribution(), TherapistPerformanceWidget(), TherapistTargetRing(), DAY_LABEL (+12 more)
+### Community 77 - "TherapistDashboardWidget.jsx"
+Cohesion: 0.12
+Nodes (28): fmtClock(), SoapPendingBanner(), AvailableSlotsWidget(), SoapViolationCard(), TherapistDashboardWidget(), StatCard(), TherapistMetrics(), TherapistPatientTypeDistribution() (+20 more)
 
 ### Community 78 - "Animation Audit Playbook"
 Cohesion: 0.08
 Nodes (22): 1. Purpose & frequency, 2. Easing & duration, 3. Physicality & origin, 4. Interruptibility, 5. Performance, 6. Accessibility, 7. Cohesion & tokens, 8. Missed opportunities (+14 more)
 
 ### Community 79 - "SplashScreen.jsx"
-Cohesion: 0.13
-Nodes (20): firebase@^12.14.0, firebase, PWAInstallPrompt(), buildRingText(), clinicCacheKey(), dailyQuotes, DAYS, firstWord() (+12 more)
+Cohesion: 0.24
+Nodes (13): buildRingText(), clinicCacheKey(), dailyQuotes, DAYS, firstWord(), getPeriod(), getTodayQuote(), isWideScreen() (+5 more)
 
-### Community 80 - "soapFirst.js"
-Cohesion: 0.23
-Nodes (19): fmtClock(), SoapPendingBanner(), fmt(), UnpaidSessionsCard(), SoapViolationCard(), useSoapFirstSettings(), diagnosisIds(), firstDiagnosis() (+11 more)
+### Community 80 - "ManualBookingForm.jsx"
+Cohesion: 0.25
+Nodes (20): hhmm(), homecareExpected(), HomecareShiftHint(), useHomecareShift(), ManualBookingForm(), SlotBookingForm(), Checkbox, useSoapFirstSettings() (+12 more)
 
 ### Community 81 - "handleManualEditActivity"
 Cohesion: 0.19
 Nodes (24): clearStoredManualApplyState(), fetchPendingCount(), handleManualEditActivity(), hidePendingApplyDock(), manualApplyLoadingText(), manualApplyStateKey(), manualEditEventForCurrentPage(), numberOrNull() (+16 more)
 
 ### Community 82 - "AttendanceManagement.jsx"
-Cohesion: 0.15
-Nodes (22): bulkUpsertAttendanceRecords(), deleteAttendanceShiftSetting(), getAttendanceEmployeeAliases(), getAttendanceRecords(), getAttendanceScheduleLookup(), getAttendanceShiftSettings(), getMyClinicIdForAttendance(), recalculateAllAttendanceRecords() (+14 more)
+Cohesion: 0.16
+Nodes (22): deleteAttendanceShiftSetting(), getAttendanceEmployeeAliases(), getAttendanceRecords(), getAttendanceScheduleLookup(), getAttendanceShiftSettings(), getMyClinicIdForAttendance(), recalculateAllAttendanceRecords(), recalculateAttendanceRecordsByIds() (+14 more)
 
 ### Community 83 - "onboard.md"
 Cohesion: 0.09
 Nodes (22): Assess Onboarding Needs, Context Over Ceremony, Contextual Help, Design Onboarding Experiences, Documentation & Help, Empty State Design, Feature Discovery & Adoption, Guided Tours & Walkthroughs (+14 more)
 
 ### Community 84 - "PlanChecklist.jsx"
-Cohesion: 0.17
-Nodes (20): GoalTreatment(), MAX_GOALS, newGoalId(), DoseRow(), EMPTY, EmptyHint(), ExerciseDetail(), OptionPicker() (+12 more)
+Cohesion: 0.18
+Nodes (19): GoalTreatment(), newGoalId(), DoseRow(), EMPTY, EmptyHint(), ExerciseDetail(), OptionPicker(), PlanCard() (+11 more)
 
 ### Community 85 - "Apple Design"
 Cohesion: 0.09
@@ -638,9 +672,9 @@ Nodes (19): abandonForeignSession(), abandonSupersededGo(), cleanup(), clearScro
 Cohesion: 0.10
 Nodes (19): aliases, components, hooks, lib, ui, utils, iconLibrary, registries (+11 more)
 
-### Community 94 - "LandingPageManager.jsx"
-Cohesion: 0.19
-Nodes (15): ADVANTAGE_ICONS, ClinicLandingRenderer(), DOT_PATTERN, formatPrice(), SERVICE_ICONS, Field(), getPath(), LandingPageManager() (+7 more)
+### Community 94 - "confirmAction"
+Cohesion: 0.17
+Nodes (24): FollowUpCard(), FollowUpCategory(), FollowUpManagementPage(), TAB_CONFIG, InventoryTakeOutHistory(), InventoryItemList(), isEmptyStock(), isLowStock() (+16 more)
 
 ### Community 95 - "wa.ts"
 Cohesion: 0.16
@@ -667,12 +701,12 @@ Cohesion: 0.11
 Nodes (5): BOT_TOKEN, CHAT_ID, INTERNAL_SECRET, corsHeaders, corsHeaders
 
 ### Community 101 - "PatientClinicalHistoryDrawer.jsx"
-Cohesion: 0.20
-Nodes (16): Field(), MedicalRecordViewSheet(), Section(), formatVisitDate(), getDiagnosisList(), PatientClinicalHistoryDrawer(), SOAP_FIELDS, colorForLabel() (+8 more)
+Cohesion: 0.14
+Nodes (26): Field(), MedicalRecordViewSheet(), Section(), formatVisitDate(), getDiagnosisList(), PatientClinicalHistoryDrawer(), SOAP_FIELDS, colorForLabel() (+18 more)
 
 ### Community 102 - "SubjectiveTemplateManager.jsx"
-Cohesion: 0.16
-Nodes (18): FIELD_LABEL, KIND_META, OBJECTIVE_SNIPPETS, RequestsReviewPanel(), slugify(), SNIPPETS, STATUS_META, SubjectiveTemplateManager() (+10 more)
+Cohesion: 0.18
+Nodes (17): FIELD_LABEL, KIND_META, OBJECTIVE_SNIPPETS, RequestsReviewPanel(), slugify(), SNIPPETS, STATUS_META, SubjectiveTemplateManager() (+9 more)
 
 ### Community 103 - "TherapistHero.jsx"
 Cohesion: 0.19
@@ -699,12 +733,12 @@ Cohesion: 0.13
 Nodes (11): vite@^5.0.8, @vitejs/plugin-react@^4.2.1, __dirname, __filename, selectionModePlugin(), inlineEditDevPlugin(), iframeRouteRestorationPlugin(), vite (+3 more)
 
 ### Community 109 - "TherapistManager.jsx"
-Cohesion: 0.20
-Nodes (16): parseTimeOffReason(), SectionCard(), TherapistManager(), TIME_OFF_LEAVE_TYPE, TIME_OFF_REASONS, addTherapistTimeOff(), createTherapistAccount(), deletePhysiotherapist() (+8 more)
+Cohesion: 0.19
+Nodes (17): parseTimeOffReason(), SectionCard(), TherapistManager(), TIME_OFF_LEAVE_TYPE, TIME_OFF_REASONS, addTherapistTimeOff(), createTherapistAccount(), deletePhysiotherapist() (+9 more)
 
-### Community 110 - "SubjectiveTemplateBuilder.jsx"
-Cohesion: 0.20
-Nodes (17): ChoiceChips(), DateInput(), DurationInput(), FormButtons(), FreeInput(), hasValue(), renderToken(), ScaleChips() (+9 more)
+### Community 110 - "components/admin/DailyRecap.jsx"
+Cohesion: 0.16
+Nodes (20): DailyRecap(), formatShortDate(), getMakassarDateForOffset(), getMakassarDateStringForOffset(), getMakassarDayLabel(), getPortalPatient(), getTherapistName(), MONTH_SHORT_ID (+12 more)
 
 ### Community 111 - "therapistMonthlyReportPdf.js"
 Cohesion: 0.16
@@ -718,17 +752,17 @@ Nodes (16): 1. Frequency — how often will a user see this?, 2. Purpose — why
 Cohesion: 0.27
 Nodes (14): firstName(), TAG, TherapistWorkloadWidget(), verdict(), WorkloadHint(), computeWorkload(), EXCLUDED_NAME_PATTERNS, fetchRecapsForWorkload() (+6 more)
 
-### Community 114 - "GoogleSheetsSettings.jsx"
-Cohesion: 0.21
-Nodes (15): extractFolderId(), GoogleDriveSettings(), DEFAULT_ENABLED, formatDateTime(), GoogleSheetsSettings(), createGoogleSheetsBackup(), extractFunctionErrorMessage(), getGoogleDriveConnectionStatus() (+7 more)
+### Community 114 - "ResumeMedisTemplate.jsx"
+Cohesion: 0.18
+Nodes (19): formatDate(), PROGRAM_TERAPI_LABELS, ResumeMedisTemplate, ResumeMedisTemplateDefault, cell, fmtAge(), fmtDate(), pad() (+11 more)
 
 ### Community 115 - "SoapFirstOverrides.jsx"
-Cohesion: 0.25
-Nodes (16): describePayload(), discountedAmount(), fmtDate(), fmtDateTime(), OverrideQueue(), recapName(), SOAP_FIELDS, SoapAudit() (+8 more)
+Cohesion: 0.20
+Nodes (19): describePayload(), discountedAmount(), fmtDate(), fmtDateTime(), OverrideQueue(), recapName(), SOAP_FIELDS, SoapAudit() (+11 more)
 
-### Community 116 - "SmartBookingPage.jsx"
-Cohesion: 0.23
-Nodes (12): BookingSuccessScreen(), SmartComplaintStep(), SmartPatientMatchConfirmStep(), SmartPatientTypeStep(), SmartReturningPatientStep(), getClinicLogo(), getPatientTherapistHistory(), matchPatientForNewRegistration() (+4 more)
+### Community 116 - "AdminDashboard.jsx"
+Cohesion: 0.17
+Nodes (19): HeroClock(), AdminAccountingDashboard, AdminAccountSettings, AdminCashHolding, AdminCheckTransaksi, AdminDashboard(), AdminDashboardHome(), AdminDatabasePatients (+11 more)
 
 ### Community 117 - "MonthlyReportWidget.jsx"
 Cohesion: 0.21
@@ -743,20 +777,20 @@ Cohesion: 0.12
 Nodes (16): 1. Read the screenshot (if present), 2. Wrap the element, 3. Load the action's reference, 4. Plan three variants: identity first, then mode, then axes, 5. Apply the freeform prompt (if present), 6. Deliver variants, 7. Parameters (composition-sized, 0-4 per variant), 8. Signal done (+8 more)
 
 ### Community 120 - "attendanceExcelParser.js"
-Cohesion: 0.21
-Nodes (13): xlsx@^0.18.5, xlsx, attendanceDateForDay(), buildAttendanceRecords(), findLabelValue(), parseAttendanceExcel(), parseTimeToken(), applyHomecareCheckInAdjustment() (+5 more)
+Cohesion: 0.25
+Nodes (11): attendanceDateForDay(), buildAttendanceRecords(), findLabelValue(), parseAttendanceExcel(), parseTimeToken(), applyHomecareCheckInAdjustment(), resolveAttendanceStatus(), toMinutes() (+3 more)
 
-### Community 121 - "TooltipContent"
-Cohesion: 0.26
-Nodes (7): SlotGrid(), CalendarView(), TherapistCard(), TherapistSelectionCard(), TherapistSelectionStep(), TooltipContent, getTherapistPracticeHoursGrouped()
+### Community 121 - "AdminAppointmentBooking.jsx"
+Cohesion: 0.28
+Nodes (16): AdminAppointmentBooking(), DayDropStrip(), DragGhost(), ScheduleTemplateModal(), TherapistCard(), OwnerBookingCalendar(), TherapistBookingCalendar(), DEFAULT_TABLES (+8 more)
 
 ### Community 122 - "InvoiceTemplateKwitansi.jsx"
-Cohesion: 0.27
-Nodes (14): dayKey(), fmtDate(), fmtDateTime(), getInvoiceDate(), getKwitansiItems(), idr(), InvoiceTemplateKwitansi, KWITANSI_CATEGORIES (+6 more)
+Cohesion: 0.30
+Nodes (13): dayKey(), fmtDate(), fmtDateTime(), getInvoiceDate(), getKwitansiItems(), idr(), InvoiceTemplateKwitansi, MONTHS (+5 more)
 
-### Community 123 - "CapacityVsDemandChart.jsx"
-Cohesion: 0.21
-Nodes (9): CapacityVsDemandChart(), formatInt(), OperationalDashboardUI(), pct(), SlotUtilizationChart(), prefersReducedMotion(), useCountUp(), cache (+1 more)
+### Community 123 - "PatientManagement.jsx"
+Cohesion: 0.32
+Nodes (14): PatientImportCSV(), PatientManagement(), OwnerPatientManagement(), Alert, AlertDescription, AlertTitle, alertVariants, createPatient() (+6 more)
 
 ### Community 124 - "MouAuthGate.jsx"
 Cohesion: 0.28
@@ -775,8 +809,8 @@ Cohesion: 0.14
 Nodes (13): Animation Performance, Assess Performance Issues, Core Web Vitals Optimization, Cumulative Layout Shift (CLS < 0.1), Interaction to Next Paint (INP < 200ms), Largest Contentful Paint (LCP < 2.5s), Loading Performance, Network Optimization (+5 more)
 
 ### Community 128 - "PemilihExtractPdf.jsx"
-Cohesion: 0.26
-Nodes (13): pdfjs-dist@^4.10.38, pdfjs-dist, callOcrHalf(), canvasToBase64(), describeFunctionError(), mergePageHalves(), normalize(), PemilihExtractPdf() (+5 more)
+Cohesion: 0.33
+Nodes (11): callOcrHalf(), canvasToBase64(), describeFunctionError(), mergePageHalves(), normalize(), PemilihExtractPdf(), renderPageCanvas(), rowCompleteness() (+3 more)
 
 ### Community 129 - "SoapPatientPdfButton.jsx"
 Cohesion: 0.29
@@ -799,8 +833,8 @@ Cohesion: 0.15
 Nodes (11): Act on the receipt, Assemble and review, Plan and asset review, Plan, capture, serve, Core Rule, Decision Comps, Impeccable Asset Producer, Input Contract (+3 more)
 
 ### Community 134 - "WhatsAppAutomationSetup.jsx"
-Cohesion: 0.28
-Nodes (9): PreviewModal(), TemplateCard(), getWhatsAppTemplates(), AVAILABLE_VARIABLES, extractVariables(), getDummyDataForCategory(), renderTemplate(), validateRenderedMessage() (+1 more)
+Cohesion: 0.33
+Nodes (8): PreviewModal(), getWhatsAppTemplates(), AVAILABLE_VARIABLES, extractVariables(), getDummyDataForCategory(), renderTemplate(), validateRenderedMessage(), WhatsAppAutomationSetup()
 
 ### Community 135 - "critique.md"
 Cohesion: 0.17
@@ -818,9 +852,9 @@ Nodes (8): BASE, md, measure(), perfMetrics(), results, routes, RUNS, stamp
 Cohesion: 0.27
 Nodes (9): APP_DIR, COMPONENT_NAME_TO_INSTALLABLE_COMPONENT_NAME_MAP, componentExists(), FILES_UPDATED_BY_SHADCN_INIT, findImportedComponentNames(), pathExists(), run(), runCommand() (+1 more)
 
-### Community 139 - "TherapistTodayPatientHistory.jsx"
-Cohesion: 0.30
-Nodes (11): formatLastVisitGap(), getDiagnosisList(), getPatientId(), getPatientKey(), getPatientName(), getPatientRM(), getTodayISO(), TherapistTodayPatientHistory() (+3 more)
+### Community 139 - "Design: Incremental Updates + Entity Deduplication"
+Cohesion: 0.11
+Nodes (17): Auto-detection, Design: Incremental Updates + Entity Deduplication, Feature 1: Incremental Updates, Feature 2: Entity Deduplication, Files changed, Files changed, Incremental mode changes, Integration point (+9 more)
 
 ### Community 140 - "clarify.md"
 Cohesion: 0.18
@@ -862,29 +896,29 @@ Nodes (8): Anatomy3DExplorer(), DISC_SVG(), MINI_NAMES, MiniSpine(), Tool(), HNP
 Cohesion: 0.38
 Nodes (8): Toast, ToastAction, ToastClose, ToastDescription, ToastTitle, toastVariants, ToastViewport, Toaster()
 
-### Community 150 - "AppointmentStateContext.jsx"
-Cohesion: 0.27
-Nodes (7): apiDeleteAppointment(), apiUpdateAppointment(), AppointmentStateContext, AppointmentStateProvider(), AppointmentSyncService, debouncedSync, debounce()
+### Community 150 - "lazyRetry.js"
+Cohesion: 0.14
+Nodes (11): AuthErrorBoundary, ErrorBoundary, lazyRetry(), loadModule(), wait(), consumeSkipSplash(), hardRefresh(), isStaleChunkError() (+3 more)
 
 ### Community 151 - "goalSuggestions.js"
 Cohesion: 0.35
 Nodes (10): ACTIVITY_PHRASE, add2(), detailOf(), halve(), lc(), painRegion(), parseObjective(), splitList() (+2 more)
 
 ### Community 152 - "spineScene.js"
-Cohesion: 0.31
-Nodes (10): ball(), canvasTex(), limb(), makeDisc(), update(), makeMaterials(), makeVertebra(), noise() (+2 more)
+Cohesion: 0.22
+Nodes (14): Breakpoints: Content-Driven, Text Overflow & Wrapping, ball(), canvasTex(), clamp(), limb(), makeDisc(), update() (+6 more)
 
 ### Community 153 - "register-clinic/index.ts"
 Cohesion: 0.20
 Nodes (7): corsHeaders, DEFAULT_DISABLED_FEATURES_BY_ROLE, generateUniqueSubdomain(), RESERVED_SUBDOMAINS, slugify(), VERCEL_API_TOKEN, VERCEL_PROJECT_ID
 
 ### Community 154 - "adapt.md"
-Cohesion: 0.20
-Nodes (9): Assess Adaptation Challenge, Desktop Adaptation (Mobile → Desktop), Email Adaptation (Web → Email), Mobile Adaptation (Desktop → Mobile), Plan Adaptation Strategy, Print Adaptation (Screen → Print), Reference Material, Tablet Adaptation (Hybrid Approach) (+1 more)
+Cohesion: 0.12
+Nodes (15): Assess Adaptation Challenge, Content Adaptation, Desktop Adaptation (Mobile → Desktop), Email Adaptation (Web → Email), Implement Adaptations, Layout Adaptation Techniques, Mobile Adaptation (Desktop → Mobile), Navigation Adaptation (+7 more)
 
-### Community 155 - "clamp"
+### Community 155 - "PemilihApp.jsx"
 Cohesion: 0.20
-Nodes (10): Breakpoints: Content-Driven, Content Adaptation, Implement Adaptations, Layout Adaptation Techniques, Navigation Adaptation, Responsive Breakpoints, Touch Adaptation, Text Overflow & Wrapping (+2 more)
+Nodes (13): PemilihApp(), CardHeader(), KATEGORI_LABEL, PemilihDashboard(), StatCard(), PemilihData(), PemilihDataDpt(), StatPill() (+5 more)
 
 ### Community 156 - "Init flow"
 Cohesion: 0.20
@@ -934,17 +968,17 @@ Nodes (8): config, escapeHtml(), exists(), fetchInvoice(), handler(), setTag(), 
 Cohesion: 0.22
 Nodes (8): 1. PART 1: MEDICAL RECORDS AUDIT (Admin Side), 2. PART 2: EVALUASI HARIAN (SOAP) AUDIT (Therapist Side), 3. PART 3: DAILY RECAPS AUDIT, 4. PART 4 & 5: RBAC & DATA INTEGRITY AUDIT, COMPREHENSIVE AUDIT REPORT - Medical Records & Evaluasi Harian System, 🔍 Detailed File Audit, 📋 Executive Summary, 🚀 Recommended Next Steps (Prioritized)
 
-### Community 168 - "AlkesInvoiceModal.jsx"
-Cohesion: 0.39
-Nodes (7): html2canvas@^1.4.1, html2canvas, AlkesInvoiceModal(), INVOICE_BASE_HEIGHT, canvasToPdf(), printInvoiceCanvas(), rasterizeInvoice()
+### Community 168 - "PemilihSetup.jsx"
+Cohesion: 0.19
+Nodes (13): deriveDefaults(), deriveFirstName(), emptyForm, inputStyle, PemilihDpcAkun(), deriveDefaults(), deriveFirstName(), emptyForm (+5 more)
 
-### Community 169 - "PremiumClinicLanding.jsx"
-Cohesion: 0.31
-Nodes (8): ADVANTAGE_ICONS, fadeUp, formatPrice(), NAV_LINKS, PhotoPanel(), PremiumClinicLanding(), Reveal(), SERVICE_ICONS
+### Community 169 - "react-helmet"
+Cohesion: 0.21
+Nodes (12): react-helmet, COMMON_PASSWORDS, getPasswordError(), isTooPredictable(), PASSWORD_HINT, PASSWORD_MIN_LENGTH, validatePassword(), ForgotPasswordPage() (+4 more)
 
-### Community 170 - "chart.jsx"
-Cohesion: 0.36
-Nodes (8): ChartContainer, ChartContext, ChartLegendContent, ChartStyle(), ChartTooltipContent, getPayloadConfigFromPayload(), THEMES, useChart()
+### Community 170 - "ImportPatientExcelModal.jsx"
+Cohesion: 0.27
+Nodes (12): xlsx, CenteredPatientTable(), ImportPatientExcelModal(), normalizeBirthDate(), normalizeGender(), normalizePhone(), TEMPLATE_HEADERS, DetailItem() (+4 more)
 
 ### Community 171 - "diagnosisSearch.js"
 Cohesion: 0.50
@@ -1014,9 +1048,9 @@ Nodes (6): 1. Executive Summary, 2. Database Schema Analysis, `daily_recaps` Tab
 Cohesion: 0.52
 Nodes (6): AdminChecklistHistory(), formatDateLabel(), formatTime(), initials(), getAdminChecklistHistory(), getAdmins()
 
-### Community 188 - "toggle-group.jsx"
-Cohesion: 0.43
-Nodes (5): ToggleGroup, ToggleGroupContext, ToggleGroupItem, Toggle, toggleVariants
+### Community 188 - "class-variance-authority"
+Cohesion: 0.17
+Nodes (13): class-variance-authority, NavigationMenu, NavigationMenuContent, NavigationMenuIndicator, NavigationMenuList, NavigationMenuTrigger, navigationMenuTriggerStyle, NavigationMenuViewport (+5 more)
 
 ### Community 189 - "dedupeFetch.js"
 Cohesion: 0.43
@@ -1050,9 +1084,9 @@ Nodes (5): After approval: the comp becomes a spec, Generate three compositional
 Cohesion: 0.60
 Nodes (5): formatDate(), InventoryPendingOrders(), cancelPendingInventoryOrder(), getPendingInventoryOrders(), receivePendingInventoryOrder()
 
-### Community 198 - "PackageHistoryService.js"
-Cohesion: 0.67
-Nodes (5): finalizePackageStatus(), reconstructPackageHistory(), regeneratePackageHistory(), runPackageHistoryTests(), triggerPackageHistoryRegeneration()
+### Community 198 - "PemilihDpcApp.jsx"
+Cohesion: 0.34
+Nodes (10): PKS_ELECTION_YEARS, bumpTpsCountIfNeeded(), fetchAllRows(), PemilihDpcApp(), CardHeader(), PemilihManualInputByParty(), PksPartaiLain(), PASTEL_COLUMN_COLORS (+2 more)
 
 ### Community 199 - "CSS Transform Mastery"
 Cohesion: 0.40
@@ -1094,27 +1128,131 @@ Nodes (4): Heuristics Scoring Guide, Issue Severity (P0–P3), Reference Materia
 Cohesion: 0.50
 Nodes (3): 1. Verifikasi Kode (Code Audit), A. API Layer (`src/lib/api.js`), HASIL INVESTIGASI RM00995
 
+### Community 210 - "whatsappScheduler.js"
+Cohesion: 0.22
+Nodes (13): generateFollowUpQueue(), sendFollowUpWhatsApp(), checkAppointments(), checkQueue(), checkTemplates(), debugFollowUp, logTable(), triggerGeneration() (+5 more)
+
 ### Community 211 - "Clinara illustration worker"
 Cohesion: 0.50
 Nodes (3): Built-in image generation (no paid OpenAI API), Clinara illustration worker, Controlled full batch
 
+### Community 224 - "qrisMatcher.js"
+Cohesion: 0.24
+Nodes (14): autoMatchQris(), clearlyBetter(), editDistance(), endMinutesOf(), minutesOf(), nameTokens(), norm(), rankCandidates() (+6 more)
+
+### Community 225 - "Analisis Logika Package Recap (Admin vs Owner)"
+Cohesion: 0.14
+Nodes (13): 1. Konsistensi Data (Inconsistency Risk), 2. Kinerja (Performance), 3. Keamanan & Multi-Tenancy (Data Leak Risk), Analisis Logika Package Recap (Admin vs Owner), API Calls, BAGIAN 1: ADMIN PACKAGE RECAP (`src/components/admin/PackageRecap.jsx`), BAGIAN 2: OWNER PACKAGE RECAP (`src/components/owner/OwnerPackageRecap.jsx`), BAGIAN 3: PERBANDINGAN API CALLS (+5 more)
+
+### Community 226 - "admin/PackageRecaps.jsx"
+Cohesion: 0.33
+Nodes (10): BASE_HEIGHT, PackagePaymentReceiptModal(), wita(), idr(), RenewPackageDialog(), getRenewalTerms(), isRenewalEnabled(), TERMS (+2 more)
+
+### Community 227 - "getPhysiotherapists"
+Cohesion: 0.36
+Nodes (9): getInitials(), TherapistPickerGrid(), TherapistScheduleManager(), TherapistScheduleOverrideManager(), TherapistTimeOffManager(), WaveBackground(), useTherapistLeaveRequestEnabled(), getPhysiotherapists() (+1 more)
+
+### Community 228 - "bsiQrisReportParser.js"
+Cohesion: 0.25
+Nodes (12): NOISE, parseMutasiPdf(), parseMutasiWords(), toNumber(), ensurePdfJs(), extractPagesWords(), MONTHS, pad2() (+4 more)
+
+### Community 229 - "PemilihSelect"
+Cohesion: 0.26
+Nodes (10): KATEGORI_LABEL, PemilihSelect(), CardHeader(), PemilihSuaraPks(), PksDashboard(), PksTpsDetail(), StatPill(), fileToBase64() (+2 more)
+
+### Community 230 - "usePatientList.js"
+Cohesion: 0.30
+Nodes (9): AppointmentManagement(), buildKey(), DEFAULT_FILTERS, sanitizeSearch(), usePatientList(), clearCachedData(), getCachedData(), setCachedData() (+1 more)
+
+### Community 231 - "BSIBelumMasukTab.jsx"
+Cohesion: 0.33
+Nodes (11): BSIBelumMasukTab(), fetchAll(), fmtDate(), fmtDateTimeWita(), formatRp(), METHOD_LABEL, MONTHS, Stat() (+3 more)
+
+### Community 232 - "numScale"
+Cohesion: 0.18
+Nodes (11): band(), countOf(), FSS, numScale(), SARA, sumOf(), totalForm(), WOMAC (+3 more)
+
+### Community 233 - "Incremental Updates + Entity Deduplication Implementation Plan"
+Cohesion: 0.20
+Nodes (9): File Map, Incremental Updates + Entity Deduplication Implementation Plan, Self-Review, Task 1: Add `datasketch` and `rapidfuzz` to dependencies, Task 2: Create `graphify/dedup.py` — entropy gate + MinHash/LSH + Jaro-Winkler, Task 3: Wire dedup into `build.py`, Task 4: Incremental updates — semantic cache + manifest in `__main__.py`, Task 5: Add `--dedup-llm` tiebreaker to `dedup.py` (+1 more)
+
+### Community 234 - "carousel.jsx"
+Cohesion: 0.42
+Nodes (8): PresentationFullscreen(), Carousel, CarouselContent, CarouselContext, CarouselItem, CarouselNext, CarouselPrevious, useCarousel()
+
+### Community 235 - "WeeklyScheduleView.jsx"
+Cohesion: 0.38
+Nodes (9): Avatar(), fmtMin(), hhmm(), initials(), PALETTE, shortName(), toKey(), toMin() (+1 more)
+
+### Community 236 - "form.jsx"
+Cohesion: 0.29
+Nodes (8): FormControl, FormDescription, FormFieldContext, FormItem, FormItemContext, FormLabel, FormMessage, useFormField()
+
+### Community 237 - "pushNotifications.js"
+Cohesion: 0.31
+Nodes (6): firebase@^12.14.0, firebase, firebaseApp, firebaseConfig, getDeviceId(), registerPushNotifications()
+
+### Community 238 - "input-group.jsx"
+Cohesion: 0.28
+Nodes (8): InputGroup(), InputGroupAddon(), inputGroupAddonVariants, InputGroupButton(), inputGroupButtonVariants, InputGroupInput(), InputGroupText(), InputGroupTextarea()
+
+### Community 239 - "empty.jsx"
+Cohesion: 0.29
+Nodes (7): Empty(), EmptyContent(), EmptyDescription(), EmptyHeader(), EmptyMedia(), emptyMediaVariants, EmptyTitle()
+
+### Community 240 - "PemilihSuaraPksSetup.jsx"
+Cohesion: 0.50
+Nodes (6): BALIKPAPAN_KECAMATAN_DEFAULTS, CalegSection(), DapilSection(), KelurahanTpsSection(), PemilihSuaraPksSetup(), SectionHeader()
+
+### Community 241 - "AdminCashHolding.jsx"
+Cohesion: 0.43
+Nodes (7): AdminCashHolding(), daysSince(), fmtDate(), formatRp(), Stat(), STATUS, todayStr()
+
+### Community 242 - "PriceCatalogManager.jsx"
+Cohesion: 0.52
+Nodes (6): calcMargin(), calcSelling(), CATEGORIES, EMPTY_FORM, num(), PriceCatalogManager()
+
+### Community 243 - "AdminCheckTransaksi.jsx"
+Cohesion: 0.38
+Nodes (3): AdminCheckTransaksi(), BSIMutasiLazy, ErrorCatcher
+
+### Community 244 - "KonversiDokterApp.jsx"
+Cohesion: 0.48
+Nodes (5): KonversiDokterApp(), Brand(), KonversiDokterLayout(), NAV, UserChip()
+
+### Community 245 - "TherapistStatusCards.jsx"
+Cohesion: 0.47
+Nodes (5): formatName(), formatShortDate(), isPWA, LEAVE_LABELS, TherapistStatusCards()
+
+### Community 246 - "Checklist Verifikasi Sinkronisasi Data Pasien"
+Cohesion: 0.33
+Nodes (5): 1. Verifikasi Tampilan Data (Patient List), 2. Verifikasi Form Edit (Patient Dialog), 3. Verifikasi Tampilan Terapis (Therapist View), 4. Verifikasi Teknis, Checklist Verifikasi Sinkronisasi Data Pasien
+
+### Community 247 - "OwnerFinanceDashboardWidget.jsx"
+Cohesion: 0.47
+Nodes (5): fmt(), fmtShort(), isPWA, OwnerFinanceDashboardWidget(), PATIENT_TYPE_COLORS
+
+### Community 248 - "readExerciseIllustrationZip"
+Cohesion: 0.83
+Nodes (3): read16(), read32(), readExerciseIllustrationZip()
+
 ## Knowledge Gaps
-- **15 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **24 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `react` connect `react` to `Input`, `Button`, `date-fns`, `lucide-react`, `App.jsx`, `cn`, `package.json`, `PemilihSuaraPks.jsx`, `OwnerFinanceDashboard.jsx`, `PatientPortalPage.jsx`, `AdminDashboard.jsx`, `customSupabaseClient.js`, `SuperAdminClinics.jsx`, `TherapistLeaveRequests.jsx`, `PatientDialog.jsx`, `AdminAppointmentBooking.jsx`, `AdminQrisReconciliation.jsx`, `ManualBookingForm.jsx`, `toast`, `WarningLetterManagerModal.jsx`, `OwnerDecreesPage.jsx`, `RotasiSetup.jsx`, `SupabaseAuthContext.jsx`, `framer-motion`, `Card`, `field.jsx`, `components/admin/DailyRecap.jsx`, `OwnerDashboard.jsx`, `OwnerPresentationPage.jsx`, `DailyRecapForm.jsx`, `InsentifBulananPage.jsx`, `InvoiceModal.jsx`, `CombinedFinanceReport.jsx`, `sidebar.jsx`, `RecapVitalsDialog.jsx`, `utils.js`, `BSIBelumMasukTab.jsx`, `TherapistDashboard.jsx`, `MedicalRecordForm.jsx`, `PayrollManagerModal.jsx`, `booking/TherapistCard.jsx`, `ClinaraLandingPage.jsx`, `DailyRecapModal.jsx`, `MouManagerModal.jsx`, `RemunerationManager`, `DashboardTopbar.jsx`, `KonversiDokterConverter.jsx`, `LandingPage.jsx`, `BSIMutasiReconciliation.jsx`, `The Fixes`, `TherapistMetrics.jsx`, `SplashScreen.jsx`, `soapFirst.js`, `AttendanceManagement.jsx`, `PlanChecklist.jsx`, `LandingPageManager.jsx`, `PatientClinicalHistoryDrawer.jsx`, `SubjectiveTemplateManager.jsx`, `TherapistHero.jsx`, `TherapistManager.jsx`, `SubjectiveTemplateBuilder.jsx`, `TherapistWorkloadWidget.jsx`, `GoogleSheetsSettings.jsx`, `SoapFirstOverrides.jsx`, `SmartBookingPage.jsx`, `MonthlyReportWidget.jsx`, `TooltipContent`, `InvoiceTemplateKwitansi.jsx`, `CapacityVsDemandChart.jsx`, `MouAuthGate.jsx`, `PemilihExtractPdf.jsx`, `SoapPatientPdfButton.jsx`, `WhatsAppAutomationSetup.jsx`, `TherapistTodayPatientHistory.jsx`, `Anatomy3DExplorer.jsx`, `toast.jsx`, `AppointmentStateContext.jsx`, `ObjectiveProgressUpdate.jsx`, `TherapistDriveUpload.jsx`, `AlkesInvoiceModal.jsx`, `PremiumClinicLanding.jsx`, `chart.jsx`, `AdminDailyChecklistWidget.jsx`, `AdminChecklistHistory.jsx`, `toggle-group.jsx`, `InventoryPendingOrders.jsx`, `DailyEvaluationAdmin.jsx`?**
-  _High betweenness centrality (0.126) - this node is a cross-community bridge._
-- **Should `Input` be split into smaller, more focused modules?**
-  _Cohesion score 0.04849820887296776 - nodes in this community are weakly interconnected._
+- **Why does `react` connect `react` to `button.jsx`, `api.js`, `Button`, `date-fns`, `TabsList`, `App.jsx`, `cn`, `dependencies`, `PemilihSuaraPks.jsx`, `OwnerFinanceDashboard.jsx`, `PatientPortalPage.jsx`, `AdminDashboard.jsx`, `customSupabaseClient.js`, `SuperAdminClinics.jsx`, `TherapistLeaveRequests.jsx`, `PatientDialog.jsx`, `DateRangePicker`, `AdminQrisReconciliation.jsx`, `ResumeMedisForm.jsx`, `toast`, `WarningLetterManagerModal.jsx`, `OwnerDecreesPage.jsx`, `RotasiSetup.jsx`, `framer-motion`, `lucide-react`, `field.jsx`, `shared/DailyRecapDetailModal.jsx`, `OwnerDashboard.jsx`, `subjectiveTemplate.js`, `OwnerPresentationPage.jsx`, `DailyRecapForm.jsx`, `InsentifBulananPage.jsx`, `InvoiceModal.jsx`, `CombinedFinanceReport.jsx`, `sidebar.jsx`, `RecapVitalsDialog.jsx`, `utils.js`, `TherapistDashboard.jsx`, `MedicalRecordForm.jsx`, `PayrollManagerModal.jsx`, `ClinicBookingPage.jsx`, `ClinaraLandingPage.jsx`, `DailyRecapModal.jsx`, `MouManagerModal.jsx`, `RemunerationManager`, `DashboardTopbar.jsx`, `KonversiDokterConverter.jsx`, `package.json`, `BSIMutasiReconciliation.jsx`, `The Fixes`, `TherapistDashboardWidget.jsx`, `SplashScreen.jsx`, `ManualBookingForm.jsx`, `AttendanceManagement.jsx`, `PlanChecklist.jsx`, `confirmAction`, `PatientClinicalHistoryDrawer.jsx`, `SubjectiveTemplateManager.jsx`, `TherapistHero.jsx`, `TherapistManager.jsx`, `components/admin/DailyRecap.jsx`, `TherapistWorkloadWidget.jsx`, `ResumeMedisTemplate.jsx`, `SoapFirstOverrides.jsx`, `AdminDashboard.jsx`, `MonthlyReportWidget.jsx`, `AdminAppointmentBooking.jsx`, `InvoiceTemplateKwitansi.jsx`, `PatientManagement.jsx`, `MouAuthGate.jsx`, `PemilihExtractPdf.jsx`, `SoapPatientPdfButton.jsx`, `WhatsAppAutomationSetup.jsx`, `Anatomy3DExplorer.jsx`, `toast.jsx`, `lazyRetry.js`, `PemilihApp.jsx`, `ObjectiveProgressUpdate.jsx`, `TherapistDriveUpload.jsx`, `PemilihSetup.jsx`, `react-helmet`, `ImportPatientExcelModal.jsx`, `AdminDailyChecklistWidget.jsx`, `AdminChecklistHistory.jsx`, `class-variance-authority`, `InventoryPendingOrders.jsx`, `PemilihDpcApp.jsx`, `admin/PackageRecaps.jsx`, `getPhysiotherapists`, `PemilihSelect`, `usePatientList.js`, `BSIBelumMasukTab.jsx`, `carousel.jsx`, `WeeklyScheduleView.jsx`, `form.jsx`, `input-group.jsx`, `PemilihSuaraPksSetup.jsx`, `AdminCashHolding.jsx`, `PriceCatalogManager.jsx`, `AdminCheckTransaksi.jsx`, `KonversiDokterApp.jsx`, `TherapistStatusCards.jsx`, `OwnerFinanceDashboardWidget.jsx`, `HeroImage.jsx`?**
+  _High betweenness centrality (0.132) - this node is a cross-community bridge._
+- **Should `button.jsx` be split into smaller, more focused modules?**
+  _Cohesion score 0.0584893751314959 - nodes in this community are weakly interconnected._
 - **Why does `Layout` connect `soapPatientPdf.js` to `document.md`?**
-  _High betweenness centrality (0.093) - this node is a cross-community bridge._
+  _High betweenness centrality (0.100) - this node is a cross-community bridge._
 - **Should `api.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.02949981745162468 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.027260032784894663 - nodes in this community are weakly interconnected._
 - **Why does `Pitfalls` connect `document.md` to `soapPatientPdf.js`?**
-  _High betweenness centrality (0.092) - this node is a cross-community bridge._
+  _High betweenness centrality (0.096) - this node is a cross-community bridge._
 - **Should `live-browser.js` be split into smaller, more focused modules?**
   _Cohesion score 0.026931567328918323 - nodes in this community are weakly interconnected._
 - **Should `Button` be split into smaller, more focused modules?**
-  _Cohesion score 0.07959770114942528 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06782106782106782 - nodes in this community are weakly interconnected._
