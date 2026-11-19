@@ -282,6 +282,26 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
         return () => { cancelled = true; };
     }, [isOpen, mode, initialData?.id]);
 
+    // ── Cicilan paket (DP + pelunasan), khusus pasien yang diizinkan owner ──
+    // Server (trigger) yang menetapkan nominal & memvalidasi; form hanya meminta DP / pelunasan.
+    const [instStatus, setInstStatus] = useState(null);
+    const [instDpOn, setInstDpOn] = useState(false);
+    const [instDpAmount, setInstDpAmount] = useState('');
+    const [payoffOn, setPayoffOn] = useState(false);
+    const [instBusy, setInstBusy] = useState(false);
+    const prevMethodRef = useRef('');
+    const loadInstStatus = useCallback(async () => {
+        if (!isOpen || mode !== 'edit' || !initialData?.id) { setInstStatus(null); return; }
+        const { data, error } = await supabase.rpc('package_installment_status', { p_recap_id: initialData.id });
+        setInstStatus(error ? null : data);
+    }, [isOpen, mode, initialData?.id]);
+    useEffect(() => {
+        setInstDpOn(false);
+        setInstDpAmount('');
+        setPayoffOn(false);
+        loadInstStatus();
+    }, [loadInstStatus]);
+
     // ── SOAP-first (khusus klinik yang mengaktifkannya, mis. Kaffah) ──
     // Server (trigger database) yang menentukan tipe pasien, nominal, dan kunci pembayaran.
     // Form ini hanya menampilkan hasilnya dan menyediakan jalur pengajuan pengecualian.
@@ -1346,7 +1366,10 @@ setFormData({
     };
     const methodNeedsProof = (value) => /debit|transfer|\btf\b/i.test(methodLabel(value));
     // Sesi paket (terkunci Rp 0 / metode 'Package'): barang dibayar dengan metode sendiri.
-    const goodsUsesOwnMethod = !isKwitansi && (isPackageSessionLocked || formData.payment_method === 'Package');
+    // Saat pelunasan cicilan dicentang, sesi ini punya pembayaran riil sehingga barang ikut metode recap.
+    const goodsUsesOwnMethod = !isKwitansi && !payoffOn && (isPackageSessionLocked || formData.payment_method === 'Package');
+    // Kolom pembayaran sesi paket terkunci (Rp 0), kecuali sedang mencatat pelunasan cicilan.
+    const payLocked = isPackageSessionLocked && !payoffOn;
     const goodsMethodOptions = paymentMethodOptions.filter(o => methodLabel(o.value).trim().toLowerCase() !== 'package');
     const PROOF_MAX_BYTES = 5 * 1024 * 1024;
     const pickProof = (file, apply) => {
@@ -1405,8 +1428,15 @@ setFormData({
     const needsDiscountRefCode = formData.discount_type !== 'none' && /meranti\s*trail\s*run/i.test(formData.discount_label || '');
     const sfIsPayment = !!formData.payment_method && formData.payment_method !== 'Package';
     const sfBaseAmount = quote?.active && quote.total != null ? Number(quote.total) : null;
+    // Cicilan: DP hanya untuk pembelian paket yang belum ber-invoice, oleh pasien yang diizinkan owner.
+    const instCanDp = sfEdit && !!instStatus?.allowed && instStatus?.kind === 'none'
+        && !!quote?.is_purchase && !quote?.invoice_locked && formData.special_type !== 'free';
+    const instDpValue = instCanDp && instDpOn ? (parseFloat(instDpAmount) || 0) : null;
+    const instCanPayoff = sfEdit && instStatus?.kind === 'followup' && !!instStatus?.can_pay_off;
     const sfFinalAmount = (() => {
         if (!sfEdit) return null;
+        if (payoffOn && instCanPayoff) return Number(instStatus.remaining) || 0;
+        if (instDpValue != null) return instDpValue;
         if (quote?.invoice_locked) return Number(initialData?.amount ?? formData.amount ?? 0);
         if (formData.special_type === 'free') return 0;
         if (sfBaseAmount == null) return null;
@@ -1434,7 +1464,32 @@ setFormData({
         return sfBaseAmount;
     })();
     const effectiveAmount = sfFinalAmount != null ? sfFinalAmount : (parseFloat(formData.amount) || 0);
-    const sfBlocked = sfEdit && sfIsPayment && !!quote?.error && !quote?.invoice_locked;
+    const sfBlocked = sfEdit && sfIsPayment && !payoffOn && !!quote?.error && !quote?.invoice_locked;
+
+    const toggleInstAllowed = async (checked) => {
+        if (!formData.patient_id) return;
+        setInstBusy(true);
+        const { error } = await supabase.rpc('set_patient_package_installment', { p_patient_id: formData.patient_id, p_allowed: !!checked });
+        setInstBusy(false);
+        if (error) {
+            toast({ variant: 'destructive', title: 'Gagal mengubah izin cicilan', description: error.message });
+            return;
+        }
+        if (!checked) setInstDpOn(false);
+        toast({ title: checked ? 'Cicilan paket diizinkan' : 'Izin cicilan paket dicabut' });
+        loadInstStatus();
+    };
+    const togglePayoff = (checked) => {
+        if (checked) {
+            prevMethodRef.current = formData.payment_method || '';
+            handleChange('payment_method', '');
+            setUseSplitPayment(false);
+            setPayoffOn(true);
+        } else {
+            setPayoffOn(false);
+            handleChange('payment_method', prevMethodRef.current || 'Package');
+        }
+    };
 
     const splitTotal = paymentSplits.reduce((sum, row) => sum + (parseFloat(row.amount) || 0), 0);
     const splitRemaining = effectiveAmount - splitTotal;
@@ -1472,9 +1527,22 @@ setFormData({
             toast({ variant: "destructive", title: "Diskon belum disetujui", description: `Diskon "${formData.discount_label}" diinput manual dan wajib disetujui owner. Ajukan persetujuan lebih dulu.` });
             return;
         }
-        if (sfEdit && sfIsPayment && quote?.error && !quote?.invoice_locked) {
+        if (sfEdit && sfIsPayment && !payoffOn && quote?.error && !quote?.invoice_locked) {
             toast({ variant: "destructive", title: "Pembayaran belum bisa disimpan", description: quote.error });
             return;
+        }
+        if (instDpValue != null) {
+            const pkgTotal = Number(sfBaseAmount) || 0;
+            if (!(instDpValue > 0 && instDpValue < pkgTotal)) {
+                newErrors.installment = `DP harus lebih dari 0 dan kurang dari harga paket (Rp ${pkgTotal.toLocaleString('id-ID')})`;
+            }
+        }
+        if ((instDpValue != null || payoffOn) && !useSplitPayment) {
+            if (!formData.payment_method || formData.payment_method === 'Package') {
+                newErrors.payment_method = "Metode pembayaran wajib dipilih";
+            } else if (methodNeedsProof(formData.payment_method) && !proofFile && !savedProofPath) {
+                newErrors.payment_proof = "Bukti pembayaran wajib diunggah untuk debit/transfer";
+            }
         }
 
         // Tips mengikuti metode pembayaran nominal terapi, jadi metode wajib ada
@@ -1638,6 +1706,9 @@ setFormData({
                 delete payload.discount_value;
                 payload.special_type = formData.special_type || null;
                 payload.free_reason = formData.special_type === 'free' ? ((formData.free_reason || '').trim() || null) : null;
+                // Cicilan: hanya dikirim bila dipakai, supaya simpan biasa tidak tergantung kolom baru.
+                if (instDpValue != null) payload.installment_dp_amount = instDpValue;
+                if (payoffOn && instCanPayoff) payload.installment_payoff = true;
             }
             // Diskon recap tidak dipakai di kwitansi (diskon per item); invoice_items
             // disimpan terpisah setelah recap tersimpan.
@@ -1693,7 +1764,7 @@ setFormData({
                 }
             }
             toast({ title: "Berhasil", description: `Data berhasil ${mode === 'add' ? 'disimpan' : 'diperbarui'}.` });
-            if (sfEdit) { loadRecapMeta(); refreshQuote(); }
+            if (sfEdit) { loadRecapMeta(); refreshQuote(); loadInstStatus(); }
             if (onSuccess) onSuccess();
             onClose();
         } catch (error) {
@@ -1943,8 +2014,81 @@ setFormData({
         </div>
     ) : null;
 
+    const fmtRp = (n) => `Rp ${Math.round(Number(n) || 0).toLocaleString('id-ID')}`;
+    const fInstallment = sfEdit && instStatus ? (
+        <div className="space-y-2">
+            {sfIsOwner && !!formData.patient_id && (!!quote?.is_purchase || instStatus.allowed || instStatus.kind !== 'none') && (
+                <div className="flex items-start gap-2 rounded-app-sm border border-dashed border-slate-300 p-2">
+                    <Checkbox
+                        id="inst-allowed"
+                        checked={!!instStatus.allowed}
+                        disabled={instBusy}
+                        onCheckedChange={toggleInstAllowed}
+                        className="mt-0.5"
+                    />
+                    <Label htmlFor="inst-allowed" className="text-xs font-normal cursor-pointer leading-snug">
+                        Izinkan pasien ini membayar paket dengan cicilan (DP + pelunasan)
+                        <span className="block text-[11px] text-slate-500">Hanya owner yang dapat mengubah izin ini. Berlaku untuk pasien ini saja.</span>
+                    </Label>
+                </div>
+            )}
+            {instCanDp && (
+                <div className="space-y-2 rounded-app-sm border border-amber-200 bg-amber-50/60 p-3">
+                    <div className="flex items-center gap-2">
+                        <Checkbox id="inst-dp" checked={instDpOn} onCheckedChange={(c) => { setInstDpOn(!!c); if (c) setUseSplitPayment(false); }} />
+                        <Label htmlFor="inst-dp" className="text-xs font-semibold cursor-pointer">Bayar paket dengan cicilan (DP dulu)</Label>
+                    </div>
+                    {instDpOn && (
+                        <div className="space-y-1">
+                            <Label className="text-xs">Nominal DP dibayar sekarang (Rp)</Label>
+                            <Input type="number" min="0" value={instDpAmount} onChange={e => setInstDpAmount(e.target.value)} placeholder="mis. 500000" />
+                            {Number(sfBaseAmount) > 0 && (
+                                <p className="text-[11px] text-slate-600">
+                                    Harga paket {fmtRp(sfBaseAmount)}
+                                    {instDpValue > 0 && instDpValue < Number(sfBaseAmount) ? <> • sisa {fmtRp(Number(sfBaseAmount) - instDpValue)} dilunasi di edit recap sesi paket berikutnya.</> : null}
+                                </p>
+                            )}
+                            {errors.installment && <p className="text-xs text-red-500">{errors.installment}</p>}
+                        </div>
+                    )}
+                </div>
+            )}
+            {instStatus.kind === 'purchase' && (
+                <div className="rounded-app-sm border border-amber-200 bg-amber-50/60 p-3 text-xs text-slate-700 space-y-0.5">
+                    <p className="font-semibold">Paket dibayar dengan cicilan</p>
+                    <p className="flex justify-between"><span>Harga paket</span><span>{fmtRp(instStatus.total)}</span></p>
+                    <p className="flex justify-between"><span>Sudah dibayar</span><span>{fmtRp(instStatus.paid)}</span></p>
+                    <p className="flex justify-between font-semibold"><span>Sisa</span><span>{Number(instStatus.remaining) > 0 ? fmtRp(instStatus.remaining) : 'Lunas'}</span></p>
+                    {Number(instStatus.remaining) > 0 && <p className="text-[11px] text-slate-500">Pelunasan dicatat di edit recap salah satu sesi paket ini (centang "Pelunasan cicilan paket").</p>}
+                </div>
+            )}
+            {instCanPayoff && (
+                <div className="space-y-1 rounded-app-sm border border-amber-200 bg-amber-50/60 p-3">
+                    <div className="flex items-center gap-2">
+                        <Checkbox id="inst-payoff" checked={payoffOn} onCheckedChange={togglePayoff} />
+                        <Label htmlFor="inst-payoff" className="text-xs font-semibold cursor-pointer">
+                            Pelunasan cicilan paket (sisa {fmtRp(instStatus.remaining)})
+                        </Label>
+                    </div>
+                    <p className="text-[11px] text-slate-600">
+                        {payoffOn
+                            ? `Nominal ${fmtRp(instStatus.remaining)} dicatat sebagai pembayaran hari ini. Pilih metode pembayaran di bawah.`
+                            : 'Centang bila pasien melunasi sisa paket pada sesi ini.'}
+                    </p>
+                </div>
+            )}
+            {instStatus.kind === 'payoff' && (
+                <div className="rounded-app-sm border border-green-200 bg-green-50/70 p-3 text-xs text-slate-700">
+                    <p className="font-semibold">Pelunasan cicilan paket sudah dicatat</p>
+                    <p>Nominal {fmtRp(instStatus.payoff_amount)} pada sesi ini.</p>
+                </div>
+            )}
+        </div>
+    ) : null;
+
     const fPayment = (
         <>
+                                {fInstallment}
                                 <div className="grid grid-cols-2 items-end gap-3 sm:gap-4">
                                     <div className="space-y-1 min-w-0">
                                         <Label className="block whitespace-nowrap">Nominal (Rp)</Label>
@@ -1965,22 +2109,22 @@ setFormData({
                                     </div>
                                     <div className="space-y-1 min-w-0">
                                         <Label className="block whitespace-nowrap">Metode Pembayaran{parseFloat(formData.amount) > 0 && !useSplitPayment && formData.special_type !== 'free' && <span className="text-red-500"> *</span>}</Label>
-                                        <SearchableSelect options={paymentMethodOptions} value={formData.payment_method} onChange={v => handleChange('payment_method', v)} onSearch={setPaymentMethodSearch} placeholder="Cari metode..." isLoading={loadingPaymentMethods} disabled={isPackageSessionLocked || useSplitPayment} />
+                                        <SearchableSelect options={payoffOn ? goodsMethodOptions : paymentMethodOptions} value={formData.payment_method} onChange={v => handleChange('payment_method', v)} onSearch={setPaymentMethodSearch} placeholder="Cari metode..." isLoading={loadingPaymentMethods} disabled={payLocked || useSplitPayment} />
                                         {errors.payment_method && <p className="text-xs text-red-500">{errors.payment_method}</p>}
                                     </div>
                                 </div>
-                                {!useSplitPayment && !isPackageSessionLocked && formData.special_type !== 'free' && methodNeedsProof(formData.payment_method) && renderProofPicker({
+                                {!useSplitPayment && !payLocked && formData.special_type !== 'free' && methodNeedsProof(formData.payment_method) && renderProofPicker({
                                     file: proofFile,
                                     savedPath: savedProofPath,
                                     onFile: setProofFile,
                                     error: errors.payment_proof
                                 })}
-                                {isPackageSessionLocked && (
+                                {payLocked && (
                                     <p className="text-xs text-slate-500 -mt-1">
                                         Sesi ini memakai kuota paket (Rp 0) sehingga nominal &amp; metode pembayaran dikunci. Kalau pasien batal memakai paket, ajukan “Lepas dari paket” ke owner lewat Detail recap > Pengajuan Perubahan.
                                     </p>
                                 )}
-                                {!isPackageSessionLocked && (
+                                {!payLocked && (
                                     <div className="flex items-center gap-2">
                                         <Checkbox
                                             id="use-split-payment"
@@ -2050,7 +2194,7 @@ setFormData({
                                         value={formData.tips_amount ?? ''}
                                         onChange={e => handleChange('tips_amount', e.target.value)}
                                         placeholder="0"
-                                        disabled={isPackageSessionLocked}
+                                        disabled={payLocked}
                                     />
                                     <p className="text-[11px] text-slate-500">
                                         Opsional, isi manual. Tidak tercantum di invoice/kwitansi, tetap tercatat sebagai pemasukan dan otomatis masuk payroll terapis. Metode pembayaran tips mengikuti metode pembayaran terapi{useSplitPayment ? ' (pada split: metode dengan nominal terbesar)' : ''}.
