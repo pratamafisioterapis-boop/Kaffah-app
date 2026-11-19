@@ -84,6 +84,14 @@ const InvoiceTemplateModern = forwardRef(({ data }, ref) => {
   });
   const isSelected = (key) => (paymentSplits.length > 0 ? key in splitAmountByMethod : payment === key);
 
+  // Cicilan paket: harga penuh di baris layanan, DP/pelunasan di total, plus penanda lunas / belum lunas.
+  const inst = data?.installment || null;
+  const paidNow = (Number(data?.amount) || 0) + goodsTotal;
+  const instRemaining = inst ? Math.max((inst.total || 0) - (inst.paidBefore || 0) - (Number(data?.amount) || 0), 0) : 0;
+  const instSettled = !!inst && instRemaining <= 0;
+  const rateValue = inst ? inst.total : (data?.amount_original || data?.amount);
+  const subtotalValue = (Number(rateValue) || 0) + goodsTotal;
+
   const discountText = data?.discount_value
     ? data?.discount_type === 'percentage'
       ? `${data.discount_value}%`
@@ -138,7 +146,27 @@ const InvoiceTemplateModern = forwardRef(({ data }, ref) => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
           <div style={{ fontSize: '28px', fontWeight: 700, letterSpacing: '0.14em', color: C.navy, lineHeight: 1 }}>RECEIPT</div>
-          <div style={{ fontSize: '12px', color: C.muted, marginTop: '6px' }}>Kwitansi Pembayaran</div>
+          <div style={{ fontSize: '12px', color: C.muted, marginTop: '6px' }}>
+            {inst?.kind === 'purchase' ? 'Kwitansi Pembayaran DP (Cicilan Paket)' : inst?.kind === 'payoff' ? 'Kwitansi Pelunasan Paket' : 'Kwitansi Pembayaran'}
+          </div>
+          {inst && (
+            <div
+              style={{
+                display: 'inline-block',
+                marginTop: '10px',
+                padding: '4px 12px',
+                borderRadius: '6px',
+                fontSize: '11.5px',
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                border: `1.5px solid ${instSettled ? '#1e8a4c' : '#c2410c'}`,
+                color: instSettled ? '#1e8a4c' : '#c2410c',
+                background: instSettled ? '#eaf7ef' : '#fff3e8',
+              }}
+            >
+              {instSettled ? 'LUNAS' : 'BELUM LUNAS'}
+            </div>
+          )}
         </div>
         <div style={{ textAlign: 'right', fontSize: '12px', lineHeight: 1.8 }}>
           <div><span style={{ color: C.muted }}>Receipt No.</span>{'  '}<span style={{ fontWeight: 600 }}>{receiptNo}</span></div>
@@ -181,7 +209,7 @@ const InvoiceTemplateModern = forwardRef(({ data }, ref) => {
             <td style={{ fontSize: '13.5px', fontWeight: 500, padding: '16px 0', borderBottom: `1px solid ${C.line}` }}>{line.description}</td>
             <td style={{ fontSize: '13px', padding: '16px 0', borderBottom: `1px solid ${C.line}`, color: C.body }}>{line.session}</td>
             <td style={{ fontSize: '13.5px', fontWeight: 500, padding: '16px 0', borderBottom: `1px solid ${C.line}`, textAlign: 'right' }}>
-              {formatCurrency(data?.amount_original || data?.amount)}
+              {formatCurrency(rateValue)}
             </td>
           </tr>
           {goodsLines.map((g, i) => (
@@ -239,14 +267,24 @@ const InvoiceTemplateModern = forwardRef(({ data }, ref) => {
 
         <div style={{ width: `${AXIS_WIDTH}px`, flex: 'none' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', padding: '6px 0', color: C.body }}>
-            <span>Subtotal</span><span>{formatCurrency((Number(data?.amount_original || data?.amount) || 0) + goodsTotal)}</span>
+            <span>Subtotal</span><span>{formatCurrency(subtotalValue)}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', padding: '6px 0', color: C.body }}>
             <span>Discount</span><span>{discountText}</span>
           </div>
+          {inst?.kind === 'payoff' && inst.paidBefore > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', padding: '6px 0', color: C.body }}>
+              <span>Previously paid (DP)</span><span>{formatCurrency(inst.paidBefore)}</span>
+            </div>
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '15px', fontWeight: 700, color: C.navy, background: C.tint, borderRadius: '8px', padding: '14px 16px', margin: '8px -16px 0' }}>
-            <span>Balance Paid</span><span>{formatCurrency((Number(data?.amount) || 0) + goodsTotal)}</span>
+            <span>{inst?.kind === 'purchase' ? 'Paid (DP)' : 'Balance Paid'}</span><span>{formatCurrency(paidNow)}</span>
           </div>
+          {inst && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '14px', fontWeight: 700, color: instSettled ? '#1e8a4c' : '#c2410c', padding: '12px 0 0' }}>
+              <span>{instSettled ? 'Remaining Balance' : 'Remaining (Unpaid)'}</span><span>{formatCurrency(instRemaining)}</span>
+            </div>
+          )}
         </div>
       </div>
 
