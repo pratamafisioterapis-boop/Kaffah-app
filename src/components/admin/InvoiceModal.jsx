@@ -47,6 +47,20 @@ const receiptDayPhrase = (recapDate, isKaffah) => {
   return `tanggal ${tgl}`;
 };
 
+// Pesan WA untuk pasien cicilan paket. DP: sopan mengingatkan pelunasan di sesi berikutnya.
+const installmentDocName = (inst) =>
+  inst?.kind === 'purchase' ? 'Kwitansi DP Paket' : inst?.kind === 'payoff' ? 'Kwitansi Pelunasan Paket' : 'Kwitansi Terapi';
+const installmentNote = (inst, paidNow) => {
+  const rp = (n) => `Rp ${Math.max(Math.round(Number(n) || 0), 0).toLocaleString('id-ID')}`;
+  if (inst?.kind === 'purchase') {
+    return `Pembayaran yang kami terima untuk paket ini berupa DP sebesar *${rp(paidNow)}*. ` +
+      `Dengan hormat, kami mohon kesediaan Bapak/Ibu untuk melunasi sisa pembayaran paket sebesar *${rp((inst.total || 0) - (Number(paidNow) || 0))}* pada pertemuan sesi berikutnya.\n\n` +
+      `Terima kasih atas pengertian dan kerja samanya.\n\n`;
+  }
+  if (inst?.kind === 'payoff') return `Pembayaran paket ini telah *lunas*. Terima kasih atas kepercayaan Bapak/Ibu.\n\n`;
+  return '';
+};
+
 const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
   const { userDetails } = useAuth();
   const [detailData, setDetailData]       = useState(null);
@@ -721,8 +735,10 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
 
       // 4. Siapkan pesan caption
       const clinicName = detailData?.clinic?.name || '';
+      const captionInst = templateData.installment;
       const caption =
-        `Berikut *Kwitansi Terapi* ${receiptDayPhrase(data?.recap_date, (templateData.clinic?.id || detailData?.clinic?.id) === KAFFAH_CLINIC_ID)}.\n\n` +
+        `Berikut *${installmentDocName(captionInst)}* ${receiptDayPhrase(data?.recap_date, (templateData.clinic?.id || detailData?.clinic?.id) === KAFFAH_CLINIC_ID)}.\n\n` +
+        installmentNote(captionInst, templateData.amount) +
         `Terima kasih telah mempercayakan pemulihan di *${clinicName}*.\n` +
         `Semoga lekas membaik dan sehat selalu.\n\n` +
         `*Salam Sehat,*\n` +
@@ -878,10 +894,8 @@ const handleSendManualWA = async () => {
   const clinicName = detailData?.clinic?.name || '';
   const invoiceLink = `${window.location.origin}/i/${data.id}`;
   const inst = templateData.installment;
-  const docName = inst?.kind === 'purchase' ? 'Kwitansi DP Paket' : inst?.kind === 'payoff' ? 'Kwitansi Pelunasan Paket' : 'Kwitansi Terapi';
-  const instNote = inst?.kind === 'purchase'
-    ? `Pembayaran ini adalah DP. Sisa pembayaran paket *Rp ${Math.max(inst.total - (Number(templateData.amount) || 0), 0).toLocaleString('id-ID')}* belum lunas.\n\n`
-    : inst?.kind === 'payoff' ? `Paket ini sudah *lunas*.\n\n` : '';
+  const docName = installmentDocName(inst);
+  const instNote = installmentNote(inst, templateData.amount);
   const message =
     `Berikut *${docName}* ${receiptDayPhrase(data?.recap_date, (templateData.clinic?.id || detailData?.clinic?.id) === KAFFAH_CLINIC_ID)}.\n\n` +
     instNote +
