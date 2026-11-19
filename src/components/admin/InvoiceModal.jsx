@@ -52,12 +52,14 @@ const installmentDocName = (inst) =>
   inst?.kind === 'purchase' ? 'Kwitansi DP Paket' : inst?.kind === 'payoff' ? 'Kwitansi Pelunasan Paket' : 'Kwitansi Terapi';
 const installmentNote = (inst, paidNow) => {
   const rp = (n) => `Rp ${Math.max(Math.round(Number(n) || 0), 0).toLocaleString('id-ID')}`;
+  // Sapaan = nickname pasien di database (sudah memuat sapaan, mis. "Bu Endang", "Mas Aris").
+  const sapa = (inst?.salutation || '').trim() || 'Bapak/Ibu';
   if (inst?.kind === 'purchase') {
     return `Pembayaran yang kami terima untuk paket ini berupa DP sebesar *${rp(paidNow)}*. ` +
-      `Dengan hormat, kami mohon kesediaan Bapak/Ibu untuk melunasi sisa pembayaran paket sebesar *${rp((inst.total || 0) - (Number(paidNow) || 0))}* pada pertemuan sesi berikutnya.\n\n` +
+      `Dengan hormat, kami mohon kesediaan ${sapa} untuk melunasi sisa pembayaran paket sebesar *${rp((inst.total || 0) - (Number(paidNow) || 0))}* pada pertemuan sesi berikutnya.\n\n` +
       `Terima kasih atas pengertian dan kerja samanya.\n\n`;
   }
-  if (inst?.kind === 'payoff') return `Pembayaran paket ini telah *lunas*. Terima kasih atas kepercayaan Bapak/Ibu.\n\n`;
+  if (inst?.kind === 'payoff') return `Pembayaran paket ini telah *lunas*. Terima kasih atas kepercayaan ${sapa}.\n\n`;
   return '';
 };
 
@@ -354,6 +356,11 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
     } else if (recap.installment_payoff) {
       const { data: st } = await supabase.rpc('package_installment_status', { p_recap_id: recap.id });
       if (st?.kind === 'payoff') installment = { kind: 'payoff', total: Number(st.total), paidBefore: Number(st.paid) };
+    }
+
+    if (installment && recap.patient_id) {
+      const { data: pat } = await supabase.from('patients').select('nickname').eq('id', recap.patient_id).maybeSingle();
+      installment.salutation = pat?.nickname || '';
     }
 
     setDetailData({
