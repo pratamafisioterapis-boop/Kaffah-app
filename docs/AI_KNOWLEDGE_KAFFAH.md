@@ -60,6 +60,23 @@ Sumber: kaffahphysio.id (dibaca 2026-11-20) dan data terapis di aplikasi.
 - Sumber: database aplikasi (jadwal terapis, slot, cuti, izin, tukar shift, pengganti, hari libur). AI membaca langsung, tidak menebak.
 - Bila data jadwal tidak jelas, AI tidak menjanjikan, tetapi meneruskan ke admin.
 
+## Format balasan jadwal kosong
+Sama dengan tombol salin jadwal di aplikasi (dibuat otomatis oleh sistem, dikirim apa adanya tanpa tambahan):
+```
+Berikut jadwal yang tersedia untuk hari Selasa, 24 November 2026:
+
+*Alma Ramadhanty E P, S.Tr.Kes,Ftr*
+🕒 13:00
+🕒 15:30
+
+*Nurfadilah, S.Ft.,Ftr*
+🕒 14:30
+
+
+Kaffah Physiotherapy
+```
+Terapis diurutkan berdasarkan jam kosong paling awal. Bila pasien meminta terapis perempuan/laki-laki, jadwal disaring sesuai gender.
+
 ## Aturan perilaku AI (usulan)
 - Hanya menjawab: jadwal kosong, layanan, tarif, lokasi, jam buka, cara booking.
 - Tidak memberi diagnosis atau saran medis; keluhan klinis diarahkan ke terapis saat sesi.

@@ -75,6 +75,33 @@ export function dueDecision(
   return { act: false, delaySeconds: 0, reason: "jam_buka_mode_hanya_tutup" };
 }
 
+const HARI = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+const BULAN = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+];
+
+/**
+ * Pesan jadwal kosong dengan format yang sama dengan tombol salin di aplikasi:
+ * terapis diurutkan berdasarkan jam kosong paling awal, nama terapis tebal (*...*), tiap jam
+ * diawali 🕒, ditutup tanda tangan klinik.
+ */
+export function formatScheduleMessage(
+  date: string,
+  blocks: { name: string; times: string[] }[],
+): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  const head = `Berikut jadwal yang tersedia untuk hari ${HARI[dow]}, ${d} ${BULAN[m - 1]} ${y}:`;
+  const body = [...blocks]
+    .map((b) => ({ ...b, times: [...b.times].sort() }))
+    .filter((b) => b.times.length)
+    .sort((a, b) => a.times[0].localeCompare(b.times[0]))
+    .map((b) => `*${b.name}*\n${b.times.map((t) => `🕒 ${t}`).join("\n")}`)
+    .join("\n\n");
+  return `${head}\n\n${body}\n\n\nKaffah Physiotherapy`;
+}
+
 /** 62812… → varian penulisan yang mungkin tersimpan di tabel pasien. */
 export function phoneVariants(waId: string): string[] {
   const d = (waId || "").replace(/\D/g, "");
