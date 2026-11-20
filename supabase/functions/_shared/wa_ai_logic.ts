@@ -83,12 +83,12 @@ const BULAN = [
 
 /**
  * Pesan jadwal kosong dengan format yang sama dengan tombol salin di aplikasi:
- * terapis diurutkan berdasarkan jam kosong paling awal, nama terapis tebal (*...*), tiap jam
+ * terapis diurutkan berdasarkan jam kosong paling awal (seri: urutan terapis di aplikasi), nama terapis tebal (*...*), tiap jam
  * diawali 🕒, ditutup tanda tangan klinik.
  */
 export function formatScheduleMessage(
   date: string,
-  blocks: { name: string; times: string[] }[],
+  blocks: { name: string; times: string[]; rank?: number }[],
 ): string {
   const [y, m, d] = date.split("-").map(Number);
   const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
@@ -96,7 +96,8 @@ export function formatScheduleMessage(
   const body = [...blocks]
     .map((b) => ({ ...b, times: [...b.times].sort() }))
     .filter((b) => b.times.length)
-    .sort((a, b) => a.times[0].localeCompare(b.times[0]))
+    // Jam kosong paling awal dulu; bila sama, ikuti urutan terapis di aplikasi (rank).
+    .sort((a, b) => a.times[0].localeCompare(b.times[0]) || (a.rank ?? 0) - (b.rank ?? 0))
     .map((b) => `*${b.name}*\n${b.times.map((t) => `🕒 ${t}`).join("\n")}`)
     .join("\n\n");
   return `${head}\n\n${body}\n\n\nKaffah Physiotherapy`;
