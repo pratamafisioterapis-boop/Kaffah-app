@@ -59,3 +59,9 @@ Hanya owner yang dapat mengubah pengaturan; owner dan admin dapat mengelola stat
 ## Yang belum ada
 - Pengiriman gambar flyer (endpoint `/waba_send_image_url` ada di dokumentasi Watzap; belum dipasang di AI).
 - Uji dengan API Claude dan Watzap sungguhan belum dilakukan dari sesi ini.
+
+## Memperbarui knowledge AI (tanpa deploy ulang)
+Knowledge dibaca dari kolom `wa_ai_settings.knowledge_override`. Sumbernya `docs/AI_KNOWLEDGE_KAFFAH.md`.
+Setelah mengubah dokumen: jalankan `node tools/sync-ai-knowledge.js`, lalu jalankan isi
+`supabase/.temp-knowledge.sql` di SQL Editor Supabase. Bila kolom kosong, fungsi memakai cadangan singkat
+di `supabase/functions/_shared/wa_ai_knowledge.ts`.

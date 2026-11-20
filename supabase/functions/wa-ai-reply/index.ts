@@ -50,9 +50,8 @@ type Ctx = {
   allowedPatientIds: Set<string>;
   patientsLoaded: boolean;
   offeredSlots: Map<string, Slot & { date: string }>; // kunci: therapist|date|HH:MM
+  knowledge?: string | null; // knowledge dari database (wa_ai_settings.knowledge_override)
 };
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // ------------------------------------------------------------------ alat (tools)
 
@@ -477,7 +476,7 @@ GAYA BAHASA
 - Bila pesan terakhir pasien tidak perlu dibalas (hanya "ok", "siap", "👍", emoji, atau penutup setelah kamu sudah bilang "sama sama"), tulis balasan akhir kosong: tidak ada pesan yang dikirim.
 
 KNOWLEDGE KLINIK
-${KAFFAH_KNOWLEDGE}`;
+${ctx.knowledge?.trim() || KAFFAH_KNOWLEDGE}`;
 }
 
 // ------------------------------------------------------------------ Claude
@@ -763,9 +762,12 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
     admin.from("wa_ai_logs").update(patch).eq("id", log.id);
 
   try {
+    const { data: kst } = await admin.from("wa_ai_settings")
+      .select("knowledge_override").eq("clinic_id", clinicId).maybeSingle();
     const ctx: Ctx = {
       admin, clinicId, conv, mode: "simulate", now: new Date(), actions: [], handoff: null,
       bookingIds: [], allowedPatientIds: new Set(), patientsLoaded: false, offeredSlots: new Map(),
+      knowledge: kst?.knowledge_override ?? null,
     };
 
     // Dikenali sebagai pasien lama atau baru (hanya untuk label di Telegram dan petunjuk AI).
@@ -992,6 +994,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
     const ctx: Ctx = {
       admin, clinicId, conv, mode, now: new Date(), actions: [], handoff: null,
       bookingIds: [], allowedPatientIds: new Set(), patientsLoaded: false, offeredSlots: new Map(),
+      knowledge: st.knowledge_override ?? null,
     };
 
     // Lampiran (foto/rontgen/voice) tidak dibaca AI: diam-diam serahkan ke admin.
