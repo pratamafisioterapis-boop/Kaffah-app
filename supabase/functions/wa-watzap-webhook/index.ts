@@ -17,6 +17,39 @@ import { handleMessage, handleStatus } from "../_shared/inbox.ts";
 const MAX_BODY = 64 * 1024; // 64 KB
 const KEEP_DAYS = 7;
 
+// Tombol Quick Reply pada template reminder terapi (reminder_terapi_konfirmasi).
+// Watzap meneruskan klik sebagai message.type = "button" dengan button.payload
+// sama dengan teks tombol.
+const REPLY_BUTTONS: Record<string, string> = {
+  hadir: "hadir",
+  reschedule: "reschedule",
+  cancel: "cancel",
+};
+
+// Mencatat balasan tombol ke follow_up_queue (hanya mencatat; tidak mengubah
+// jadwal). Kegagalan di sini tidak boleh menggagalkan respons webhook.
+async function recordReminderReply(
+  admin: ReturnType<typeof createClient>,
+  clinicId: string,
+  msg: any,
+) {
+  try {
+    if (msg?.type !== "button") return;
+    const label = String(msg.button?.payload || msg.button?.text || "").trim().toLowerCase();
+    const reply = REPLY_BUTTONS[label];
+    if (!reply) return;
+    const { error } = await admin.rpc("record_reminder_reply", {
+      p_clinic_id: clinicId,
+      p_context_id: msg.context?.id ?? null,
+      p_phone: msg.from ?? null,
+      p_reply: reply,
+    });
+    if (error) console.error("[wa-watzap-webhook] catat balasan tombol gagal", error.message);
+  } catch (e) {
+    console.error("[wa-watzap-webhook] catat balasan tombol error", e);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
@@ -54,6 +87,7 @@ Deno.serve(async (req) => {
         : undefined;
       for (const msg of v.messages || []) {
         await handleMessage(admin, cfg.clinic_id, v.contacts || [], msg, media);
+        await recordReminderReply(admin, cfg.clinic_id, msg);
       }
       for (const st of v.statuses || []) {
         await handleStatus(admin, st);
