@@ -1,0 +1,217 @@
+﻿kode_sekarang,nama_sekarang,nama_baku_EN,nama_baku_ID,kode_tujuan_lama,nama_tujuan_lama,aksi_usulan,catatan_untuk_ditinjau
+BV01,Ankle Pumps Duduk,Ankle pumps,Ankle pump,AK01,Ankle pump dan alfabet,gabung,
+DN01,Stretch Plantar Fascia 1,Plantar fascia stretch,Peregangan fasia plantar,AK04,Peregangan fasia plantar,gabung,Varian 1/2
+DQ01,Stretch Plantar Fascia 2,Plantar fascia stretch,Peregangan fasia plantar,AK04,Peregangan fasia plantar,gabung,Varian 1/2
+FO01,Foot Rolling Bola Tenis,Foot rolling with tennis ball,Foot rolling bola tenis,AK04,Peregangan fasia plantar,tinjau,Terapi jaringan lunak mandiri; adjunct
+TC01,Towel Curl 2,Towel curl,Towel curl,AK05,Short foot dan towel curl,gabung,Varian 1/2
+TO01,Towel Curl 1,Towel curl,Towel curl,AK05,Short foot dan towel curl,gabung,Varian 1/2
+DC01,Calf Raise Pegang Kursi,Heel raise,Heel raise (berdiri / duduk / pegang kursi),AK06,Heel raise (dua kaki lalu satu kaki),gabung,
+HL01,Heel Raise Duduk,Heel raise,Heel raise (berdiri / duduk / pegang kursi),AK06,Heel raise (dua kaki lalu satu kaki),gabung,
+HR01,Heel Raise,Heel raise,Heel raise (berdiri / duduk / pegang kursi),AK06,Heel raise (dua kaki lalu satu kaki),gabung,
+BW01,Ankle Band Duduk,Ankle band exercises (all planes),"Latihan pergelangan kaki dengan band (dorsifleksi, eversi, inversi)",AK09,Penguatan band eversi-inversi-dorsofleksi,gabung,Termasuk dumbbell/blok
+DO01,Dorsifleksi Ankle Blok,Ankle band exercises (all planes),"Latihan pergelangan kaki dengan band (dorsifleksi, eversi, inversi)",AK09,Penguatan band eversi-inversi-dorsofleksi,gabung,Termasuk dumbbell/blok
+DR01,Dorsifleksi Ankle Dumbbell 1,Ankle band exercises (all planes),"Latihan pergelangan kaki dengan band (dorsifleksi, eversi, inversi)",AK09,Penguatan band eversi-inversi-dorsofleksi,gabung,Termasuk dumbbell/blok
+DS01,Dorsifleksi Ankle Dumbbell 2,Ankle band exercises (all planes),"Latihan pergelangan kaki dengan band (dorsifleksi, eversi, inversi)",AK09,Penguatan band eversi-inversi-dorsofleksi,gabung,Termasuk dumbbell/blok
+DT01,Ankle Band Mini 1,Ankle band exercises (all planes),"Latihan pergelangan kaki dengan band (dorsifleksi, eversi, inversi)",AK09,Penguatan band eversi-inversi-dorsofleksi,gabung,Termasuk dumbbell/blok
+DW01,Ankle Band Mini 2,Ankle band exercises (all planes),"Latihan pergelangan kaki dengan band (dorsifleksi, eversi, inversi)",AK09,Penguatan band eversi-inversi-dorsofleksi,gabung,Termasuk dumbbell/blok
+EA01,Eversi Ankle Band 2,Ankle band exercises (all planes),"Latihan pergelangan kaki dengan band (dorsifleksi, eversi, inversi)",AK09,Penguatan band eversi-inversi-dorsofleksi,gabung,Termasuk dumbbell/blok
+EV01,Eversi Ankle Band 1,Ankle band exercises (all planes),"Latihan pergelangan kaki dengan band (dorsifleksi, eversi, inversi)",AK09,Penguatan band eversi-inversi-dorsofleksi,gabung,Termasuk dumbbell/blok
+IA01,Inversi Ankle Band 2,Ankle band exercises (all planes),"Latihan pergelangan kaki dengan band (dorsifleksi, eversi, inversi)",AK09,Penguatan band eversi-inversi-dorsofleksi,gabung,Termasuk dumbbell/blok
+IN01,Inversi Ankle Band 1,Ankle band exercises (all planes),"Latihan pergelangan kaki dengan band (dorsifleksi, eversi, inversi)",AK09,Penguatan band eversi-inversi-dorsofleksi,gabung,Termasuk dumbbell/blok
+CZ01,Single Leg Cone Touch,Single leg cone touch,Single leg cone touch,AK17,Star excursion / Y-balance reach,tinjau,Mirip Y-balance reach
+CH01,Chin Tuck Duduk,Chin tuck,Chin tuck (retraksi dagu),CX01,Chin tuck,gabung,CX01 sudah punya video sendiri -> konflik 1 video/latihan; varian duduk/berdiri/telentang dengan handuk
+CI01,Chin Tuck Berdiri 2,Chin tuck,Chin tuck (retraksi dagu),CX01,Chin tuck,gabung,CX01 sudah punya video sendiri -> konflik 1 video/latihan; varian duduk/berdiri/telentang dengan handuk
+CN01,Chin Tuck Supine Handuk,Chin tuck,Chin tuck (retraksi dagu),CX01,Chin tuck,gabung,CX01 sudah punya video sendiri -> konflik 1 video/latihan; varian duduk/berdiri/telentang dengan handuk
+CT01,Chin Tuck Berdiri 1,Chin tuck,Chin tuck (retraksi dagu),CX01,Chin tuck,gabung,CX01 sudah punya video sendiri -> konflik 1 video/latihan; varian duduk/berdiri/telentang dengan handuk
+EK01,Ekstensi Leher,Cervical active ROM,ROM aktif servikal,CX03,ROM aktif servikal,gabung,"Fleksi/ekstensi/rotasi; RM01 dan RM02 (lama, ber-video) ikut"
+FL01,Fleksi Leher,Cervical active ROM,ROM aktif servikal,CX03,ROM aktif servikal,gabung,"Fleksi/ekstensi/rotasi; RM01 dan RM02 (lama, ber-video) ikut"
+RL01,Rotasi Leher Duduk,Cervical active ROM,ROM aktif servikal,CX03,ROM aktif servikal,gabung,"Fleksi/ekstensi/rotasi; RM01 dan RM02 (lama, ber-video) ikut"
+RM01,Latihan Aktif Leher,Cervical active ROM,ROM aktif servikal,CX03,ROM aktif servikal,gabung,"Fleksi/ekstensi/rotasi; RM01 dan RM02 (lama, ber-video) ikut"
+RM02,Latihan Aktif Rotasi Leher,Cervical active ROM,ROM aktif servikal,CX03,ROM aktif servikal,gabung,"Fleksi/ekstensi/rotasi; RM01 dan RM02 (lama, ber-video) ikut"
+RO01,Rotasi Leher,Cervical active ROM,ROM aktif servikal,CX03,ROM aktif servikal,gabung,"Fleksi/ekstensi/rotasi; RM01 dan RM02 (lama, ber-video) ikut"
+SC01,Stretch Leher Lateral dengan Band 2,Upper trapezius / lateral neck stretch,Peregangan upper trapezius / fleksi lateral leher,CX04,Peregangan upper trapezius,gabung,CX04 sudah punya video; termasuk versi dengan band
+SE01,Stretch Leher Lateral dengan Band 1,Upper trapezius / lateral neck stretch,Peregangan upper trapezius / fleksi lateral leher,CX04,Peregangan upper trapezius,gabung,CX04 sudah punya video; termasuk versi dengan band
+SL01,Stretch Leher Lateral Fleksi,Upper trapezius / lateral neck stretch,Peregangan upper trapezius / fleksi lateral leher,CX04,Peregangan upper trapezius,gabung,CX04 sudah punya video; termasuk versi dengan band
+SU01,Stretch Upper Trapezius,Upper trapezius / lateral neck stretch,Peregangan upper trapezius / fleksi lateral leher,CX04,Peregangan upper trapezius,gabung,CX04 sudah punya video; termasuk versi dengan band
+ST01,Peregangan Scalene,Scalene stretch,Peregangan skalenus,CX06,Peregangan skalenus,gabung,"ST01 (lama, ber-video, tak di rencana) duplikat CX06"
+SF01,Stretch Leher Fleksi dengan Band,Neck flexion stretch,Peregangan fleksi leher,CX07,Peregangan suboksipital,tinjau,Dengan band atau tangan di belakang kepala; cek apakah target suboksipital atau ekstensor leher
+SR01,Stretch Leher Fleksi Tangan di Belakang Kepala,Neck flexion stretch,Peregangan fleksi leher,CX07,Peregangan suboksipital,tinjau,Dengan band atau tangan di belakang kepala; cek apakah target suboksipital atau ekstensor leher
+IE01,Isometrik Leher Rotasi,Isometric neck strengthening (multi-direction),Isometrik leher multi-arah,CX08,Isometrik fleksi leher,tinjau,CX08 hanya fleksi dan ber-video. Keputusan: satu latihan multi-arah atau 4 latihan arah (fleksi/ekstensi/rotasi/lateral)
+II01,Isometrik Leher Band,Isometric neck strengthening (multi-direction),Isometrik leher multi-arah,CX08,Isometrik fleksi leher,tinjau,CX08 hanya fleksi dan ber-video. Keputusan: satu latihan multi-arah atau 4 latihan arah (fleksi/ekstensi/rotasi/lateral)
+IL01,Isometrik Lateral Fleksi Leher,Isometric neck strengthening (multi-direction),Isometrik leher multi-arah,CX08,Isometrik fleksi leher,tinjau,CX08 hanya fleksi dan ber-video. Keputusan: satu latihan multi-arah atau 4 latihan arah (fleksi/ekstensi/rotasi/lateral)
+IM01,Isometrik Leher Ekstensi,Isometric neck strengthening (multi-direction),Isometrik leher multi-arah,CX08,Isometrik fleksi leher,tinjau,CX08 hanya fleksi dan ber-video. Keputusan: satu latihan multi-arah atau 4 latihan arah (fleksi/ekstensi/rotasi/lateral)
+IO01,Isometrik Leher Fleksi,Isometric neck strengthening (multi-direction),Isometrik leher multi-arah,CX08,Isometrik fleksi leher,tinjau,CX08 hanya fleksi dan ber-video. Keputusan: satu latihan multi-arah atau 4 latihan arah (fleksi/ekstensi/rotasi/lateral)
+IR01,Isometrik Rotasi Leher,Isometric neck strengthening (multi-direction),Isometrik leher multi-arah,CX08,Isometrik fleksi leher,tinjau,CX08 hanya fleksi dan ber-video. Keputusan: satu latihan multi-arah atau 4 latihan arah (fleksi/ekstensi/rotasi/lateral)
+IS01,Isometrik Ekstensi Leher,Isometric neck strengthening (multi-direction),Isometrik leher multi-arah,CX08,Isometrik fleksi leher,tinjau,CX08 hanya fleksi dan ber-video. Keputusan: satu latihan multi-arah atau 4 latihan arah (fleksi/ekstensi/rotasi/lateral)
+IT01,Isometrik Leher Lateral Fleksi,Isometric neck strengthening (multi-direction),Isometrik leher multi-arah,CX08,Isometrik fleksi leher,tinjau,CX08 hanya fleksi dan ber-video. Keputusan: satu latihan multi-arah atau 4 latihan arah (fleksi/ekstensi/rotasi/lateral)
+PI01,Postur Berdiri Retraksi Scapula 3,Scapular retraction (standing posture),Retraksi skapula berdiri,CX09,Retraksi skapula (scapular squeeze),gabung,Varian 1-4
+PK01,Postur Berdiri Retraksi Scapula 4,Scapular retraction (standing posture),Retraksi skapula berdiri,CX09,Retraksi skapula (scapular squeeze),gabung,Varian 1-4
+PS01,Penguatan Scapula Handuk,Scapular strengthening with towel,Penguatan skapula dengan handuk,CX09,Retraksi skapula (scapular squeeze),tinjau,Cek video: setara retraksi atau penguatan lain
+PT01,Postur Berdiri Retraksi Scapula 1,Scapular retraction (standing posture),Retraksi skapula berdiri,CX09,Retraksi skapula (scapular squeeze),gabung,Varian 1-4
+PU01,Postur Berdiri Retraksi Scapula 2,Scapular retraction (standing posture),Retraksi skapula berdiri,CX09,Retraksi skapula (scapular squeeze),gabung,Varian 1-4
+RR01,Retraksi Scapula,Scapular retraction (standing posture),Retraksi skapula berdiri,CX09,Retraksi skapula (scapular squeeze),gabung,Varian 1-4
+AA01,Stretch Fleksor Pergelangan Tangan 1,Wrist flexor stretch,Peregangan fleksor pergelangan tangan,EW02,Peregangan fleksor pergelangan,gabung,Varian 1/2/3 = posisi berbeda; video tambahan
+AC01,Stretch Fleksor Pergelangan Tangan 2,Wrist flexor stretch,Peregangan fleksor pergelangan tangan,EW02,Peregangan fleksor pergelangan,gabung,Varian 1/2/3 = posisi berbeda; video tambahan
+AD01,Stretch Fleksor Pergelangan Tangan 3,Wrist flexor stretch,Peregangan fleksor pergelangan tangan,EW02,Peregangan fleksor pergelangan,gabung,Varian 1/2/3 = posisi berbeda; video tambahan
+SG01,Stretch Pergelangan Tangan Telapak Menyatu,Prayer stretch (wrist flexor),"Peregangan fleksor pergelangan, telapak menyatu",EW02,Peregangan fleksor pergelangan,gabung,Varian posisi
+WC01,Wrist Curl Band 2,Wrist curl,Wrist curl (fleksi/ekstensi dengan beban),EW05,Wrist curl dan reverse curl,gabung,Band 1/2 dan dumbbell = varian beban
+WI01,Wrist Curl Dumbbell,Wrist curl,Wrist curl (fleksi/ekstensi dengan beban),EW05,Wrist curl dan reverse curl,gabung,Band 1/2 dan dumbbell = varian beban
+WR01,Wrist Curl Band 1,Wrist curl,Wrist curl (fleksi/ekstensi dengan beban),EW05,Wrist curl dan reverse curl,gabung,Band 1/2 dan dumbbell = varian beban
+PA01,Pronasi Supinasi Band 2,Forearm pronation-supination,Pronasi-supinasi lengan bawah dengan beban/band,EW06,Pronasi-supinasi dengan beban (palu),gabung,Varian band 1/2
+PR01,Pronasi Supinasi Band 1,Forearm pronation-supination,Pronasi-supinasi lengan bawah dengan beban/band,EW06,Pronasi-supinasi dengan beban (palu),gabung,Varian band 1/2
+GE01,Genggam Bola Tenis,Tennis ball grip,Genggam bola tenis,EW07,Latihan genggam (putty/bola),gabung,
+DE01,Deviasi Pergelangan Tangan 1,Wrist radial/ulnar deviation,Deviasi radial-ulnar pergelangan tangan,EW17,ROM aktif pergelangan tangan,tinjau,Belum jelas apakah tanpa beban (ROM) atau dengan beban; cek video
+DP01,Deviasi Pergelangan Tangan 2,Wrist radial/ulnar deviation,Deviasi radial-ulnar pergelangan tangan,EW17,ROM aktif pergelangan tangan,tinjau,Belum jelas apakah tanpa beban (ROM) atau dengan beban; cek video
+DV01,Deviasi Pergelangan Tangan 3,Wrist radial/ulnar deviation,Deviasi radial-ulnar pergelangan tangan,EW17,ROM aktif pergelangan tangan,tinjau,Belum jelas apakah tanpa beban (ROM) atau dengan beban; cek video
+EP01,Ekstensi Pergelangan Tangan,Wrist extension (active),Ekstensi pergelangan tangan aktif,EW17,ROM aktif pergelangan tangan,tinjau,Cek video: ROM aktif atau penguatan
+IW01,Intro Wajah,Facial intro,Intro wajah,FC01,Latihan otot wajah di depan cermin,tinjau,"Kemungkinan video pengantar, bukan latihan; cek video"
+LJ01,Latihan Jalan,Walking,Latihan jalan,GN01,Jalan kaki bertahap,gabung,
+SW01,Swimming,Swimming,Berenang,GN03,Aqua exercise / berenang,tinjau,GN03 = aqua exercise/berenang
+BZ01,Berdiri Pegang Kursi,Sit-to-stand,Sit-to-stand (duduk-berdiri),GN09,Sit-to-stand,gabung,"DU01 = posisi awal, BZ01 = berdiri pegang kursi; mungkin bukan latihan terpisah"
+DB01,Sit to Stand Kursi 1,Sit-to-stand,Sit-to-stand (duduk-berdiri),GN09,Sit-to-stand,gabung,"DU01 = posisi awal, BZ01 = berdiri pegang kursi; mungkin bukan latihan terpisah"
+DF01,Sit to Stand Kursi 2,Sit-to-stand,Sit-to-stand (duduk-berdiri),GN09,Sit-to-stand,gabung,"DU01 = posisi awal, BZ01 = berdiri pegang kursi; mungkin bukan latihan terpisah"
+DU01,Duduk Kursi Posisi Awal,Sit-to-stand,Sit-to-stand (duduk-berdiri),GN09,Sit-to-stand,gabung,"DU01 = posisi awal, BZ01 = berdiri pegang kursi; mungkin bukan latihan terpisah"
+DM01,Ankle Slide Supine,Heel slide,Heel slide,HP01,Heel slide,gabung,Termasuk slider dan ankle slide terlentang
+HE01,Heel Slide Slider,Heel slide,Heel slide,HP01,Heel slide,gabung,Termasuk slider dan ankle slide terlentang
+CB01,Clamshell Band 1,Clamshell,Clamshell,HP02,Clamshell,gabung,Band 1/2 dan supine
+CM01,Clamshell Band 2,Clamshell,Clamshell,HP02,Clamshell,gabung,Band 1/2 dan supine
+CS01,Clamshell Band Supine,Clamshell,Clamshell,HP02,Clamshell,gabung,Band 1/2 dan supine
+AZ01,Side Lying Hip Abduksi 1,Side-lying hip abduction,Abduksi hip miring,HP03,Abduksi hip miring,gabung,Varian 1/2 dan band
+BB01,Side Lying Abduksi Band,Side-lying hip abduction,Abduksi hip miring,HP03,Abduksi hip miring,gabung,Varian 1/2 dan band
+BF01,Side Lying Hip Abduksi 2,Side-lying hip abduction,Abduksi hip miring,HP03,Abduksi hip miring,gabung,Varian 1/2 dan band
+BS01,Butterfly Stretch 2,Butterfly stretch,Peregangan butterfly (adduktor),HP06,Peregangan adduktor (butterfly/side lunge),gabung,Varian 1/2
+BU01,Butterfly Stretch 1,Butterfly stretch,Peregangan butterfly (adduktor),HP06,Peregangan adduktor (butterfly/side lunge),gabung,Varian 1/2
+CG01,Side Lunge,Side lunge,Side lunge,HP06,Peregangan adduktor (butterfly/side lunge),tinjau,HP06 memuat side lunge sebagai peregangan; CJ01 (kettlebell) penguatan
+CJ01,Side Lunge Kettlebell,Side lunge,Side lunge,HP06,Peregangan adduktor (butterfly/side lunge),tinjau,HP06 memuat side lunge sebagai peregangan; CJ01 (kettlebell) penguatan
+CD01,Standing Quad Stretch,Quadriceps stretch,Peregangan quadriceps,HP08,Peregangan quadriceps berdiri,gabung,Berdiri dan half-kneeling
+SQ01,Stretch Quadriceps Half Kneeling,Quadriceps stretch,Peregangan quadriceps,HP08,Peregangan quadriceps berdiri,gabung,Berdiri dan half-kneeling
+HA01,Hip Adduksi Bola,Ball squeeze (hip adduction isometric),Remas bola antara lutut (isometrik adduksi),HP09,Isometrik adduksi (remas bola),gabung,
+LI01,Latihan Bola Antara Kaki 2,Ball squeeze (hip adduction isometric),Remas bola antara lutut (isometrik adduksi),HP09,Isometrik adduksi (remas bola),gabung,
+LT01,Latihan Bola Antara Kaki 1,Ball squeeze (hip adduction isometric),Remas bola antara lutut (isometrik adduksi),HP09,Isometrik adduksi (remas bola),gabung,
+HB01,Hip Abduksi Berdiri Band 1,Standing hip abduction with band,Abduksi hip berdiri dengan band,HP11,Abduksi hip berdiri dengan band,gabung,Banyak varian band/warna
+HD01,Hip Abduksi Berdiri Band 2,Standing hip abduction with band,Abduksi hip berdiri dengan band,HP11,Abduksi hip berdiri dengan band,gabung,Banyak varian band/warna
+HN01,Hip Abduksi Berdiri Band Hitam 2,Standing hip abduction with band,Abduksi hip berdiri dengan band,HP11,Abduksi hip berdiri dengan band,gabung,Banyak varian band/warna
+HS01,Hip Abduksi Berdiri Band Hitam 1,Standing hip abduction with band,Abduksi hip berdiri dengan band,HP11,Abduksi hip berdiri dengan band,gabung,Banyak varian band/warna
+HU01,Hip Abduksi Berdiri Band 3,Standing hip abduction with band,Abduksi hip berdiri dengan band,HP11,Abduksi hip berdiri dengan band,gabung,Banyak varian band/warna
+CV01,Side Step Band,Lateral band walk,Jalan lateral dengan band,HP12,Monster walk (jalan lateral dengan band),gabung,
+DD01,Step Up Posisi Awal,Step up,Step up,HP13,Step Up,gabung,HP13 sudah ber-video. Termasuk lateral/knee drive/posisi awal
+DI01,Step Up Knee Lift,Step up,Step up,HP13,Step Up,gabung,HP13 sudah ber-video. Termasuk lateral/knee drive/posisi awal
+DJ01,Step Up Samping,Step up,Step up,HP13,Step Up,gabung,HP13 sudah ber-video. Termasuk lateral/knee drive/posisi awal
+LS01,Lateral Step Up,Step up,Step up,HP13,Step Up,gabung,HP13 sudah ber-video. Termasuk lateral/knee drive/posisi awal
+SV01,Step Up Knee Drive,Step up,Step up,HP13,Step Up,gabung,HP13 sudah ber-video. Termasuk lateral/knee drive/posisi awal
+CF01,Squat dengan Kursi,Mini squat / chair squat,Mini squat / squat dengan kursi,HP14,Mini squat,gabung,"Tangan di dada, band 1/2, kursi"
+CK01,Squat Tangan di Dada,Mini squat / chair squat,Mini squat / squat dengan kursi,HP14,Mini squat,gabung,"Tangan di dada, band 1/2, kursi"
+CW01,Squat Band 1,Mini squat / chair squat,Mini squat / squat dengan kursi,HP14,Mini squat,gabung,"Tangan di dada, band 1/2, kursi"
+CY01,Squat Band 2,Mini squat / chair squat,Mini squat / squat dengan kursi,HP14,Mini squat,gabung,"Tangan di dada, band 1/2, kursi"
+HI01,Hip Abduksi Band Supine,Supine hip abduction with band,Abduksi hip terlentang dengan band,HP24,Isometrik abduksi hip,tinjau,Isometrik atau dinamis? Cek video
+QS01,Quad Set Foam Roller,Quad set,Quad set (isometrik quadriceps),KN01,Quad set (isometrik quadriceps),gabung,Dengan foam roller
+DH01,Step Down 1,Step down,Step down,KN06,Step-down,gabung,Varian 1/2/3 dan lateral
+DK01,Step Down 2,Step down,Step down,KN06,Step-down,gabung,Varian 1/2/3 dan lateral
+DL01,Step Down 3,Step down,Step down,KN06,Step-down,gabung,Varian 1/2/3 dan lateral
+LE01,Lateral Step Down,Step down,Step down,KN06,Step-down,gabung,Varian 1/2/3 dan lateral
+AJ01,Prone Knee Fleksi,Hamstring curl prone,Hamstring curl tengkurap,KN08,Hamstring curl (band/telungkup),gabung,"AJ01 tanpa beban, HC01 dengan band"
+HC01,Hamstring Curl Band Prone,Hamstring curl prone,Hamstring curl tengkurap,KN08,Hamstring curl (band/telungkup),gabung,"AJ01 tanpa beban, HC01 dengan band"
+DG01,Bulgarian Split Squat Kursi,Bulgarian split squat,Bulgarian split squat,KN09,Split squat,gabung,Progresi split squat
+LU01,Lunge,Lunge,Lunge,KN09,Split squat,tinjau,Boleh dilebur dengan split squat atau dibuat sendiri
+CR01,Single Leg Balance Board,Single leg balance on unstable surface,Keseimbangan satu kaki di permukaan tidak stabil,KN17,Single leg stance di permukaan tidak stabil,gabung,Balance board / dome. AK11 juga mirip
+CU01,Balance Dome,Single leg balance on unstable surface,Keseimbangan satu kaki di permukaan tidak stabil,KN17,Single leg stance di permukaan tidak stabil,gabung,Balance board / dome. AK11 juga mirip
+PC01,Posterior Pelvic Tilt 2,Posterior pelvic tilt,Pelvic tilt posterior,LB01,Pelvic tilt berbaring,gabung,Varian 1/2
+PV01,Posterior Pelvic Tilt 1,Posterior pelvic tilt,Pelvic tilt posterior,LB01,Pelvic tilt berbaring,gabung,Varian 1/2
+KC01,Knee to Chest Satu Kaki,Knee to chest,Knee-to-chest (satu/dua kaki),LB02,Knee-to-chest bergantian,gabung,Termasuk knee hug berdiri
+KE01,Knee to Chest 2,Knee to chest,Knee-to-chest (satu/dua kaki),LB02,Knee-to-chest bergantian,gabung,Termasuk knee hug berdiri
+KH01,Knee Hug Berdiri 1,Knee to chest,Knee-to-chest (satu/dua kaki),LB02,Knee-to-chest bergantian,gabung,Termasuk knee hug berdiri
+KO01,Knee to Chest Dua Tangan,Knee to chest,Knee-to-chest (satu/dua kaki),LB02,Knee-to-chest bergantian,gabung,Termasuk knee hug berdiri
+KT01,Knee to Chest 1,Knee to chest,Knee-to-chest (satu/dua kaki),LB02,Knee-to-chest bergantian,gabung,Termasuk knee hug berdiri
+KU01,Knee Hug Berdiri 2,Knee to chest,Knee-to-chest (satu/dua kaki),LB02,Knee-to-chest bergantian,gabung,Termasuk knee hug berdiri
+BG01,Stretch Rotasi Lumbal,Lumbar rotation stretch,Peregangan rotasi lumbal,LB03,Rotasi lumbal berbaring,gabung,
+RU01,Rotasi Trunk Duduk,Seated trunk rotation,Rotasi trunk duduk,LB03,Rotasi lumbal berbaring,tinjau,Padanan rotasi lumbal berbaring tapi posisi duduk
+AL01,Prone Lying,Thoracic extension / prone press-up,"Ekstensi tengkurap (prone lying, on elbows, press-up)",LB04,Press-up tengkurap (arah ekstensi),gabung,Urutan progresif McKenzie; cek video
+CO01,Cobra Press Up,Thoracic extension / prone press-up,"Ekstensi tengkurap (prone lying, on elbows, press-up)",LB04,Press-up tengkurap (arah ekstensi),gabung,Urutan progresif McKenzie; cek video
+PL01,Prone on Elbows,Thoracic extension / prone press-up,"Ekstensi tengkurap (prone lying, on elbows, press-up)",LB04,Press-up tengkurap (arah ekstensi),gabung,Urutan progresif McKenzie; cek video
+CA01,Cat Camel 1,Cat-camel,Cat-camel,LB05,Cat-camel,gabung,Varian 1/2
+CC01,Cat Camel 2,Cat-camel,Cat-camel,LB05,Cat-camel,gabung,Varian 1/2
+CL01,Child Pose Reach,Child's pose,Child's pose,LB06,Child's pose,gabung,Termasuk versi reach
+CP01,Child Pose,Child's pose,Child's pose,LB06,Child's pose,gabung,Termasuk versi reach
+QU01,Quadruped Rock Back,Quadruped rock back,Rock back posisi merangkak,LB06,Child's pose,tinjau,Mirip child's pose; bisa dilebur
+AN01,Single Leg Bridge 1,Bridge,Bridging (glute bridge),LB08,Bridging,gabung,Progresi: awal -> tumit terangkat -> satu kaki 1/2/3
+AO01,Single Leg Bridge 2,Bridge,Bridging (glute bridge),LB08,Bridging,gabung,Progresi: awal -> tumit terangkat -> satu kaki 1/2/3
+AP01,Single Leg Bridge 3,Bridge,Bridging (glute bridge),LB08,Bridging,gabung,Progresi: awal -> tumit terangkat -> satu kaki 1/2/3
+BD01,Bridge Tumit Terangkat 2,Bridge,Bridging (glute bridge),LB08,Bridging,gabung,Progresi: awal -> tumit terangkat -> satu kaki 1/2/3
+BR01,Bridge Awal,Bridge,Bridging (glute bridge),LB08,Bridging,gabung,Progresi: awal -> tumit terangkat -> satu kaki 1/2/3
+BT01,Bridge Tumit Terangkat 1,Bridge,Bridging (glute bridge),LB08,Bridging,gabung,Progresi: awal -> tumit terangkat -> satu kaki 1/2/3
+GL01,Glute Bridge,Bridge,Bridging (glute bridge),LB08,Bridging,gabung,Progresi: awal -> tumit terangkat -> satu kaki 1/2/3
+BK01,Side Plank Lutut,Side plank,Side plank (lutut / hip abduksi),LB11,Side Plank,gabung,"LB11 sudah ber-video; BK01 = regresi (lutut), BL01 = progresi"
+BL01,Side Plank Hip Abduksi,Side plank,Side plank (lutut / hip abduksi),LB11,Side Plank,gabung,"LB11 sudah ber-video; BK01 = regresi (lutut), BL01 = progresi"
+AH01,Plank Siku 1,Forearm plank,Plank siku,LB12,Plank,gabung,Varian 1/2
+BJ01,Plank Siku 2,Forearm plank,Plank siku,LB12,Plank,gabung,Varian 1/2
+PG01,Plank Tangan Lurus,Plank on extended arms,Plank tangan lurus,LB12,Plank,gabung,Varian progresi/regresi
+AG01,Superman,Superman (prone back extension),Superman (ekstensi punggung tengkurap),LB13,Ekstensi tengkurap (superman ringan),gabung,
+KD01,Kettlebell Deadlift,Kettlebell deadlift,Deadlift kettlebell,LB14,Hip hinge dengan tongkat,tinjau,Hip hinge dengan beban
+AT01,Stretch Piriformis Figure 4,Piriformis / figure-4 stretch,Peregangan piriformis figure-4,LB15,Peregangan piriformis (figure-4),gabung,"Terlentang, duduk, berdiri"
+BP01,Stretch Piriformis Duduk,Piriformis / figure-4 stretch,Peregangan piriformis figure-4,LB15,Peregangan piriformis (figure-4),gabung,"Terlentang, duduk, berdiri"
+BQ01,Stretch Hip Duduk Figure 4,Piriformis / figure-4 stretch,Peregangan piriformis figure-4,LB15,Peregangan piriformis (figure-4),gabung,"Terlentang, duduk, berdiri"
+CE01,Stretch Figure 4 Berdiri,Piriformis / figure-4 stretch,Peregangan piriformis figure-4,LB15,Peregangan piriformis (figure-4),gabung,"Terlentang, duduk, berdiri"
+AU01,Stretch Hamstring Band,Hamstring stretch,Peregangan hamstring,LB16,Peregangan hamstring (telentang dengan tali),gabung,"Band, terlentang, duduk, kaki di kursi"
+AV01,Stretch Hamstring Supine,Hamstring stretch,Peregangan hamstring,LB16,Peregangan hamstring (telentang dengan tali),gabung,"Band, terlentang, duduk, kaki di kursi"
+BM01,Stretch Hamstring Duduk,Hamstring stretch,Peregangan hamstring,LB16,Peregangan hamstring (telentang dengan tali),gabung,"Band, terlentang, duduk, kaki di kursi"
+BO01,Stretch Hamstring Duduk Kaki Terbuka,Hamstring stretch,Peregangan hamstring,LB16,Peregangan hamstring (telentang dengan tali),gabung,"Band, terlentang, duduk, kaki di kursi"
+BX01,Stretch Hamstring Kaki di Kursi,Hamstring stretch,Peregangan hamstring,LB16,Peregangan hamstring (telentang dengan tali),gabung,"Band, terlentang, duduk, kaki di kursi"
+AW01,Stretch Hip Fleksor Side Lying,Hip flexor stretch,Peregangan hip flexor,LB17,Peregangan hip flexor (lunge berlutut),gabung,Lunge dan side-lying
+BY01,Stretch Hip Fleksor Lunge,Hip flexor stretch,Peregangan hip flexor,LB17,Peregangan hip flexor (lunge berlutut),gabung,Lunge dan side-lying
+PB01,Pendulum Bahu 2,Codman pendulum,Pendulum Codman,SH01,Pendulum (Codman),gabung,Varian 1/2/3
+PE01,Pendulum Bahu 1,Codman pendulum,Pendulum Codman,SH01,Pendulum (Codman),gabung,Varian 1/2/3
+PN01,Pendulum Bahu 3,Codman pendulum,Pendulum Codman,SH01,Pendulum (Codman),gabung,Varian 1/2/3
+FB01,Fleksi Bahu Overhead Band,Overhead band shoulder flexion,Fleksi bahu overhead dengan band,SH02,Angkat lengan dengan tongkat (wand flexion),tinjau,Mirip fleksi dengan tongkat tapi dengan resistensi
+FE01,Fleksi Bahu dengan Stick,Wand shoulder flexion,Fleksi bahu dengan tongkat,SH02,Angkat lengan dengan tongkat (wand flexion),gabung,
+RA01,Rotasi Eksternal Bahu 1,Shoulder external rotation (no band),Eksorotasi bahu,SH03,Eksorotasi dengan tongkat,tinjau,Cek video: dengan tongkat atau tanpa alat
+RI01,Rotasi Eksternal Bahu 2,Shoulder external rotation (no band),Eksorotasi bahu,SH03,Eksorotasi dengan tongkat,tinjau,Cek video: dengan tongkat atau tanpa alat
+RK01,Rotasi Eksternal Bahu 3,Shoulder external rotation (no band),Eksorotasi bahu,SH03,Eksorotasi dengan tongkat,tinjau,Cek video: dengan tongkat atau tanpa alat
+SA01,Stretch Bahu Cross Body 2,Cross-body shoulder stretch,Peregangan bahu cross-body,SH04,Peregangan kapsul posterior (cross-body),gabung,Varian 1/2
+SB01,Stretch Bahu Cross Body 1,Cross-body shoulder stretch,Peregangan bahu cross-body,SH04,Peregangan kapsul posterior (cross-body),gabung,Varian 1/2
+RE01,Rotasi Eksternal Bahu Band 1,Shoulder external rotation with band,Eksorotasi bahu dengan band,SH08,Eksorotasi dengan band,gabung,Band 1/2
+RT01,Rotasi Eksternal Bahu Band 2,Shoulder external rotation with band,Eksorotasi bahu dengan band,SH08,Eksorotasi dengan band,gabung,Band 1/2
+RN01,Rotasi Internal Bahu Band,Shoulder internal rotation with band,Endorotasi bahu dengan band,SH09,Endorotasi dengan band,gabung,
+PZ01,Prone Horizontal Abduksi Bahu,Prone horizontal abduction (T),Abduksi horizontal bahu tengkurap,SH14,Horizontal abduction tengkurap (T),gabung,
+PY01,Prone Y Raise,Prone Y raise,Prone Y raise,SH15,Lower trapezius (prone Y),gabung,Setara 'Lower trapezius (prone Y)'; CX13 juga mencakup Y
+BC01,Bicep Curl Band 2,Biceps curl with band,Biceps curl dengan band,SH16,Biceps curl (isometrik lalu eksentrik),tinjau,SH16 = isometrik lalu eksentrik; ini konsentrik-eksentrik dengan band
+BE01,Bicep Curl Band 3,Biceps curl with band,Biceps curl dengan band,SH16,Biceps curl (isometrik lalu eksentrik),tinjau,SH16 = isometrik lalu eksentrik; ini konsentrik-eksentrik dengan band
+BI01,Bicep Curl Band 1,Biceps curl with band,Biceps curl dengan band,SH16,Biceps curl (isometrik lalu eksentrik),tinjau,SH16 = isometrik lalu eksentrik; ini konsentrik-eksentrik dengan band
+AB01,Abduksi Bahu,Shoulder abduction,Abduksi bahu,,,tinjau,Tidak ada padanan pasti; dekat SH10 (scaption) tapi bidangnya beda
+AE01,Stretch Punggung Atas Tangan Menyatu 2,Upper-back stretch with clasped hands,"Peregangan punggung atas, tangan menyatu",,,baru,Varian 1/2/3
+AF01,Stretch Punggung Atas Tangan Menyatu 3,Upper-back stretch with clasped hands,"Peregangan punggung atas, tangan menyatu",,,baru,Varian 1/2/3
+AI01,Prone Hip Ekstensi 2,Prone hip extension,Ekstensi hip tengkurap (dengan/ tanpa band),,,baru,Tidak ada di katalog
+AQ01,Supine Leg Raise Lutut Ditekuk,Supine bent-knee leg raise / hip flexion,Angkat tungkai terlentang lutut ditekuk / fleksi hip,,,tinjau,SLR (HP17) lutut lurus; ini berbeda. Cek video
+AR01,Supine Hip Fleksi,Supine bent-knee leg raise / hip flexion,Angkat tungkai terlentang lutut ditekuk / fleksi hip,,,tinjau,SLR (HP17) lutut lurus; ini berbeda. Cek video
+AX01,Abdominal Curl Tangan Silang,Abdominal curl / sit-up,Abdominal curl / sit-up,,,tinjau,"Tidak ada di katalog; sit-up penuh tidak lazim di rehab punggung, keputusan klinis Anda"
+AY01,Sit Up Tangan di Belakang Kepala,Abdominal curl / sit-up,Abdominal curl / sit-up,,,tinjau,"Tidak ada di katalog; sit-up penuh tidak lazim di rehab punggung, keputusan klinis Anda"
+BA01,Band Pull Apart,Band pull-apart,Band pull-apart,,,tinjau,Dekat SH11 (rowing band) dan CX09; keputusan Anda
+BH01,Prone Hip Ekstensi Band,Prone hip extension,Ekstensi hip tengkurap (dengan/ tanpa band),,,baru,Tidak ada di katalog
+CQ01,Step Tap Blok,Step tap,Step tap pada blok,,,tinjau,Kontrol/keseimbangan; cek video
+DA01,Single Leg Deadlift Cone,Single leg deadlift,Single leg deadlift,,,baru,
+EB01,Ekstensi Bahu,Shoulder extension,Ekstensi bahu (tanpa beban dan band),,,baru,EB01 tanpa beban; ES01/ET01 band 1/2
+EE01,Ekstensi Lutut Duduk,Seated knee extension,Ekstensi lutut duduk / slider,,,baru,KN04 = terminal knee extension band; ini beda
+EL01,Ekstensi Lutut Slider,Seated knee extension,Ekstensi lutut duduk / slider,,,baru,KN04 = terminal knee extension band; ini beda
+EN01,Ekstensi Trunk Tangan Doa,Trunk extension with hands in prayer,Ekstensi trunk tangan doa,,,tinjau,Cek video; dekat CX10/LB04
+ES01,Ekstensi Bahu Band 1,Shoulder extension,Ekstensi bahu (tanpa beban dan band),,,baru,EB01 tanpa beban; ES01/ET01 band 1/2
+ET01,Ekstensi Bahu Band 2,Shoulder extension,Ekstensi bahu (tanpa beban dan band),,,baru,EB01 tanpa beban; ES01/ET01 band 1/2
+FA01,Farmer Carry Kettlebell,Farmer carry,Farmer carry,,,baru,
+FT01,Fleksi Trunk Duduk,Seated trunk flexion,Fleksi trunk duduk,,,tinjau,Cek video
+GB01,Goblet Squat 3,Goblet squat,Goblet squat,,,baru,Varian 1/2/3
+GO01,Goblet Squat 1,Goblet squat,Goblet squat,,,baru,Varian 1/2/3
+GS01,Goblet Squat 2,Goblet squat,Goblet squat,,,baru,Varian 1/2/3
+HF01,Hip Fleksi Berdiri Band,Standing hip flexion with band,Fleksi hip berdiri dengan band,,,baru,
+HK01,Hip Ekstensi Berdiri Band,Standing hip extension,Ekstensi hip berdiri (band / kaki di kursi),,,baru,
+HT01,Hip Ekstensi Kaki di Kursi,Standing hip extension,Ekstensi hip berdiri (band / kaki di kursi),,,baru,
+LA01,Latihan Bahu Berdiri,Standing shoulder exercise,Latihan bahu berdiri,,,tinjau,Nama terlalu umum; cek video lalu tentukan
+OV01,Overhead Press dengan Stick,Overhead press with stick,Overhead press dengan tongkat,,,baru,
+PH01,Prone Ekstensi Bahu,Prone shoulder extension,Ekstensi bahu tengkurap,,,baru,
+PP01,Prone Hip Ekstensi 1,Prone hip extension,Ekstensi hip tengkurap (dengan/ tanpa band),,,baru,Tidak ada di katalog
+SD01,Stretch Bahu Band di Belakang,Behind-back shoulder stretch (band/towel),Peregangan bahu di belakang punggung (band/handuk),,,baru,Peregangan rotasi internal; tidak ada di katalog lama
+SI01,Stretch Triceps 1,Triceps stretch,Peregangan triceps,,,baru,Varian 1/2
+SK01,Stretch Bahu dengan Kursi,Overhead shoulder/lat stretch,Peregangan bahu overhead / latissimus,,,baru,"Kursi, gym ball, overhead, lat gym ball"
+SM01,Stretch Lat Gym Ball,Overhead shoulder/lat stretch,Peregangan bahu overhead / latissimus,,,baru,"Kursi, gym ball, overhead, lat gym ball"
+SN01,Stretch Bahu Handuk di Belakang,Behind-back shoulder stretch (band/towel),Peregangan bahu di belakang punggung (band/handuk),,,baru,Peregangan rotasi internal; tidak ada di katalog lama
+SO01,Stretch Bahu Overhead,Overhead shoulder/lat stretch,Peregangan bahu overhead / latissimus,,,baru,"Kursi, gym ball, overhead, lat gym ball"
+SP01,Stretch Punggung Atas Tangan Menyatu 1,Upper-back stretch with clasped hands,"Peregangan punggung atas, tangan menyatu",,,baru,Varian 1/2/3
+SS01,Stretch Triceps 2,Triceps stretch,Peregangan triceps,,,baru,Varian 1/2
+SY01,Stretch Bahu Gym Ball,Overhead shoulder/lat stretch,Peregangan bahu overhead / latissimus,,,baru,"Kursi, gym ball, overhead, lat gym ball"
