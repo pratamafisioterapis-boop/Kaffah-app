@@ -567,6 +567,17 @@ export const sendFollowUpWhatsApp = async (id) => {
   }, 'sendFollowUpWhatsApp', { retry: true });
 };
 
+// Kirim reminder terapi lewat template WABA (sama dengan pengiriman otomatis),
+// bukan membuka wa.me dengan teks bebas. Hanya berlaku untuk therapy_reminder.
+export const sendTherapyReminderNow = async (id) => {
+  const { data, error } = await supabase.rpc('send_therapy_reminder_now', { p_queue_id: id });
+  if (error) return { data: null, error };
+  if (!data?.success) {
+    return { data, error: new Error(data?.message || 'Gagal mengirim reminder') };
+  }
+  return { data, error: null };
+};
+
 export const markFollowUpAsCompleted = async (id) => {
   return safeQuery(async () => {
     return await supabase

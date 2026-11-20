@@ -14,12 +14,14 @@ import {
 import { 
   getFollowUpQueue, 
   sendFollowUpWhatsApp, 
+  sendTherapyReminderNow,
   markFollowUpAsCompleted,
   deleteFollowUpQueue,
   deleteFollowUpQueueBulk,
   generateFollowUpQueue,
 } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
+import { getTherapyReminderPreview, isTherapyReminder } from '@/lib/reminderTemplate';
 import { format, isBefore, startOfDay } from 'date-fns';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -173,10 +175,14 @@ const FollowUpManagement = () => {
         setGenerating(false);
     }
 };
-  const handleSend = async (id) => {
+  const handleSend = async (item) => {
+      const id = item.id;
       setProcessingId(id);
       try {
-          const { error } = await sendFollowUpWhatsApp(id);
+          // Reminder terapi dikirim lewat template WABA di server (dengan tombol balasan).
+          const { error } = isTherapyReminder(item)
+            ? await sendTherapyReminderNow(id)
+            : await sendFollowUpWhatsApp(id);
           if (error) throw error;
           toast({ title: "Sent", description: "Message sent via WhatsApp." });
       } catch (error) {
@@ -428,7 +434,7 @@ console.log({
               </div>
               
               <div className="bg-slate-50/50 p-3 rounded-app-sm text-sm text-slate-600 mb-4 border border-slate-100 font-normal leading-relaxed flex-grow">
-                  {item.message_content}
+                  {isTherapyReminder(item) ? getTherapyReminderPreview(item) : item.message_content}
               </div>
               
               <div className="flex items-center gap-4 text-xs text-slate-500 mb-4 pl-2 border-t border-slate-50 pt-3">
@@ -452,7 +458,7 @@ console.log({
               <div className="flex gap-2 pl-2 mt-auto">
                   {item.status === 'pending' ? (
                       <>
-                          <Button size="sm" className="h-9 text-xs flex-1 bg-green-600 hover:bg-green-700 shadow-sm" onClick={() => handleSend(item.id)} disabled={processingId === item.id}>
+                          <Button size="sm" className="h-9 text-xs flex-1 bg-green-600 hover:bg-green-700 shadow-sm" onClick={() => handleSend(item)} disabled={processingId === item.id}>
                               {processingId === item.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5 mr-1.5" />} 
                               Kirim
                           </Button>
