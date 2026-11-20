@@ -85,3 +85,14 @@ di `supabase/functions/_shared/wa_ai_knowledge.ts`.
 - **Terapis langganan**: `lookup_patient` mengembalikan `therapist_history` (terapis aktif yang pernah menangani,
   urut terbanyak lalu terbaru). AI mengecek jadwal terapis urutan pertama, lalu berikutnya; terapis lain hanya
   ditawarkan dengan persetujuan pasien.
+
+## Mengatur AI lewat Telegram (owner)
+- **Koreksi**: reply pesan draf (juga draf "tidak dibalas AI"/diserahkan ke admin) dengan jawaban atau arahan yang benar.
+  "ok"/👍 = draf tepat. Jika draf tidak tercatat (mis. pengiriman sempat timeout), konteks diambil dari isi pesan yang di-reply.
+- **Aturan umum**: tulis langsung tanpa reply (min. 12 karakter), mis. "jangan balas dulu, jeda minimal 2 menit".
+  Tersimpan di `wa_ai_corrections` (kind `rule`/`correction`) dan masuk prompt sebagai "ARAHAN DARI OWNER" (40 terbaru).
+- **Jeda menjawab**: `/jeda 2 menit` atau tulis di arahan (mis. "beri jeda minimal 2 menit"); disimpan di
+  `wa_ai_settings.min_delay_seconds` (bawaan 120 detik) dan berlaku di mode review & live. Di mode review hanya pesan
+  pasien terbaru yang dibuatkan draf setelah jeda (pesan beruntun digabung).
+- Perintah: `/status`, `/jeda`, `/aturan` (daftar), `/hapus N`, `/skor`.
+- Pesan tombol template (`msg_type = button`) diperlakukan seperti teks: "Hadir" tidak dibalas, "Reschedule"/"Cancel" ditangani AI.

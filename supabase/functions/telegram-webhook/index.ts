@@ -40,8 +40,12 @@ const HELP = [
   "Boleh juga ditulis biasa, mis. \"jadwal kosong besok\".",
   "",
   "Asisten AI WhatsApp:",
-  "Balas (reply) pesan draf AI dengan jawaban yang benar untuk mengoreksi, atau \"ok\" bila sudah tepat.",
+  "- Reply pesan draf AI dengan jawaban/arahan yang benar untuk mengoreksi (juga untuk pesan yang tidak dibalas AI), atau \"ok\" bila sudah tepat.",
+  "- Tulis aturan umum langsung (tanpa reply), mis. \"jangan balas dulu, beri jeda minimal 2 menit\".",
+  "/jeda 2 menit  atur jeda menjawab",
   "/skor  skor ketepatan AI 24 jam terakhir",
+  "/aturan  daftar arahan, /hapus N  hapus arahan",
+  "/status  status AI",
 ].join("\n");
 
 function json(body: unknown, status = 200) {
@@ -124,8 +128,13 @@ async function handleUpdate(update: any) {
   // Hanya chat pribadi milik owner yang dilayani.
   if (String(msg.chat?.id) !== CHAT_ID || String(msg.from?.id) !== CHAT_ID) return;
 
-  // Koreksi draf AI WhatsApp (reply ke pesan draf) dan /skor ditangani wa-ai-reply.
-  if (msg.reply_to_message || /^\/skor(?:@\w+)?\b/i.test(msg.text.trim())) {
+  // Koreksi draf AI WhatsApp (reply), aturan umum, dan perintah /skor /jeda /aturan /hapus /status
+  // ditangani wa-ai-reply. Teks bebas yang bukan perintah jadwal juga dianggap arahan untuk AI.
+  const body = msg.text.trim();
+  const forAi = msg.reply_to_message ||
+    /^\/(?:skor|jeda|aturan|hapus|status)(?:@\w+)?\b/i.test(body) ||
+    (detect(body) === null && !body.startsWith("/"));
+  if (forAi) {
     const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/wa-ai-reply`, {
       method: "POST",
       headers: {
@@ -187,6 +196,9 @@ async function handleAdmin(action: string) {
       commands: [
         { command: "kosong", description: "Jadwal kosong (mis. /kosong besok)" },
         { command: "skor", description: "Skor ketepatan AI WhatsApp" },
+        { command: "jeda", description: "Atur jeda AI menjawab (mis. /jeda 2 menit)" },
+        { command: "aturan", description: "Daftar arahan owner untuk AI" },
+        { command: "status", description: "Status AI WhatsApp" },
         { command: "bantuan", description: "Daftar perintah" },
       ],
     });
