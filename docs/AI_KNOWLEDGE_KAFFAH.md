@@ -39,7 +39,10 @@ Sumber: kaffahphysio.id (dibaca 2026-11-20) dan data terapis di aplikasi.
 - Keluhan lebih dari satu: tambah Rp25.000 per sesi (regular menjadi Rp225.000).
 - Paket dengan dua keluhan: tambah Rp25.000 x jumlah sesi di paket tersebut.
 - Cicilan: tidak ada.
-- Promo: akan disampaikan pemilik (INGATKAN setelah knowledge lain beres). Sebelum itu AI tidak menyebut promo apa pun.
+- Promo (hanya yang tertulis di sini; AI tidak boleh mengarang promo lain). Aturan umum: semua promo TIDAK bisa digabung dengan promo lain.
+  - Promo datang berdua: potongan Rp20.000. Tidak berlaku untuk harga paket.
+  - Promo referral: pasien baru yang direkomendasikan pasien lama yang pernah terapi mendapat potongan Rp20.000. Pasien lama pemberi rekomendasi harus ditemukan di database. Pasien lama tersebut mendapat potongan Rp100.000 (tidak bisa dilimpahkan ke pasien lain), berlaku untuk kunjungan berikutnya.
+  - Tarif pasien anak Rp150.000 sudah terhitung sebagai promo, jadi tidak ditambah/digabung promo lain.
 - Tarif home care: TIDAK dijawab AI. Tergantung jarak; klinik tidak melayani jarak jauh. Semua pertanyaan home care diserahkan ke admin.
 - Pembayaran: tunai, QRIS, kartu debit/kredit, dan transfer. Rekening BSI 3030399993 atas nama Kaffah Physiotherapy.
 
