@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS public.wa_ai_settings (
   -- live: mengirim balasan ke pasien dan membuat booking sungguhan.
   mode           text NOT NULL DEFAULT 'simulate' CHECK (mode IN ('simulate', 'live')),
   -- AI baru membalas bila admin belum membalas sampai sekian detik (0 = langsung).
-  delay_seconds  integer NOT NULL DEFAULT 180 CHECK (delay_seconds BETWEEN 0 AND 150),
+  delay_seconds  integer NOT NULL DEFAULT 120 CHECK (delay_seconds BETWEEN 0 AND 150),
   -- Bila tidak kosong, AI hanya melayani nomor-nomor ini (uji terbatas), format 62812...
   test_phones    text[] NOT NULL DEFAULT '{}',
   updated_by     uuid,

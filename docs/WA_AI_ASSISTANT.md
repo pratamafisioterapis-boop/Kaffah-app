@@ -7,8 +7,8 @@ Knowledge: `docs/AI_KNOWLEDGE_KAFFAH.md` (sumber tunggal). Setelah mengubahnya j
 ## Alur
 Pesan pasien -> `wa-watzap-webhook` -> menyimpan ke inbox -> memanggil `wa-ai-reply`.
 `wa-ai-reply` hanya bekerja bila `wa_ai_settings.enabled = true`:
-1. Di jam kerja menunggu `delay_seconds` (default 180, maks 150 oleh batas edge function;
-   isi 120 bila 180 ditolak). Batal bila admin sudah membalas atau ada pesan pasien yang lebih baru.
+1. Di jam kerja menunggu `delay_seconds` (default 120, maks 150 oleh batas edge function;
+   Batal bila admin sudah membalas atau ada pesan pasien yang lebih baru.
    Di luar jam kerja (Sen-Jum 09-21, Sab-Min 09-17 WITA) langsung membalas.
 2. Claude memakai alat: data pasien dari nomor, jadwal kosong, hitung harga, buat booking, serahkan ke admin.
 3. `mode = simulate`: hanya mencatat rencana ke `wa_ai_logs` (tidak mengirim, tidak membuat booking).
