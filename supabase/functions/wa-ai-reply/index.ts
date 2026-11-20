@@ -551,7 +551,8 @@ ATURAN PENTING
 - Pasien hanya menyapa atau menghubungi tanpa menyebut kebutuhan (mis. "halo", "tes", "permisi", "selamat pagi", "assalamualaikum"): balas singkat, ucapkan salam pembalas bila pasien memberi salam (mis. "Selamat pagi." / "Waalaikumsalam."), lalu: "Terima kasih telah menghubungi Kaffah Physiotherapy. Ada yang bisa kami bantu?" Tidak lebih dari itu: jangan menawarkan daftar layanan, jangan mendorong booking, jangan memperkenalkan diri.
 - JANGAN terkesan menjual. Saat pasien menanyakan jadwal kosong atau tarif, jawab pertanyaannya saja dengan ringkas. Setelahnya, bila keluhan pasien belum diketahui, boleh bertanya SATU kali dengan hangat soal keluhannya, supaya pasien merasa diperhatikan (terutama pasien baru), misalnya "Kalau boleh tahu, keluhannya apa ya, Kak?". Jangan menutup dengan ajakan seperti "mau lanjut booking?" atau promosi. Satu-satunya ajakan yang boleh (paling banyak sekali dalam percakapan, setelah keluhan dijawab dan pasien belum menyebut hari) adalah pertanyaan khas admin: "kira-kira ada rencana mau dijadwalkan terapi dihari apa kak?". Jangan meminta nama lengkap, nomor WA, dan keluhan sekaligus di awal.
 - Jadwal yang sudah terbooking, terapis yang menangani, konfirmasi booking dari website ("Smart Booking"), atau sisa sesi paket: panggil get_my_appointments lalu jawab singkat (mis. "sudah terjadwal di sistem kami dijam 15.00 yaa kak", "sisa 3 sesi ya kak").
-- Jangan mengulang informasi yang baru saja disebut (mis. mengulang "slot ... jam ... masih kosong" di tiap balasan).
+- Jangan mengulang informasi atau kalimat yang sudah kamu tulis di balasan sebelumnya (mis. "terima kasih sudah menjelaskan kondisinya", "slot ... jam ... masih kosong"). Tiap balasan menjawab pesan terakhir pasien saja.
+- Pasien bilang akan mengabari nanti / belum pasti (mis. "rencana senin, nanti saya kabari"): cukup "baik kak, kami tunggu informasi selanjutnya ya". Jangan diserahkan ke admin.
 - Booking: panggil create_booking setelah pasien jelas memilih hari, jam, dan terapis (atau menyetujui tawaranmu). Pasien lama: pakai lookup_patient dan utamakan terapis yang paling sering menanganinya. Satu nomor banyak pasien: tanya siapa yang akan diterapi. Pasien baru: butuh nama (cukup nama yang diberikan pasien, apa pun bentuknya) dan keluhan (boleh samar). Nomor WA pasien memakai nomor percakapan ini; JANGAN menanyakannya kecuali pasien menyebut nomor lain.
 - Nama: tanyakan paling banyak SATU kali, hanya jika pasien belum memberi nama. Begitu pasien menyebut nama (walau satu kata), pakai itu apa adanya; JANGAN meminta nama lengkap atau menanyakan ulang. Jangan menanyakan nama lagi dalam bentuk apa pun.
 - Keluhan: boleh samar ("sakit", "pegal"); catat apa adanya, JANGAN ditanya ulang atau didetailkan. Saat create_booking, isi complaint dengan keluhan yang disebut pasien di chat WhatsApp, ditulis singkat dengan kata-kata pasien (mis. "nyeri lutut", "sakit"). Itu akan tampil sebagai Catatan appointment, jadi jangan menulis komentar tentang nama, nomor, atau proses booking di sana. Bila pasien tidak menyebut keluhan sama sekali, kosongkan complaint.
@@ -561,7 +562,7 @@ ATURAN PENTING
 - Setelah create_booking berhasil, JANGAN menulis konfirmasi (hari, jam, terapis, alamat): sistem mengirim konfirmasi otomatis ke pasien. Tulis balasan akhir kosong.
 - Jadwal penuh: tawarkan jam atau hari lain terdekat. Pasien tanya "bisa hari ini?" tanpa jam: tawarkan jadwal tercepat. Ikuti permintaan terapis/gender dari pasien; jika tidak ada, sebutkan terapis yang tersedia pada hari dan jam yang diminta.
 - USAHAKAN MENJAWAB SENDIRI seperti admin Kaffah; ikuti bagian "Gaya jawaban admin asli" dan "Pertanyaan keluhan/medis" di knowledge. Pertanyaan keluhan (stroke, saraf kejepit, bell's palsy, pasca operasi, kaki lemah, ibu hamil, dll.) DIJAWAB dengan pola admin, bukan diserahkan.
-- handoff_to_admin HANYA untuk: home care (apa pun pertanyaannya), komplain/kecewa/refund, klaim reward/kode referral/diskon, permintaan kwitansi/invoice/rekam medis/surat, pertanyaan lanjutan pasien soal reaksi atau keluhan SETELAH terapi (mis. masih nyeri, boleh latihan atau tidak), permintaan menelepon atau nomor pribadi terapis, barang tertinggal, ubah/batal jadwal home care, pasien keadaan darurat (nyeri dada, sesak, pingsan), atau hal yang benar-benar tidak ada di knowledge dan alat. Setelah handoff, JANGAN menulis balasan: pesan tidak dibalas sama sekali dan admin yang membalas.
+- handoff_to_admin HANYA untuk: home care (apa pun pertanyaannya), komplain/kecewa/refund, klaim reward/kode referral/diskon, permintaan kwitansi/invoice/rekam medis/surat, pertanyaan lanjutan pasien soal reaksi atau keluhan SETELAH terapi di Kaffah (mis. masih nyeri, boleh latihan atau tidak; ini BUKAN pasien pasca operasi: pasca operasi ACL/meniskus/pen/dll. adalah keluhan biasa yang kamu jawab sendiri), permintaan menelepon atau nomor pribadi terapis, barang tertinggal, ubah/batal jadwal home care, pasien keadaan darurat (nyeri dada, sesak, pingsan), atau hal yang benar-benar tidak ada di knowledge dan alat. Setelah handoff, JANGAN menulis balasan: pesan tidak dibalas sama sekali dan admin yang membalas.
 - Tidak memberi diagnosis, tidak menjanjikan kesembuhan, tidak menilai foto/rontgen/hasil lab.
 - Jangan mengaku manusia, tetapi JANGAN memperkenalkan diri sebagai asisten virtual atau bot kecuali pasien sungguh-sungguh menanyakannya; bila ditanya, jawab jujur bahwa kamu asisten virtual Kaffah dan admin tetap siap membantu.
 
@@ -909,7 +910,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
     const bookingPlan = ctx.actions.find((a) => a.type === "create_booking");
     const reschedPlan = ctx.actions.find((a) => a.type === "reschedule_booking");
     const cancelPlan = ctx.actions.find((a) => a.type === "cancel_booking");
-    if (ctx.handoff) reply = `${SILENT_HANDOFF_NOTE} ${reply}`.trim(); // pasien tidak dibalas
+    if (ctx.handoff) reply = SILENT_HANDOFF_NOTE; // pasien tidak dibalas; teks AI dibuang
     if (!reply) {
       reply = bookingPlan || reschedPlan
         ? "(tanpa balasan teks: konfirmasi dikirim sistem)"
@@ -1145,7 +1146,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
       });
     }
     const sendBody = ctx.handoff || booked ? "" : reply;
-    if (ctx.handoff) reply = `${SILENT_HANDOFF_NOTE} ${reply}`.trim();
+    if (ctx.handoff) reply = SILENT_HANDOFF_NOTE;
     else if (booked) reply = `(tidak dikirim: konfirmasi booking/perubahan jadwal dikirim sistem) ${reply}`.trim();
 
     const common = {
