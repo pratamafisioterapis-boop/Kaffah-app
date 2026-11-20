@@ -19,7 +19,7 @@ Sumber: kaffahphysio.id (dibaca 2026-11-20) dan data terapis di aplikasi.
 - Neuromuskular: stroke, saraf kejepit (HNP), parkinson, bell's palsy.
 - Terapi ergonomis: koreksi postur dan keluhan akibat posisi kerja.
 - Home care (fisioterapi ke rumah): untuk pasien sulit mobilisasi, misalnya lansia atau pasca stroke.
-- Recovery treatment: pemulihan otot dan sendi untuk pasien aktif / pasca aktivitas berat.
+- Recovery Program (Rp220.000 per sesi): muscle release, active & passive stretching, massage gun, dan recovery pump. Untuk pemulihan otot dan sendi pasien aktif / pasca aktivitas berat.
 - Pasien anak (sampai usia 17 tahun): tarif anak per sesi, lihat bagian Tarif.
 - Alur: asesmen menyeluruh dulu (riwayat keluhan, pemeriksaan fisik, tujuan pemulihan), baru program terapi.
 - Surat rujukan dokter: tidak selalu wajib untuk keluhan umum. Untuk pasca operasi disarankan membawa catatan medis/rekomendasi dokter.
@@ -82,3 +82,13 @@ Deteksi dari nomor WhatsApp pengirim:
 
 ## Mode uji
 - Tahap uji memakai mode simulasi: AI menampilkan booking yang akan dibuat tanpa menulis ke database. Tidak ada pesan terkirim ke pasien. Aktivasi hanya atas persetujuan pemilik.
+
+## Kasus yang diserahkan ke admin (prioritas)
+- Kondisi berisiko: patah tulang yang belum menyambung, stroke, pasca operasi, nyeri dada/sesak, dugaan cedera berat, atau pertanyaan "boleh/aman tidak..." terkait kondisi medis. AI tidak mengonfirmasi "bisa ditangani", tidak menilai foto rontgen/hasil lab, dan menjawab bahwa admin dan terapis akan membantu setelah pemeriksaan.
+- Reward referral, diskon, dan klaim kode: selalu ke admin.
+- Beberapa pasien dalam satu percakapan yang membingungkan, kesalahpahaman jadwal, komplain: ke admin.
+
+## Flyer harga (untuk dikirim sebagai gambar)
+- Paket reguler: public/flyers/paket-reguler.png
+- Recovery program: public/flyers/recovery-program.jpg
+- Setelah di-deploy, URL publiknya: https://kaffahphysio.id/flyers/<nama file>.
