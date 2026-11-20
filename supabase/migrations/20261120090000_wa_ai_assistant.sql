@@ -54,7 +54,6 @@ ALTER TABLE public.wa_ai_logs     ENABLE ROW LEVEL SECURITY;
 
 -- Owner/admin klinik yang sama boleh melihat & mengubah pengaturan dan melihat log.
 -- Penulisan log hanya oleh service role (fungsi edge).
-DROP POLICY IF EXISTS wa_ai_settings_staff ON public.wa_ai_settings;
 CREATE POLICY wa_ai_settings_staff ON public.wa_ai_settings FOR ALL TO authenticated
   USING (
     (SELECT get_my_role()) = 'super_admin'
@@ -65,7 +64,6 @@ CREATE POLICY wa_ai_settings_staff ON public.wa_ai_settings FOR ALL TO authentic
     OR ((SELECT get_my_role()) IN ('owner', 'admin') AND clinic_id = (SELECT get_my_clinic_id()))
   );
 
-DROP POLICY IF EXISTS wa_ai_logs_staff_read ON public.wa_ai_logs;
 CREATE POLICY wa_ai_logs_staff_read ON public.wa_ai_logs FOR SELECT TO authenticated
   USING (
     (SELECT get_my_role()) = 'super_admin'
