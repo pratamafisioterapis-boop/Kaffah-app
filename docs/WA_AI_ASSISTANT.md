@@ -45,6 +45,12 @@ update wa_ai_settings set enabled = false where clinic_id = '<clinic_id>';
 Mematikan AI untuk satu percakapan: `update wa_inbox_conversations set ai_paused = true where id = '<id>';`
 Membersihkan serah-terima: `update wa_inbox_conversations set ai_handoff = false where id = '<id>';`
 
+Reschedule & cancel: AI memindahkan jadwal yang sudah terbooking (alat `reschedule_booking`, update
+`appointments.appointment_date/therapist_id`; trigger `handle_reschedule_whatsapp` mengirim konfirmasi ke pasien)
+dan membatalkan (`cancel_booking`, status `cancelled`; trigger `notify_booking_cancelled` memberi notifikasi ke
+owner/admin/terapis). Keduanya hanya untuk jadwal milik nomor pengirim dan bukan home care; `action_by_name`
+diisi "Asisten AI WhatsApp". Saat pasien minta batal, AI menyarankan jadwal ulang dulu.
+
 Serah-terima bersifat DIAM: saat AI menyerahkan chat ke admin (home care, komplain, klaim reward,
 kwitansi, pertanyaan pasca-terapi, ubah/batal jadwal, darurat, lampiran), AI tidak mengirim pesan apa pun
 ke pasien; chat hanya ditandai "Diserahkan ke admin". Pesan yang tidak perlu dibalas ("ok", "siap",

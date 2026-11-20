@@ -51,7 +51,10 @@ type Ctx = {
   patientsLoaded: boolean;
   offeredSlots: Map<string, Slot & { date: string }>; // kunci: therapist|date|HH:MM
   knowledge?: string | null; // knowledge dari database (wa_ai_settings.knowledge_override)
+  myAppointments?: Map<string, any>; // jadwal milik nomor ini (dari get_my_appointments)
 };
+
+const AI_ACTOR = "Asisten AI WhatsApp";
 
 // ------------------------------------------------------------------ alat (tools)
 
@@ -136,6 +139,36 @@ const TOOLS = [
         },
       },
       required: ["therapist_id", "date", "time"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "reschedule_booking",
+    description:
+      "Pindahkan jadwal pasien yang SUDAH terbooking ke slot baru. appointment_id harus dari get_my_appointments; slot baru harus sebelumnya ditampilkan get_available_slots. Panggil hanya setelah pasien jelas memilih hari+jam baru. Sistem otomatis mengirim konfirmasi perubahan jadwal ke pasien.",
+    input_schema: {
+      type: "object",
+      properties: {
+        appointment_id: { type: "string" },
+        therapist_id: { type: "string", description: "Terapis slot baru" },
+        date: { type: "string", description: "YYYY-MM-DD" },
+        time: { type: "string", description: "HH:MM" },
+      },
+      required: ["appointment_id", "therapist_id", "date", "time"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "cancel_booking",
+    description:
+      "Batalkan jadwal pasien yang SUDAH terbooking atas permintaan pasien. appointment_id harus dari get_my_appointments. Panggil setelah jelas jadwal mana yang dibatalkan dan pasien memang tidak ingin dipindah ke waktu lain.",
+    input_schema: {
+      type: "object",
+      properties: {
+        appointment_id: { type: "string" },
+        reason: { type: "string", description: "Alasan singkat dari pasien bila ada" },
+      },
+      required: ["appointment_id"],
       additionalProperties: false,
     },
   },
@@ -252,7 +285,9 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
         .sort((a: any, b: any) => String(a.appointment_date).localeCompare(String(b.appointment_date)))
         .map((a: any) => {
           const w = witaParts(new Date(a.appointment_date));
+          (ctx.myAppointments ??= new Map()).set(a.id, a);
           return {
+            appointment_id: a.id,
             date: w.date,
             day: ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"][w.dow],
             time: w.time,
@@ -428,6 +463,60 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
       return { ok: true, appointment_id: id };
     }
 
+    case "reschedule_booking": {
+      const appt = ctx.myAppointments?.get(String(input.appointment_id));
+      if (!appt) return { ok: false, error: "jadwal ini tidak ditemukan untuk nomor ini; panggil get_my_appointments dulu" };
+      if (appt.is_homecare) return { ok: false, error: "jadwal home care: serahkan ke admin" };
+      const time = String(input.time || "").slice(0, 5);
+      if (!ctx.offeredSlots.has(`${input.therapist_id}|${input.date}|${time}`)) {
+        return { ok: false, error: "slot baru belum ditampilkan lewat get_available_slots; ambil jadwal dulu" };
+      }
+      const old = witaParts(new Date(appt.appointment_date));
+      const plan = {
+        appointment_id: appt.id,
+        from: `${old.date} ${old.time}`,
+        to: witaTimestamp(input.date, time),
+        therapist_id: input.therapist_id,
+      };
+      if (ctx.mode === "simulate") {
+        ctx.actions.push({ type: "reschedule_booking", simulated: true, ...plan });
+        return { ok: true, simulated: true };
+      }
+      const fresh = (await slotsForDate(ctx, input.date)).find(
+        (s) => s.therapist_id === input.therapist_id && s.slot_start.slice(0, 5) === time,
+      );
+      if (!fresh) return { ok: false, error: "slot baru saja terisi; tawarkan jam lain" };
+      const { error } = await ctx.admin.from("appointments").update({
+        appointment_date: plan.to,
+        therapist_id: input.therapist_id,
+        action_by_name: AI_ACTOR,
+        updated_at: new Date().toISOString(),
+      }).eq("id", appt.id).eq("clinic_id", ctx.clinicId).neq("status", "cancelled");
+      if (error) return { ok: false, error: `gagal memindahkan jadwal: ${error.message}` };
+      ctx.actions.push({ type: "reschedule_booking", ...plan });
+      return { ok: true, note: "Konfirmasi perubahan jadwal dikirim otomatis oleh sistem." };
+    }
+
+    case "cancel_booking": {
+      const appt = ctx.myAppointments?.get(String(input.appointment_id));
+      if (!appt) return { ok: false, error: "jadwal ini tidak ditemukan untuk nomor ini; panggil get_my_appointments dulu" };
+      if (appt.is_homecare) return { ok: false, error: "jadwal home care: serahkan ke admin" };
+      const w = witaParts(new Date(appt.appointment_date));
+      const plan = { appointment_id: appt.id, at: `${w.date} ${w.time}`, reason: String(input.reason || "").slice(0, 200) };
+      if (ctx.mode === "simulate") {
+        ctx.actions.push({ type: "cancel_booking", simulated: true, ...plan });
+        return { ok: true, simulated: true };
+      }
+      const { error } = await ctx.admin.from("appointments").update({
+        status: "cancelled",
+        action_by_name: AI_ACTOR,
+        updated_at: new Date().toISOString(),
+      }).eq("id", appt.id).eq("clinic_id", ctx.clinicId).neq("status", "cancelled");
+      if (error) return { ok: false, error: `gagal membatalkan: ${error.message}` };
+      ctx.actions.push({ type: "cancel_booking", ...plan });
+      return { ok: true };
+    }
+
     case "handoff_to_admin": {
       const reason = String(input.reason || "").slice(0, 300) || "tanpa alasan";
       const priority = input.priority === "high" ? "high" : "normal";
@@ -462,10 +551,13 @@ ATURAN PENTING
 - Booking: panggil create_booking setelah pasien jelas memilih hari, jam, dan terapis (atau menyetujui tawaranmu). Pasien lama: pakai lookup_patient dan utamakan terapis yang paling sering menanganinya. Satu nomor banyak pasien: tanya siapa yang akan diterapi. Pasien baru: butuh nama (cukup nama yang diberikan pasien, apa pun bentuknya) dan keluhan (boleh samar). Nomor WA pasien memakai nomor percakapan ini; JANGAN menanyakannya kecuali pasien menyebut nomor lain.
 - Nama: tanyakan paling banyak SATU kali, hanya jika pasien belum memberi nama. Begitu pasien menyebut nama (walau satu kata), pakai itu apa adanya; JANGAN meminta nama lengkap atau menanyakan ulang. Jangan menanyakan nama lagi dalam bentuk apa pun.
 - Keluhan: boleh samar ("sakit", "pegal"); catat apa adanya, JANGAN ditanya ulang atau didetailkan. Saat create_booking, isi complaint dengan keluhan yang disebut pasien di chat WhatsApp, ditulis singkat dengan kata-kata pasien (mis. "nyeri lutut", "sakit"). Itu akan tampil sebagai Catatan appointment, jadi jangan menulis komentar tentang nama, nomor, atau proses booking di sana. Bila pasien tidak menyebut keluhan sama sekali, kosongkan complaint.
+- RESCHEDULE (pasien minta pindah/undur/majukan jadwal yang sudah terbooking): kamu yang menangani sampai selesai. Panggil get_my_appointments untuk tahu jadwalnya (bila ada beberapa, pastikan yang mana). Tanyakan hari/jam pengganti bila belum disebut, cek dengan get_available_slots (utamakan terapis yang sama), tawarkan slot, lalu setelah pasien memilih panggil reschedule_booking. Setelah berhasil, JANGAN menulis konfirmasi: sistem mengirim konfirmasi perubahan jadwal otomatis; tulis balasan akhir kosong. Pasien belum tahu kapan bisanya: "baik kak, kabari kami ya kalau sudah ada waktunya".
+- CANCEL (pasien minta batal): panggil get_my_appointments, pastikan jadwal yang dimaksud. Sarankan dulu untuk dijadwalkan ulang di waktu lain ("apakah mau kami jadwalkan ulang di hari lain kak?"). Bila pasien memilih waktu baru: proses sebagai reschedule. Bila pasien tetap batal atau belum tahu waktunya: panggil cancel_booking, lalu balas singkat bahwa jadwalnya sudah dibatalkan dan sarankan booking lagi di waktu lain bila sudah ada waktu luang (mis. "baik kak, jadwalnya sudah kami batalkan ya. Kalau sudah ada waktu luang bisa langsung booking lagi di hari lain kak"). Bila pasien batal karena sakit, tambahkan doa singkat "semoga lekas membaik".
+- Jadwal home care: ubah/batal tetap serahkan ke admin.
 - Setelah create_booking berhasil, JANGAN menulis konfirmasi (hari, jam, terapis, alamat): sistem mengirim konfirmasi otomatis ke pasien. Tulis balasan akhir kosong.
 - Jadwal penuh: tawarkan jam atau hari lain terdekat. Pasien tanya "bisa hari ini?" tanpa jam: tawarkan jadwal tercepat. Ikuti permintaan terapis/gender dari pasien; jika tidak ada, sebutkan terapis yang tersedia pada hari dan jam yang diminta.
 - USAHAKAN MENJAWAB SENDIRI seperti admin Kaffah; ikuti bagian "Gaya jawaban admin asli" dan "Pertanyaan keluhan/medis" di knowledge. Pertanyaan keluhan (stroke, saraf kejepit, bell's palsy, pasca operasi, kaki lemah, ibu hamil, dll.) DIJAWAB dengan pola admin, bukan diserahkan.
-- handoff_to_admin HANYA untuk: home care (apa pun pertanyaannya), komplain/kecewa/refund, klaim reward/kode referral/diskon, permintaan kwitansi/invoice/rekam medis/surat, pertanyaan lanjutan pasien soal reaksi atau keluhan SETELAH terapi (mis. masih nyeri, boleh latihan atau tidak), permintaan menelepon atau nomor pribadi terapis, barang tertinggal, ubah/batal jadwal yang sudah terbooking, pasien keadaan darurat (nyeri dada, sesak, pingsan), atau hal yang benar-benar tidak ada di knowledge dan alat. Setelah handoff, JANGAN menulis balasan: pesan tidak dibalas sama sekali dan admin yang membalas.
+- handoff_to_admin HANYA untuk: home care (apa pun pertanyaannya), komplain/kecewa/refund, klaim reward/kode referral/diskon, permintaan kwitansi/invoice/rekam medis/surat, pertanyaan lanjutan pasien soal reaksi atau keluhan SETELAH terapi (mis. masih nyeri, boleh latihan atau tidak), permintaan menelepon atau nomor pribadi terapis, barang tertinggal, ubah/batal jadwal home care, pasien keadaan darurat (nyeri dada, sesak, pingsan), atau hal yang benar-benar tidak ada di knowledge dan alat. Setelah handoff, JANGAN menulis balasan: pesan tidak dibalas sama sekali dan admin yang membalas.
 - Tidak memberi diagnosis, tidak menjanjikan kesembuhan, tidak menilai foto/rontgen/hasil lab.
 - Jangan mengaku manusia, tetapi JANGAN memperkenalkan diri sebagai asisten virtual atau bot kecuali pasien sungguh-sungguh menanyakannya; bila ditanya, jawab jujur bahwa kamu asisten virtual Kaffah dan admin tetap siap membantu.
 
@@ -811,8 +903,14 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
       reply = await runAgent(ctx, transcript, hint);
     }
     const bookingPlan = ctx.actions.find((a) => a.type === "create_booking");
+    const reschedPlan = ctx.actions.find((a) => a.type === "reschedule_booking");
+    const cancelPlan = ctx.actions.find((a) => a.type === "cancel_booking");
     if (ctx.handoff) reply = `${SILENT_HANDOFF_NOTE} ${reply}`.trim(); // pasien tidak dibalas
-    if (!reply) reply = bookingPlan ? "(tanpa balasan teks: konfirmasi booking dikirim sistem)" : "(tidak dibalas: pesan tidak perlu dibalas)";
+    if (!reply) {
+      reply = bookingPlan || reschedPlan
+        ? "(tanpa balasan teks: konfirmasi dikirim sistem)"
+        : "(tidak dibalas: pesan tidak perlu dibalas)";
+    }
 
     const t = witaParts(new Date(msg.created_at));
     const lines = [
@@ -827,6 +925,12 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
     ];
     if (bookingPlan) {
       lines.push("", `📅 Rencana booking (belum dibuat): ${bookingPlan.start?.slice(0, 16).replace("T", " ")} · ${bookingPlan.guest_name || "pasien terdaftar"} · catatan: ${String(bookingPlan.notes || "-").replace(/\n/g, " / ")}`);
+    }
+    if (reschedPlan) {
+      lines.push("", `🔁 Rencana pindah jadwal (belum diubah): ${reschedPlan.from} → ${String(reschedPlan.to).slice(0, 16).replace("T", " ")}`);
+    }
+    if (cancelPlan) {
+      lines.push("", `❌ Rencana batal (belum dibatalkan): ${cancelPlan.at}${cancelPlan.reason ? ` · alasan: ${cancelPlan.reason}` : ""}`);
     }
     if (ctx.handoff) lines.push("", `⚠️ AI akan menyerahkan ke admin: ${ctx.handoff.reason}`);
     await sendTelegram(lines.join("\n"));
@@ -1027,7 +1131,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
     }
 
     // Serah-terima: diam, pasien tidak dibalas. Booking berhasil: konfirmasi dikirim sistem.
-    const booked = ctx.actions.some((a) => a.type === "create_booking");
+    const booked = ctx.actions.some((a) => a.type === "create_booking" || a.type === "reschedule_booking");
     // Balasan kosong tanpa booking/serah-terima = pesan yang memang tidak perlu dibalas (mis. "ok", "siap").
     if (!reply && !booked && !ctx.handoff) {
       return await finish({
@@ -1038,7 +1142,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
     }
     const sendBody = ctx.handoff || booked ? "" : reply;
     if (ctx.handoff) reply = `${SILENT_HANDOFF_NOTE} ${reply}`.trim();
-    else if (booked) reply = `(tidak dikirim: konfirmasi booking dikirim sistem) ${reply}`.trim();
+    else if (booked) reply = `(tidak dikirim: konfirmasi booking/perubahan jadwal dikirim sistem) ${reply}`.trim();
 
     const common = {
       reply_text: reply,
