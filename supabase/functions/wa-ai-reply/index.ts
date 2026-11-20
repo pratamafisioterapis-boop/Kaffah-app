@@ -487,9 +487,12 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
       );
       if (!fresh) return { ok: false, error: "slot baru saja terisi; tawarkan jam lain" };
       const { error } = await ctx.admin.from("appointments").update({
+        // Sama dengan jalur reschedule di aplikasi (status 'rescheduled') agar tercatat di laporan.
         appointment_date: plan.to,
         therapist_id: input.therapist_id,
+        status: "rescheduled",
         action_by_name: AI_ACTOR,
+        action_by_role: "ai",
         updated_at: new Date().toISOString(),
       }).eq("id", appt.id).eq("clinic_id", ctx.clinicId).neq("status", "cancelled");
       if (error) return { ok: false, error: `gagal memindahkan jadwal: ${error.message}` };
@@ -510,6 +513,7 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
       const { error } = await ctx.admin.from("appointments").update({
         status: "cancelled",
         action_by_name: AI_ACTOR,
+        action_by_role: "ai",
         updated_at: new Date().toISOString(),
       }).eq("id", appt.id).eq("clinic_id", ctx.clinicId).neq("status", "cancelled");
       if (error) return { ok: false, error: `gagal membatalkan: ${error.message}` };
