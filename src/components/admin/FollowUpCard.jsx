@@ -20,6 +20,11 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { format, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { interpolateTemplate } from '@/lib/api';
+import {
+  THERAPY_REMINDER_BUTTONS,
+  getTherapyReminderPreview,
+  isTherapyReminder
+} from '@/lib/reminderTemplate';
 
 const FollowUpCard = ({
   item,
@@ -31,7 +36,11 @@ const FollowUpCard = ({
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const displayMessage = interpolateTemplate(item.message_content, item);
+  // Reminder terapi dikirim memakai template WABA, jadi pratinjaunya juga isi template.
+  const isTemplateReminder = isTherapyReminder(item);
+  const displayMessage = isTemplateReminder
+    ? getTherapyReminderPreview(item)
+    : interpolateTemplate(item.message_content, item);
 
   const handleCopyMessage = async () => {
     try {
@@ -525,6 +534,24 @@ const packageRisk = getPackageRisk();
             >
               {expanded ? 'Tutup Pesan' : 'Lihat Selengkapnya'}
             </button>
+          )}
+
+          {isTemplateReminder && (
+            <div className="mt-3 pt-3 border-t border-slate-100">
+              <div className="flex flex-wrap gap-1.5">
+                {THERAPY_REMINDER_BUTTONS.map((label) => (
+                  <span
+                    key={label}
+                    className="px-2.5 py-1 rounded-full border border-slate-200 bg-slate-50 text-slate-600 text-xs font-medium"
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-1.5 text-[11px] text-slate-400">
+                Dikirim sebagai template WhatsApp dengan 3 tombol balasan.
+              </p>
+            </div>
           )}
         </div>
 
