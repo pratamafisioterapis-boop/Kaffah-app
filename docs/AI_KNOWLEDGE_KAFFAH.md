@@ -1,0 +1,59 @@
+# Knowledge Kaffah Physiotherapy untuk AI Balasan WhatsApp
+
+Status: DRAFT. Menunggu verifikasi pemilik. AI belum diaktifkan.
+Sumber: kaffahphysio.id (dibaca 2026-11-20) dan data terapis di aplikasi.
+
+## Identitas
+- Nama: Kaffah Physiotherapy, klinik fisioterapi di Balikpapan Utara.
+- Alamat: Jl. Telindung, Perumnas Blok 1 RT. 07 No. 71, Batu Ampar, Balikpapan Utara.
+- WhatsApp/telepon: +62 812-3333-9435
+- Email: kaffah.physiotherapy@gmail.com
+- Jam operasional: Senin-Jumat 09.00-21.00, Sabtu 09.00-17.00, Minggu 09.00-17.00.
+- Terapis bersertifikat dengan SIPF aktif; pendekatan evidence-based, personal, aman.
+- Peta lokasi: halaman Lokasi di situs, dan Google Maps (ulasan Google 5.0 dari 264 ulasan).
+
+## Layanan
+- Fisioterapi nyeri otot & sendi: otot, sendi, pinggang, leher, tulang belakang.
+- Fisioterapi cedera olahraga: sprain, strain, cedera lutut, bahu, pergelangan tangan.
+- Rehabilitasi pasca operasi: ortopedi dan bedah lainnya.
+- Neuromuskular: stroke, saraf kejepit (HNP), parkinson, bell's palsy.
+- Terapi ergonomis: koreksi postur dan keluhan akibat posisi kerja.
+- Home care (fisioterapi ke rumah): untuk pasien sulit mobilisasi, misalnya lansia atau pasca stroke.
+- Recovery treatment: pemulihan otot dan sendi untuk pasien aktif / pasca aktivitas berat.
+- Pediatrik: paket khusus anak.
+- Alur: asesmen menyeluruh dulu (riwayat keluhan, pemeriksaan fisik, tujuan pemulihan), baru program terapi.
+- Surat rujukan dokter: tidak selalu wajib untuk keluhan umum. Untuk pasca operasi disarankan membawa catatan medis/rekomendasi dokter.
+
+## Tarif (dari halaman Tarif)
+| Layanan | Harga | Catatan |
+|---|---|---|
+| Regular Session | Rp200.000 / sesi | assessment lengkap, terapi manual & modalitas, exercise therapy |
+| Recovery Treatment | Rp220.000 / sesi | |
+| Paket 1: 3 sesi | Rp530.000 (normal Rp600.000, hemat Rp70.000) | berlaku 1 bulan |
+| Paket 6 sesi | Rp1.000.000 (normal Rp1.200.000, hemat Rp200.000) | berlaku 3 bulan, paling populer |
+| Paket 3: 12 sesi | Rp1.900.000 (normal Rp2.400.000, hemat Rp500.000) | masa berlaku di situs terbaca 6 bulan, PERLU DIKONFIRMASI |
+| Paket Anak 5 sesi | Rp750.000 (normal Rp1.000.000, hemat Rp250.000) | berlaku 2 bulan |
+
+- Cicilan: tidak ada (konfirmasi pemilik).
+- Promo: akan disampaikan pemilik.
+- Tarif home care: belum ditemukan di situs. PERLU DIISI.
+- Metode pembayaran: belum ditemukan di situs. PERLU DIISI.
+
+## Terapis (aktif dan tampil di landing)
+- Adi Pratama, S.Fis., Ftr (kepala terapis)
+- Alma Ramadhanty E P, S.Tr.Kes, Ftr (shift siang)
+- Annisa Septiyani, S.Kes., Ftr (shift pagi)
+- Nurfadilah, S.Ft., Ftr (shift siang)
+- Prasetyo Abiyyu D N, S.Kes., Ftr (shift pagi)
+- Semua berspesialisasi umum (Physiotherapist). Pasien bisa memilih terapis, disesuaikan kondisi klinis dan jadwal yang tersedia.
+
+## Jadwal kosong
+- Sumber: database aplikasi (jadwal terapis, slot, cuti, izin, tukar shift, pengganti, hari libur). AI membaca langsung, tidak menebak.
+- Bila data jadwal tidak jelas, AI tidak menjanjikan, tetapi meneruskan ke admin.
+
+## Aturan perilaku AI (usulan)
+- Hanya menjawab: jadwal kosong, layanan, tarif, lokasi, jam buka, cara booking.
+- Tidak memberi diagnosis atau saran medis; keluhan klinis diarahkan ke terapis saat sesi.
+- Komplain, refund, kasus darurat, atau pertanyaan di luar knowledge: jawab bahwa admin akan membalas dan tandai chat.
+- Tidak mengarang harga, promo, atau jadwal.
+- Gaya bahasa: sopan, ramah, ringkas, Bahasa Indonesia. Sapaan perlu ditentukan pemilik.
