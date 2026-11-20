@@ -8,8 +8,10 @@ import {
   getTodayTherapyPatients, 
   getBirthdayPatients,
   sendFollowUpWhatsApp,
+  sendTherapyReminderNow,
   interpolateTemplate
 } from '@/lib/api';
+import { getTherapyReminderPreview, isTherapyReminder } from '@/lib/reminderTemplate';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import FollowUpMessagePreview from './FollowUpMessagePreview';
@@ -70,7 +72,11 @@ const FollowUpCategory = ({ category }) => {
   const handlePreview = async (item) => {
     setSelectedPatient(item);
     // Use interpolateTemplate from API which handles the new structure
-    const msg = interpolateTemplate(item.message_content, item);
+    // Reminder terapi dikirim sebagai template WABA (dengan tombol), jadi yang
+    // dipratinjau adalah isi template, bukan teks lama di message_content.
+    const msg = isTherapyReminder(item)
+      ? getTherapyReminderPreview(item)
+      : interpolateTemplate(item.message_content, item);
     setPreviewMessage(msg);
     setIsPreviewOpen(true);
   };
@@ -84,6 +90,21 @@ const FollowUpCategory = ({ category }) => {
     
     if (!phone) {
       toast({ variant: "destructive", title: "Gagal", description: "Nomor HP pasien tidak tersedia." });
+      setSending(false);
+      return;
+    }
+
+    // Reminder terapi: kirim lewat template WABA di server (bukan wa.me), supaya
+    // pasien menerima tombol Hadir / Reschedule / Cancel dan balasannya tercatat.
+    if (isTherapyReminder(selectedPatient)) {
+      const sentResult = await sendTherapyReminderNow(selectedPatient.id);
+      if (sentResult.error) {
+        toast({ variant: "destructive", title: "Gagal mengirim", description: sentResult.error.message });
+      } else {
+        setData(prev => prev.filter(p => p.id !== selectedPatient.id));
+        toast({ title: "Berhasil", description: "Reminder dikirim memakai template WhatsApp." });
+        setIsPreviewOpen(false);
+      }
       setSending(false);
       return;
     }
