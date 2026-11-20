@@ -34,7 +34,8 @@ Sumber: kaffahphysio.id (dibaca 2026-11-20) dan data terapis di aplikasi.
 | Paket 3: 12 sesi | Rp1.900.000 (normal Rp2.400.000, hemat Rp500.000) | berlaku 6 bulan (terkonfirmasi flyer) |
 
 - Paket Anak: DIHAPUS, AI tidak menyebutnya.
-- Pasien anak (sampai usia 17 tahun): Rp150.000 per sesi. Recovery tetap sama (Rp220.000).
+- Pasien anak (sampai usia 17 tahun): Rp150.000 per sesi, hanya harga satuan (tidak ada paket anak). Recovery tetap sama (Rp220.000).
+- Recovery + keluhan lain: Rp250.000 per sesi.
 - Keluhan lebih dari satu: tambah Rp25.000 per sesi (regular menjadi Rp225.000).
 - Paket dengan dua keluhan: tambah Rp25.000 x jumlah sesi di paket tersebut.
 - Cicilan: tidak ada.
@@ -69,7 +70,11 @@ Deteksi dari nomor WhatsApp pengirim:
 2. Nomor tercatat untuk beberapa nama pasien: tanya dulu siapa yang akan diterapi, lalu lanjut seperti poin 1.
 3. Nomor baru / pasien baru:
    - Sesuaikan dengan jam yang diinginkan pasien, atau terapis tertentu bila diminta.
-   - Tanya nama lengkap (disimpan dengan sapaan "Ka" di depan nama), nomor WA pasien, dan keluhannya.
+   - Tanya nama lengkap (di kolom guest name ditulis dengan awalan "Ka", misalnya "Ka Budi Santoso"), nomor WA pasien, dan keluhannya.
    - Langsung jadwalkan.
+- Terapis yang diminta sedang cuti/izin/penuh: tawarkan terapis lain, atau beri tahu kapan jadwal terapis tersebut tersedia.
 - Jadwal penuh: tawarkan jam lain atau hari lain yang bisa dipilih pasien, lalu langsung jadwalkan.
 - Home care: tidak diproses AI, diserahkan ke admin.
+
+## Mode uji
+- Tahap uji memakai mode simulasi: AI menampilkan booking yang akan dibuat tanpa menulis ke database. Tidak ada pesan terkirim ke pasien. Aktivasi hanya atas persetujuan pemilik.
