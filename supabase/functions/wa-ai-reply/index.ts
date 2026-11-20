@@ -152,9 +152,12 @@ const TOOLS = [
 async function loadTherapists(admin: Admin, clinicId: string) {
   const { data } = await admin
     .from("physiotherapists")
-    .select("id, name, gender, is_active")
+    .select("id, name, gender, is_active, created_at")
     .eq("clinic_id", clinicId)
-    .eq("is_active", true);
+    .eq("is_active", true)
+    .order("created_at", { ascending: true })
+    .order("name", { ascending: true });
+  // Urutan penyisipan Map = urutan terapis di aplikasi (dipakai sebagai pemutus seri jadwal).
   return new Map((data || []).map((t: any) => [t.id, t]));
 }
 
@@ -262,11 +265,13 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
           ctx.offeredSlots.set(`${s.therapist_id}|${date}|${hhmm}`, { ...s, date });
         }
         if (byT.size) {
+          const order = [...therapists.keys()];
           const list = [...byT.entries()].map(([id, times]) => ({
             therapist_id: id,
             name: String(therapists.get(id)?.name || ""),
             gender: therapists.get(id)?.gender,
             times: times.sort(),
+            rank: order.indexOf(id),
           }));
           days.push({
             date,
