@@ -42,7 +42,12 @@ update wa_ai_settings set enabled = false where clinic_id = '<clinic_id>';
 Mematikan AI untuk satu percakapan: `update wa_inbox_conversations set ai_paused = true where id = '<id>';`
 Membersihkan serah-terima: `update wa_inbox_conversations set ai_handoff = false where id = '<id>';`
 
+## Antarmuka di aplikasi
+Pengaturan WhatsApp -> tab **Asisten AI**: tombol aktif/mati, mode (simulasi/live), kapan AI membalas, jam operasional,
+nomor uji, kontrol per percakapan (diserahkan ke admin / dijeda / cari chat untuk dijeda), dan riwayat balasan AI.
+Hanya owner yang dapat mengubah pengaturan; owner dan admin dapat mengelola status per percakapan.
+(Tampilan inbox percakapan `/owner/wa-inbox` yang disebut di docs/WHATSAPP_CLOUD_API.md tidak ada di repo ini.)
+
 ## Yang belum ada
-- Tombol aktif/nonaktif, daftar log, dan penanda "dibalas AI" di antarmuka aplikasi (sementara lewat SQL di atas).
-- Pengiriman gambar flyer (endpoint gambar Watzap belum dipastikan); AI membalas harga dalam teks.
-- Uji dengan API Claude sungguhan belum dilakukan dari sesi ini (tidak ada kunci di sini).
+- Pengiriman gambar flyer (endpoint `/waba_send_image_url` ada di dokumentasi Watzap; belum dipasang di AI).
+- Uji dengan API Claude dan Watzap sungguhan belum dilakukan dari sesi ini.

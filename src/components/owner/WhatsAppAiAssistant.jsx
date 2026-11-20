@@ -12,6 +12,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { getCachedClinicId } from '@/lib/api';
 import { confirmAction } from '@/lib/confirmAction';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import WhatsAppAiChats from './WhatsAppAiChats';
 import { Bot, Loader2, RefreshCcw, Save, ShieldAlert } from 'lucide-react';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -345,6 +346,8 @@ const WhatsAppAiAssistant = () => {
           )}
         </CardContent>
       </Card>
+
+      <WhatsAppAiChats />
 
       <Card>
         <CardContent className="p-6 space-y-4">
