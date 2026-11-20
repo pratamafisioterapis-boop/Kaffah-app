@@ -15,7 +15,7 @@
 import { adminClient, json, normalizePhone } from "../_shared/wa.ts";
 import { KAFFAH_KNOWLEDGE } from "../_shared/wa_ai_knowledge.ts";
 import {
-  isWithinBusinessHours,
+  dueDecision,
   openFutureSlots,
   phoneVariants,
   quotePrice,
@@ -481,7 +481,135 @@ async function sendText(admin: Admin, clinicId: string, conv: any, body: string)
     .update({ last_message_at: now, last_preview: body.slice(0, 120) }).eq("id", conv.id);
 }
 
+// ------------------------------------------------------------------ cek balasan admin (Watzap)
+
+/**
+ * Apakah pesan terakhir di percakapan ini berasal dari klinik (admin atau AI)? Admin sering
+ * membalas dari dasbor/ponsel Watzap, yang tidak masuk webhook, jadi harus bertanya ke Watzap.
+ * Melempar galat bila tidak bisa dipastikan; pemanggil tidak boleh mengirim dalam kasus itu.
+ */
+async function lastMessageFromClinic(admin: Admin, clinicId: string, waId: string): Promise<boolean> {
+  const { data: wa } = await admin.from("wa_settings")
+    .select("api_key, number_key").eq("clinic_id", clinicId).maybeSingle();
+  if (!wa?.api_key || !wa.number_key) throw new Error("kunci Watzap tidak ada");
+
+  const call = async (body: Record<string, unknown>) => {
+    const res = await fetch("https://api.watzap.id/v1/conversations", {
+      method: "POST",
+      signal: AbortSignal.timeout(15000),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ api_key: wa.api_key, number_key: wa.number_key, ...body }),
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok || (out?.ack && out.ack !== "success" && out.ack !== "successfully")) {
+      throw new Error(`Watzap ${res.status}: ${String(out?.message || "gagal").slice(0, 120)}`);
+    }
+    return out?.data ?? out;
+  };
+
+  const digits = normalizePhone(waId);
+  const tail = digits.slice(-9);
+  const list = await call({ action: "list", search: digits, per_page: 10, page: 1 });
+  const found = (list?.items || []).find((c: any) =>
+    String(c.phone || c.wa_id || "").replace(/\D/g, "").endsWith(tail)
+  );
+  if (!found?.conversation_id) throw new Error("percakapan tidak ditemukan di Watzap");
+
+  // Urutan data tidak dijamin: ambil halaman pertama dan terakhir, lalu cari yang terbaru.
+  const perPage = 50;
+  const first = await call({ action: "messages", conversation_id: found.conversation_id, page: 1, per_page: perPage });
+  let items: any[] = first?.items || [];
+  const total = Number(first?.pagination?.total || items.length);
+  if (total > perPage) {
+    const lastPage = Math.ceil(total / perPage);
+    const last = await call({ action: "messages", conversation_id: found.conversation_id, page: lastPage, per_page: perPage });
+    items = items.concat(last?.items || []);
+  }
+  if (!items.length) throw new Error("riwayat pesan Watzap kosong");
+  const newest = items.reduce((a: any, b: any) => {
+    const ta = String(a.timestamp || ""), tb = String(b.timestamp || "");
+    return tb > ta || (tb === ta && Number(b.message_id) > Number(a.message_id)) ? b : a;
+  });
+  return newest.is_from_me === true;
+}
+
 // ------------------------------------------------------------------ alur utama
+
+type QueueRow = { id: string; clinic_id: string; conversation_id: string; message_id: string };
+
+/** Terima pesan masuk baru: tentukan apakah AI boleh bertindak, lalu masukkan ke antrean. */
+async function enqueue(admin: Admin, conversationId: string, messageId: string) {
+  const { data: conv } = await admin.from("wa_inbox_conversations")
+    .select("*").eq("id", conversationId).maybeSingle();
+  if (!conv) return;
+  const clinicId = conv.clinic_id as string;
+
+  const { data: st } = await admin.from("wa_ai_settings").select("*").eq("clinic_id", clinicId).maybeSingle();
+  if (!st?.enabled) return; // MATI: tidak melakukan apa pun, tidak mencatat apa pun.
+
+  const testPhones: string[] = (st.test_phones || []).map((p: string) => normalizePhone(p));
+  const isTester = testPhones.includes(normalizePhone(conv.wa_id));
+  if (testPhones.length && !isTester) return; // uji terbatas: hanya nomor uji
+
+  const { data: msg } = await admin.from("wa_inbox_messages")
+    .select("id, direction, msg_type").eq("id", messageId).maybeSingle();
+  if (!msg || msg.direction !== "in") return;
+  if (["reaction", "sticker"].includes(msg.msg_type)) return;
+
+  const now = new Date();
+  // Penguji tidak menunggu jeda; jam aktif tetap berlaku agar pengaturan bisa diuji.
+  const d = dueDecision(now, {
+    mode: st.ai_mode || "both",
+    delay_seconds: isTester ? 0 : st.delay_seconds,
+    closed_delay_seconds: isTester ? 0 : st.closed_delay_seconds,
+    business_hours: st.business_hours,
+  });
+  const mode: "simulate" | "live" = st.mode === "live" ? "live" : "simulate";
+
+  if (!d.act) {
+    await admin.from("wa_ai_logs").insert({
+      clinic_id: clinicId, conversation_id: conversationId, inbound_message_id: messageId,
+      mode, outcome: "skipped", skip_reason: d.reason,
+    });
+    return;
+  }
+  const { data: row, error } = await admin.from("wa_ai_queue").insert({
+    clinic_id: clinicId, conversation_id: conversationId, message_id: messageId,
+    due_at: new Date(now.getTime() + d.delaySeconds * 1000).toISOString(),
+  }).select("id, clinic_id, conversation_id, message_id").single();
+  if (error) return; // pesan yang sama sudah masuk antrean
+  if (d.delaySeconds === 0) await processItem(admin, row as QueueRow); // jam tutup: balas langsung
+}
+
+/** Penyapu (dipanggil cron tiap menit): proses semua yang sudah jatuh tempo. */
+async function sweep(admin: Admin) {
+  // Kembalikan item yang macet (pekerja terhenti) agar dicoba lagi, maksimal 3 kali.
+  await admin.from("wa_ai_queue").update({ status: "pending", updated_at: new Date().toISOString() })
+    .eq("status", "processing").lt("updated_at", new Date(Date.now() - 10 * 60 * 1000).toISOString())
+    .lt("attempts", 3);
+
+  const { data: due } = await admin.from("wa_ai_queue")
+    .select("id, clinic_id, conversation_id, message_id, attempts")
+    .eq("status", "pending").lte("due_at", new Date().toISOString())
+    .order("due_at", { ascending: true }).limit(4);
+  const work = [];
+  for (const q of due || []) {
+    // Klaim atomik: hanya satu penyapu yang memegang item ini.
+    const { data: claimed } = await admin.from("wa_ai_queue")
+      .update({ status: "processing", attempts: (q.attempts || 0) + 1, updated_at: new Date().toISOString() })
+      .eq("id", q.id).eq("status", "pending").select("id").maybeSingle();
+    if (claimed) work.push(processItem(admin, q as QueueRow));
+  }
+  await Promise.allSettled(work);
+}
+
+async function processItem(admin: Admin, q: QueueRow) {
+  try {
+    await handleInbound(admin, q.conversation_id, q.message_id);
+  } finally {
+    await admin.from("wa_ai_queue").update({ status: "done", updated_at: new Date().toISOString() }).eq("id", q.id);
+  }
+}
 
 async function handleInbound(admin: Admin, conversationId: string, messageId: string) {
   const { data: conv } = await admin.from("wa_inbox_conversations")
@@ -490,49 +618,50 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
   const clinicId = conv.clinic_id as string;
 
   const { data: st } = await admin.from("wa_ai_settings").select("*").eq("clinic_id", clinicId).maybeSingle();
-  if (!st?.enabled) return; // MATI: tidak melakukan apa pun, tidak mencatat apa pun.
+  if (!st?.enabled) return; // dimatikan selagi menunggu di antrean
   const mode: "simulate" | "live" = st.mode === "live" ? "live" : "simulate";
-
-  const testPhones: string[] = (st.test_phones || []).map((p: string) => normalizePhone(p));
-  const isTester = testPhones.includes(normalizePhone(conv.wa_id));
-  if (testPhones.length && !isTester) return; // uji terbatas: hanya nomor uji
 
   const { data: msg } = await admin.from("wa_inbox_messages")
     .select("id, direction, msg_type, body, created_at").eq("id", messageId).maybeSingle();
   if (!msg || msg.direction !== "in") return;
-  if (["reaction", "sticker"].includes(msg.msg_type)) return;
 
   const base = { clinic_id: clinicId, conversation_id: conversationId, inbound_message_id: messageId, mode };
-  // Klaim pesan ini; webhook yang terkirim ganda berhenti di sini.
+  // Klaim pesan ini; pemrosesan ganda berhenti di sini.
   const { data: log, error: claimErr } = await admin.from("wa_ai_logs")
     .insert({ ...base, outcome: "processing" }).select("id").single();
   if (claimErr) return;
   const finish = (patch: Record<string, unknown>) =>
     admin.from("wa_ai_logs").update(patch).eq("id", log.id);
-  const skip = (reason: string) => finish({ outcome: "skipped", skip_reason: reason });
+  const skip = (reason: string, detail?: string) =>
+    finish({ outcome: "skipped", skip_reason: reason, error_message: detail ?? null });
 
   try {
     if (conv.ai_paused) return await skip("ai_dimatikan_untuk_chat_ini");
     if (conv.ai_handoff) return await skip("sudah_diserahkan_ke_admin");
-
-    // Beri admin kesempatan membalas dulu (di jam kerja). Penguji tidak menunggu.
-    const now0 = new Date();
-    const wait = isTester || !isWithinBusinessHours(now0) ? 0 : st.delay_seconds * 1000;
-    if (wait > 0) await sleep(wait);
 
     const { data: latestIn } = await admin.from("wa_inbox_messages")
       .select("id").eq("conversation_id", conversationId).eq("direction", "in")
       .order("created_at", { ascending: false }).limit(1).maybeSingle();
     if (latestIn && latestIn.id !== messageId) return await skip("ada_pesan_lebih_baru");
 
-    const { count: adminReplies } = await admin.from("wa_inbox_messages")
+    const { count: appReplies } = await admin.from("wa_inbox_messages")
       .select("id", { count: "exact", head: true })
       .eq("conversation_id", conversationId).eq("direction", "out").gt("created_at", msg.created_at);
-    if (adminReplies) return await skip("admin_sudah_membalas");
+    if (appReplies) return await skip("admin_sudah_membalas");
 
     const { data: fresh } = await admin.from("wa_inbox_conversations")
       .select("ai_paused, ai_handoff").eq("id", conversationId).maybeSingle();
     if (fresh?.ai_paused || fresh?.ai_handoff) return await skip("status_chat_berubah");
+
+    // Admin sering membalas lewat dasbor/ponsel Watzap: tanyakan langsung ke Watzap.
+    try {
+      if (await lastMessageFromClinic(admin, clinicId, conv.wa_id)) {
+        return await skip("admin_sudah_membalas_via_watzap");
+      }
+    } catch (e) {
+      // Tidak bisa memastikan: jangan mengirim apa pun (gagal dengan aman).
+      return await skip("tidak_bisa_cek_balasan_admin", String((e as Error).message || e).slice(0, 300));
+    }
 
     const ctx: Ctx = {
       admin, clinicId, conv, mode, now: new Date(), actions: [], handoff: null,
@@ -586,7 +715,6 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
       return await finish({ ...common, outcome: ctx.handoff ? "handoff" : "simulated" });
     }
 
-    // live: kirim dulu; hanya tandai handoff bila pesan terkirim atau tetap perlu admin.
     if (ctx.handoff) {
       await admin.from("wa_inbox_conversations").update({
         ai_handoff: true,
@@ -614,18 +742,32 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  const admin = adminClient();
+  const p = await req.json().catch(() => ({}));
 
-  // Hanya pemanggil internal (webhook) yang membawa service role key.
+  const run = (work: Promise<unknown>) => {
+    const w = work.catch((e) => console.error("[wa-ai-reply] fatal", e));
+    if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(w);
+    return w;
+  };
+
+  // Penyapu cron: autentikasi dengan token rahasia di tabel khusus.
+  if (p.sweep) {
+    const token = req.headers.get("x-cron-token") || "";
+    const { data: sec } = await admin.from("wa_ai_cron_secret").select("token").limit(1).maybeSingle();
+    if (!token || !sec?.token || token !== sec.token) return json({ error: "Forbidden" }, 403);
+    const w = run(sweep(admin));
+    if (typeof EdgeRuntime === "undefined") await w;
+    return json({ accepted: true }, 202);
+  }
+
+  // Pemicu dari webhook: hanya pemanggil internal dengan service role key.
   const bearer = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
   if (!bearer || bearer !== Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) {
     return json({ error: "Forbidden" }, 403);
   }
-  const p = await req.json().catch(() => ({}));
   if (!p.conversation_id || !p.message_id) return json({ error: "conversation_id & message_id wajib" }, 400);
-
-  const work = handleInbound(adminClient(), String(p.conversation_id), String(p.message_id))
-    .catch((e) => console.error("[wa-ai-reply] fatal", e));
-  if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(work);
-  else await work;
+  const w = run(enqueue(admin, String(p.conversation_id), String(p.message_id)));
+  if (typeof EdgeRuntime === "undefined") await w;
   return json({ accepted: true }, 202);
 });

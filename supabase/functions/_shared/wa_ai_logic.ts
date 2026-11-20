@@ -25,6 +25,56 @@ export function isWithinBusinessHours(d: Date): boolean {
   return minutes >= 9 * 60 && minutes < close;
 }
 
+// ---------------------------------------------------------------- jam aktif AI
+
+/** Jam operasional per hari (0=Minggu … 6=Sabtu): [buka, tutup] "HH:MM" WITA. */
+export type BusinessHours = Record<string, [string, string] | null>;
+
+export const DEFAULT_BUSINESS_HOURS: BusinessHours = {
+  "1": ["09:00", "21:00"], "2": ["09:00", "21:00"], "3": ["09:00", "21:00"],
+  "4": ["09:00", "21:00"], "5": ["09:00", "21:00"],
+  "6": ["09:00", "17:00"], "0": ["09:00", "17:00"],
+};
+
+const toMinutes = (hhmm: string) => {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + (m || 0);
+};
+
+/** Apakah klinik sedang buka (WITA) menurut jadwal; hari bernilai null = tutup seharian. */
+export function isOpenAt(d: Date, hours?: BusinessHours | null): boolean {
+  const h = hours && Object.keys(hours).length ? hours : DEFAULT_BUSINESS_HOURS;
+  const { dow, minutes } = witaParts(d);
+  const day = h[String(dow)];
+  if (!day) return false;
+  return minutes >= toMinutes(day[0]) && minutes < toMinutes(day[1]);
+}
+
+export type AiMode = "both" | "closed_only" | "silent_only";
+export type Policy = {
+  mode: AiMode;
+  delay_seconds: number; // admin diam selama ini (jam buka)
+  closed_delay_seconds: number; // jeda saat jam tutup (0 = langsung)
+  business_hours?: BusinessHours | null;
+};
+
+/**
+ * both: jam buka -> tunggu admin diam N detik; jam tutup -> balas setelah jeda tutup.
+ * closed_only: hanya saat jam tutup. silent_only: kapan pun, tunggu admin diam N detik.
+ */
+export function dueDecision(
+  now: Date,
+  p: Policy,
+): { act: boolean; delaySeconds: number; reason: string } {
+  const open = isOpenAt(now, p.business_hours);
+  if (p.mode === "silent_only") {
+    return { act: true, delaySeconds: p.delay_seconds, reason: "admin_diam" };
+  }
+  if (!open) return { act: true, delaySeconds: p.closed_delay_seconds, reason: "jam_tutup" };
+  if (p.mode === "both") return { act: true, delaySeconds: p.delay_seconds, reason: "admin_diam" };
+  return { act: false, delaySeconds: 0, reason: "jam_buka_mode_hanya_tutup" };
+}
+
 /** 62812… → varian penulisan yang mungkin tersimpan di tabel pasien. */
 export function phoneVariants(waId: string): string[] {
   const d = (waId || "").replace(/\D/g, "");
