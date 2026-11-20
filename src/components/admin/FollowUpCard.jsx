@@ -193,6 +193,14 @@ const patientName =
   // tombolnya tidak boleh ikut terkunci walau status-nya sudah bukan pending.
   const locksOnSend = item.follow_up_type === 'follow_up';
   const isPending = item.status === 'pending';
+
+  // Balasan tombol pasien pada reminder terapi (Hadir / Reschedule / Cancel).
+  const REPLY_CONFIG = {
+    hadir: { label: 'Pasien: Hadir', badge: 'bg-green-100 text-green-700 border-green-200' },
+    reschedule: { label: 'Pasien minta ubah jadwal', badge: 'bg-amber-100 text-amber-800 border-amber-200' },
+    cancel: { label: 'Pasien minta batal', badge: 'bg-red-100 text-red-700 border-red-200' }
+  };
+  const replyConfig = item.patient_reply ? REPLY_CONFIG[item.patient_reply] : null;
   const isLocked = locksOnSend && !isPending;
 
   const handleSendWhatsApp = () => {
@@ -359,6 +367,16 @@ const packageRisk = getPackageRisk();
       className={`text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-semibold ${patientCategoryConfig.badge}`}
     >
       {patientCategoryConfig.label}
+    </Badge>
+  )}
+
+  {replyConfig && (
+    <Badge
+      variant="outline"
+      className={`text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-semibold ${replyConfig.badge}`}
+      title={item.patient_reply_at ? `Dibalas ${format(parseISO(item.patient_reply_at), 'HH:mm', { locale: idLocale })}` : undefined}
+    >
+      {replyConfig.label}
     </Badge>
   )}
 
