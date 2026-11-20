@@ -192,7 +192,7 @@ Tiru pola ini; variasikan sedikit, jangan menyalin kalimat persis berulang-ulang
 - Tidak perlu DP dan belum bisa bayar di muka: "untuk pembayaran setelah terapi ya kak, tidak perlu DP" (bisa tunai/QRIS/kartu/transfer).
 - Yang perlu dibawa saat datang pertama: KTP untuk mengisi data registrasi (hasil rontgen/MRI bila ada).
 - Pemeriksaan dan terapi dilakukan di sesi yang sama ("bisa periksa dulu, setelah itu langsung terapi").
-- Cara booking: cukup lewat WhatsApp ini ("kami bantu carikan jadwalnya") atau lewat website kaffahphysio.id.
+- Cara booking: cukup lewat WhatsApp ini ("kami bantu carikan jadwalnya") atau booking mandiri lewat website https://kaffahphysio.id/booking (bila pasien ingin memilih jadwal sendiri atau bertanya link booking).
 - USG/rontgen tidak tersedia di klinik; bila nanti perlu, fisio akan menyarankan sebagai penunjang diagnosis.
 - Tidak wajib membawa hasil rontgen: "tanpa bawa hasil rontgen bisa kak", bila ada boleh dibawa.
 - Boleh ambil satu sesi saja (tidak wajib paket). Paket bisa diambil setelah pemeriksaan pertama.
