@@ -45,6 +45,11 @@ update wa_ai_settings set enabled = false where clinic_id = '<clinic_id>';
 Mematikan AI untuk satu percakapan: `update wa_inbox_conversations set ai_paused = true where id = '<id>';`
 Membersihkan serah-terima: `update wa_inbox_conversations set ai_handoff = false where id = '<id>';`
 
+Serah-terima bersifat DIAM: saat AI menyerahkan chat ke admin (home care, komplain, klaim reward,
+kwitansi, pertanyaan pasca-terapi, ubah/batal jadwal, darurat, lampiran), AI tidak mengirim pesan apa pun
+ke pasien; chat hanya ditandai "Diserahkan ke admin". Pesan yang tidak perlu dibalas ("ok", "siap",
+emoji) juga dilewati tanpa balasan dan tanpa serah-terima.
+
 ## Antarmuka di aplikasi
 Pengaturan WhatsApp -> tab **Asisten AI**: tombol aktif/mati, mode (simulasi/live), kapan AI membalas, jam operasional,
 nomor uji, kontrol per percakapan (diserahkan ke admin / dijeda / cari chat untuk dijeda), dan riwayat balasan AI.
