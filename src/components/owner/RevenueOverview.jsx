@@ -213,13 +213,19 @@ const RevenueOverview = ({ dateRange }) => {
   const therapistTotal = therapistRevenue.reduce((s, t) => s + t.revenue, 0);
 
   // ── Pemasukan Paket vs Non-Paket (sesuai date range) ──
-  // Pemasukan paket dihitung dari pembayaran yang benar-benar masuk (amount di
-  // daily_recaps), bukan diamortisasi per sesi.
+  // Sesi paket biasanya ber-amount 0 (bayar di awal), jadi pemasukan paket
+  // diakui per sesi: nominal paket / total sesi — sama dengan widget revenue
+  // per terapis & total pemasukan, supaya angkanya konsisten.
   const packageVsNonPackage = useMemo(() => {
     const nonPaketRecaps = (data.nonPkgRecaps || []).filter(r => (Number(r.amount) || 0) > 0);
-    const paketRecaps = (data.pkgRecaps || []).filter(r => (Number(r.amount) || 0) > 0);
+    const paketValue = r => {
+      const pt = r.package_tracking;
+      const perSession = pt && Number(pt.total_sessions) > 0 ? Number(pt.nominal) / Number(pt.total_sessions) : 0;
+      return perSession || Number(r.amount) || 0;
+    };
+    const paketRecaps = (data.pkgRecaps || []).filter(r => paketValue(r) > 0);
     const nonPaket = nonPaketRecaps.reduce((s, r) => s + (Number(r.amount) || 0), 0);
-    const paket = paketRecaps.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+    const paket = paketRecaps.reduce((s, r) => s + paketValue(r), 0);
     const total = nonPaket + paket;
     return {
       nonPaket: Math.round(nonPaket),
@@ -496,7 +502,7 @@ const RevenueOverview = ({ dateRange }) => {
           ) : (
             <>
               <div className="flex h-8 gap-0.5 rounded-xl overflow-hidden bg-slate-100">
-                {[['paket', packageVsNonPackage.paket, '#7c3aed'], ['non', packageVsNonPackage.nonPaket, '#2563eb']].map(([k, v, c]) => (
+                {[['paket', packageVsNonPackage.paket, '#7c3aed'], ['non', packageVsNonPackage.nonPaket, '#2563eb']].filter(([, v]) => v > 0).map(([k, v, c]) => (
                   <button
                     key={k}
                     type="button"
