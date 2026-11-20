@@ -14,3 +14,4 @@ serviceAccount*.json
 illustration-runs/
 __pycache__/
 perf-results/
+supabase/.temp-knowledge.sql
