@@ -31,13 +31,13 @@ Sumber: kaffahphysio.id (dibaca 2026-11-20) dan data terapis di aplikasi.
 | Recovery Treatment | Rp220.000 / sesi | |
 | Paket 1: 3 sesi | Rp530.000 (normal Rp600.000, hemat Rp70.000) | berlaku 1 bulan |
 | Paket 6 sesi | Rp1.000.000 (normal Rp1.200.000, hemat Rp200.000) | berlaku 3 bulan, paling populer |
-| Paket 3: 12 sesi | Rp1.900.000 (normal Rp2.400.000, hemat Rp500.000) | masa berlaku di situs terbaca 6 bulan, PERLU DIKONFIRMASI |
+| Paket 3: 12 sesi | Rp1.900.000 (normal Rp2.400.000, hemat Rp500.000) | masa berlaku di situs terbaca 6 bulan; menunggu flyer dari pemilik untuk memastikan |
 | Paket Anak 5 sesi | Rp750.000 (normal Rp1.000.000, hemat Rp250.000) | berlaku 2 bulan |
 
 - Cicilan: tidak ada (konfirmasi pemilik).
-- Promo: akan disampaikan pemilik.
-- Tarif home care: belum ditemukan di situs. PERLU DIISI.
-- Metode pembayaran: belum ditemukan di situs. PERLU DIISI.
+- Promo: akan disampaikan pemilik (INGATKAN setelah knowledge lain beres). Sebelum itu AI tidak menyebut promo apa pun.
+- Tarif home care: TIDAK dijawab AI. Tergantung jarak; klinik tidak melayani jarak jauh. Semua pertanyaan home care diserahkan ke admin.
+- Pembayaran: tunai, transfer, QRIS (konfirmasi metode lengkap ke pemilik). Rekening BSI 3030399993 (atas nama: PERLU DIISI).
 
 ## Terapis (aktif dan tampil di landing)
 - Adi Pratama, S.Fis., Ftr (kepala terapis)
@@ -56,4 +56,6 @@ Sumber: kaffahphysio.id (dibaca 2026-11-20) dan data terapis di aplikasi.
 - Tidak memberi diagnosis atau saran medis; keluhan klinis diarahkan ke terapis saat sesi.
 - Komplain, refund, kasus darurat, atau pertanyaan di luar knowledge: jawab bahwa admin akan membalas dan tandai chat.
 - Tidak mengarang harga, promo, atau jadwal.
-- Gaya bahasa: sopan, ramah, ringkas, Bahasa Indonesia. Sapaan perlu ditentukan pemilik.
+- Gaya bahasa: sopan, ramah, ringkas, Bahasa Indonesia.
+- Sapaan: pasien baru (nomor belum ada di database pasien) dipanggil "Kak". Pasien lama (nomor cocok dengan data pasien) dipanggil dengan nickname dari data pasien.
+- Home care (jadwal, tarif, area, cara pesan): AI tidak menjawab isi. AI hanya bilang admin akan membalas, lalu chat ditandai untuk admin.
