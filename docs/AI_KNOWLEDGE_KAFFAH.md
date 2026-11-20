@@ -125,7 +125,7 @@ Serahkan HANYA bila benar-benar perlu; jangan semua dialihkan. Saat diserahkan, 
 - Kiriman foto/dokumen/voice note.
 
 ## Flyer harga (untuk dikirim sebagai gambar)
-- Paket reguler: public/flyers/paket-reguler.png
+- Paket reguler: public/flyers/paket-reguler.jpg (dikirim AI lewat alat send_brochure)
 - Recovery program: public/flyers/recovery-program.jpg
 - Setelah di-deploy, URL publiknya: https://kaffahphysio.id/flyers/<nama file>.
 

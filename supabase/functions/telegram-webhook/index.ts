@@ -38,6 +38,10 @@ const HELP = [
   "/kosong 15/11  atau  /kosong 15 nov",
   "",
   "Boleh juga ditulis biasa, mis. \"jadwal kosong besok\".",
+  "",
+  "Asisten AI WhatsApp:",
+  "Balas (reply) pesan draf AI dengan jawaban yang benar untuk mengoreksi, atau \"ok\" bila sudah tepat.",
+  "/skor  skor ketepatan AI 24 jam terakhir",
 ].join("\n");
 
 function json(body: unknown, status = 200) {
@@ -120,6 +124,20 @@ async function handleUpdate(update: any) {
   // Hanya chat pribadi milik owner yang dilayani.
   if (String(msg.chat?.id) !== CHAT_ID || String(msg.from?.id) !== CHAT_ID) return;
 
+  // Koreksi draf AI WhatsApp (reply ke pesan draf) dan /skor ditangani wa-ai-reply.
+  if (msg.reply_to_message || /^\/skor(?:@\w+)?\b/i.test(msg.text.trim())) {
+    const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/wa-ai-reply`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      },
+      body: JSON.stringify({ telegram_update: update }),
+    });
+    if (!res.ok) await reply("Maaf, koreksi belum bisa disimpan sekarang. Coba lagi sebentar lagi.");
+    return;
+  }
+
   const cmd = detect(msg.text);
   if (!cmd) {
     await reply(HELP);
@@ -168,6 +186,7 @@ async function handleAdmin(action: string) {
     const cmds = await tg("setMyCommands", {
       commands: [
         { command: "kosong", description: "Jadwal kosong (mis. /kosong besok)" },
+        { command: "skor", description: "Skor ketepatan AI WhatsApp" },
         { command: "bantuan", description: "Daftar perintah" },
       ],
     });
