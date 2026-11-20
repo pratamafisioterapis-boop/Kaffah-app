@@ -604,6 +604,112 @@ async function lastMessageFromClinic(
   return { fromClinic: newest.is_from_me === true, variant: win.label };
 }
 
+// ------------------------------------------------------------------ mode review (Telegram)
+
+async function sendTelegram(text: string) {
+  const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
+  const chat = Deno.env.get("TELEGRAM_CHAT_ID");
+  if (!token || !chat) throw new Error("TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID belum diset");
+  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    signal: AbortSignal.timeout(15000),
+    headers: { "Content-Type": "application/json" },
+    // Teks biasa (tanpa parse_mode) supaya karakter dari pesan pasien tidak merusak pesan.
+    body: JSON.stringify({ chat_id: chat, text: text.slice(0, 4000), disable_web_page_preview: true }),
+  });
+  if (!res.ok) throw new Error(`Telegram ${res.status}: ${(await res.text()).slice(0, 120)}`);
+}
+
+/**
+ * Mode review: untuk SETIAP pesan pasien, AI menyusun draf balasan seperti biasa lalu mengirim
+ * pesan pasien + draf itu ke Telegram owner. Tidak ada pesan ke pasien dan tidak ada booking.
+ * Sengaja tanpa penyaring (jam aktif, nomor uji, balasan admin, jeda, serah-terima).
+ */
+async function reviewToTelegram(admin: Admin, conversationId: string, messageId: string) {
+  const { data: conv } = await admin.from("wa_inbox_conversations")
+    .select("*").eq("id", conversationId).maybeSingle();
+  if (!conv) return;
+  const clinicId = conv.clinic_id as string;
+  const { data: msg } = await admin.from("wa_inbox_messages")
+    .select("id, direction, msg_type, body, created_at").eq("id", messageId).maybeSingle();
+  if (!msg || msg.direction !== "in" || msg.msg_type === "reaction") return;
+
+  const { data: log, error: claimErr } = await admin.from("wa_ai_logs").insert({
+    clinic_id: clinicId, conversation_id: conversationId, inbound_message_id: messageId,
+    mode: "review", outcome: "processing",
+  }).select("id").single();
+  if (claimErr) return; // pesan ini sudah diproses
+  const finish = (patch: Record<string, unknown>) =>
+    admin.from("wa_ai_logs").update(patch).eq("id", log.id);
+
+  try {
+    const ctx: Ctx = {
+      admin, clinicId, conv, mode: "simulate", now: new Date(), actions: [], handoff: null,
+      bookingIds: [], allowedPatientIds: new Set(), patientsLoaded: false, offeredSlots: new Map(),
+    };
+
+    // Dikenali sebagai pasien lama atau baru (hanya untuk label di Telegram dan petunjuk AI).
+    const variants = phoneVariants(conv.wa_id);
+    const { data: known } = variants.length
+      ? await admin.from("patients").select("full_name, nickname")
+        .eq("clinic_id", clinicId).in("phone", variants).limit(3)
+      : { data: [] };
+    const label = (known || []).length
+      ? `pasien lama: ${(known || []).map((p: any) => p.nickname || p.full_name).join(" / ")}`
+      : "nomor baru / belum terdaftar";
+
+    let reply: string;
+    if (msg.msg_type !== "text") {
+      ctx.handoff = { reason: `Pasien mengirim ${msg.msg_type}; AI tidak membaca lampiran`, priority: "normal" };
+      reply = HANDOFF_ACK;
+    } else {
+      // Konteks sampai pesan ini saja, supaya draf sesuai dengan pesan yang sedang ditinjau.
+      const { data: hist } = await admin.from("wa_inbox_messages")
+        .select("direction, body, msg_type, created_at").eq("conversation_id", conversationId)
+        .lte("created_at", msg.created_at).order("created_at", { ascending: false }).limit(20);
+      const transcript = (hist || []).reverse().map((m: any) => {
+        const who = m.direction === "in" ? "Pasien" : "Klinik";
+        const t = witaParts(new Date(m.created_at));
+        const text = m.body && m.body.trim() ? m.body : `[${m.msg_type}]`;
+        return `[${t.date} ${t.time}] ${who}: ${text.slice(0, 600)}`;
+      }).join("\n");
+      const hint = (known || []).length
+        ? "Nomor ini tercatat sebagai pasien terdaftar (panggil lookup_patient untuk detail)."
+        : "Nomor ini BELUM tercatat di database pasien (anggap pasien baru; tetap boleh panggil lookup_patient).";
+      reply = await runAgent(ctx, transcript, hint);
+    }
+    const bookingPlan = ctx.actions.find((a) => a.type === "create_booking");
+    if (!reply) reply = bookingPlan ? "(tanpa balasan teks: konfirmasi booking dikirim sistem)" : "(AI tidak menghasilkan balasan)";
+
+    const t = witaParts(new Date(msg.created_at));
+    const lines = [
+      `📩 Pesan pasien (${t.time} WITA)`,
+      `Dari: ${conv.contact_name || "-"} (+${conv.wa_id}), ${label}`,
+      "",
+      msg.body && msg.body.trim() ? msg.body : `[${msg.msg_type}]`,
+      "",
+      "🤖 Draf balasan AI:",
+      reply,
+    ];
+    if (bookingPlan) {
+      lines.push("", `📅 Rencana booking (belum dibuat): ${bookingPlan.start?.slice(0, 16).replace("T", " ")} · ${bookingPlan.guest_name || "pasien terdaftar"} · catatan: ${String(bookingPlan.notes || "-").replace(/\n/g, " / ")}`);
+    }
+    if (ctx.handoff) lines.push("", `⚠️ AI akan menyerahkan ke admin: ${ctx.handoff.reason}`);
+    await sendTelegram(lines.join("\n"));
+
+    await finish({
+      outcome: ctx.handoff ? "handoff" : "simulated",
+      reply_text: reply,
+      planned_actions: ctx.actions,
+      handoff_reason: ctx.handoff?.reason ?? null,
+      handoff_priority: ctx.handoff?.priority ?? null,
+    });
+  } catch (e) {
+    console.error("[wa-ai-reply] review gagal", e);
+    await finish({ outcome: "error", error_message: String((e as Error).message || e).slice(0, 500) });
+  }
+}
+
 // ------------------------------------------------------------------ alur utama
 
 type QueueRow = { id: string; clinic_id: string; conversation_id: string; message_id: string };
@@ -617,6 +723,9 @@ async function enqueue(admin: Admin, conversationId: string, messageId: string) 
 
   const { data: st } = await admin.from("wa_ai_settings").select("*").eq("clinic_id", clinicId).maybeSingle();
   if (!st?.enabled) return; // MATI: tidak melakukan apa pun, tidak mencatat apa pun.
+
+  // Mode review: semua pesan pasien (tanpa penyaring) -> draf AI ke Telegram owner.
+  if (st.mode === "review") return await reviewToTelegram(admin, conversationId, messageId);
 
   const testPhones: string[] = (st.test_phones || []).map((p: string) => normalizePhone(p));
   const isTester = testPhones.includes(normalizePhone(conv.wa_id));
@@ -702,6 +811,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
 
   const { data: st } = await admin.from("wa_ai_settings").select("*").eq("clinic_id", clinicId).maybeSingle();
   if (!st?.enabled) return; // dimatikan selagi menunggu di antrean
+  if (st.mode === "review") return; // mode review ditangani reviewToTelegram, bukan antrean
   const mode: "simulate" | "live" = st.mode === "live" ? "live" : "simulate";
 
   const { data: msg } = await admin.from("wa_inbox_messages")

@@ -218,9 +218,10 @@ const WhatsAppAiAssistant = () => {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Mode kerja</Label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {[
-                  { v: 'simulate', t: 'Simulasi', d: 'Hanya mencatat rencana balasan. Tidak ada pesan terkirim.' },
+                  { v: 'review', t: 'Review Telegram', d: 'Draf balasan untuk SETIAP pesan pasien dikirim ke Telegram owner. Tidak ada pesan ke pasien dan tidak ada booking.' },
+                  { v: 'simulate', t: 'Simulasi', d: 'Hanya mencatat rencana balasan di riwayat. Tidak ada pesan terkirim.' },
                   { v: 'live', t: 'Live', d: 'Mengirim balasan dan membuat booking sungguhan.' },
                 ].map((o) => (
                   <button
@@ -383,6 +384,9 @@ const WhatsAppAiAssistant = () => {
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={o.cls}>{o.label}</Badge>
+                      {l.mode === 'review' && (
+                        <Badge variant="outline" className="ml-1 bg-violet-50 text-violet-700 border-violet-200">Telegram</Badge>
+                      )}
                       {l.handoff_priority === 'high' && (
                         <Badge variant="outline" className="ml-1 bg-red-50 text-red-700 border-red-200">Prioritas</Badge>
                       )}
