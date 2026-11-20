@@ -20,7 +20,7 @@ Sumber: kaffahphysio.id (dibaca 2026-11-20) dan data terapis di aplikasi.
 - Terapi ergonomis: koreksi postur dan keluhan akibat posisi kerja.
 - Home care (fisioterapi ke rumah): untuk pasien sulit mobilisasi, misalnya lansia atau pasca stroke.
 - Recovery treatment: pemulihan otot dan sendi untuk pasien aktif / pasca aktivitas berat.
-- Pediatrik: paket khusus anak.
+- Pasien anak (sampai usia 17 tahun): tarif anak per sesi, lihat bagian Tarif.
 - Alur: asesmen menyeluruh dulu (riwayat keluhan, pemeriksaan fisik, tujuan pemulihan), baru program terapi.
 - Surat rujukan dokter: tidak selalu wajib untuk keluhan umum. Untuk pasca operasi disarankan membawa catatan medis/rekomendasi dokter.
 
@@ -32,8 +32,11 @@ Sumber: kaffahphysio.id (dibaca 2026-11-20) dan data terapis di aplikasi.
 | Paket 1: 3 sesi | Rp530.000 (normal Rp600.000, hemat Rp70.000) | berlaku 1 bulan |
 | Paket 6 sesi | Rp1.000.000 (normal Rp1.200.000, hemat Rp200.000) | berlaku 3 bulan, paling populer |
 | Paket 3: 12 sesi | Rp1.900.000 (normal Rp2.400.000, hemat Rp500.000) | berlaku 6 bulan (terkonfirmasi flyer) |
-| Paket Anak 5 sesi | Rp750.000 (normal Rp1.000.000, hemat Rp250.000) | berlaku 2 bulan |
 
+- Paket Anak: DIHAPUS, AI tidak menyebutnya.
+- Pasien anak (sampai usia 17 tahun): Rp150.000 per sesi. Recovery tetap sama (Rp220.000).
+- Keluhan lebih dari satu: tambah Rp25.000 per sesi (regular menjadi Rp225.000).
+- Paket dengan dua keluhan: tambah Rp25.000 x jumlah sesi di paket tersebut.
 - Cicilan: tidak ada.
 - Promo: akan disampaikan pemilik (INGATKAN setelah knowledge lain beres). Sebelum itu AI tidak menyebut promo apa pun.
 - Tarif home care: TIDAK dijawab AI. Tergantung jarak; klinik tidak melayani jarak jauh. Semua pertanyaan home care diserahkan ke admin.
@@ -60,5 +63,13 @@ Sumber: kaffahphysio.id (dibaca 2026-11-20) dan data terapis di aplikasi.
 - Sapaan: pasien baru (nomor belum ada di database pasien) dipanggil "Kak". Pasien lama (nomor cocok dengan data pasien) dipanggil dengan nickname dari data pasien.
 - Home care (jadwal, tarif, area, cara pesan): AI tidak menjawab isi. AI hanya bilang admin akan membalas, lalu chat ditandai untuk admin.
 
-## Cara booking
-- Menunggu penjelasan dari pemilik (akan disampaikan terpisah).
+## Cara booking (AI langsung membuat booking di aplikasi)
+Deteksi dari nomor WhatsApp pengirim:
+1. Nomor tercatat di database untuk 1 pasien: utamakan terapis yang paling sering menangani pasien itu, lalu langsung buatkan booking di sistem aplikasi.
+2. Nomor tercatat untuk beberapa nama pasien: tanya dulu siapa yang akan diterapi, lalu lanjut seperti poin 1.
+3. Nomor baru / pasien baru:
+   - Sesuaikan dengan jam yang diinginkan pasien, atau terapis tertentu bila diminta.
+   - Tanya nama lengkap (disimpan dengan sapaan "Ka" di depan nama), nomor WA pasien, dan keluhannya.
+   - Langsung jadwalkan.
+- Jadwal penuh: tawarkan jam lain atau hari lain yang bisa dipilih pasien, lalu langsung jadwalkan.
+- Home care: tidak diproses AI, diserahkan ke admin.
