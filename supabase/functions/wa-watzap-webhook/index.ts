@@ -14,6 +14,30 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { handleMessage, handleStatus } from "../_shared/inbox.ts";
 
+declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
+
+// Beri tahu asisten AI ada pesan pasien baru. Aman bila AI mati: fungsi tujuan langsung
+// berhenti. Kegagalan di sini tidak boleh mengganggu penerimaan webhook.
+async function notifyAi(admin: any, waMessageId: string) {
+  try {
+    const { data: m } = await admin.from("wa_inbox_messages")
+      .select("id, conversation_id, direction").eq("wa_message_id", waMessageId).maybeSingle();
+    if (!m || m.direction !== "in") return;
+    const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/wa-ai-reply`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      },
+      body: JSON.stringify({ conversation_id: m.conversation_id, message_id: m.id }),
+      signal: AbortSignal.timeout(5000),
+    });
+    await res.text();
+  } catch (e) {
+    console.error("[wa-watzap-webhook] notifyAi gagal", e);
+  }
+}
+
 const MAX_BODY = 64 * 1024; // 64 KB
 const KEEP_DAYS = 7;
 
@@ -54,6 +78,11 @@ Deno.serve(async (req) => {
         : undefined;
       for (const msg of v.messages || []) {
         await handleMessage(admin, cfg.clinic_id, v.contacts || [], msg, media);
+        if (msg?.id) {
+          const p = notifyAi(admin, String(msg.id));
+          if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(p);
+          else await p;
+        }
       }
       for (const st of v.statuses || []) {
         await handleStatus(admin, st);
