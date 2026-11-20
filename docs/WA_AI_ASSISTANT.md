@@ -15,6 +15,9 @@ Penyapu `pg_cron` ("wa-ai-sweep", tiap menit) memproses antrean yang jatuh tempo
 pesan masih yang terbaru, admin belum membalas (di aplikasi DAN lewat Watzap `/conversations`), chat tidak dijeda/diserahkan.
 Bila pengecekan ke Watzap gagal, AI TIDAK mengirim (gagal dengan aman) dan mencatat alasannya.
 `mode = simulate` hanya mencatat ke `wa_ai_logs`; `mode = live` mengirim dan membuat booking.
+`mode = review`: untuk SETIAP pesan pasien (tanpa penyaring jam/nomor uji/balasan admin/jeda) AI menyusun draf lalu mengirim
+pesan pasien + draf ke Telegram owner (secret TELEGRAM_BOT_TOKEN dan TELEGRAM_CHAT_ID). Tidak ada pesan ke pasien, tidak ada booking.
+Butuh migrasi `20261120130000_wa_ai_review_mode.sql` (menambah nilai 'review' pada aturan mode).
 Kasus berisiko / home care / reward / komplain / lampiran: `ai_handoff = true`, AI diam sampai admin membersihkannya.
 
 ## Urutan penerapan yang aman
