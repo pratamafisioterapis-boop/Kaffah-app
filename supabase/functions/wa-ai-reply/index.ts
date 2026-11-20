@@ -509,27 +509,60 @@ async function lastMessageFromClinic(admin: Admin, clinicId: string, waId: strin
 
   const digits = normalizePhone(waId);
   const tail = digits.slice(-9);
-  const list = await call({ action: "list", search: digits, per_page: 10, page: 1 });
-  const found = (list?.items || []).find((c: any) =>
-    String(c.phone || c.wa_id || "").replace(/\D/g, "").endsWith(tail)
-  );
-  if (!found?.conversation_id) throw new Error("percakapan tidak ditemukan di Watzap");
+
+  // Nama kolom hasil Watzap tidak terdokumentasi: ambil larik pertama apa pun namanya.
+  const itemsOf = (d: any): any[] => {
+    if (Array.isArray(d)) return d;
+    if (Array.isArray(d?.items)) return d.items;
+    const arr = Object.values(d || {}).find((v) => Array.isArray(v));
+    return (arr as any[]) || [];
+  };
+  // Cocokkan nomor lewat nilai kolom mana pun (bukan hanya "phone").
+  const hasPhone = (c: any) =>
+    Object.values(c || {}).some((v) =>
+      (typeof v === "string" || typeof v === "number") &&
+      String(v).replace(/\D/g, "").endsWith(tail) && String(v).replace(/\D/g, "").length >= 9
+    );
+  const idOf = (c: any) => c?.conversation_id ?? c?.id ?? c?._id;
+
+  // Percobaan 1: dengan filter pencarian. Percobaan 2: tanpa filter, 100 percakapan terbaru
+  // (pasien yang baru menulis pasti ada di sana).
+  let found: any = null;
+  let seen = 0;
+  let keys = "";
+  for (const params of [
+    { action: "list", search: digits, per_page: 20, page: 1 },
+    { action: "list", per_page: 100, page: 1 },
+  ]) {
+    const items = itemsOf(await call(params));
+    seen = Math.max(seen, items.length);
+    if (!keys && items[0]) keys = Object.keys(items[0]).slice(0, 12).join(",");
+    found = items.find(hasPhone);
+    if (found) break;
+  }
+  const convId = idOf(found);
+  if (!convId) {
+    throw new Error(`percakapan tidak ditemukan di Watzap (daftar=${seen}, kolom=${keys || "-"})`);
+  }
 
   // Urutan data tidak dijamin: ambil halaman pertama dan terakhir, lalu cari yang terbaru.
   const perPage = 50;
-  const first = await call({ action: "messages", conversation_id: found.conversation_id, page: 1, per_page: perPage });
-  let items: any[] = first?.items || [];
+  const first = await call({ action: "messages", conversation_id: convId, page: 1, per_page: perPage });
+  let items: any[] = itemsOf(first);
   const total = Number(first?.pagination?.total || items.length);
   if (total > perPage) {
     const lastPage = Math.ceil(total / perPage);
-    const last = await call({ action: "messages", conversation_id: found.conversation_id, page: lastPage, per_page: perPage });
-    items = items.concat(last?.items || []);
+    const last = await call({ action: "messages", conversation_id: convId, page: lastPage, per_page: perPage });
+    items = items.concat(itemsOf(last));
   }
   if (!items.length) throw new Error("riwayat pesan Watzap kosong");
   const newest = items.reduce((a: any, b: any) => {
     const ta = String(a.timestamp || ""), tb = String(b.timestamp || "");
     return tb > ta || (tb === ta && Number(b.message_id) > Number(a.message_id)) ? b : a;
   });
+  if (typeof newest.is_from_me !== "boolean") {
+    throw new Error(`kolom is_from_me tidak ada (kolom=${Object.keys(newest).slice(0, 12).join(",")})`);
+  }
   return newest.is_from_me === true;
 }
 
