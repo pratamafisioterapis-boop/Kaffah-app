@@ -64,7 +64,6 @@ Hanya owner yang dapat mengubah pengaturan; owner dan admin dapat mengelola stat
 (Tampilan inbox percakapan `/owner/wa-inbox` yang disebut di docs/WHATSAPP_CLOUD_API.md tidak ada di repo ini.)
 
 ## Yang belum ada
-- Pengiriman gambar flyer (endpoint `/waba_send_image_url` ada di dokumentasi Watzap; belum dipasang di AI).
 - Uji dengan API Claude dan Watzap sungguhan belum dilakukan dari sesi ini.
 
 ## Memperbarui knowledge AI (tanpa deploy ulang)
@@ -72,3 +71,17 @@ Knowledge dibaca dari kolom `wa_ai_settings.knowledge_override`. Sumbernya `docs
 Setelah mengubah dokumen: jalankan `node tools/sync-ai-knowledge.js`, lalu jalankan isi
 `supabase/.temp-knowledge.sql` di SQL Editor Supabase. Bila kolom kosong, fungsi memakai cadangan singkat
 di `supabase/functions/_shared/wa_ai_knowledge.ts`.
+
+## Koreksi owner, skor harian, flyer, terapis langganan
+- **Koreksi lewat Telegram**: setiap draf di Telegram bisa di-reply owner. Balasan "ok"/"sip"/👍 = draf tepat;
+  teks lain = jawaban yang benar. Bot `telegram-webhook` meneruskan reply & `/skor` ke `wa-ai-reply`
+  (`{telegram_update}` dengan bearer service role). Disimpan di `wa_ai_corrections`; 30 koreksi terbaru ikut
+  ke prompt AI sebagai "KOREKSI DARI OWNER" sehingga langsung berlaku.
+- **Skor harian**: cron `wa-ai-daily-score` (21.40 WITA) memanggil `{daily_report:true}`. Draf mode review
+  dibandingkan dengan balasan admin asli di Watzap, dinilai sesuai/sebagian/tidak (kolom `verdict`,
+  `admin_reply` di `wa_ai_logs`), lalu ringkasan dikirim ke Telegram. `/skor` di Telegram menjalankannya kapan saja.
+- **Flyer**: alat `send_brochure` (paket_reguler, recovery) mengirim gambar dari `https://kaffahphysio.id/flyers/`
+  lewat `waba_send_image_url` sebelum balasan teks (mode live). Di mode review hanya ditampilkan rencananya.
+- **Terapis langganan**: `lookup_patient` mengembalikan `therapist_history` (terapis aktif yang pernah menangani,
+  urut terbanyak lalu terbaru). AI mengecek jadwal terapis urutan pertama, lalu berikutnya; terapis lain hanya
+  ditawarkan dengan persetujuan pasien.
