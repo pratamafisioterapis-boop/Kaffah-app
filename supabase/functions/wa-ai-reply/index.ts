@@ -488,36 +488,43 @@ async function sendText(admin: Admin, clinicId: string, conv: any, body: string)
  * membalas dari dasbor/ponsel Watzap, yang tidak masuk webhook, jadi harus bertanya ke Watzap.
  * Melempar galat bila tidak bisa dipastikan; pemanggil tidak boleh mengirim dalam kasus itu.
  */
-async function lastMessageFromClinic(admin: Admin, clinicId: string, waId: string): Promise<boolean> {
+async function lastMessageFromClinic(
+  admin: Admin,
+  clinicId: string,
+  waId: string,
+): Promise<{ fromClinic: boolean; variant: string }> {
   const { data: wa } = await admin.from("wa_settings")
     .select("api_key, number_key").eq("clinic_id", clinicId).maybeSingle();
-  if (!wa?.api_key || !wa.number_key) throw new Error("kunci Watzap tidak ada");
+  if (!wa?.api_key) throw new Error("kunci Watzap tidak ada");
 
-  const call = async (body: Record<string, unknown>) => {
-    const res = await fetch("https://api.watzap.id/v1/conversations", {
+  // Parameter yang diterima endpoint /conversations tidak terdokumentasi lengkap: kunci nomor
+  // (WA Web) bisa membuat hasil kosong untuk WABA, jadi disertakan hanya pada satu percobaan.
+  const post = async (path: string, body: Record<string, unknown>, withNumberKey: boolean) => {
+    const res = await fetch(`https://api.watzap.id/v1/${path}`, {
       method: "POST",
       signal: AbortSignal.timeout(15000),
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ api_key: wa.api_key, number_key: wa.number_key, ...body }),
+      body: JSON.stringify({
+        api_key: wa.api_key,
+        ...(withNumberKey && wa.number_key ? { number_key: wa.number_key } : {}),
+        ...body,
+      }),
     });
     const out = await res.json().catch(() => ({}));
     if (!res.ok || (out?.ack && out.ack !== "success" && out.ack !== "successfully")) {
-      throw new Error(`Watzap ${res.status}: ${String(out?.message || "gagal").slice(0, 120)}`);
+      throw new Error(`HTTP ${res.status} ${String(out?.message || "gagal").slice(0, 80)}`);
     }
     return out?.data ?? out;
   };
 
   const digits = normalizePhone(waId);
   const tail = digits.slice(-9);
-
-  // Nama kolom hasil Watzap tidak terdokumentasi: ambil larik pertama apa pun namanya.
   const itemsOf = (d: any): any[] => {
     if (Array.isArray(d)) return d;
     if (Array.isArray(d?.items)) return d.items;
     const arr = Object.values(d || {}).find((v) => Array.isArray(v));
     return (arr as any[]) || [];
   };
-  // Cocokkan nomor lewat nilai kolom mana pun (bukan hanya "phone").
   const hasPhone = (c: any) =>
     Object.values(c || {}).some((v) =>
       (typeof v === "string" || typeof v === "number") &&
@@ -525,36 +532,48 @@ async function lastMessageFromClinic(admin: Admin, clinicId: string, waId: strin
     );
   const idOf = (c: any) => c?.conversation_id ?? c?.id ?? c?._id;
 
-  // Percobaan 1: dengan filter pencarian. Percobaan 2: tanpa filter, 100 percakapan terbaru
-  // (pasien yang baru menulis pasti ada di sana).
+  // ID pengirim WABA (bila ada) dari info akun.
+  let senderIds: string[] = [];
+  try {
+    const info = await post("checking_key", {}, false);
+    senderIds = [...new Set(JSON.stringify(info).match(/[0-9a-f]{24}/g) || [])].slice(0, 3);
+  } catch { /* abaikan: percobaan tanpa sender_id tetap jalan */ }
+
+  type Attempt = { label: string; nk: boolean; extra: Record<string, unknown> };
+  const attempts: Attempt[] = [
+    { label: "waba", nk: false, extra: { channel: "waba" } },
+    { label: "polos", nk: false, extra: {} },
+    ...senderIds.map((id, i) => ({ label: `pengirim${i + 1}`, nk: false, extra: { sender_id: id, channel: "waba" } })),
+    { label: "kunci-nomor", nk: true, extra: {} },
+  ];
+
+  let win: Attempt | null = null;
   let found: any = null;
-  let seen = 0;
-  let keys = "";
-  for (const params of [
-    { action: "list", search: digits, per_page: 20, page: 1 },
-    { action: "list", per_page: 100, page: 1 },
-  ]) {
-    const items = itemsOf(await call(params));
-    seen = Math.max(seen, items.length);
-    if (!keys && items[0]) keys = Object.keys(items[0]).slice(0, 12).join(",");
-    found = items.find(hasPhone);
-    if (found) break;
+  const diag: string[] = [];
+  for (const at of attempts) {
+    try {
+      const d = await post("conversations", { action: "list", per_page: 100, page: 1, ...at.extra }, at.nk);
+      const items = itemsOf(d);
+      diag.push(`${at.label}=${items.length}[${Object.keys(d || {}).slice(0, 4).join("/")}]`);
+      const hit = items.find(hasPhone);
+      if (hit) { win = at; found = hit; break; }
+    } catch (e) {
+      diag.push(`${at.label}=ERR ${String((e as Error).message).slice(0, 60)}`);
+    }
   }
   const convId = idOf(found);
-  if (!convId) {
-    throw new Error(`percakapan tidak ditemukan di Watzap (daftar=${seen}, kolom=${keys || "-"})`);
+  if (!win || !convId) {
+    throw new Error(`percakapan tidak ditemukan di Watzap: ${diag.join("; ")}`.slice(0, 400));
   }
 
   // Urutan data tidak dijamin: ambil halaman pertama dan terakhir, lalu cari yang terbaru.
   const perPage = 50;
-  const first = await call({ action: "messages", conversation_id: convId, page: 1, per_page: perPage });
+  const msgs = (page: number) =>
+    post("conversations", { action: "messages", conversation_id: convId, page, per_page: perPage, ...win!.extra }, win!.nk);
+  const first = await msgs(1);
   let items: any[] = itemsOf(first);
   const total = Number(first?.pagination?.total || items.length);
-  if (total > perPage) {
-    const lastPage = Math.ceil(total / perPage);
-    const last = await call({ action: "messages", conversation_id: convId, page: lastPage, per_page: perPage });
-    items = items.concat(itemsOf(last));
-  }
+  if (total > perPage) items = items.concat(itemsOf(await msgs(Math.ceil(total / perPage))));
   if (!items.length) throw new Error("riwayat pesan Watzap kosong");
   const newest = items.reduce((a: any, b: any) => {
     const ta = String(a.timestamp || ""), tb = String(b.timestamp || "");
@@ -563,7 +582,7 @@ async function lastMessageFromClinic(admin: Admin, clinicId: string, waId: strin
   if (typeof newest.is_from_me !== "boolean") {
     throw new Error(`kolom is_from_me tidak ada (kolom=${Object.keys(newest).slice(0, 12).join(",")})`);
   }
-  return newest.is_from_me === true;
+  return { fromClinic: newest.is_from_me === true, variant: win.label };
 }
 
 // ------------------------------------------------------------------ alur utama
@@ -687,10 +706,11 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
     if (fresh?.ai_paused || fresh?.ai_handoff) return await skip("status_chat_berubah");
 
     // Admin sering membalas lewat dasbor/ponsel Watzap: tanyakan langsung ke Watzap.
+    let watzapVariant = "";
     try {
-      if (await lastMessageFromClinic(admin, clinicId, conv.wa_id)) {
-        return await skip("admin_sudah_membalas_via_watzap");
-      }
+      const chk = await lastMessageFromClinic(admin, clinicId, conv.wa_id);
+      watzapVariant = chk.variant;
+      if (chk.fromClinic) return await skip("admin_sudah_membalas_via_watzap", `cek=${chk.variant}`);
     } catch (e) {
       // Tidak bisa memastikan: jangan mengirim apa pun (gagal dengan aman).
       return await skip("tidak_bisa_cek_balasan_admin", String((e as Error).message || e).slice(0, 300));
@@ -738,7 +758,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
 
     const common = {
       reply_text: reply,
-      planned_actions: ctx.actions,
+      planned_actions: [{ type: "cek_balasan_admin", variant: watzapVariant }, ...ctx.actions],
       handoff_reason: ctx.handoff?.reason ?? null,
       handoff_priority: ctx.handoff?.priority ?? null,
       appointment_id: ctx.bookingIds[0] ?? null,
