@@ -248,7 +248,7 @@ const WaitingListPage = () => {
             <div className="flex items-center gap-2 font-semibold text-slate-900">
               <User className="w-4 h-4 text-slate-400 shrink-0" />
               <span className="truncate">{item.patient_name}</span>
-              {item.source === 'ai_whatsapp' && <Badge variant="secondary" className="gap-1"><Sparkles className="w-3 h-3" />AI</Badge>}
+              {(item.source === 'ai_whatsapp' || item.source === 'ai_whatsapp_review') &&<Badge variant="secondary" className="gap-1"><Sparkles className="w-3 h-3" />AI</Badge>}
             </div>
             <div className="text-xs text-slate-500 mt-0.5">{item.phone} · masuk {new Date(item.created_at).toLocaleString('id-ID', { timeZone: 'Asia/Makassar', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
           </div>
