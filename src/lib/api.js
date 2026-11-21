@@ -3022,12 +3022,21 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate, include
     const userId = sessionData?.session?.user?.id;
     const userRow = { clinic_id: await getCachedClinicId(userId) };
 
+    // PRAXIS: pendapatan dihitung berbasis KAS (bukan akrual per sesi).
+    // - Beli paket (mis. Rp1,5jt tgl 25): seluruh nominal jadi pendapatan di tanggal bayar;
+    //   sesi ke-2 dst sampai selesai = 0 (di rekap tercatat amount 0 / metode 'Package').
+    // - Bayar di muka lewat Package Recap (Tambah Paket): masuk saat dibayar (package_payments),
+    //   walau pasien belum terapi.
+    const isPraxis = userRow?.clinic_id === PRAXIS_CLINIC_ID;
+    const dateCol = isPraxis ? 'revenue_date' : 'recap_date';
+
     const buildQuery = () => {
       let query = supabase
         .from('daily_recaps')
         .select(`
         id,
         recap_date,
+        revenue_date,
         amount,
         amount_package,
         tips_amount,
@@ -3054,11 +3063,11 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate, include
         .order('recap_date', { ascending: false });
 
       if (startDate) {
-        query = query.gte('recap_date', startDate);
+        query = query.gte(dateCol, startDate);
       }
 
       if (endDate) {
-        query = query.lte('recap_date', endDate);
+        query = query.lte(dateCol, endDate);
       }
 
       return query;
@@ -3110,7 +3119,7 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate, include
     const toIncomeRow = item => ({
       id: item.id,
 
-      date: item.recap_date,
+      date: isPraxis ? (item.revenue_date || item.recap_date) : item.recap_date,
 
       patient_name:
         item.actual_patient?.full_name ||
@@ -3139,11 +3148,12 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate, include
         item.payment_method ||
         '-',
 
-      amount:
-        item.amount_package &&
-        Number(item.amount_package) > 0
-          ? Number(item.amount_package)
-          : Number(item.amount || 0),
+      amount: isPraxis
+        ? Number(item.amount || 0)
+        : (item.amount_package &&
+          Number(item.amount_package) > 0
+            ? Number(item.amount_package)
+            : Number(item.amount || 0)),
 
       // Nominal riil yang benar-benar diterima pada tanggal recap ini
       // (0 untuk sesi lanjutan paket yang tidak ada pembayaran baru).
@@ -3187,10 +3197,11 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate, include
       }];
     });
 
-    // Opt-in (laporan akuntansi): pembayaran paket di awal sebagai uang masuk pada tanggal bayar.
-    // amount = 0 (akrual tetap per sesi lewat nominal paket, jadi tidak dihitung dua kali);
-    // cash_amount = nominal yang diterima.
-    if (includePackagePayments) {
+    // Pembayaran paket di awal sebagai uang masuk pada tanggal bayar.
+    // Klinik lain (opt-in, laporan akuntansi): amount = 0 karena akrual tetap per sesi lewat
+    // nominal paket, jadi tidak dihitung dua kali; cash_amount = nominal yang diterima.
+    // Praxis (berbasis kas): selalu disertakan dan amount = nominal yang dibayar.
+    if (includePackagePayments || isPraxis) {
       const { data: pays } = await getPackagePaymentsInRange({ startDate, endDate });
       (pays || []).forEach(p => {
         formatted.push({
@@ -3201,7 +3212,7 @@ export const getPatientIncomeFromPackages = async ({ startDate, endDate, include
           package_name: `Bayar di awal: ${p.package_name}`,
           session_number: null,
           payment_method: p.payment_method || '-',
-          amount: 0,
+          amount: isPraxis ? (Number(p.amount) || 0) : 0,
           cash_amount: Number(p.amount) || 0,
           is_package_payment: true
         });

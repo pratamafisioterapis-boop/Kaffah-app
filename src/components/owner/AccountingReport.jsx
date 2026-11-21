@@ -145,7 +145,8 @@ const handleExportExcel = (mode = 'accrual') => {
     // diubah.
     // Pembayaran paket di awal hanya masuk mode kas (di mode akrual nominalnya sudah
     // tersebar per sesi lewat nominal paket).
-    ...data.patientIncome.filter(item => isCashBasis || !item.is_package_payment).map(item => {
+    // (Praxis berbasis kas: amount-nya sudah nominal bayar, jadi ikut di kedua mode.)
+    ...data.patientIncome.filter(item => isCashBasis || !item.is_package_payment || Number(item.amount) > 0).map(item => {
       const packageLabel = item.package_name || '-';
       const paket = item.session_number && item.session_number >= 2
         ? `Sesi ke-${item.session_number} (${packageLabel})`
