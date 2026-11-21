@@ -24,6 +24,7 @@ import {
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import PageHero from '@/components/shared/PageHero';
 import { confirmAction } from '@/lib/confirmAction';
+import { PRAXIS_CLINIC_ID } from '@/lib/clinicIds';
 
 // Setiap tab bisa mewakili lebih dari satu follow_up_type — mis. "Pengingat
 // Terapi" juga harus menghitung reminder homecare (therapy_reminder_homecare),
@@ -46,7 +47,11 @@ const FollowUpManagementPage = () => {
   // Klinik yang belum setup Watzap (mis. Praxis) mengirim manual lewat wa.me.
   const [watzapReady, setWatzapReady] = useState(false);
 
-  const { clinicName } = useAuth();
+  const { clinicName, userDetails } = useAuth();
+  // Praxis tidak memakai tab Reward Referral.
+  const tabs = userDetails?.clinic_id === PRAXIS_CLINIC_ID
+    ? TAB_CONFIG.filter(tab => tab.value !== 'referral_reward')
+    : TAB_CONFIG;
   const { toast } = useToast();
 
   // ===============================
@@ -175,7 +180,7 @@ const FollowUpManagementPage = () => {
     timeZone: 'Asia/Makassar'
   });
 
-  const activeTabConfig = TAB_CONFIG.find(tab => tab.value === activeTab) || TAB_CONFIG[0];
+  const activeTabConfig = tabs.find(tab => tab.value === activeTab) || tabs[0];
 
   const statusRank = { pending: 0, failed: 1, sent: 2, completed: 2, cancelled: 3 };
 const byStatus = (a, b) => (statusRank[a.status] ?? 9) - (statusRank[b.status] ?? 9);
@@ -251,7 +256,7 @@ const getCount = (types) => {
       >
 
         <TabsList className="w-full h-auto flex-nowrap justify-start gap-1.5 overflow-x-auto scrollbar-hide snap-x snap-mandatory bg-slate-50 border border-slate-200 rounded-app p-1.5 -mx-1 px-1 sm:mx-0 sm:px-1.5">
-          {TAB_CONFIG.map(tab => {
+          {tabs.map(tab => {
             const Icon = tab.icon;
             const count = getCount(tab.types);
             return (

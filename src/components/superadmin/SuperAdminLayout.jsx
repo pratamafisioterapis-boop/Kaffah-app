@@ -7,6 +7,7 @@ import {
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
+import SuperAdminAccountSwitcher from '@/components/superadmin/SuperAdminAccountSwitcher';
 
 // Menu super admin. `tab` = tampil di bar bawah (mobile); sisanya masuk "Lainnya".
 const NAV = [
@@ -111,6 +112,7 @@ const SuperAdminLayout = ({ children, userName = 'Super Admin' }) => {
             <span className="max-[699px]:hidden">Super Admin / </span>
             <span className="font-semibold text-app-ink">{current.label}</span>
           </p>
+          <SuperAdminAccountSwitcher />
         </header>
 
         <main className="flex-1 min-w-0 px-4 py-5 pb-28 min-[700px]:px-6 min-[700px]:py-6 min-[700px]:pb-10 min-[1100px]:px-8 min-[1100px]:py-7">
