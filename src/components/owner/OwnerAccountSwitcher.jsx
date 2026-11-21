@@ -37,17 +37,17 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
   // owner (not when a super admin is viewing the owner account itself).
   const isOwnerHop = isImpersonating && impersonationOrigin?.origin_role === 'owner';
 
+  // Daftar dimuat sejak komponen tampil (bukan saat dropdown dibuka) dan
+  // daftar tersimpan langsung dipakai, jadi dropdown terbuka tanpa menunggu.
   useEffect(() => {
-    if (!open || !clinicId) return;
+    if (!clinicId) return;
     let active = true;
     // While impersonating, RLS may hide the clinic's users, so use the list
     // the owner's own session cached.
-    const cached = isOwnerHop ? readCache(clinicId) : null;
-    if (cached) {
-      setAccounts(cached.filter((a) => a.id !== user?.id));
-      return;
-    }
-    setLoading(true);
+    const cached = readCache(clinicId);
+    if (cached) setAccounts(cached.filter((a) => a.id !== user?.id));
+    if (isOwnerHop && cached) return;
+    if (!cached) setLoading(true);
     // Therapist name comes from the physiotherapists table (the same
     // source as the Physiotherapist Management cards); the email stays the real login email from users.
     // users.* can be stale after a profile edit.
@@ -85,7 +85,14 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
       setLoading(false);
     });
     return () => { active = false; };
-  }, [open, clinicId, user?.id, isOwnerHop]);
+  }, [clinicId, user?.id, isOwnerHop]);
+
+  // Siapkan kode dashboard tujuan begitu dropdown dibuka.
+  useEffect(() => {
+    if (!open) return;
+    import('@/pages/AdminDashboard').catch(() => {});
+    import('@/pages/TherapistDashboard').catch(() => {});
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
