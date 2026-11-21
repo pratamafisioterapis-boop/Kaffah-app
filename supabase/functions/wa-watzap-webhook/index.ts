@@ -58,6 +58,16 @@ async function recordReminderReply(
   msg: any,
 ) {
   try {
+    // Balasan teks yang menandakan akan datang ("baik", "insyaallah iya", ...) dicatat sebagai hadir.
+    if (msg?.type === "text") {
+      const { error: textErr } = await admin.rpc("record_reminder_text_reply", {
+        p_clinic_id: clinicId,
+        p_phone: msg.from ?? null,
+        p_text: msg.text?.body ?? "",
+      });
+      if (textErr) console.error("[wa-watzap-webhook] catat balasan teks gagal", textErr.message);
+      return;
+    }
     if (msg?.type !== "button") return;
     const label = String(msg.button?.payload || msg.button?.text || "").trim().toLowerCase();
     const reply = REPLY_BUTTONS[label];
@@ -71,37 +81,6 @@ async function recordReminderReply(
     if (error) console.error("[wa-watzap-webhook] catat balasan tombol gagal", error.message);
   } catch (e) {
     console.error("[wa-watzap-webhook] catat balasan tombol error", e);
-  }
-}
-
-// Balasan teks singkat yang menandakan pasien akan hadir ("insyaallah", "iya",
-// "baik", "siap", "oke", ...). Ditolak bila ada kata penolakan / ubah jadwal,
-// atau pesan terlalu panjang (kemungkinan pertanyaan lain).
-const NEGATIVE = /\b(tidak|nggak|ngga|gak|ga|enggak|engga|belum|batal|cancel|reschedule|ubah|ganti|mundur|maju|geser|izin|nanti|telat|terlambat|berhalangan|sakit|ada acara)\b/;
-const AFFIRMATIVE = /\b(insya\s?allah|insyaallah|insha\s?allah|inshaallah|in\s?syaa?\s?allah|iya|iyaa+|iy|ya|yaa|yup|baik|baiklah|oke|ok|okey|okay|siap|sip|sippp?|noted|note|hadir|datang|terima\s?kasih|makasih|terimakasih|thanks|thank\s?you|boleh|sudah|udah|ditunggu|aamiin|amin)\b/;
-
-function isAttendanceText(msg: any): boolean {
-  if (msg?.type !== "text") return false;
-  const t = String(msg.text?.body || "").toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
-  if (!t || t.length > 60) return false;
-  if (NEGATIVE.test(t)) return false;
-  return AFFIRMATIVE.test(t);
-}
-
-async function recordTextAttendance(
-  admin: ReturnType<typeof createClient>,
-  clinicId: string,
-  msg: any,
-) {
-  try {
-    if (!isAttendanceText(msg)) return;
-    const { error } = await admin.rpc("record_reminder_text_reply", {
-      p_clinic_id: clinicId,
-      p_phone: msg.from ?? null,
-    });
-    if (error) console.error("[wa-watzap-webhook] catat balasan teks gagal", error.message);
-  } catch (e) {
-    console.error("[wa-watzap-webhook] catat balasan teks error", e);
   }
 }
 
@@ -143,7 +122,6 @@ Deno.serve(async (req) => {
       for (const msg of v.messages || []) {
         await handleMessage(admin, cfg.clinic_id, v.contacts || [], msg, media);
         await recordReminderReply(admin, cfg.clinic_id, msg);
-        await recordTextAttendance(admin, cfg.clinic_id, msg);
         if (msg?.id) {
           const p = notifyAi(admin, String(msg.id));
           if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(p);
