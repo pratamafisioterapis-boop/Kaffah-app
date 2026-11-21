@@ -21,8 +21,8 @@ const SuperAdminAccountSwitcher = () => {
   const [switchingId, setSwitchingId] = useState(null);
   const [query, setQuery] = useState('');
 
+  // Muat daftar owner sejak topbar tampil, bukan saat dropdown dibuka.
   useEffect(() => {
-    if (!open) return undefined;
     let active = true;
     setLoading(true);
     Promise.all([
@@ -40,7 +40,7 @@ const SuperAdminAccountSwitcher = () => {
       setLoading(false);
     });
     return () => { active = false; };
-  }, [open]);
+  }, []);
 
   useEffect(() => {
     if (!open) return undefined;
