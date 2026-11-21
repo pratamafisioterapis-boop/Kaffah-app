@@ -2184,7 +2184,7 @@ export const getPackagePaymentsInRange = async ({ startDate, endDate, paymentMet
   return safeQuery(async () => {
     let query = supabase
       .from('package_payments')
-      .select('id, paid_at, amount, payment_method, package_name, receipt_number, patient:patients!patient_id(full_name)')
+      .select('id, paid_at, amount, payment_method, bank_account_id, package_name, receipt_number, patient:patients!patient_id(full_name)')
       .eq('status', 'paid')
       .order('paid_at', { ascending: false });
     if (startDate) query = query.gte('paid_at', `${startDate}T00:00:00+08:00`);
@@ -2549,10 +2549,31 @@ export const getAdminAccountingReport = async ({ startDate, endDate }) => {
     // dan pembayaran paket di awal (package_payments), selain pemasukan manual admin.
     // Disimpan terpisah (recap_income_breakdown) supaya daftar Pemasukan (edit/hapus) tidak berubah.
     let recapIncome = [];
+
+    // Metode pembayaran & bank untuk PDF: label metode (bisa tersimpan sebagai id/label),
+    // bank dari baris itu sendiri, atau dari bank yang tertaut ke metode pembayarannya.
+    const [{ data: pmOptions }, { data: bankRows }] = await Promise.all([
+      supabase.from('operational_options').select('id, label, bank_account_id')
+        .eq('clinic_id', userRow?.clinic_id).eq('category', 'payment_method'),
+      supabase.from('bank_accounts').select('id, bank_name, account_number')
+        .eq('clinic_id', userRow?.clinic_id),
+    ]);
+    const pmByKey = {};
+    (pmOptions || []).forEach(o => { pmByKey[String(o.id)] = o; pmByKey[String(o.label || '').toLowerCase()] = o; });
+    const bankById = Object.fromEntries((bankRows || []).map(b => [String(b.id), b]));
+    const payInfo = (method, bankId) => {
+      const opt = method ? pmByKey[String(method)] || pmByKey[String(method).toLowerCase()] : null;
+      const bank = bankById[String(bankId || opt?.bank_account_id || '')];
+      return {
+        payment_label: opt?.label || method || '-',
+        bank_label: bank ? `${bank.bank_name}${bank.account_number ? ` (${bank.account_number})` : ''}` : '-'
+      };
+    };
+
     if (userRow?.clinic_id === PRAXIS_CLINIC_ID) {
       let recapQuery = supabase
         .from('daily_recaps')
-        .select('id, revenue_date, amount, payment_method, full_name, guest_name, package_type, service_type, invoice_items, goods_items, tips_amount')
+        .select('id, revenue_date, amount, payment_method, bank_account_id, full_name, guest_name, package_type, service_type, invoice_items, goods_items, tips_amount')
         .eq('clinic_id', userRow.clinic_id)
         .gt('amount', 0)
         .order('revenue_date', { ascending: true })
@@ -2589,6 +2610,7 @@ export const getAdminAccountingReport = async ({ startDate, endDate }) => {
           patient_name: patientName,
           items,
           description: `${patientName} - ${items.map(i => i.name).join(', ')}`,
+          ...payInfo(r.payment_method, r.bank_account_id),
           amount: Number(r.amount) || 0
         };
       });
@@ -2603,6 +2625,7 @@ export const getAdminAccountingReport = async ({ startDate, endDate }) => {
           patient_name: p.patient?.full_name || 'Tanpa Nama',
           items: [{ name: p.package_name || 'Paket', qty: 1, amount: Number(p.amount) || 0 }],
           description: `${p.patient?.full_name || 'Tanpa Nama'} - ${p.package_name || 'Paket'}`,
+          ...payInfo(p.payment_method, p.bank_account_id),
           amount: Number(p.amount) || 0
         });
       });
@@ -2616,7 +2639,10 @@ export const getAdminAccountingReport = async ({ startDate, endDate }) => {
         total_income: manualIncomeTotal + recapIncomeTotal,
         total_expenses: expenses?.reduce((acc, curr) => acc + Number(curr.amount || 0), 0) || 0,
         expenses_breakdown: expenses || [],
-        income_breakdown: income || [],
+        income_breakdown: (income || []).map(i => ({
+          ...i,
+          ...payInfo(i.payment_method, i.bank_account_id)
+        })),
         recap_income_breakdown: recapIncome
       },
       error: null
