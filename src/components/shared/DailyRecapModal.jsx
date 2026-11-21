@@ -397,6 +397,18 @@ const DailyRecapModal = ({ isOpen, onClose, mode = 'add', initialData = null, on
         setFormData(prev => ({ ...prev, special_type: recapMeta.special_type || '', free_reason: recapMeta.free_reason || '' }));
     }, [recapMeta]);
 
+    // Tanggal bayar (WITA, yyyy-mm-dd). Server mengisi invoice_created_at = now() saat invoice
+    // terbit, jadi sesi yang diinput terlambat tercatat dibayar hari input. Admin bisa
+    // mengoreksinya ke tanggal bayar sebenarnya (set_recap_paid_date).
+    const witaYmdOf = (d) => new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Makassar' });
+    const todayWitaYmd = witaYmdOf(new Date());
+    const [paidOn, setPaidOn] = useState('');
+    useEffect(() => {
+        if (!isOpen) return;
+        setPaidOn(recapMeta?.invoice_created_at ? witaYmdOf(recapMeta.invoice_created_at) : todayWitaYmd);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, recapMeta?.invoice_created_at]);
+
     const initializeForm = () => {
         try {
             setSelectedPackage(null);
@@ -1763,6 +1775,17 @@ setFormData({
                     await supabase.from('daily_recaps').update({ cashier_id: userDetails.id }).eq('id', recapId).is('cashier_id', null);
                 }
             }
+            // Koreksi tanggal bayar bila admin memilih tanggal selain yang tercatat.
+            {
+                const recapIdForPaid = mode === 'add' ? result.data?.recap_id : initialData?.id;
+                const prevPaid = recapMeta?.invoice_created_at ? witaYmdOf(recapMeta.invoice_created_at) : todayWitaYmd;
+                if (recapIdForPaid && paidOn && paidOn !== prevPaid && payload.payment_method !== 'Package' && payload.special_type !== 'free') {
+                    const { error: paidErr } = await supabase.rpc('set_recap_paid_date', { p_recap_id: recapIdForPaid, p_paid_date: paidOn });
+                    if (paidErr) {
+                        toast({ variant: "destructive", title: "Tanggal bayar belum diubah", description: paidErr.message });
+                    }
+                }
+            }
             toast({ title: "Berhasil", description: `Data berhasil ${mode === 'add' ? 'disimpan' : 'diperbarui'}.` });
             if (sfEdit) { loadRecapMeta(); refreshQuote(); loadInstStatus(); }
             if (onSuccess) onSuccess();
@@ -2119,6 +2142,18 @@ setFormData({
                                     onFile: setProofFile,
                                     error: errors.payment_proof
                                 })}
+                                {!payLocked && formData.special_type !== 'free' && (formData.payment_method || useSplitPayment) && (
+                                    <div className="space-y-1">
+                                        <Label className="block">Tanggal Bayar</Label>
+                                        <Input
+                                            type="date"
+                                            value={paidOn}
+                                            max={todayWitaYmd}
+                                            onChange={e => setPaidOn(e.target.value)}
+                                        />
+                                        <p className="text-[11px] text-slate-500">Ubah bila pasien membayar di hari terapi tetapi data baru diinput belakangan.</p>
+                                    </div>
+                                )}
                                 {payLocked && (
                                     <p className="text-xs text-slate-500 -mt-1">
                                         Sesi ini memakai kuota paket (Rp 0) sehingga nominal &amp; metode pembayaran dikunci. Kalau pasien batal memakai paket, ajukan “Lepas dari paket” ke owner lewat Detail recap > Pengajuan Perubahan.
