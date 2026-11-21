@@ -25,6 +25,7 @@ const FollowUpManagementPage = React.lazy(lazyRetry(() => import('@/components/a
 const AdminAccountingDashboard = React.lazy(lazyRetry(() => import('@/components/admin/AdminAccountingDashboard'), 'AdminAccountingDashboard'));
 import AdminDashboardMetrics from '@/components/admin/AdminDashboardMetrics'; 
 import TodaysOverviewWidget from '@/components/admin/TodaysOverviewWidget';
+import ReminderConfirmationWidget from '@/components/shared/ReminderConfirmationWidget';
 import AdminDailyChecklistWidget from '@/components/admin/AdminDailyChecklistWidget';
 import SoapPendingBanner from '@/components/shared/SoapPendingBanner';
 import UnpaidSessionsCard from '@/components/shared/UnpaidSessionsCard';
@@ -335,6 +336,8 @@ await Promise.all([loadSlots(), loadStats()]);
                <h3 className="text-lg font-semibold text-slate-800 tracking-tight">Today's Overview</h3>
                <TodaysOverviewWidget />
              </div>
+
+             <ReminderConfirmationWidget />
 
              <SoapPendingBanner role="admin" />
              <UnpaidSessionsCard />

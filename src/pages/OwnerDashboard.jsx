@@ -32,6 +32,7 @@ const AdminManagementPage = React.lazy(lazyRetry(() => import('@/components/owne
 const OwnerManagementPage = React.lazy(lazyRetry(() => import('@/components/owner/OwnerManagementPage'), 'OwnerManagementPage'));
 import OnboardingChecklist from '@/components/owner/OnboardingChecklist';
 import TargetFillReminder from '@/components/owner/TargetFillReminder';
+import ReminderConfirmationWidget from '@/components/shared/ReminderConfirmationWidget';
 
 
 
@@ -434,6 +435,9 @@ setTherapists(enrichedTherapists);
           <TabsContent value="operational" className="animate-in fade-in-0 duration-150 focus-visible:outline-none focus-visible:ring-0">
             {/* Grid bento: 2 kolom di HP, 4 kolom di tablet, 6 kolom di desktop */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
+              <div className="col-span-2 md:col-span-4 lg:col-span-6">
+                <ReminderConfirmationWidget />
+              </div>
               <OperationalDashboardUI
                 totalSessions={totalSessions}
                 totalPatients={totalPatients}
