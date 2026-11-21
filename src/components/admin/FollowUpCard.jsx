@@ -203,13 +203,22 @@ const patientName =
   const locksOnSend = item.follow_up_type === 'follow_up';
   const isPending = item.status === 'pending';
 
-  // Balasan tombol pasien pada reminder terapi (Hadir / Reschedule / Cancel).
+  // Balasan pasien pada reminder terapi: tombol Hadir / Reschedule / Cancel, atau balasan teks
+  // yang menandakan akan datang ("baik", "insyaallah iya", ...) yang juga dicatat sebagai Hadir.
   const REPLY_CONFIG = {
-    hadir: { label: 'Pasien: Hadir', badge: 'bg-green-100 text-green-700 border-green-200' },
-    reschedule: { label: 'Pasien minta ubah jadwal', badge: 'bg-amber-100 text-amber-800 border-amber-200' },
-    cancel: { label: 'Pasien minta batal', badge: 'bg-red-100 text-red-700 border-red-200' }
+    hadir: { label: 'Hadir', badge: 'bg-green-100 text-green-700 border-green-200' },
+    reschedule: { label: 'Minta ubah jadwal', badge: 'bg-amber-100 text-amber-800 border-amber-200' },
+    cancel: { label: 'Minta batal', badge: 'bg-red-100 text-red-700 border-red-200' },
+    pending: { label: 'Belum konfirmasi', badge: 'bg-slate-100 text-slate-600 border-slate-200' }
   };
-  const replyConfig = item.patient_reply ? REPLY_CONFIG[item.patient_reply] : null;
+  // Reminder yang sudah terkirim tetapi belum dibalas pasien.
+  const awaitingReply =
+    isTemplateReminder && !item.patient_reply && ['sent', 'completed'].includes(item.status);
+  const replyConfig = item.patient_reply
+    ? REPLY_CONFIG[item.patient_reply]
+    : awaitingReply
+      ? REPLY_CONFIG.pending
+      : null;
   const isLocked = locksOnSend && !isPending;
 
   const handleSendWhatsApp = () => {
