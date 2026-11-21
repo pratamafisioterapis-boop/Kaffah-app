@@ -115,3 +115,18 @@ tidak ada balasan dan tidak ada draf ke Telegram (mis. nomor admin sendiri: 6282
 ```sql
 update wa_ai_settings set ignored_phones = array['6282159018652','6287872290608'] where clinic_id = '<clinic_id>';
 ```
+
+## Uji regresi (soal tetap)
+Tabel `wa_ai_eval_cases` berisi soal tetap: transkrip + jawaban/tindakan yang benar (`expected`, jenis `reply`/`silent`/`handoff`/`booking`). Soal berasal dari
+daftar tulisan tangan, dari log yang dinilai (sesuai/tidak/koreksi) dan bertambah otomatis dari setiap koreksi owner di Telegram serta draf yang dinilai "tidak".
+Transkrip boleh memakai `{{D+1}}`, `{{TGL+1}}`, `{{HARI+1}}` (relatif terhadap hari ini WITA).
+- Jalan uji dimulai dengan `/uji` di Telegram, atau OTOMATIS saat `wa_ai_settings.knowledge_override` berubah (jeda minimal 60 menit antar jalan otomatis).
+  SQL manual: `select wa_ai_eval_start('<clinic_id>', 'manual')`.
+- Penyapu (cron `wa-ai-sweep`, tiap menit) mengerjakan 6 soal per menit di mode simulasi (tanpa menulis apa pun ke pasien/booking), menilai hasilnya
+  (handoff/silent dinilai pasti, reply/booking dinilai Claude), lalu mengirim laporan ke Telegram: skor, perbandingan dengan jalan sebelumnya, soal yang MEMBURUK/MEMBAIK dan yang masih salah.
+- Hasil: `wa_ai_eval_runs` dan `wa_ai_eval_results` (draf, tindakan, verdict). Selisih kecil bisa karena variasi jawaban AI.
+
+## Waiting list: peringatan slot kosong
+Tiap menit penyapu mencocokkan waiting list berstatus `waiting` dengan slot kosong (tanggal, rentang jam/label, jenis kelamin terapis). Slot baru yang cocok dikirim
+SEKALI ke Telegram owner beserta draf WA siap salin (tidak dikirim ke pasien); dicatat di `waiting_list_alerts` agar tidak berulang. Hanya aktif pukul 07.00-22.00 WITA.
+Admin lalu mengabari pasien dari halaman Waiting List ("Kabari via WA").
