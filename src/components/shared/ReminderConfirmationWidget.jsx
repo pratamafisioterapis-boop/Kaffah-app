@@ -4,6 +4,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { CheckCircle2, CalendarClock, XCircle, HelpCircle, RefreshCcw } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { getCachedClinicId } from '@/lib/api';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { PRAXIS_CLINIC_ID } from '@/lib/clinicIds';
 
 const todayWITA = () =>
   new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(new Date());
@@ -31,7 +33,7 @@ const STATS = [
  * (Hadir / Reschedule / Cancel / Tanpa konfirmasi). Dipakai di dashboard
  * admin dan owner. "Tanpa konfirmasi" bisa diklik untuk melihat daftar pasien.
  */
-const ReminderConfirmationWidget = () => {
+const ReminderConfirmationWidgetInner = () => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -174,6 +176,13 @@ const ReminderConfirmationWidget = () => {
       </Dialog>
     </div>
   );
+};
+
+// Klinik Praxis tidak memakai widget ini.
+const ReminderConfirmationWidget = () => {
+  const { userDetails } = useAuth();
+  if (userDetails?.clinic_id === PRAXIS_CLINIC_ID) return null;
+  return <ReminderConfirmationWidgetInner />;
 };
 
 export default ReminderConfirmationWidget;
