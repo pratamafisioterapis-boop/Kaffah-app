@@ -5,9 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Loader2, Plus, Trash2, Pencil, UserPlus, SlidersHorizontal, Stethoscope, Unlink, Search, ChevronDown, Inbox, LogIn } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { Loader2, Plus, Trash2, Pencil, UserPlus, SlidersHorizontal, Stethoscope, Unlink, Search, ChevronDown, Inbox } from 'lucide-react';
 import { ROLES, ROLE_LABELS, getFeatureCatalogForRole, SETUP_SUB_FEATURES } from '@/lib/featureCatalog';
 import { linkOwnerAsTherapist, setOwnerTherapistActive, reassignTherapistToOwner, separateTherapistFromOwner } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -77,23 +75,6 @@ const seedDiagnosaFromReferenceClinic = async (targetClinicId) => {
 
 const SuperAdminClinics = () => {
   const { toast } = useToast();
-  const { impersonateUser } = useAuth();
-  const navigate = useNavigate();
-  const [switchingOwnerId, setSwitchingOwnerId] = useState(null);
-
-  // Super admin hops into an owner's account; from there the owner's own
-  // account switcher still works (admin / terapis).
-  const handleSwitchToOwner = async (owner) => {
-    setSwitchingOwnerId(owner.id);
-    const { error } = await impersonateUser(owner.id);
-    setSwitchingOwnerId(null);
-    if (error) {
-      toast({ variant: 'destructive', title: 'Gagal pindah akun', description: error.message });
-      return;
-    }
-    toast({ title: `Beralih ke ${owner.full_name || owner.email}` });
-    navigate('/owner', { replace: true });
-  };
   const [clinics, setClinics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -689,15 +670,6 @@ const SuperAdminClinics = () => {
                                 title="Edit owner ini"
                               >
                                 <Pencil className="w-3 h-3" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleSwitchToOwner(o)}
-                                disabled={switchingOwnerId !== null}
-                                className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-full border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:opacity-60"
-                                title="Pindah ke akun owner ini (lihat tampilan sebagai owner)"
-                              >
-                                {switchingOwnerId === o.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <LogIn className="w-3 h-3" />} Masuk sebagai Owner
                               </button>
                               {!physio ? (
                                 <button
