@@ -95,4 +95,4 @@ di `supabase/functions/_shared/wa_ai_knowledge.ts`.
   `wa_ai_settings.min_delay_seconds` (bawaan 120 detik) dan berlaku di mode review & live. Di mode review hanya pesan
   pasien terbaru yang dibuatkan draf setelah jeda (pesan beruntun digabung).
 - Perintah: `/status`, `/jeda`, `/aturan` (daftar), `/hapus N`, `/skor`.
-- Pesan tombol template (`msg_type = button`) diperlakukan seperti teks: "Hadir" tidak dibalas, "Reschedule"/"Cancel" ditangani AI.
+- Pesan tombol template (`msg_type = button`) diperlakukan seperti teks: "Hadir" dibalas "Terima kasih atas konfirmasinya ya {sapaan} 🙏", "Reschedule"/"Cancel" ditangani AI. Template pengingat hanya ada di Watzap, jadi untuk tombol dan balasan teks singkat (≤40 huruf) AI ikut membaca template 36 jam terakhir dari Watzap untuk mengetahui sapaan (satu nomor banyak pasien: sapa orang tua).
