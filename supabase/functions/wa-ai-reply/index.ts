@@ -56,6 +56,7 @@ type Ctx = {
   knowledge?: string | null; // knowledge dari database (wa_ai_settings.knowledge_override)
   myAppointments?: Map<string, any>; // jadwal milik nomor ini (dari get_my_appointments)
   corrections?: string; // koreksi owner dari Telegram (contoh jawaban yang benar)
+  review?: boolean; // mode review (draf Telegram): waiting list tetap disimpan, aksi lain hanya simulasi
 };
 
 const AI_ACTOR = "Asisten AI WhatsApp";
@@ -605,7 +606,8 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
         therapist_gender: gender,
         notes: String(input.notes || "").replace(/\s+/g, " ").trim().slice(0, 300) || null,
       };
-      if (ctx.mode === "simulate") {
+      // Mode review tetap menyimpan waiting list (tidak mengirim pesan ke pasien); simulasi murni tidak.
+      if (ctx.mode === "simulate" && !ctx.review) {
         ctx.actions.push({ type: "waiting_list", simulated: true, ...plan });
         return { ok: true, simulated: true, note: "Mode simulasi: belum masuk waiting list sungguhan." };
       }
@@ -630,9 +632,9 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
       const same = (existing || []).find((e: any) => (e.preferred_date ?? null) === plan.preferred_date);
       const { error } = same
         ? await ctx.admin.from("waiting_list").update(row).eq("id", same.id)
-        : await ctx.admin.from("waiting_list").insert({ ...row, clinic_id: ctx.clinicId, status: "waiting", source: "ai_whatsapp" });
+        : await ctx.admin.from("waiting_list").insert({ ...row, clinic_id: ctx.clinicId, status: "waiting", source: ctx.mode === "live" ? "ai_whatsapp" : "ai_whatsapp_review" });
       if (error) return { ok: false, error: `gagal masuk waiting list: ${error.message}` };
-      ctx.actions.push({ type: "waiting_list", ...plan });
+      ctx.actions.push({ type: "waiting_list", saved: true, ...plan });
       return { ok: true, note: "Pasien tercatat di waiting list; admin akan mengabari bila ada slot kosong." };
     }
 
@@ -1105,7 +1107,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
     const { data: kst } = await admin.from("wa_ai_settings")
       .select("knowledge_override").eq("clinic_id", clinicId).maybeSingle();
     const ctx: Ctx = {
-      admin, clinicId, conv, mode: "simulate", now: new Date(), actions: [], handoff: null,
+      admin, clinicId, conv, mode: "simulate", review: true, now: new Date(), actions: [], handoff: null,
       bookingIds: [], allowedPatientIds: new Set(), patientsLoaded: false, offeredSlots: new Map(),
       knowledge: kst?.knowledge_override ?? null,
     };
@@ -1179,7 +1181,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
       const when = w.preferred_date || "tanggal bebas";
       const jam = w.time_from && w.time_to ? `${w.time_from}-${w.time_to}` : w.time_from ? `di atas ${w.time_from}` : w.time_to ? `sebelum ${w.time_to}` : w.time_label;
       const gen = w.therapist_gender === "female" ? "terapis wanita" : w.therapist_gender === "male" ? "terapis pria" : "terapis bebas";
-      lines.push("", `📝 Rencana masuk waiting list (belum disimpan): ${w.name} · ${when} · ${jam} · ${gen}${w.notes ? ` · ${w.notes}` : ""}`);
+      lines.push("", `📝 ${w.saved ? "Masuk waiting list (sudah tersimpan)" : "Rencana masuk waiting list (belum disimpan)"}: ${w.name} · ${when} · ${jam} · ${gen}${w.notes ? ` · ${w.notes}` : ""}`);
     }
     for (const b of ctx.actions.filter((a) => a.type === "send_brochure")) {
       lines.push("", `📎 Akan kirim gambar: ${b.title} (${b.url})`);
