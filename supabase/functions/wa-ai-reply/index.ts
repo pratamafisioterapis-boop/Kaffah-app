@@ -671,7 +671,7 @@ ATURAN PENTING
 - Jangan mengulang informasi atau kalimat yang sudah kamu tulis di balasan sebelumnya (mis. "terima kasih sudah menjelaskan kondisinya", "slot ... jam ... masih kosong"). Tiap balasan menjawab pesan terakhir pasien saja.
 - TOMBOL TEMPLATE: pesan pasien "Hadir" (tombol konfirmasi kehadiran dari template pengingat) dibalas singkat: "Terima kasih atas konfirmasinya ya {sapaan} 🙏". {sapaan} = sapaan yang dipakai klinik di pesan template sebelumnya pada percakapan (tampil di riwayat sebagai "Klinik (template otomatis)", mis. "Selamat Pagi Ibu Farida" -> "Ibu Farida"); bila ada beberapa template dengan sapaan berbeda (satu nomor banyak pasien) atau tidak ada, pakai "Kak". Jangan menambah hal lain. Pesan "Reschedule" (tombol) berarti pasien ingin memindah jadwal: bila pasien belum menyebut hari/jam baru, tanyakan "untuk reschedulenya, berkenan dijadwalkan dihari dan jam berapa {sapaan pada template, atau nama panggilan/nama guest}?" lalu proses sebagai RESCHEDULE di bawah. Pesan "Cancel" (tombol) diproses sebagai CANCEL di bawah.
 - PESAN BERUNTUN: bila pasien mengirim beberapa pesan beruntun yang belum dibalas, jawab sebagai SATU kesimpulan yang mencakup semuanya, bukan membalas satu per satu.
-- WAITING LIST: bila jadwal yang diinginkan pasien penuh atau tidak ada slot yang cocok dengan batasan pasien (hari, jam, atau terapis pria/wanita) dan pasien belum memilih alternatif (atau meminta dikabari bila ada yang batal): panggil add_to_waiting_list (isi preferred_date bila pasien menyebut hari, time_from/time_to atau time_label sesuai batasan jam, therapist_gender sesuai permintaan, notes singkat). Lalu balas: "Baik {sapaan}, apabila ada pasien yang cancel {kondisi pasien, mis. diatas jam 11 / hari Senin pagi / terapis wanita} maka akan kami infokan secepatnya 🙏". Jangan menjanjikan slot pasti. Jangan masukkan bila pasien sudah memilih jadwal lain atau tidak mau menunggu.
+- WAITING LIST: bila jadwal yang diinginkan pasien penuh atau tidak ada slot yang cocok dengan batasan pasien (hari, jam, atau terapis pria/wanita) dan pasien belum memilih alternatif (atau meminta dikabari bila ada yang batal): panggil add_to_waiting_list (isi preferred_date bila pasien menyebut hari, time_from/time_to atau time_label sesuai batasan jam, therapist_gender sesuai permintaan, notes singkat). Lalu balas: "Baik {sapaan}, apabila ada pasien yang cancel {kondisi pasien, mis. diatas jam 11 / hari Senin pagi / terapis wanita} maka akan kami infokan secepatnya 🙏". Jangan menjanjikan slot pasti. Jangan masukkan bila pasien sudah memilih jadwal lain atau tidak mau menunggu. BACA SELURUH RIWAYAT, termasuk pesan "Klinik" (balasan admin) sebelumnya, untuk memahami konteks: bila admin sudah menyebut "terapis perempuan penuh" atau pasien perempuan (ibu/mba) dilayani terapis perempuan dan pasien tidak meminta terapis laki-laki, isi therapist_gender = female; bila pasien menyebut batasan jam (mis. "jangan jam 12", "kalau ada pagi") masukkan ke time_from/time_to/time_label atau notes; isi preferred_date dengan hari yang dimaksud pasien (mis. "besok").
 - Pasien bilang akan mengabari nanti / belum pasti (mis. "rencana senin, nanti saya kabari"): cukup "baik kak, kami tunggu informasi selanjutnya ya". Jangan diserahkan ke admin.
 - Booking: panggil create_booking setelah pasien jelas memilih hari, jam, dan terapis (atau menyetujui tawaranmu). Pasien lama: pakai lookup_patient dan utamakan terapis yang paling sering menanganinya. Satu nomor banyak pasien: tanya siapa yang akan diterapi. Pasien baru: butuh nama (cukup nama yang diberikan pasien, apa pun bentuknya) dan keluhan (boleh samar). Nomor WA pasien memakai nomor percakapan ini; JANGAN menanyakannya kecuali pasien menyebut nomor lain.
 - TERAPIS LANGGANAN (pasien lama): sebelum menawarkan jadwal atau membooking, lihat therapist_history dari lookup_patient (urut dari yang paling sering menangani). Cek jadwal terapis urutan pertama dulu (get_available_slots dengan therapist_id-nya). Bila tidak ada jadwal yang cocok dengan hari/jam pasien, cek terapis berikutnya di therapist_history. Usahakan selalu terapis yang sudah pernah memegang pasien itu. Bila semua terapis tersebut tidak cocok, boleh menawarkan terapis lain, tetapi WAJIB minta persetujuan pasien dulu (mis. "untuk jam tersebut jadwal Ns X sudah penuh kak, apakah berkenan dengan terapis lain?") dan JANGAN membooking/memindah ke terapis lain sebelum pasien setuju. Bila pasien sendiri meminta terapis tertentu, ikuti permintaan pasien.
@@ -827,7 +827,14 @@ async function sendImage(admin: Admin, clinicId: string, conv: any, url: string,
  * Watzap, tidak di inbox; untuk pesan tombol ("Hadir", "Reschedule") template terbaru ikut disertakan
  * supaya AI tahu konteks dan sapaan yang dipakai klinik.
  */
-async function buildTranscript(admin: Admin, clinicId: string, waId: string, hist: any[], lastType: string): Promise<string> {
+async function buildTranscript(
+  admin: Admin,
+  clinicId: string,
+  waId: string,
+  hist: any[],
+  lastType: string,
+  until?: number, // batas waktu (ms): abaikan pesan klinik setelah pesan yang sedang ditinjau
+): Promise<string> {
   const fmt = (who: string, at: Date, text: string) => {
     const t = witaParts(at);
     return `[${t.date} ${t.time}] ${who}: ${text.slice(0, 600)}`;
@@ -836,22 +843,34 @@ async function buildTranscript(admin: Admin, clinicId: string, waId: string, his
     t: Date.parse(m.created_at),
     s: fmt(m.direction === "in" ? "Pasien" : "Klinik", new Date(m.created_at), m.body && m.body.trim() ? m.body : `[${m.msg_type}]`),
   }));
-  // Tombol, atau balasan teks singkat ("baik mbak", "siap") yang mungkin menjawab template pengingat.
+  // Balasan admin yang dikirim lewat dasbor/ponsel Watzap TIDAK masuk inbox, padahal berisi konteks
+  // penting (mis. "terapis perempuan besok penuh"). Selalu gabungkan dari Watzap; template otomatis
+  // (pengingat jadwal) hanya untuk pesan tombol atau balasan teks singkat ("baik mbak", "siap").
+  const norm = (t: string) => t.replace(/\s+/g, " ").trim().toLowerCase();
   const lastBody = String(hist[0]?.body || "").trim();
-  if (lastType === "button" || (lastType === "text" && lastBody.length <= 40)) {
-    try {
-      const { items } = await watzapHistory(admin, clinicId, waId);
-      const since = Date.now() - 36 * 3600e3;
-      const templates = items
-        .filter((i: any) => i.is_from_me === true && i.type === "template" && String(i.message || "").trim())
-        .map((i: any) => ({ t: Date.parse(`${String(i.timestamp).replace(" ", "T")}+07:00`), text: String(i.message) }))
-        .filter((i) => Number.isFinite(i.t) && i.t >= since)
-        .sort((a, b) => a.t - b.t)
-        .slice(-3);
-      for (const tp of templates) rows.push({ t: tp.t, s: fmt("Klinik (template otomatis)", new Date(tp.t), tp.text) });
-    } catch (e) {
-      console.error("[wa-ai-reply] template Watzap gagal dimuat", e);
+  const wantTemplates = lastType === "button" || (lastType === "text" && lastBody.length <= 40);
+  try {
+    const { items } = await watzapHistory(admin, clinicId, waId);
+    const end = until ?? Number.POSITIVE_INFINITY;
+    const knownOut = new Set(hist.filter((m: any) => m.direction !== "in").map((m: any) => norm(String(m.body || ""))));
+    const oldest = rows.length ? rows[0].t - 60e3 : Date.now() - 48 * 3600e3;
+    const all = items
+      .filter((i: any) => i.is_from_me === true && String(i.message || "").trim())
+      .map((i: any) => ({ t: Date.parse(`${String(i.timestamp).replace(" ", "T")}+07:00`), text: String(i.message), type: i.type }))
+      .filter((i) => Number.isFinite(i.t) && i.t <= end)
+      .sort((a, b) => a.t - b.t);
+    const adminMsgs = all
+      .filter((i) => i.type !== "template" && i.t >= oldest && !knownOut.has(norm(i.text)))
+      .slice(-12);
+    for (const m of adminMsgs) rows.push({ t: m.t, s: fmt("Klinik", new Date(m.t), m.text) });
+    if (wantTemplates) {
+      const since = (until ?? Date.now()) - 36 * 3600e3;
+      for (const tp of all.filter((i) => i.type === "template" && i.t >= since).slice(-3)) {
+        rows.push({ t: tp.t, s: fmt("Klinik (template otomatis)", new Date(tp.t), tp.text) });
+      }
     }
+  } catch (e) {
+    console.error("[wa-ai-reply] riwayat Watzap gagal dimuat", e);
   }
   return rows.sort((a, b) => a.t - b.t).map((r) => r.s).join("\n");
 }
@@ -1141,7 +1160,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
       const { data: hist } = await admin.from("wa_inbox_messages")
         .select("direction, body, msg_type, created_at").eq("conversation_id", conversationId)
         .lte("created_at", msg.created_at).order("created_at", { ascending: false }).limit(20);
-      const transcript = await buildTranscript(admin, clinicId, conv.wa_id, hist || [], msg.msg_type);
+      const transcript = await buildTranscript(admin, clinicId, conv.wa_id, hist || [], msg.msg_type, Date.parse(msg.created_at));
       const hint = (known || []).length
         ? "Nomor ini tercatat sebagai pasien terdaftar (panggil lookup_patient untuk detail)."
         : "Nomor ini BELUM tercatat di database pasien (anggap pasien baru; tetap boleh panggil lookup_patient).";
