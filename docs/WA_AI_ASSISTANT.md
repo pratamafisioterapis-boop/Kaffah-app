@@ -96,3 +96,15 @@ di `supabase/functions/_shared/wa_ai_knowledge.ts`.
   pasien terbaru yang dibuatkan draf setelah jeda (pesan beruntun digabung).
 - Perintah: `/status`, `/jeda`, `/aturan` (daftar), `/hapus N`, `/skor`.
 - Pesan tombol template (`msg_type = button`) diperlakukan seperti teks: "Hadir" dibalas "Terima kasih atas konfirmasinya ya {sapaan} 🙏", "Reschedule"/"Cancel" ditangani AI. Template pengingat hanya ada di Watzap, jadi untuk tombol dan balasan teks singkat (≤40 huruf) AI ikut membaca template 36 jam terakhir dari Watzap untuk mengetahui sapaan (satu nomor banyak pasien: sapa orang tua).
+
+## Waiting list
+- Tabel `waiting_list` (migrasi `20261121100000_waiting_list.sql`): nomor pasien, nama, tanggal yang diinginkan, jam (`time_from`/`time_to` atau label pagi/siang/sore/malam/bebas), terapis pria/wanita/bebas, catatan, status (waiting, notified, booked, cancelled), sumber (`ai_whatsapp`/`manual`).
+- AI memakai alat `add_to_waiting_list` bila slot yang diinginkan penuh/tidak cocok dan pasien tidak memilih alternatif, lalu membalas "Baik {sapaan}, apabila ada pasien yang cancel {kondisi} maka akan kami infokan secepatnya 🙏". Di mode review hanya tampil sebagai rencana di Telegram. Permintaan sama dari nomor yang sama diperbarui, bukan digandakan.
+- Halaman admin/owner **Waiting List** (menu Clinic Management): daftar menunggu / sudah dikabari / selesai, badge "Ada slot cocok" (dicek otomatis dari slot kosong terapis, sesuai jam & jenis kelamin terapis), tombol "Kabari via WA" (membuka WhatsApp dengan pesan siap kirim dan menandai sudah dikabari), tandai sudah booking/batal, dan tambah manual.
+- Sapaan pasien yang belum terdaftar mengikuti sapaan yang dipakai admin di riwayat ("ka", "kak", ...). Pesan beruntun dijawab sebagai satu kesimpulan setelah jeda.
+
+## Badge konfirmasi reminder terapi
+Kartu reminder di Follow Up Management menampilkan **Hadir** (tombol Hadir atau balasan teks seperti "baik", "insyaallah iya", "siap"),
+**Minta ubah jadwal**, **Minta batal**, atau **Belum konfirmasi** (reminder sudah terkirim tetapi belum dibalas). Balasan teks dicatat
+oleh `record_reminder_text_reply` (dipanggil `wa-watzap-webhook`); kata penolak/ragu (tidak, batal, reschedule, telat, maaf, ...) tidak dihitung hadir,
+dan Reschedule/Cancel dari tombol tidak ditimpa. Satu nomor untuk beberapa pasien: semua reminder hari itu di nomor tersebut ikut ditandai.

@@ -195,6 +195,24 @@ const TOOLS = [
     },
   },
   {
+    name: "add_to_waiting_list",
+    description:
+      "Masukkan pasien ke waiting list (daftar tunggu) di sistem agar admin mengabari bila ada pasien yang cancel / slot kosong. Pakai bila jadwal yang diinginkan pasien penuh atau tidak ada slot yang cocok dengan batasan pasien (hari, jam, terapis pria/wanita) dan pasien tidak memilih alternatif, atau pasien meminta dikabari bila ada yang kosong. Nomor WhatsApp diambil otomatis dari percakapan.",
+    input_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Nama pasien (nama panggilan/guest/profil WhatsApp)" },
+        preferred_date: { type: "string", description: "YYYY-MM-DD bila pasien menyebut hari tertentu; kosongkan bila bebas" },
+        time_from: { type: "string", description: "HH:MM batas awal jam, mis. 'di atas jam 11' = 11:00" },
+        time_to: { type: "string", description: "HH:MM batas akhir jam bila ada" },
+        time_label: { type: "string", enum: ["pagi", "siang", "sore", "malam", "bebas"], description: "Dipakai bila jam tidak spesifik" },
+        therapist_gender: { type: "string", enum: ["female", "male", "any"], description: "female = terapis wanita, male = terapis pria, any = bebas" },
+        notes: { type: "string", description: "Catatan singkat untuk admin (keluhan, alasan, kondisi khusus)" },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
     name: "handoff_to_admin",
     description:
       "Serahkan percakapan ke admin manusia HANYA untuk kasus di daftar handoff pada aturan. Pesan pasien TIDAK akan dibalas sama sekali (admin yang membalas), jadi setelah memanggil alat ini jangan menulis balasan apa pun. Jangan dipakai untuk hal yang bisa kamu jawab dari knowledge atau alat lain.",
@@ -566,6 +584,58 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
       return { ok: true, note: "Gambar flyer akan dikirim sebelum balasan teksmu; teks cukup singkat dan tidak perlu mengulang semua harga." };
     }
 
+    case "add_to_waiting_list": {
+      const today = witaParts(ctx.now).date;
+      const okTime = (v: unknown) => (/^([01]\d|2[0-3]):[0-5]\d$/.test(String(v || "")) ? String(v) : null);
+      const gender = input.therapist_gender === "female" || input.therapist_gender === "male" ? input.therapist_gender : "any";
+      const label = ["pagi", "siang", "sore", "malam", "bebas"].includes(input.time_label) ? input.time_label : "bebas";
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(String(input.preferred_date || "")) && input.preferred_date >= today
+        ? input.preferred_date
+        : null;
+      const name = String(input.name || "").replace(/\s+/g, " ").trim().slice(0, 120) ||
+        String(ctx.conv.contact_name || "").trim() || "Pasien WhatsApp";
+      const local = phoneVariants(ctx.conv.wa_id)[1] || ctx.conv.wa_id; // format 08…
+      const plan = {
+        name,
+        phone: local,
+        preferred_date: date,
+        time_from: okTime(input.time_from),
+        time_to: okTime(input.time_to),
+        time_label: label,
+        therapist_gender: gender,
+        notes: String(input.notes || "").replace(/\s+/g, " ").trim().slice(0, 300) || null,
+      };
+      if (ctx.mode === "simulate") {
+        ctx.actions.push({ type: "waiting_list", simulated: true, ...plan });
+        return { ok: true, simulated: true, note: "Mode simulasi: belum masuk waiting list sungguhan." };
+      }
+      if (!ctx.patientsLoaded) await loadPatients(ctx);
+      const patientId = ctx.allowedPatientIds.size === 1 ? [...ctx.allowedPatientIds][0] : null;
+      const row = {
+        patient_id: patientId,
+        patient_name: plan.name,
+        phone: plan.phone,
+        conversation_id: ctx.conv.id,
+        preferred_date: plan.preferred_date,
+        time_from: plan.time_from,
+        time_to: plan.time_to,
+        time_label: plan.time_label,
+        therapist_gender: plan.therapist_gender,
+        notes: plan.notes,
+        updated_at: new Date().toISOString(),
+      };
+      // Permintaan yang sama dari nomor yang sama diperbarui, bukan digandakan.
+      const { data: existing } = await ctx.admin.from("waiting_list")
+        .select("id, preferred_date").eq("clinic_id", ctx.clinicId).eq("phone", plan.phone).eq("status", "waiting").limit(20);
+      const same = (existing || []).find((e: any) => (e.preferred_date ?? null) === plan.preferred_date);
+      const { error } = same
+        ? await ctx.admin.from("waiting_list").update(row).eq("id", same.id)
+        : await ctx.admin.from("waiting_list").insert({ ...row, clinic_id: ctx.clinicId, status: "waiting", source: "ai_whatsapp" });
+      if (error) return { ok: false, error: `gagal masuk waiting list: ${error.message}` };
+      ctx.actions.push({ type: "waiting_list", ...plan });
+      return { ok: true, note: "Pasien tercatat di waiting list; admin akan mengabari bila ada slot kosong." };
+    }
+
     case "handoff_to_admin": {
       const reason = String(input.reason || "").slice(0, 300) || "tanpa alasan";
       const priority = input.priority === "high" ? "high" : "normal";
@@ -598,6 +668,8 @@ ATURAN PENTING
 - Jadwal yang sudah terbooking, terapis yang menangani, konfirmasi booking dari website ("Smart Booking"), atau sisa sesi paket: panggil get_my_appointments lalu jawab singkat (mis. "sudah terjadwal di sistem kami dijam 15.00 yaa kak", "sisa 3 sesi ya kak").
 - Jangan mengulang informasi atau kalimat yang sudah kamu tulis di balasan sebelumnya (mis. "terima kasih sudah menjelaskan kondisinya", "slot ... jam ... masih kosong"). Tiap balasan menjawab pesan terakhir pasien saja.
 - TOMBOL TEMPLATE: pesan pasien "Hadir" (tombol konfirmasi kehadiran dari template pengingat) dibalas singkat: "Terima kasih atas konfirmasinya ya {sapaan} 🙏". {sapaan} = sapaan yang dipakai klinik di pesan template sebelumnya pada percakapan (tampil di riwayat sebagai "Klinik (template otomatis)", mis. "Selamat Pagi Ibu Farida" -> "Ibu Farida"); bila ada beberapa template dengan sapaan berbeda (satu nomor banyak pasien) atau tidak ada, pakai "Kak". Jangan menambah hal lain. Pesan "Reschedule" (tombol) berarti pasien ingin memindah jadwal: bila pasien belum menyebut hari/jam baru, tanyakan "untuk reschedulenya, berkenan dijadwalkan dihari dan jam berapa {sapaan pada template, atau nama panggilan/nama guest}?" lalu proses sebagai RESCHEDULE di bawah. Pesan "Cancel" (tombol) diproses sebagai CANCEL di bawah.
+- PESAN BERUNTUN: bila pasien mengirim beberapa pesan beruntun yang belum dibalas, jawab sebagai SATU kesimpulan yang mencakup semuanya, bukan membalas satu per satu.
+- WAITING LIST: bila jadwal yang diinginkan pasien penuh atau tidak ada slot yang cocok dengan batasan pasien (hari, jam, atau terapis pria/wanita) dan pasien belum memilih alternatif (atau meminta dikabari bila ada yang batal): panggil add_to_waiting_list (isi preferred_date bila pasien menyebut hari, time_from/time_to atau time_label sesuai batasan jam, therapist_gender sesuai permintaan, notes singkat). Lalu balas: "Baik {sapaan}, apabila ada pasien yang cancel {kondisi pasien, mis. diatas jam 11 / hari Senin pagi / terapis wanita} maka akan kami infokan secepatnya 🙏". Jangan menjanjikan slot pasti. Jangan masukkan bila pasien sudah memilih jadwal lain atau tidak mau menunggu.
 - Pasien bilang akan mengabari nanti / belum pasti (mis. "rencana senin, nanti saya kabari"): cukup "baik kak, kami tunggu informasi selanjutnya ya". Jangan diserahkan ke admin.
 - Booking: panggil create_booking setelah pasien jelas memilih hari, jam, dan terapis (atau menyetujui tawaranmu). Pasien lama: pakai lookup_patient dan utamakan terapis yang paling sering menanganinya. Satu nomor banyak pasien: tanya siapa yang akan diterapi. Pasien baru: butuh nama (cukup nama yang diberikan pasien, apa pun bentuknya) dan keluhan (boleh samar). Nomor WA pasien memakai nomor percakapan ini; JANGAN menanyakannya kecuali pasien menyebut nomor lain.
 - TERAPIS LANGGANAN (pasien lama): sebelum menawarkan jadwal atau membooking, lihat therapist_history dari lookup_patient (urut dari yang paling sering menangani). Cek jadwal terapis urutan pertama dulu (get_available_slots dengan therapist_id-nya). Bila tidak ada jadwal yang cocok dengan hari/jam pasien, cek terapis berikutnya di therapist_history. Usahakan selalu terapis yang sudah pernah memegang pasien itu. Bila semua terapis tersebut tidak cocok, boleh menawarkan terapis lain, tetapi WAJIB minta persetujuan pasien dulu (mis. "untuk jam tersebut jadwal Ns X sudah penuh kak, apakah berkenan dengan terapis lain?") dan JANGAN membooking/memindah ke terapis lain sebelum pasien setuju. Bila pasien sendiri meminta terapis tertentu, ikuti permintaan pasien.
@@ -615,7 +687,7 @@ ATURAN PENTING
 - Jangan mengaku manusia, tetapi JANGAN memperkenalkan diri sebagai asisten virtual atau bot kecuali pasien sungguh-sungguh menanyakannya; bila ditanya, jawab jujur bahwa kamu asisten virtual Kaffah dan admin tetap siap membantu.
 
 GAYA BAHASA
-- Bahasa Indonesia santai-sopan seperti admin Kaffah: ringkas dan hangat, tidak kaku. Pasien lama dipanggil dengan nama panggilannya (nickname dari data pasien); pasien baru dipanggil "Kak". Jawaban pendek (maks sekitar 4 baris), tanpa markdown/heading/tabel. Daftar sederhana dengan tanda "-" hanya untuk jadwal atau tarif.
+- Bahasa Indonesia santai-sopan seperti admin Kaffah: ringkas dan hangat, tidak kaku. Pasien lama dipanggil dengan nama panggilannya (nickname dari data pasien). Pasien yang belum terdaftar: lihat pesan "Klinik" sebelumnya di riwayat dan pakai sapaan yang dipakai admin (mis. "ka", "kak", "bu", "pak"); bila belum ada, pakai "Kak". Jawaban pendek (maks sekitar 4 baris), tanpa markdown/heading/tabel. Daftar sederhana dengan tanda "-" hanya untuk jadwal atau tarif.
 - Emoji: JANGAN berlebihan dan jangan generik. Paling banyak satu emoji per pesan, dan sekitar separuh pesan tanpa emoji sama sekali (kadang pakai, kadang tidak). Jangan memakai 😊🙏 berulang-ulang di tiap balasan.
 - Balasan akhirmu (teks terakhir tanpa alat) ADALAH pesan yang dikirim ke pasien, jangan menambah penjelasan untuk admin.
 - Bila pesan terakhir pasien tidak perlu dibalas (hanya "ok", "siap", "👍", emoji, atau penutup setelah kamu sudah bilang "sama sama"), tulis balasan akhir kosong: tidak ada pesan yang dikirim.
@@ -1102,6 +1174,12 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
     }
     if (cancelPlan) {
       lines.push("", `❌ Rencana batal (belum dibatalkan): ${cancelPlan.at}${cancelPlan.reason ? ` · alasan: ${cancelPlan.reason}` : ""}`);
+    }
+    for (const w of ctx.actions.filter((a) => a.type === "waiting_list")) {
+      const when = w.preferred_date || "tanggal bebas";
+      const jam = w.time_from && w.time_to ? `${w.time_from}-${w.time_to}` : w.time_from ? `di atas ${w.time_from}` : w.time_to ? `sebelum ${w.time_to}` : w.time_label;
+      const gen = w.therapist_gender === "female" ? "terapis wanita" : w.therapist_gender === "male" ? "terapis pria" : "terapis bebas";
+      lines.push("", `📝 Rencana masuk waiting list (belum disimpan): ${w.name} · ${when} · ${jam} · ${gen}${w.notes ? ` · ${w.notes}` : ""}`);
     }
     for (const b of ctx.actions.filter((a) => a.type === "send_brochure")) {
       lines.push("", `📎 Akan kirim gambar: ${b.title} (${b.url})`);

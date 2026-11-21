@@ -58,6 +58,16 @@ async function recordReminderReply(
   msg: any,
 ) {
   try {
+    // Balasan teks yang menandakan akan datang ("baik", "insyaallah iya", ...) dicatat sebagai hadir.
+    if (msg?.type === "text") {
+      const { error: textErr } = await (admin as any).rpc("record_reminder_text_reply", {
+        p_clinic_id: clinicId,
+        p_phone: msg.from ?? null,
+        p_text: msg.text?.body ?? "",
+      });
+      if (textErr) console.error("[wa-watzap-webhook] catat balasan teks gagal", textErr.message);
+      return;
+    }
     if (msg?.type !== "button") return;
     const label = String(msg.button?.payload || msg.button?.text || "").trim().toLowerCase();
     const reply = REPLY_BUTTONS[label];
