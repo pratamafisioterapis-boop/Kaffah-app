@@ -35,7 +35,7 @@ import DatePicker from '@/components/DatePicker';
 import DailyRecapModal from '@/components/shared/DailyRecapModal';
 import DailyRecapDetailModal from '@/components/shared/DailyRecapDetailModal';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
+import { KAFFAH_CLINIC_ID, PRAXIS_CLINIC_ID } from '@/lib/clinicIds';
 import PageHero from '@/components/shared/PageHero';
 import SendClinaraDialog from '@/components/admin/patients/SendClinaraDialog';
 import { PortalStatusButton, SoapMark, TtvMark } from '@/components/admin/RecapRowMarks';
@@ -117,6 +117,7 @@ const DailyRecap = ({ hideControls = false, showPaymentFilter = false }) => {
   const { toast } = useToast();
   const { clinicName, userDetails } = useAuth();
   // Tombol portal Clinara di rekap harian hanya untuk klinik Kaffah.
+  const isPraxis = userDetails?.clinic_id === PRAXIS_CLINIC_ID;
   const portalButtonEnabled = userDetails?.clinic_id === KAFFAH_CLINIC_ID;
   const [alkesOpen, setAlkesOpen] = useState(false);
   const [alkesEnabled, setAlkesEnabled] = useState(false);
@@ -1110,17 +1111,10 @@ const getPremiumPastelBadge = (text) => {
           <div className="hidden sm:block w-full">
           <table className="w-full text-left table-fixed text-xs xl:text-xs 2xl:text-sm [&_.text-sm]:text-xs xl:[&_.text-sm]:text-xs 2xl:[&_.text-sm]:text-sm [&_td]:[overflow-wrap:break-word] [&_td]:[word-break:normal]">
             <colgroup>
-              <col style={{ width: '9%' }} />
-              <col style={{ width: '11%' }} />
-              <col style={{ width: '10%' }} />
-              <col style={{ width: '12%' }} />
-              <col style={{ width: '9%' }} />
-              <col style={{ width: '7%' }} />
-              <col style={{ width: '10%' }} />
-              <col style={{ width: '8%' }} />
-              <col style={{ width: '9%' }} />
-              <col style={{ width: '7%' }} />
-              <col style={{ width: '8%' }} />
+              {(isPraxis
+                ? [8, 11, 10, 10, 8, 13, 10, 9, 8, 6, 7]
+                : [9, 11, 10, 12, 9, 7, 10, 8, 9, 7, 8]
+              ).map((w, i) => <col key={i} style={{ width: `${w}%` }} />)}
             </colgroup>
             <thead className="bg-slate-100 text-slate-900 font-semibold border-b border-slate-300">
               <tr>
@@ -1189,7 +1183,7 @@ const getPremiumPastelBadge = (text) => {
                           </Badge>
                         </div>
                      </td>
-                     <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center text-app-accent font-semibold">
+                     <td className={cn("px-1 py-3 xl:px-2 2xl:px-3 text-center text-app-accent font-semibold", isPraxis && "whitespace-normal [overflow-wrap:normal]")}>
                        {packageLabel}
                        {recap.bypass_package_id && (
                          <Badge title={recap.bypass_reason || ''} className="block mt-1 text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 whitespace-normal leading-tight">Di luar paket</Badge>
