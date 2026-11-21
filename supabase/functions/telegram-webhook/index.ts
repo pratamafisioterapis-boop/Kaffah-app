@@ -44,6 +44,7 @@ const HELP = [
   "- Tulis aturan umum langsung (tanpa reply), mis. \"jangan balas dulu, beri jeda minimal 2 menit\".",
   "/jeda 2 menit  atur jeda menjawab",
   "/skor  skor ketepatan AI 24 jam terakhir",
+  "/uji  uji regresi AI (soal tetap) dan bandingkan dengan uji sebelumnya",
   "/aturan  daftar arahan, /hapus N  hapus arahan",
   "/status  status AI",
 ].join("\n");
@@ -132,7 +133,7 @@ async function handleUpdate(update: any) {
   // ditangani wa-ai-reply. Teks bebas yang bukan perintah jadwal juga dianggap arahan untuk AI.
   const body = msg.text.trim();
   const forAi = msg.reply_to_message ||
-    /^\/(?:skor|jeda|aturan|hapus|status)(?:@\w+)?\b/i.test(body) ||
+    /^\/(?:skor|uji|jeda|aturan|hapus|status)(?:@\w+)?\b/i.test(body) ||
     (detect(body) === null && !body.startsWith("/"));
   if (forAi) {
     const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/wa-ai-reply`, {
@@ -196,6 +197,7 @@ async function handleAdmin(action: string) {
       commands: [
         { command: "kosong", description: "Jadwal kosong (mis. /kosong besok)" },
         { command: "skor", description: "Skor ketepatan AI WhatsApp" },
+        { command: "uji", description: "Uji regresi AI (soal tetap)" },
         { command: "jeda", description: "Atur jeda AI menjawab (mis. /jeda 2 menit)" },
         { command: "aturan", description: "Daftar arahan owner untuk AI" },
         { command: "status", description: "Status AI WhatsApp" },
