@@ -125,6 +125,8 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
 
   const handleSwitch = async (acc) => {
     setSwitchingId(acc.id);
+    // Unduh kode dashboard tujuan sambil menunggu sesi remote dibuat.
+    (ADMIN_ROLES.includes(acc.role) ? import('@/pages/AdminDashboard') : import('@/pages/TherapistDashboard')).catch(() => {});
     const { error } = await impersonateUser(acc.id);
     setSwitchingId(null);
     if (error) {

@@ -38,11 +38,24 @@ Deno.serve(async (req: Request) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const { data: callerProfile, error: profileErr } = await adminClient
+    // Baca body & profil pemanggil bersamaan; profil tujuan menyusul begitu
+    // target_user_id diketahui (tanpa menunggu pemeriksaan lain).
+    const bodyPromise = req.json().catch(() => ({}));
+    const callerPromise = adminClient
       .from("users")
       .select("id, email, role, is_active, clinic_id")
       .eq("id", callerData.user.id)
       .single();
+    const { target_user_id } = await bodyPromise;
+    const targetPromise = target_user_id
+      ? adminClient
+          .from("users")
+          .select("id, email, full_name, role, clinic_id, is_active")
+          .eq("id", target_user_id)
+          .single()
+      : Promise.resolve({ data: null, error: null });
+    const [{ data: callerProfile, error: profileErr }, { data: targetProfile, error: targetErr }] =
+      await Promise.all([callerPromise, targetPromise]);
 
     if (profileErr || !callerProfile) {
       return new Response(JSON.stringify({ error: "Profil pemanggil tidak ditemukan" }), {
@@ -60,9 +73,6 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const body = await req.json().catch(() => ({}));
-    const { target_user_id } = body;
-
     if (!target_user_id) {
       return new Response(JSON.stringify({ error: "target_user_id wajib diisi" }), {
         status: 400,
@@ -76,12 +86,6 @@ Deno.serve(async (req: Request) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const { data: targetProfile, error: targetErr } = await adminClient
-      .from("users")
-      .select("id, email, full_name, role, clinic_id, is_active")
-      .eq("id", target_user_id)
-      .single();
 
     if (targetErr || !targetProfile) {
       return new Response(JSON.stringify({ error: "Akun tujuan tidak ditemukan" }), {
@@ -133,12 +137,16 @@ Deno.serve(async (req: Request) => {
 
     // Best-effort audit log; a logging failure must not block a legitimate
     // support session, so it never overrides the response below.
-    await adminClient.from("impersonation_logs").insert({
+    // Tidak ditunggu: respons tidak perlu menanti penulisan log.
+    const logWrite = adminClient.from("impersonation_logs").insert({
       admin_id: callerProfile.id,
       admin_email: callerProfile.email,
       target_user_id: targetProfile.id,
       target_email: targetProfile.email,
-    });
+    }).then(() => {}, () => {});
+    // deno-lint-ignore no-explicit-any
+    const rt = (globalThis as any).EdgeRuntime;
+    if (rt?.waitUntil) rt.waitUntil(logWrite);
 
     return new Response(
       JSON.stringify({
