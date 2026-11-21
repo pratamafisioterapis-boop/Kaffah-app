@@ -597,7 +597,7 @@ ATURAN PENTING
 - JANGAN terkesan menjual. Saat pasien menanyakan jadwal kosong atau tarif, jawab pertanyaannya saja dengan ringkas. Setelahnya, bila keluhan pasien belum diketahui, boleh bertanya SATU kali dengan hangat soal keluhannya, supaya pasien merasa diperhatikan (terutama pasien baru), misalnya "Kalau boleh tahu, keluhannya apa ya, Kak?". Jangan menutup dengan ajakan seperti "mau lanjut booking?" atau promosi. Satu-satunya ajakan yang boleh (paling banyak sekali dalam percakapan, setelah keluhan dijawab dan pasien belum menyebut hari) adalah pertanyaan khas admin: "kira-kira ada rencana mau dijadwalkan terapi dihari apa kak?". Jangan meminta nama lengkap, nomor WA, dan keluhan sekaligus di awal.
 - Jadwal yang sudah terbooking, terapis yang menangani, konfirmasi booking dari website ("Smart Booking"), atau sisa sesi paket: panggil get_my_appointments lalu jawab singkat (mis. "sudah terjadwal di sistem kami dijam 15.00 yaa kak", "sisa 3 sesi ya kak").
 - Jangan mengulang informasi atau kalimat yang sudah kamu tulis di balasan sebelumnya (mis. "terima kasih sudah menjelaskan kondisinya", "slot ... jam ... masih kosong"). Tiap balasan menjawab pesan terakhir pasien saja.
-- TOMBOL TEMPLATE: pesan pasien "Hadir" (tombol konfirmasi kehadiran) tidak perlu dibalas: tulis balasan akhir kosong. Pesan "Reschedule" (tombol) berarti pasien ingin memindah jadwal: bila pasien belum menyebut hari/jam baru, tanyakan "untuk reschedulenya, berkenan dijadwalkan dihari dan jam berapa {nama panggilan atau nama guest}?" lalu proses sebagai RESCHEDULE di bawah. Pesan "Cancel" (tombol) diproses sebagai CANCEL di bawah.
+- TOMBOL TEMPLATE: pesan pasien "Hadir" (tombol konfirmasi kehadiran dari template pengingat) dibalas singkat: "Terima kasih atas konfirmasinya ya {sapaan} 🙏". {sapaan} = sapaan yang dipakai klinik di pesan template sebelumnya pada percakapan (tampil di riwayat sebagai "Klinik (template otomatis)", mis. "Selamat Pagi Ibu Farida" -> "Ibu Farida"); bila ada beberapa template dengan sapaan berbeda (satu nomor banyak pasien) atau tidak ada, pakai "Kak". Jangan menambah hal lain. Pesan "Reschedule" (tombol) berarti pasien ingin memindah jadwal: bila pasien belum menyebut hari/jam baru, tanyakan "untuk reschedulenya, berkenan dijadwalkan dihari dan jam berapa {sapaan pada template, atau nama panggilan/nama guest}?" lalu proses sebagai RESCHEDULE di bawah. Pesan "Cancel" (tombol) diproses sebagai CANCEL di bawah.
 - Pasien bilang akan mengabari nanti / belum pasti (mis. "rencana senin, nanti saya kabari"): cukup "baik kak, kami tunggu informasi selanjutnya ya". Jangan diserahkan ke admin.
 - Booking: panggil create_booking setelah pasien jelas memilih hari, jam, dan terapis (atau menyetujui tawaranmu). Pasien lama: pakai lookup_patient dan utamakan terapis yang paling sering menanganinya. Satu nomor banyak pasien: tanya siapa yang akan diterapi. Pasien baru: butuh nama (cukup nama yang diberikan pasien, apa pun bentuknya) dan keluhan (boleh samar). Nomor WA pasien memakai nomor percakapan ini; JANGAN menanyakannya kecuali pasien menyebut nomor lain.
 - TERAPIS LANGGANAN (pasien lama): sebelum menawarkan jadwal atau membooking, lihat therapist_history dari lookup_patient (urut dari yang paling sering menangani). Cek jadwal terapis urutan pertama dulu (get_available_slots dengan therapist_id-nya). Bila tidak ada jadwal yang cocok dengan hari/jam pasien, cek terapis berikutnya di therapist_history. Usahakan selalu terapis yang sudah pernah memegang pasien itu. Bila semua terapis tersebut tidak cocok, boleh menawarkan terapis lain, tetapi WAJIB minta persetujuan pasien dulu (mis. "untuk jam tersebut jadwal Ns X sudah penuh kak, apakah berkenan dengan terapis lain?") dan JANGAN membooking/memindah ke terapis lain sebelum pasien setuju. Bila pasien sendiri meminta terapis tertentu, ikuti permintaan pasien.
@@ -746,6 +746,40 @@ async function sendImage(admin: Admin, clinicId: string, conv: any, url: string,
     sent_by: null,
   });
   if (!ok) throw new Error(`Watzap menolak gambar: ${out?.message || res.status}`);
+}
+
+/**
+ * Riwayat percakapan untuk AI. Pesan template otomatis (mis. pengingat jadwal) hanya tersimpan di
+ * Watzap, tidak di inbox; untuk pesan tombol ("Hadir", "Reschedule") template terbaru ikut disertakan
+ * supaya AI tahu konteks dan sapaan yang dipakai klinik.
+ */
+async function buildTranscript(admin: Admin, clinicId: string, waId: string, hist: any[], lastType: string): Promise<string> {
+  const fmt = (who: string, at: Date, text: string) => {
+    const t = witaParts(at);
+    return `[${t.date} ${t.time}] ${who}: ${text.slice(0, 600)}`;
+  };
+  const rows = hist.slice().reverse().map((m: any) => ({
+    t: Date.parse(m.created_at),
+    s: fmt(m.direction === "in" ? "Pasien" : "Klinik", new Date(m.created_at), m.body && m.body.trim() ? m.body : `[${m.msg_type}]`),
+  }));
+  // Tombol, atau balasan teks singkat ("baik mbak", "siap") yang mungkin menjawab template pengingat.
+  const lastBody = String(hist[0]?.body || "").trim();
+  if (lastType === "button" || (lastType === "text" && lastBody.length <= 40)) {
+    try {
+      const { items } = await watzapHistory(admin, clinicId, waId);
+      const since = Date.now() - 36 * 3600e3;
+      const templates = items
+        .filter((i: any) => i.is_from_me === true && i.type === "template" && String(i.message || "").trim())
+        .map((i: any) => ({ t: Date.parse(`${String(i.timestamp).replace(" ", "T")}+07:00`), text: String(i.message) }))
+        .filter((i) => Number.isFinite(i.t) && i.t >= since)
+        .sort((a, b) => a.t - b.t)
+        .slice(-3);
+      for (const tp of templates) rows.push({ t: tp.t, s: fmt("Klinik (template otomatis)", new Date(tp.t), tp.text) });
+    } catch (e) {
+      console.error("[wa-ai-reply] template Watzap gagal dimuat", e);
+    }
+  }
+  return rows.sort((a, b) => a.t - b.t).map((r) => r.s).join("\n");
 }
 
 /**
@@ -1033,12 +1067,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
       const { data: hist } = await admin.from("wa_inbox_messages")
         .select("direction, body, msg_type, created_at").eq("conversation_id", conversationId)
         .lte("created_at", msg.created_at).order("created_at", { ascending: false }).limit(20);
-      const transcript = (hist || []).reverse().map((m: any) => {
-        const who = m.direction === "in" ? "Pasien" : "Klinik";
-        const t = witaParts(new Date(m.created_at));
-        const text = m.body && m.body.trim() ? m.body : `[${m.msg_type}]`;
-        return `[${t.date} ${t.time}] ${who}: ${text.slice(0, 600)}`;
-      }).join("\n");
+      const transcript = await buildTranscript(admin, clinicId, conv.wa_id, hist || [], msg.msg_type);
       const hint = (known || []).length
         ? "Nomor ini tercatat sebagai pasien terdaftar (panggil lookup_patient untuk detail)."
         : "Nomor ini BELUM tercatat di database pasien (anggap pasien baru; tetap boleh panggil lookup_patient).";
@@ -1580,12 +1609,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
       const { data: hist } = await admin.from("wa_inbox_messages")
         .select("direction, body, msg_type, created_at").eq("conversation_id", conversationId)
         .order("created_at", { ascending: false }).limit(20);
-      const transcript = (hist || []).reverse().map((m: any) => {
-        const who = m.direction === "in" ? "Pasien" : "Klinik";
-        const t = witaParts(new Date(m.created_at));
-        const text = m.body && m.body.trim() ? m.body : `[${m.msg_type}]`;
-        return `[${t.date} ${t.time}] ${who}: ${text.slice(0, 600)}`;
-      }).join("\n");
+      const transcript = await buildTranscript(admin, clinicId, conv.wa_id, hist || [], msg.msg_type);
 
       const variants = phoneVariants(conv.wa_id);
       const { count: known } = variants.length
