@@ -85,21 +85,26 @@ const AdminAccountingReport = ({ data, dateRange }) => {
         const itemsText = hasItems
           ? i.items.map(it => `${it.name}${it.qty > 1 ? ` x${it.qty}` : ''} - ${rp(it.amount)}`).join('\n')
           : [i.category, i.description].filter(Boolean).join(': ') || '-';
+        const bankText = i.bank_label && i.bank_label !== '-'
+          ? i.bank_label
+          : (i.bank_accounts?.bank_name || '-');
         return [
           i.date && isValid(new Date(i.date)) ? format(new Date(i.date), 'dd/MM/yyyy') : '-',
           i.patient_name || '-',
           itemsText,
+          i.payment_label || i.payment_method || '-',
+          bankText,
           rp(i.amount)
         ];
       });
 
       autoTable(doc, {
         startY: doc.lastAutoTable.finalY + 20,
-        head: [['Tanggal', 'Nama Pasien', 'Item', 'Nominal (Rp)']],
-        body: incomeRows.length > 0 ? incomeRows : [['-', '-', 'No Data', '0']],
-        columnStyles: { 3: { halign: 'right' } },
-        styles: { fontSize: 9 },
-        foot: incomeRows.length > 0 ? [['', '', 'Total Income', rp(total_income)]] : undefined,
+        head: [['Tanggal', 'Nama Pasien', 'Item', 'Metode', 'Bank', 'Nominal (Rp)']],
+        body: incomeRows.length > 0 ? incomeRows : [['-', '-', 'No Data', '-', '-', '0']],
+        columnStyles: { 5: { halign: 'right' } },
+        styles: { fontSize: 8 },
+        foot: incomeRows.length > 0 ? [['', '', '', '', 'Total Income', rp(total_income)]] : undefined,
       });
 
       doc.save('admin-accounting-report.pdf');
