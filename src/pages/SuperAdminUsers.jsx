@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, MonitorSmartphone, FileSpreadsheet, Plus, KeyRound, Eye, EyeOff, Search, ChevronDown } from 'lucide-react';
+import { Loader2, FileSpreadsheet, Plus, KeyRound, Eye, EyeOff, Search, ChevronDown } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,18 +31,8 @@ const categoryMeta = (key) => CATEGORIES.find((c) => c.key === key);
 
 const emptyKonversiDokterForm = { full_name: '', email: '', password: '' };
 
-const ROLE_HOME_PATH = {
-  super_admin: '/super-admin',
-  owner: '/owner',
-  admin: '/admin',
-  therapist: '/therapist',
-  physiotherapist: '/therapist',
-};
-
 const SuperAdminUsers = () => {
   const { toast } = useToast();
-  const navigate = useNavigate();
-  const { impersonateUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [clinics, setClinics] = useState([]);
   const [konversiDokterAdminIds, setKonversiDokterAdminIds] = useState(new Set());
@@ -53,7 +41,6 @@ const SuperAdminUsers = () => {
   const [groupBy, setGroupBy] = useState('clinic'); // 'clinic' | 'cat'
   const [openGroups, setOpenGroups] = useState({});
   const [loading, setLoading] = useState(true);
-  const [remotingId, setRemotingId] = useState(null);
   const [togglingKonversiId, setTogglingKonversiId] = useState(null);
   const [createKonversiOpen, setCreateKonversiOpen] = useState(false);
   const [createKonversiForm, setCreateKonversiForm] = useState(emptyKonversiDokterForm);
@@ -108,26 +95,6 @@ const SuperAdminUsers = () => {
     const { error } = await supabase.from('users').update({ clinic_id: newClinicId || null }).eq('id', userId);
     if (error) toast({ variant: 'destructive', title: 'Gagal ubah klinik', description: error.message });
     else { toast({ title: 'Klinik user diperbarui' }); fetchData(); }
-  };
-
-  const handleRemoteLogin = async (u) => {
-    if (u.role === 'super_admin') {
-      toast({ variant: 'destructive', title: 'Tidak diizinkan', description: 'Tidak bisa remote ke sesama super admin.' });
-      return;
-    }
-    if (!u.is_active) {
-      toast({ variant: 'destructive', title: 'Tidak diizinkan', description: 'Akun nonaktif tidak bisa diremote.' });
-      return;
-    }
-    setRemotingId(u.id);
-    const { error, target } = await impersonateUser(u.id);
-    setRemotingId(null);
-    if (error) {
-      toast({ variant: 'destructive', title: 'Gagal remote ke akun', description: error.message });
-      return;
-    }
-    toast({ title: `Berhasil remote sebagai ${u.full_name || u.email}` });
-    navigate(ROLE_HOME_PATH[target?.role || u.role] || '/', { replace: true });
   };
 
   const handleToggleActive = async (user) => {
@@ -358,13 +325,6 @@ const SuperAdminUsers = () => {
           <span className="min-[1180px]:hidden text-[13px] text-app-muted">{hasKonversi ? 'Konversi Dokter diizinkan' : 'Konversi Dokter tidak'}</span>
         </label>
         <div className="col-span-2 min-[1180px]:col-auto flex flex-wrap gap-2 min-[1180px]:justify-end min-[1180px]:gap-0.5">
-          <RowAction
-            icon={remotingId === u.id ? Loader2 : MonitorSmartphone}
-            label="Remote login"
-            title="Login sebagai user ini tanpa password"
-            disabled={u.role === 'super_admin' || !u.is_active || remotingId === u.id}
-            onClick={() => handleRemoteLogin(u)}
-          />
           <RowAction icon={KeyRound} label="Ganti password" title="Ganti password user ini" onClick={() => setResetPasswordUser(u)} />
         </div>
       </div>
