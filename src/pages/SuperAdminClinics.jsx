@@ -131,11 +131,13 @@ const SuperAdminClinics = () => {
 
   const fetchClinics = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('clinics').select('*').order('created_at', { ascending: false });
+    const [{ data, error }, { data: ownerRows }] = await Promise.all([
+      supabase.from('clinics').select('*').order('created_at', { ascending: false }),
+      supabase.from('users').select('id, full_name, email, phone, clinic_id').eq('role', 'owner').order('created_at', { ascending: true }),
+    ]);
     if (error) toast({ variant: 'destructive', title: 'Gagal memuat klinik', description: error.message });
     else setClinics(data || []);
 
-    const { data: ownerRows } = await supabase.from('users').select('id, full_name, email, phone, clinic_id').eq('role', 'owner').order('created_at', { ascending: true });
     const ownerMap = {};
     (ownerRows || []).forEach((o) => {
       if (!ownerMap[o.clinic_id]) ownerMap[o.clinic_id] = [];

@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, MonitorSmartphone, FileSpreadsheet, Plus, KeyRound, Eye, EyeOff, Search, ChevronDown } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -12,6 +11,9 @@ import { Switch } from '@/components/ui/switch';
 import { PageHead, Panel, Pill, EmptyState, Spinner, Initials, RowAction, SHEET_DIALOG } from '@/components/superadmin/ui';
 import { cn } from '@/lib/utils';
 import { validatePassword } from '@/lib/passwordPolicy';
+
+// <select> native: ratusan dropdown Radix per baris membuat halaman ini berat.
+const NATIVE_SELECT = 'w-full min-h-11 px-3 rounded-md border border-input bg-background text-sm truncate focus:outline-none focus:ring-2 focus:ring-app-accent/25';
 
 const ROLES = ['owner', 'admin', 'therapist', 'physiotherapist', 'super_admin'];
 
@@ -66,7 +68,7 @@ const SuperAdminUsers = () => {
   const fetchData = async () => {
     setLoading(true);
     const [usersRes, clinicsRes, konversiDokterAdminsRes, pemilihAdminsRes, pemilihDpcRes] = await Promise.all([
-      supabase.from('users').select('*').order('created_at', { ascending: false }),
+      supabase.from('users').select('id, full_name, email, role, clinic_id, is_active, created_at').order('created_at', { ascending: false }),
       supabase.from('clinics').select('id, name'),
       supabase.from('konversi_dokter_admins').select('user_id'),
       supabase.from('pemilih_admins').select('user_id'),
@@ -96,7 +98,8 @@ const SuperAdminUsers = () => {
     return 'non_klinik';
   };
 
-  const clinicName = (id) => clinics.find(c => c.id === id)?.name || '-';
+  const clinicNameById = useMemo(() => new Map(clinics.map((c) => [c.id, c.name])), [clinics]);
+  const clinicName = (id) => clinicNameById.get(id) || '-';
 
   const handleChangeRole = async (userId, newRole) => {
     const { error } = await supabase.from('users').update({ role: newRole }).eq('id', userId);
@@ -286,7 +289,7 @@ const SuperAdminUsers = () => {
       const m = staff.filter((u) => u.clinic_id === c.id);
       if (m.length) groups.push({ key: `c:${c.id}`, title: c.name, members: m, kind: 'clinic' });
     });
-    const orphans = staff.filter((u) => !u.clinic_id || !clinics.some((c) => c.id === u.clinic_id));
+    const orphans = staff.filter((u) => !u.clinic_id || !clinicNameById.has(u.clinic_id));
     if (orphans.length) groups.push({ key: 'c:none', title: 'Tanpa klinik', members: orphans, kind: 'clinic' });
     SPECIAL.forEach((k) => {
       const m = visibleUsers.filter((u) => categoryOf(u) === k);
@@ -332,20 +335,26 @@ const SuperAdminUsers = () => {
         </div>
         <div className="min-w-0">
           <FieldLabel>Role</FieldLabel>
-          <Select value={u.role} onValueChange={(val) => handleChangeRole(u.id, val)}>
-            <SelectTrigger className="w-full min-h-11" aria-label={`Role ${u.full_name || u.email}`}><SelectValue /></SelectTrigger>
-            <SelectContent>{ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-          </Select>
+          <select
+            value={u.role}
+            onChange={(e) => handleChangeRole(u.id, e.target.value)}
+            aria-label={`Role ${u.full_name || u.email}`}
+            className={NATIVE_SELECT}
+          >
+            {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+          </select>
         </div>
         <div className="min-w-0">
           <FieldLabel>Klinik</FieldLabel>
-          <Select value={u.clinic_id || 'none'} onValueChange={(val) => handleChangeClinic(u.id, val === 'none' ? null : val)}>
-            <SelectTrigger className="w-full min-h-11 [&>span]:truncate [&>span]:text-left" aria-label={`Klinik ${u.full_name || u.email}`}><SelectValue placeholder="Tanpa klinik" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Tanpa klinik</SelectItem>
-              {clinics.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <select
+            value={u.clinic_id || 'none'}
+            onChange={(e) => handleChangeClinic(u.id, e.target.value === 'none' ? null : e.target.value)}
+            aria-label={`Klinik ${u.full_name || u.email}`}
+            className={NATIVE_SELECT}
+          >
+            <option value="none">Tanpa klinik</option>
+            {clinics.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
         </div>
         <label className="flex items-center gap-2.5 min-h-11 cursor-pointer">
           <Switch checked={!!u.is_active} onCheckedChange={() => handleToggleActive(u)} aria-label={`Akun aktif ${u.full_name || u.email}`} />

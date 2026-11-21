@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
+import { fetchSuperAdminStats } from '@/lib/superAdminStats';
 import { Button } from '@/components/ui/button';
 import { PageHead, Panel, PanelTitle, EmptyState, Spinner } from '@/components/superadmin/ui';
 import { CheckCircle2 } from 'lucide-react';
@@ -23,26 +24,16 @@ const SuperAdminOverview = () => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [clinicsRes, users, patients, therapists] = await Promise.all([
-        supabase.from('clinics').select('id, name, subscription_status, max_patients, max_therapists'),
-        supabase.from('users').select('*', { count: 'exact', head: true }),
-        supabase.from('patients').select('*', { count: 'exact', head: true }),
-        supabase.from('physiotherapists').select('*', { count: 'exact', head: true }),
-      ]);
-      const clinics = clinicsRes.data || [];
-      // Jumlah pasien per klinik untuk membaca pemakaian kuota.
-      const usage = await Promise.all(
-        clinics.map(async (c) => {
-          const { count } = await supabase.from('patients').select('*', { count: 'exact', head: true }).eq('clinic_id', c.id);
-          return { ...c, patientCount: count || 0 };
-        })
-      );
+      const { data: clinicRows } = await supabase.from('clinics').select('id, name, subscription_status, max_patients, max_therapists');
+      const clinics = clinicRows || [];
+      const stats = await fetchSuperAdminStats(clinics.map((c) => c.id));
+      const usage = clinics.map((c) => ({ ...c, patientCount: stats.patientCounts[c.id] || 0 }));
       if (cancelled) return;
       setState({
         clinics: usage,
-        users: users.count || 0,
-        patients: patients.count || 0,
-        therapists: therapists.count || 0,
+        users: stats.users,
+        patients: stats.patients,
+        therapists: stats.therapists,
       });
     })();
     return () => { cancelled = true; };
