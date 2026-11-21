@@ -178,10 +178,13 @@ const WaitingListPage = () => {
   const contactViaWa = async (item) => {
     const matches = matchesFor(item);
     const first = matches[0];
+    const hari = first
+      ? (first.date === todayWita() ? 'hari ini' : dateText(first.date))
+      : (item.preferred_date ? dateText(item.preferred_date) : 'hari ini');
     const slotLine = first
-      ? `Ada jadwal kosong ${dateText(first.date)} pukul ${first.time}${first.therapist ? ` dengan ${first.therapist}` : ''}. `
-      : 'Ada jadwal kosong yang sesuai. ';
-    const text = `Halo kak ${item.patient_name}, kami dari Kaffah Physiotherapy. ${slotLine}Apakah kakak berkenan untuk dijadwalkan? 🙏`;
+      ? `kami ingin menginformasikan kalau ${hari} ada pasien yang cancel di jam ${first.time}${first.therapist ? ` dengan ${first.therapist}` : ''}`
+      : `kami ingin menginformasikan kalau ${hari} ada pasien yang cancel`;
+    const text = `Halo kak ${item.patient_name}, ${slotLine}, apakah berkenan kami jadwalkan? 🙏`;
     window.open(`https://api.whatsapp.com/send?phone=${waPhone(item.phone)}&text=${encodeURIComponent(text)}`, '_blank');
     await update(item.id, { status: 'notified', notified_at: new Date().toISOString() }, 'Ditandai sudah dikabari');
   };
