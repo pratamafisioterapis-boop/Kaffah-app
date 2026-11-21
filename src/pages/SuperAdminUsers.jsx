@@ -123,6 +123,9 @@ const SuperAdminUsers = () => {
       return;
     }
     setRemotingId(u.id);
+    // Unduh kode dashboard tujuan sambil menunggu sesi remote dibuat.
+    const warm = { owner: () => import('@/pages/OwnerDashboard'), admin: () => import('@/pages/AdminDashboard'), therapist: () => import('@/pages/TherapistDashboard') }[u.role === 'physiotherapist' ? 'therapist' : u.role];
+    warm?.().catch(() => {});
     const { error, target } = await impersonateUser(u.id);
     setRemotingId(null);
     if (error) {
