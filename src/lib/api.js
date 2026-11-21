@@ -24,6 +24,7 @@ import { id as idLocale } from 'date-fns/locale';
 import { safeQuery } from '@/lib/supabaseErrorHandler';
 import { markIncentiveFlags } from '@/lib/soapFirst';
 import { formatPatientNameForClinic } from '@/utils/patientName';
+import { PRAXIS_CLINIC_ID } from '@/lib/clinicIds';
 
 // Supabase/PostgREST caps unbounded selects at a server-side max row count
 // (commonly 1000). Queries that can plausibly return more rows than that
@@ -2544,12 +2545,53 @@ export const getAdminAccountingReport = async ({ startDate, endDate }) => {
     const { data: income, error: incomeError } = await incomeQuery;
     if (incomeError) throw incomeError;
 
+    // PRAXIS: pemasukan juga berasal dari Daily Recap (uang masuk per revenue_date)
+    // dan pembayaran paket di awal (package_payments), selain pemasukan manual admin.
+    // Disimpan terpisah (recap_income_breakdown) supaya daftar Pemasukan (edit/hapus) tidak berubah.
+    let recapIncome = [];
+    if (userRow?.clinic_id === PRAXIS_CLINIC_ID) {
+      let recapQuery = supabase
+        .from('daily_recaps')
+        .select('id, revenue_date, amount, payment_method')
+        .eq('clinic_id', userRow.clinic_id)
+        .gt('amount', 0)
+        .limit(5000);
+      if (startDate) recapQuery = recapQuery.gte('revenue_date', startDate);
+      if (endDate) recapQuery = recapQuery.lte('revenue_date', endDate);
+      const { data: recaps, error: recapError } = await recapQuery;
+      if (recapError) throw recapError;
+
+      recapIncome = (recaps || []).map(r => ({
+        id: `recap-${r.id}`,
+        date: r.revenue_date,
+        category: 'Daily Recap',
+        description: 'Pendapatan dari Daily Recap',
+        amount: Number(r.amount) || 0
+      }));
+
+      const { data: pays, error: paysError } = await getPackagePaymentsInRange({ startDate, endDate });
+      if (paysError) throw paysError;
+      (pays || []).forEach(p => {
+        recapIncome.push({
+          id: `pkgpay-${p.id}`,
+          date: witaYmd(p.paid_at),
+          category: 'Pembayaran Paket (di awal)',
+          description: `${p.patient?.full_name || 'Tanpa Nama'} - ${p.package_name || 'Paket'}`,
+          amount: Number(p.amount) || 0
+        });
+      });
+    }
+
+    const manualIncomeTotal = income?.reduce((acc, curr) => acc + Number(curr.amount || 0), 0) || 0;
+    const recapIncomeTotal = recapIncome.reduce((acc, curr) => acc + curr.amount, 0);
+
     return {
       data: {
-        total_income: income?.reduce((acc, curr) => acc + Number(curr.amount || 0), 0) || 0,
+        total_income: manualIncomeTotal + recapIncomeTotal,
         total_expenses: expenses?.reduce((acc, curr) => acc + Number(curr.amount || 0), 0) || 0,
         expenses_breakdown: expenses || [],
-        income_breakdown: income || []
+        income_breakdown: income || [],
+        recap_income_breakdown: recapIncome
       },
       error: null
     };

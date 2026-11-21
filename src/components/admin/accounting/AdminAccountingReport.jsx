@@ -17,9 +17,15 @@ const AdminAccountingReport = ({ data, dateRange }) => {
     total_income = 0, 
     total_expenses = 0, 
     expenses_breakdown = [], 
-    income_breakdown = [] 
+    income_breakdown: manualIncomeBreakdown = [],
+    recap_income_breakdown = []
   } = data;
-  
+
+  // Pemasukan laporan = pemasukan manual admin + (Praxis) Daily Recap & pembayaran paket.
+  const income_breakdown = [
+    ...(Array.isArray(manualIncomeBreakdown) ? manualIncomeBreakdown : []),
+    ...(Array.isArray(recap_income_breakdown) ? recap_income_breakdown : [])
+  ];
 
   const exportPDF = () => {
     try {
