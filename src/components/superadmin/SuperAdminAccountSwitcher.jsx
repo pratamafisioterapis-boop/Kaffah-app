@@ -83,6 +83,8 @@ const SuperAdminAccountSwitcher = () => {
 
   const handleSwitch = async (owner) => {
     setSwitchingId(owner.id);
+    // Unduh kode dashboard owner sambil menunggu sesi remote dibuat.
+    import('@/pages/OwnerDashboard').catch(() => {});
     const { error } = await impersonateUser(owner.id);
     setSwitchingId(null);
     if (error) {
