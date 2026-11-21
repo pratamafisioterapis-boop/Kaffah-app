@@ -80,7 +80,8 @@ const AdminAccountingDashboard = ({ initialData, dateRange: propDateRange }) => 
           total_income: data.total_income || 0,
           total_expenses: data.total_expenses || 0,
           expenses_breakdown: Array.isArray(data.expenses_breakdown) ? data.expenses_breakdown : [],
-          income_breakdown: Array.isArray(data.income_breakdown) ? data.income_breakdown : []
+          income_breakdown: Array.isArray(data.income_breakdown) ? data.income_breakdown : [],
+          recap_income_breakdown: Array.isArray(data.recap_income_breakdown) ? data.recap_income_breakdown : []
         });
       } else {
         // Fallback if data is null
