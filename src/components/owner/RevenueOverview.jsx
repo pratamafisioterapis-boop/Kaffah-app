@@ -11,6 +11,8 @@ import {
 import { getOwnerIncome, getOwnerExpenditures, getAdminIncome, getAdminExpenses, getPatientIncomeFromPackages, getBepFinancials, getCachedClinicId } from '@/lib/api';
 import { supabase } from '@/lib/customSupabaseClient';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { PRAXIS_CLINIC_ID } from '@/lib/clinicIds';
 import useMonthlyFinance from '@/hooks/useMonthlyFinance';
 import BreakEvenPointWidget from '@/components/owner/BreakEvenPointWidget';
 import ProfitMarginTrendWidget from '@/components/owner/ProfitMarginTrendWidget';
@@ -62,6 +64,8 @@ const KpiTile = ({ tone, icon, title, value, series, inverse, className }) => {
 };
 
 const RevenueOverview = ({ dateRange }) => {
+  const { userDetails } = useAuth();
+  const hidePackageVsNonPackage = userDetails?.clinic_id === PRAXIS_CLINIC_ID;
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -495,7 +499,8 @@ const RevenueOverview = ({ dateRange }) => {
           )}
         </FinanceTile>
 
-        {/* Paket vs non-paket */}
+        {/* Paket vs non-paket (disembunyikan di Praxis) */}
+        {!hidePackageVsNonPackage && (
         <FinanceTile tone="vio" icon={Package} title="Paket vs Non-Paket" className="col-span-2 md:col-span-2 lg:col-span-2">
           {packageVsNonPackage.total === 0 ? (
             <TileEmpty>Belum ada pemasukan pada periode ini.</TileEmpty>
@@ -534,6 +539,7 @@ const RevenueOverview = ({ dateRange }) => {
             </>
           )}
         </FinanceTile>
+        )}
 
         <PromoDiscountWidget key={`promo-${refreshKey}`} dateRange={dateRange} className="col-span-2 md:col-span-2 lg:col-span-2" />
       </div>
