@@ -25,13 +25,15 @@ import { Loader2, PackageX, CalendarClock, AlertCircle, Trash2, CheckCircle, XCi
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { PRAXIS_CLINIC_ID } from '@/lib/clinicIds';
 
 const RELIGION_OPTIONS = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Lainnya'];
 const MAX_KTP_SIZE = 5 * 1024 * 1024;
 
 const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) => {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, userDetails } = useAuth();
+  const hideReferral = userDetails?.clinic_id === PRAXIS_CLINIC_ID;
   
   // Helper to safely format date for HTML input
   const safeDate = (dateVal) => {
@@ -680,6 +682,7 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
                       </div>
                   </div>
 
+                  {!hideReferral && (
                   {/* Referral (Direferensikan oleh Pasien) */}
                   <div className="space-y-1">
                     <Label className="flex items-center gap-1">
@@ -755,6 +758,7 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
                       Jika pasien ini direferensikan oleh pasien lama, cari & pilih nama pasien tersebut agar reward WhatsApp otomatis terkirim ke pasien lama saat terapi pertama pasien ini selesai.
                     </p>
                   </div>
+                  )}
 
                   {/* Pekerjaan & Agama */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
