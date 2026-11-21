@@ -4,7 +4,8 @@ import {
   markFollowUpAsSent,
   markFollowUpAsCompleted,
   deleteFollowUp,
-  interpolateTemplate
+  interpolateTemplate,
+  getWaApiSettings
 } from '@/lib/api';
 import { supabase } from '@/lib/customSupabaseClient';
 import FollowUpCard from '@/components/admin/FollowUpCard';
@@ -42,6 +43,8 @@ const FollowUpManagementPage = () => {
   const [queueItems, setQueueItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('booking_appointment');
+  // Klinik yang belum setup Watzap (mis. Praxis) mengirim manual lewat wa.me.
+  const [watzapReady, setWatzapReady] = useState(false);
 
   const { clinicName } = useAuth();
   const { toast } = useToast();
@@ -66,6 +69,17 @@ const FollowUpManagementPage = () => {
   useEffect(() => {
     fetchQueue();
   }, [fetchQueue]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await getWaApiSettings();
+        setWatzapReady(Boolean(data?.enabled && data?.api_key));
+      } catch {
+        setWatzapReady(false);
+      }
+    })();
+  }, []);
 
   // ===============================
   // Handlers
@@ -97,7 +111,9 @@ const FollowUpManagementPage = () => {
 
   const handleSendWA = async (item) => {
 
-    if (item.follow_up_type === 'follow_up') {
+    // Hanya klinik dengan Watzap aktif yang memakai kirim otomatis; selain itu
+    // semua tipe (termasuk Follow Up Rutin) dikirim manual via WhatsApp.
+    if (item.follow_up_type === 'follow_up' && watzapReady) {
       await handleSendFollowUpRutin(item);
       return;
     }
