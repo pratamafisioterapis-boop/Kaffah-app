@@ -2552,22 +2552,46 @@ export const getAdminAccountingReport = async ({ startDate, endDate }) => {
     if (userRow?.clinic_id === PRAXIS_CLINIC_ID) {
       let recapQuery = supabase
         .from('daily_recaps')
-        .select('id, revenue_date, amount, payment_method')
+        .select('id, revenue_date, amount, payment_method, full_name, guest_name, package_type, service_type, invoice_items, goods_items, tips_amount')
         .eq('clinic_id', userRow.clinic_id)
         .gt('amount', 0)
+        .order('revenue_date', { ascending: true })
         .limit(5000);
       if (startDate) recapQuery = recapQuery.gte('revenue_date', startDate);
       if (endDate) recapQuery = recapQuery.lte('revenue_date', endDate);
       const { data: recaps, error: recapError } = await recapQuery;
       if (recapError) throw recapError;
 
-      recapIncome = (recaps || []).map(r => ({
-        id: `recap-${r.id}`,
-        date: r.revenue_date,
-        category: 'Daily Recap',
-        description: 'Pendapatan dari Daily Recap',
-        amount: Number(r.amount) || 0
-      }));
+      // Item = rincian invoice (nama, qty, nominal bersih setelah diskon); fallback ke paket/layanan.
+      const toItems = (r) => {
+        const inv = Array.isArray(r.invoice_items) ? r.invoice_items : [];
+        const items = inv
+          .filter(it => it && it.name)
+          .map(it => ({
+            name: it.name,
+            qty: Number(it.qty) || 1,
+            amount: Math.max(0, (Number(it.price) || 0) * (Number(it.qty) || 1) - (Number(it.discount) || 0))
+          }));
+        if (items.length === 0) {
+          const fallback = r.package_type || r.service_type || 'Terapi';
+          items.push({ name: fallback, qty: 1, amount: Number(r.amount) || 0 });
+        }
+        return items;
+      };
+
+      recapIncome = (recaps || []).map(r => {
+        const items = toItems(r);
+        const patientName = r.full_name || r.guest_name || 'Tanpa Nama';
+        return {
+          id: `recap-${r.id}`,
+          date: r.revenue_date,
+          category: 'Daily Recap',
+          patient_name: patientName,
+          items,
+          description: `${patientName} - ${items.map(i => i.name).join(', ')}`,
+          amount: Number(r.amount) || 0
+        };
+      });
 
       const { data: pays, error: paysError } = await getPackagePaymentsInRange({ startDate, endDate });
       if (paysError) throw paysError;
@@ -2576,6 +2600,8 @@ export const getAdminAccountingReport = async ({ startDate, endDate }) => {
           id: `pkgpay-${p.id}`,
           date: witaYmd(p.paid_at),
           category: 'Pembayaran Paket (di awal)',
+          patient_name: p.patient?.full_name || 'Tanpa Nama',
+          items: [{ name: p.package_name || 'Paket', qty: 1, amount: Number(p.amount) || 0 }],
           description: `${p.patient?.full_name || 'Tanpa Nama'} - ${p.package_name || 'Paket'}`,
           amount: Number(p.amount) || 0
         });
