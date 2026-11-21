@@ -108,3 +108,10 @@ Kartu reminder di Follow Up Management menampilkan **Hadir** (tombol Hadir atau 
 **Minta ubah jadwal**, **Minta batal**, atau **Belum konfirmasi** (reminder sudah terkirim tetapi belum dibalas). Balasan teks dicatat
 oleh `record_reminder_text_reply` (dipanggil `wa-watzap-webhook`); kata penolak/ragu (tidak, batal, reschedule, telat, maaf, ...) tidak dihitung hadir,
 dan Reschedule/Cancel dari tombol tidak ditimpa. Satu nomor untuk beberapa pasien: semua reminder hari itu di nomor tersebut ikut ditandai.
+
+## Nomor yang diabaikan AI
+Kolom `wa_ai_settings.ignored_phones` (text[], migrasi `20261121130000_wa_ai_ignored_phones.sql`) berisi nomor yang tidak ditanggapi AI sama sekali:
+tidak ada balasan dan tidak ada draf ke Telegram (mis. nomor admin sendiri: 6282159018652, 6287872290608). Format bebas (08…/62…/+62…), dinormalkan saat dibandingkan.
+```sql
+update wa_ai_settings set ignored_phones = array['6282159018652','6287872290608'] where clinic_id = '<clinic_id>';
+```
