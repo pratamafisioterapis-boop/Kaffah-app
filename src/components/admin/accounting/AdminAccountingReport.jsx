@@ -74,17 +74,32 @@ const AdminAccountingReport = ({ data, dateRange }) => {
       // Income Table
       doc.text('Income Detail', 14, doc.lastAutoTable.finalY + 15);
       
-      const incomeRows = Array.isArray(income_breakdown) ? income_breakdown.map(i => [
-        i.date && isValid(new Date(i.date)) ? format(new Date(i.date), 'dd/MM/yyyy') : '-',
-        i.category || '-',
-        i.description || '-',
-        parseFloat(i.amount || 0).toLocaleString('id-ID')
-      ]) : [];
+      const rp = (n) => parseFloat(n || 0).toLocaleString('id-ID');
+      const sortedIncome = Array.isArray(income_breakdown)
+        ? [...income_breakdown].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')))
+        : [];
+      // Kolom: Tanggal | Nama Pasien | Item (nama x qty - nominal) | Total.
+      // Pemasukan manual admin tidak punya pasien/item: pakai kategori & deskripsi.
+      const incomeRows = sortedIncome.map(i => {
+        const hasItems = Array.isArray(i.items) && i.items.length > 0;
+        const itemsText = hasItems
+          ? i.items.map(it => `${it.name}${it.qty > 1 ? ` x${it.qty}` : ''} - ${rp(it.amount)}`).join('\n')
+          : [i.category, i.description].filter(Boolean).join(': ') || '-';
+        return [
+          i.date && isValid(new Date(i.date)) ? format(new Date(i.date), 'dd/MM/yyyy') : '-',
+          i.patient_name || '-',
+          itemsText,
+          rp(i.amount)
+        ];
+      });
 
       autoTable(doc, {
         startY: doc.lastAutoTable.finalY + 20,
-        head: [['Date', 'Source', 'Description', 'Amount']],
+        head: [['Tanggal', 'Nama Pasien', 'Item', 'Nominal (Rp)']],
         body: incomeRows.length > 0 ? incomeRows : [['-', '-', 'No Data', '0']],
+        columnStyles: { 3: { halign: 'right' } },
+        styles: { fontSize: 9 },
+        foot: incomeRows.length > 0 ? [['', '', 'Total Income', rp(total_income)]] : undefined,
       });
 
       doc.save('admin-accounting-report.pdf');
