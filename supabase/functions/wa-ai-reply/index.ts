@@ -1509,6 +1509,12 @@ async function dailyReport(admin: Admin) {
 
 type QueueRow = { id: string; clinic_id: string; conversation_id: string; message_id: string };
 
+/** Nomor yang diabaikan AI (wa_ai_settings.ignored_phones), mis. nomor admin sendiri. */
+function isIgnoredPhone(st: any, waId: string): boolean {
+  const list: string[] = (st?.ignored_phones || []).map((p: string) => normalizePhone(p));
+  return list.includes(normalizePhone(waId));
+}
+
 /** Terima pesan masuk baru: tentukan apakah AI boleh bertindak, lalu masukkan ke antrean. */
 async function enqueue(admin: Admin, conversationId: string, messageId: string) {
   const { data: conv } = await admin.from("wa_inbox_conversations")
@@ -1518,6 +1524,7 @@ async function enqueue(admin: Admin, conversationId: string, messageId: string) 
 
   const { data: st } = await admin.from("wa_ai_settings").select("*").eq("clinic_id", clinicId).maybeSingle();
   if (!st?.enabled) return; // MATI: tidak melakukan apa pun, tidak mencatat apa pun.
+  if (isIgnoredPhone(st, conv.wa_id)) return; // nomor admin sendiri: tanpa balasan & tanpa draf Telegram
 
   // Mode review: semua pesan pasien -> draf AI ke Telegram owner, setelah jeda minimal
   // (pesan beruntun digabung: hanya pesan terbaru yang dibuatkan draf).
@@ -1618,6 +1625,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
 
   const { data: st } = await admin.from("wa_ai_settings").select("*").eq("clinic_id", clinicId).maybeSingle();
   if (!st?.enabled) return; // dimatikan selagi menunggu di antrean
+  if (isIgnoredPhone(st, conv.wa_id)) return;
   if (st.mode === "review") {
     // Setelah jeda: hanya pesan pasien terbaru yang dibuatkan draf (yang lebih lama sudah tercakup).
     const { data: latest } = await admin.from("wa_inbox_messages")
