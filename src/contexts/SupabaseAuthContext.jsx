@@ -443,7 +443,8 @@ export const AuthProvider = ({ children }) => {
       // Already impersonating as an owner: restore the owner's own session
       // first so they can hop straight to another account.
       const existingOrigin = readImpersonationOrigin();
-      if (existingOrigin?.origin_role === 'owner') {
+      const isOwnerHop = existingOrigin?.origin_role === 'owner';
+      if (isOwnerHop) {
         const { error: restoreError } = await supabase.auth.setSession({
           access_token: existingOrigin.access_token,
           refresh_token: existingOrigin.refresh_token,
@@ -469,8 +470,12 @@ export const AuthProvider = ({ children }) => {
         access_token: originSession.access_token,
         refresh_token: originSession.refresh_token,
         admin_email: originSession.user?.email || null,
-        origin_role: existingOrigin?.origin_role || userDetails?.role || null,
-        origin_clinic_id: existingOrigin?.origin_clinic_id || userDetails?.clinic_id || null,
+        origin_role: isOwnerHop ? 'owner' : (userDetails?.role || null),
+        origin_clinic_id: (isOwnerHop ? existingOrigin.origin_clinic_id : userDetails?.clinic_id) || null,
+        // Super admin -> owner -> admin/terapis: remember the super admin
+        // origin one level up so "Akun Owner" and then "Kembali ke Super Admin"
+        // both keep working.
+        parent: (isOwnerHop ? existingOrigin.parent : existingOrigin) || null,
       };
       localStorage.setItem(IMPERSONATION_ORIGIN_KEY, JSON.stringify(originPayload));
       setImpersonationOrigin(originPayload);
@@ -507,8 +512,15 @@ export const AuthProvider = ({ children }) => {
         access_token: origin.access_token,
         refresh_token: origin.refresh_token,
       });
-      localStorage.removeItem(IMPERSONATION_ORIGIN_KEY);
-      setImpersonationOrigin(null);
+      // Hopped from an impersonated owner (super admin -> owner -> terapis):
+      // going back lands on the owner, still impersonated by the super admin.
+      if (origin.parent) {
+        localStorage.setItem(IMPERSONATION_ORIGIN_KEY, JSON.stringify(origin.parent));
+        setImpersonationOrigin(origin.parent);
+      } else {
+        localStorage.removeItem(IMPERSONATION_ORIGIN_KEY);
+        setImpersonationOrigin(null);
+      }
       if (error) throw error;
       return { error: null };
     } catch (error) {

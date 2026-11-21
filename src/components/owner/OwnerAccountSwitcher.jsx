@@ -33,13 +33,16 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [switchingId, setSwitchingId] = useState(null);
+  // True only when currently inside an admin/terapis account reached from the
+  // owner (not when a super admin is viewing the owner account itself).
+  const isOwnerHop = isImpersonating && impersonationOrigin?.origin_role === 'owner';
 
   useEffect(() => {
     if (!open || !clinicId) return;
     let active = true;
     // While impersonating, RLS may hide the clinic's users, so use the list
     // the owner's own session cached.
-    const cached = isImpersonating ? readCache(clinicId) : null;
+    const cached = isOwnerHop ? readCache(clinicId) : null;
     if (cached) {
       setAccounts(cached.filter((a) => a.id !== user?.id));
       return;
@@ -70,7 +73,9 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
           return p ? { ...a, full_name: p.name || a.full_name } : a;
         })
         .sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
-      if (!isImpersonating) {
+      // Cache whenever we're on the owner account itself (incl. an owner opened
+      // by a super admin), so the list survives hopping into an admin/terapis.
+      if (!isOwnerHop) {
         try {
           localStorage.setItem(cacheKey(clinicId), JSON.stringify(list));
           localStorage.removeItem(LEGACY_CACHE_KEY);
@@ -80,7 +85,7 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
       setLoading(false);
     });
     return () => { active = false; };
-  }, [open, clinicId, user?.id, isImpersonating]);
+  }, [open, clinicId, user?.id, isOwnerHop]);
 
   useEffect(() => {
     if (!open) return;
@@ -169,7 +174,7 @@ const OwnerAccountSwitcher = ({ clinicId }) => {
             <p className="text-xs text-app-muted">Lihat tampilan sebagai admin / terapis klinik Anda</p>
           </div>
           <div className="max-h-[min(360px,60vh)] overflow-y-auto p-2">
-            {isImpersonating && (
+            {isOwnerHop && (
               <div className="mb-1">
                 <p className="px-2 py-1 text-xs font-bold uppercase tracking-wide text-app-muted">Owner</p>
                 <button
