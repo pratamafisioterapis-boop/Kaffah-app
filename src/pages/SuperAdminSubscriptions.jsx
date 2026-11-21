@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { fetchSuperAdminStats } from '@/lib/superAdminStats';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -31,11 +32,8 @@ const SuperAdminSubscriptions = () => {
     setClinics(data || []);
     setLoading(false);
     // Pemakaian kuota: hitung pasien per klinik (tidak menghalangi tampilan form).
-    const entries = await Promise.all((data || []).map(async (c) => {
-      const { count } = await supabase.from('patients').select('*', { count: 'exact', head: true }).eq('clinic_id', c.id);
-      return [c.id, count || 0];
-    }));
-    setPatientCounts(Object.fromEntries(entries));
+    const stats = await fetchSuperAdminStats((data || []).map((c) => c.id));
+    setPatientCounts(stats.patientCounts);
   };
 
   useEffect(() => { fetchClinics(); }, []);

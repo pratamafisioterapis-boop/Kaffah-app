@@ -1,18 +1,19 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import SuperAdminLayout from '@/components/superadmin/SuperAdminLayout';
-import { PageHead } from '@/components/superadmin/ui';
-import SuperAdminOverview from '@/pages/SuperAdminOverview';
-import SuperAdminClinics from '@/pages/SuperAdminClinics';
-import SuperAdminClinicViewer from '@/pages/SuperAdminClinicViewer';
-import SuperAdminRegistrationLinks from '@/pages/SuperAdminRegistrationLinks';
-import SuperAdminUsers from '@/pages/SuperAdminUsers';
-import SuperAdminSubscriptions from '@/pages/SuperAdminSubscriptions';
-import JournalKnowledgeBaseManager from '@/components/owner/JournalKnowledgeBaseManager';
-import ExerciseVideoManager from '@/components/superadmin/ExerciseVideoManager';
+import { PageHead, Spinner } from '@/components/superadmin/ui';
+const SuperAdminOverview = React.lazy(() => import('@/pages/SuperAdminOverview'));
+const SuperAdminClinics = React.lazy(() => import('@/pages/SuperAdminClinics'));
+const SuperAdminClinicViewer = React.lazy(() => import('@/pages/SuperAdminClinicViewer'));
+const SuperAdminRegistrationLinks = React.lazy(() => import('@/pages/SuperAdminRegistrationLinks'));
+const SuperAdminUsers = React.lazy(() => import('@/pages/SuperAdminUsers'));
+const SuperAdminSubscriptions = React.lazy(() => import('@/pages/SuperAdminSubscriptions'));
+const JournalKnowledgeBaseManager = React.lazy(() => import('@/components/owner/JournalKnowledgeBaseManager'));
+const ExerciseVideoManager = React.lazy(() => import('@/components/superadmin/ExerciseVideoManager'));
 
 const SuperAdminDashboard = () => (
   <SuperAdminLayout userName="Super Admin">
+    <Suspense fallback={<Spinner />}>
     <Routes>
       <Route path="/" element={<Navigate to="/super-admin/overview" replace />} />
       <Route path="/overview" element={<SuperAdminOverview />} />
@@ -40,6 +41,7 @@ const SuperAdminDashboard = () => (
         }
       />
     </Routes>
+    </Suspense>
   </SuperAdminLayout>
 );
 
