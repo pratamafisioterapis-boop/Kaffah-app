@@ -117,7 +117,7 @@ export const DocSignature = ({ data, clinic, signatureUrl }) => (
           <img
             src={clinic.stamp_url}
             alt="stamp"
-            style={{ position: 'absolute', right: '-8px', bottom: 0, maxHeight: '72px', maxWidth: '72px', objectFit: 'contain', opacity: 0.9 }} loading="lazy" decoding="async" />
+            style={{ position: 'absolute', left: '-6px', bottom: 0, maxHeight: '72px', maxWidth: '72px', objectFit: 'contain', opacity: 0.9 }} loading="lazy" decoding="async" />
         )}
       </div>
       <div style={{ height: '1px', background: C.text }} />
