@@ -32,11 +32,11 @@ const ResumeMedisTemplateKaffah = forwardRef(({ data, clinic }, ref) => {
     return () => { cancelled = true; };
   }, [data?.therapist_signature_url]);
 
-  const labelCell = { width: '150px', padding: '13px 16px 13px 0', borderBottom: `1px solid ${C.line}`, verticalAlign: 'top' };
-  const valueCell = { padding: '13px 0', borderBottom: `1px solid ${C.line}`, verticalAlign: 'top' };
+  const labelCell = { width: '150px', padding: '10px 16px 10px 0', borderBottom: `1px solid ${C.line}`, verticalAlign: 'top' };
+  const valueCell = { padding: '10px 0', borderBottom: `1px solid ${C.line}`, verticalAlign: 'top' };
   const labelMain = { fontSize: '12px', fontWeight: 600, color: C.navy, letterSpacing: '0.02em' };
   const labelSub = { fontSize: '10.5px', color: C.muted, marginTop: '2px' };
-  const bodyText = { fontSize: '13px', lineHeight: 1.65, whiteSpace: 'pre-wrap', margin: 0 };
+  const bodyText = { fontSize: '12.5px', lineHeight: 1.55, whiteSpace: 'pre-wrap', margin: 0 };
   const th = { fontSize: '10.5px', fontWeight: 600, letterSpacing: '0.1em', color: C.muted, textAlign: 'left', padding: '0 0 9px', borderBottom: `2px solid ${C.navy}` };
 
   return (
@@ -50,7 +50,7 @@ const ResumeMedisTemplateKaffah = forwardRef(({ data, clinic }, ref) => {
         // a near-blank second page even though the real content fits.
         minHeight: 'calc(297mm - 2px)',
         boxSizing: 'border-box',
-        padding: '48px 52px 40px',
+        padding: '40px 52px 32px',
         display: 'flex',
         flexDirection: 'column',
         fontFamily: "'Inter', Arial, sans-serif",
@@ -76,7 +76,7 @@ const ResumeMedisTemplateKaffah = forwardRef(({ data, clinic }, ref) => {
         ]}
       />
 
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '22px' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '18px' }}>
         <thead>
           <tr>
             <th style={{ ...th, width: '150px' }}>PEMERIKSAAN</th>
@@ -99,30 +99,30 @@ const ResumeMedisTemplateKaffah = forwardRef(({ data, clinic }, ref) => {
           <tr>
             <td style={labelCell}><div style={labelMain}>Program Terapi</div><div style={labelSub}>Modalitas</div></td>
             <td style={valueCell}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: '24px', rowGap: '6px' }}>
                 {Object.entries(PROGRAM_TERAPI_LABELS).map(([key, label]) => {
                   const on = programTerapi.includes(key);
                   return (
-                    <div key={key} style={{
-                      minHeight: '34px', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                      fontSize: '12px', padding: '4px 8px', textAlign: 'center', borderRadius: '8px',
-                      border: `1px solid ${on ? C.navy : C.chipLine}`,
-                      background: on ? C.navy : 'transparent',
-                      color: on ? '#ffffff' : C.muted,
-                      fontWeight: on ? 700 : 400,
-                    }}>
-                      {on && (
-                        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" style={{ flex: 'none' }}>
-                          <path d="M2.5 6.3 5 8.8 9.6 3.6" fill="none" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
-                      {label}
+                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '9px', fontSize: '12.5px', lineHeight: '18px' }}>
+                      <span style={{
+                        width: '15px', height: '15px', boxSizing: 'border-box', borderRadius: '4px', flex: 'none',
+                        border: `1.5px solid ${on ? C.navy : C.chipLine}`,
+                        background: on ? C.navy : '#ffffff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        {on && (
+                          <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true">
+                            <path d="M2.5 6.3 5 8.8 9.6 3.6" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </span>
+                      <span style={{ color: on ? C.text : '#8a98a8', fontWeight: on ? 600 : 400 }}>{label}</span>
                     </div>
                   );
                 })}
               </div>
               {otherProgram && (
-                <p style={{ fontSize: '12.5px', margin: '10px 0 0' }}>
+                <p style={{ fontSize: '12.5px', margin: '8px 0 0' }}>
                   <span style={{ color: C.muted }}>Lainnya: </span>{otherProgram}
                 </p>
               )}
@@ -139,7 +139,7 @@ const ResumeMedisTemplateKaffah = forwardRef(({ data, clinic }, ref) => {
         </tbody>
       </table>
 
-      <div style={{ flex: 1, minHeight: '28px' }} />
+      <div style={{ flex: 1, minHeight: '20px' }} />
       <DocSignature data={data} clinic={clinic} signatureUrl={signatureUrl} />
     </div>
   );

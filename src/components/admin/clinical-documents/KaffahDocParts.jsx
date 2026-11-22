@@ -1,5 +1,5 @@
 // Bagian bersama dokumen klinis khusus Kaffah (gaya "Tabel Klinis", senada dengan kwitansi).
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 export const formatDate = (value) => {
   if (!value) return '-';
@@ -21,29 +21,86 @@ export const C = {
 
 // Kop dan blok tanda tangan dipakai bersama Resume Medis dan Surat Keterangan
 // (gaya "Tabel Klinis", senada dengan kwitansi).
-export const DocHeader = ({ clinic, title, subtitle }) => (
+// Logo klinik sering punya ruang putih di sekelilingnya sehingga tampak menjorok dari
+// margin kiri. Potong bagian putihnya lewat canvas; bila gagal (mis. CORS), pakai gambar asli.
+const trimWhitespace = (url) => new Promise((resolve) => {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    try {
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const px = ctx.getImageData(0, 0, w, h).data;
+      let minX = w; let minY = h; let maxX = -1; let maxY = -1;
+      for (let y = 0; y < h; y += 1) {
+        for (let x = 0; x < w; x += 1) {
+          const i = (y * w + x) * 4;
+          const solid = px[i + 3] > 20 && (px[i] < 235 || px[i + 1] < 235 || px[i + 2] < 235);
+          if (solid) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+      if (maxX < 0) { resolve(url); return; }
+      const out = document.createElement('canvas');
+      out.width = maxX - minX + 1;
+      out.height = maxY - minY + 1;
+      out.getContext('2d').drawImage(canvas, minX, minY, out.width, out.height, 0, 0, out.width, out.height);
+      resolve(out.toDataURL('image/png'));
+    } catch (e) {
+      resolve(url);
+    }
+  };
+  img.onerror = () => resolve(url);
+  img.src = url;
+});
+
+const useTrimmedLogo = (url) => {
+  const [src, setSrc] = useState(url);
+  useEffect(() => {
+    let cancelled = false;
+    setSrc(url);
+    if (url) trimWhitespace(url).then((result) => { if (!cancelled) setSrc(result); });
+    return () => { cancelled = true; };
+  }, [url]);
+  return src;
+};
+
+export const DocHeader = ({ clinic, title, subtitle }) => {
+  const logoSrc = useTrimmedLogo(clinic?.logo_url || '/clinara-logo.png');
+  return (
   <>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <img src={clinic?.logo_url || '/clinara-logo.png'} alt="logo" style={{ width: '64px', height: 'auto', objectFit: 'contain', display: 'block' }} loading="lazy" decoding="async" />
+    {/* Judul dan nama klinik sama-sama dimulai dari atas dengan tinggi baris yang sama, jadi sejajar. */}
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '20px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', minWidth: 0 }}>
+        <img src={logoSrc} alt="logo" style={{ width: '78px', height: 'auto', maxHeight: '70px', objectFit: 'contain', display: 'block', flex: 'none' }} loading="lazy" decoding="async" />
         <div>
-          <div style={{ fontSize: '17px', fontWeight: 700, letterSpacing: '0.1em', color: C.navy }}>
+          <div style={{ fontSize: '17px', lineHeight: '24px', fontWeight: 700, letterSpacing: '0.1em', color: C.navy }}>
             {(clinic?.name || '').toUpperCase()}
           </div>
-          <div style={{ fontSize: '11.5px', lineHeight: 1.55, color: C.muted, marginTop: '5px' }}>
+          <div style={{ fontSize: '11px', lineHeight: 1.55, color: C.muted, marginTop: '2px' }}>
             {clinic?.address || ''}
             {(clinic?.phone || clinic?.email) && <><br />{[clinic?.phone, clinic?.email].filter(Boolean).join('  ·  ')}</>}
           </div>
         </div>
       </div>
       <div style={{ textAlign: 'right', flex: 'none' }}>
-        <div style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '0.14em', color: C.navy, lineHeight: 1.1 }}>{title}</div>
+        <div style={{ fontSize: '20px', fontWeight: 700, letterSpacing: '0.12em', color: C.navy, lineHeight: '24px', whiteSpace: 'nowrap' }}>{title}</div>
         {subtitle && <div style={{ fontSize: '11.5px', color: C.muted, marginTop: '5px' }}>{subtitle}</div>}
       </div>
     </div>
     <div style={{ height: '2px', background: C.navy, marginTop: '20px' }} />
   </>
-);
+  );
+};
 
 export const DocSignature = ({ data, clinic, signatureUrl }) => (
   <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -52,7 +109,7 @@ export const DocSignature = ({ data, clinic, signatureUrl }) => (
         {(data?.tempat || 'Balikpapan')}, {formatDate(data?.document_date)}
       </div>
       <div style={{ fontSize: '10.5px', fontWeight: 600, letterSpacing: '0.12em', color: C.muted }}>FISIOTERAPIS</div>
-      <div style={{ position: 'relative', height: '86px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div style={{ position: 'relative', height: '78px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
         {signatureUrl && (
           <img src={signatureUrl} alt="signature" style={{ maxHeight: '80px', maxWidth: '170px' }} loading="lazy" decoding="async" />
         )}
@@ -60,7 +117,7 @@ export const DocSignature = ({ data, clinic, signatureUrl }) => (
           <img
             src={clinic.stamp_url}
             alt="stamp"
-            style={{ position: 'absolute', right: '-26px', bottom: 0, maxHeight: '85px', maxWidth: '85px', objectFit: 'contain', opacity: 0.9 }} loading="lazy" decoding="async" />
+            style={{ position: 'absolute', left: '-6px', bottom: 0, maxHeight: '72px', maxWidth: '72px', objectFit: 'contain', opacity: 0.9 }} loading="lazy" decoding="async" />
         )}
       </div>
       <div style={{ height: '1px', background: C.text }} />
@@ -74,8 +131,8 @@ export const DocSignature = ({ data, clinic, signatureUrl }) => (
 
 export const InfoPanel = ({ rows, columns = 3 }) => (
   <div style={{
-    background: C.tint, borderRadius: '8px', padding: '16px 20px', marginTop: '20px',
-    display: 'grid', gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: '14px 20px',
+    background: C.tint, borderRadius: '8px', padding: '14px 20px', marginTop: '16px',
+    display: 'grid', gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: '12px 20px',
   }}>
     {rows.map(([label, value, span]) => (
       <div key={label} style={span ? { gridColumn: `span ${span}` } : undefined}>
