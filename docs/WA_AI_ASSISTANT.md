@@ -130,3 +130,7 @@ Transkrip boleh memakai `{{D+1}}`, `{{TGL+1}}`, `{{HARI+1}}` (relatif terhadap h
 Tiap menit penyapu mencocokkan waiting list berstatus `waiting` dengan slot kosong (tanggal, rentang jam/label, jenis kelamin terapis). Slot baru yang cocok dikirim
 SEKALI ke Telegram owner beserta draf WA siap salin (tidak dikirim ke pasien); dicatat di `waiting_list_alerts` agar tidak berulang. Hanya aktif pukul 07.00-22.00 WITA.
 Admin lalu mengabari pasien dari halaman Waiting List ("Kabari via WA").
+
+### Aturan peringatan waiting list (diperbarui)
+- Pasien menyebut tanggal tertentu: peringatan bila ada slot cocok di tanggal itu.
+- Pasien tidak menyebut tanggal: peringatan hanya untuk slot cocok yang kosong HARI INI atau yang BARU kosong dalam 3 hari ke depan (pembatalan, reschedule, cuti dicabut). Slot baru kosong dideteksi dengan membandingkan snapshot slot (`wa_slot_snapshot`, `wa_slot_snapshot_dates`) antar penyapuan; tanggal yang baru pertama kali dilihat hanya dijadikan patokan tanpa peringatan.
