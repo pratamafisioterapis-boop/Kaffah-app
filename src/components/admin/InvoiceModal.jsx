@@ -700,8 +700,18 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
 
       // 1b. Cek jendela 24 jam. PDF lewat jalur non-resmi Watzap tidak punya status pengiriman, dan
       //     Meta menolak diam-diam bila pasien tidak membalas dalam 24 jam, jadi jangan kirim percuma.
+      //     Khusus Kaffah: kwitansi terapi biasa (bukan DP/pelunasan paket) untuk hari ini boleh dikirim lewat
+      //     template Meta 'kwitansi' bila jendela tertutup; server yang memilih jalur (invoice_wa_dispatch).
+      //     Teks template tetap "Kwitansi Terapi hari ini", jadi kwitansi DP/pelunasan atau tanggal lain tidak memakainya.
+      const isKaffahClinic = (templateData.clinic?.id || detailData?.clinic?.id) === KAFFAH_CLINIC_ID;
+      const instKind = templateData.installment?.kind;
+      const templateOk =
+        isKaffahClinic && !isOneOff &&
+        instKind !== 'purchase' && instKind !== 'payoff' &&
+        receiptDayPhrase(data?.recap_date, true) === 'hari ini';
+
       const { data: win } = await supabase.rpc('invoice_wa_window', { p_phone: rawPhone });
-      if (win?.checkable && !win.open) {
+      if (win?.checkable && !win.open && !templateOk) {
         if (!isOneOff) {
           await supabase
             .from('daily_recaps')
@@ -761,6 +771,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
           p_caption:  caption,
           p_file_url: fileUrl,
           p_filename: fileName,
+          p_template_ok: templateOk,
         });
         if (sendErr) throw new Error(sendErr.message);
         const sendId = sent?.send_id;
@@ -780,7 +791,7 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
         if (final?.status === 'terkirim') {
           toast({
             title: "✅ Invoice Terkirim",
-            description: `Invoice PDF diterima Watzap untuk dikirim ke ${rawPhone}. Catatan: status berdasarkan respons API, bukan konfirmasi pasien menerima pesan.`,
+            description: `Invoice PDF diterima Watzap untuk dikirim ke ${rawPhone}${sent?.via === 'template' ? ' (lewat template, karena di luar 24 jam)' : ''}. Catatan: status berdasarkan respons API, bukan konfirmasi pasien menerima pesan.`,
           });
         } else if (final?.status === 'gagal') {
           toast({
