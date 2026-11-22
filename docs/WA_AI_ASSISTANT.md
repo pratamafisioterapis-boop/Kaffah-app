@@ -134,3 +134,6 @@ Admin lalu mengabari pasien dari halaman Waiting List ("Kabari via WA").
 ### Aturan peringatan waiting list (diperbarui)
 - Pasien menyebut tanggal tertentu: peringatan bila ada slot cocok di tanggal itu.
 - Pasien tidak menyebut tanggal: peringatan hanya untuk slot cocok yang kosong HARI INI atau yang BARU kosong dalam 3 hari ke depan (pembatalan, reschedule, cuti dicabut). Slot baru kosong dideteksi dengan membandingkan snapshot slot (`wa_slot_snapshot`, `wa_slot_snapshot_dates`) antar penyapuan; tanggal yang baru pertama kali dilihat hanya dijadikan patokan tanpa peringatan.
+
+### Lampiran dilewati
+`wa-watzap-webhook` hanya memberi tahu AI untuk pesan `text` dan `button`. Gambar, dokumen, voice note, stiker, lokasi, dll. tidak dibaca dan tidak dibalas AI (tidak ada draf Telegram); admin yang menangani. Pesan tetap tersimpan di inbox.
