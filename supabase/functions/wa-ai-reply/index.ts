@@ -724,27 +724,39 @@ function recordUsage(model: string, usage: any) {
   } catch { /* abaikan */ }
 }
 
+let useLongCache = true; // turun ke false bila API menolak cache 1 jam
+
 async function callClaude(system: string, messages: any[]) {
   const key = Deno.env.get("ANTHROPIC_API_KEY");
   if (!key) throw new Error("ANTHROPIC_API_KEY belum diset");
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    signal: AbortSignal.timeout(60000),
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
-    },
-    // cache_control pada blok system men-cache alat + system prompt (dibaca ulang dengan harga ~10%).
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 1024,
-      system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
-      tools: TOOLS,
-      messages,
-    }),
-  });
-  const data = await res.json();
+  // cache_control pada blok system men-cache alat + system prompt (dibaca ulang dengan harga ~10%).
+  // Cache 1 jam cocok untuk lalu lintas jarang; bila API menolaknya, turun ke cache 5 menit.
+  const send = (long: boolean) =>
+    fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      signal: AbortSignal.timeout(60000),
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        ...(long ? { "anthropic-beta": "extended-cache-ttl-2025-04-11" } : {}),
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 1024,
+        system: [{ type: "text", text: system, cache_control: long ? { type: "ephemeral", ttl: "1h" } : { type: "ephemeral" } }],
+        tools: TOOLS,
+        messages,
+      }),
+    });
+  let res = await send(useLongCache);
+  let data = await res.json();
+  if (!res.ok && useLongCache && res.status === 400 && /cache|ttl|beta|cache_control/i.test(String(data?.error?.message || ""))) {
+    console.error("[wa-ai-reply] cache 1 jam ditolak, pakai cache 5 menit", data?.error?.message);
+    useLongCache = false;
+    res = await send(false);
+    data = await res.json();
+  }
   if (!res.ok) throw new Error(`Anthropic ${res.status}: ${data?.error?.message || "unknown"}`);
   recordUsage(MODEL, data.usage);
   return data;
@@ -951,7 +963,7 @@ async function buildTranscript(
  * Petunjuk tambahan untuk AI: terapis yang pernah menangani pasien lama (urut terbanyak) dan
  * koreksi owner terbaru dari Telegram (disimpan ke ctx.corrections).
  */
-async function prepareContext(ctx: Ctx, known: boolean): Promise<string> {
+async function prepareContext(ctx: Ctx, known: boolean, patientText = ""): Promise<string> {
   let extra = "";
   try {
     const { data: cs } = await ctx.admin.from("wa_ai_corrections")
@@ -968,6 +980,52 @@ async function prepareContext(ctx: Ctx, known: boolean): Promise<string> {
   } catch (e) {
     console.error("[wa-ai-reply] koreksi gagal dimuat", e);
   }
+
+  // Data yang hampir selalu dibutuhkan dimuat lebih dulu oleh sistem agar AI tidak perlu memanggil
+  // alat satu per satu (tiap putaran alat = satu panggilan API lagi).
+  const preloaded: string[] = [];
+  try {
+    if (known) {
+      const pts = await loadPatients(ctx);
+      if (pts.length) {
+        preloaded.push(`DATA PASIEN TERDAFTAR untuk nomor ini (hasil lookup_patient, sudah dimuat): ${JSON.stringify(pts)}`);
+      }
+    }
+  } catch (e) {
+    console.error("[wa-ai-reply] data pasien gagal dimuat", e);
+  }
+  try {
+    const appt: any = await runTool(ctx, "get_my_appointments", {});
+    const has = (appt?.appointments || []).length || (appt?.active_packages || []).length;
+    preloaded.push(
+      has
+        ? `JADWAL TERBOOKING & PAKET untuk nomor ini (hasil get_my_appointments, sudah dimuat): ${JSON.stringify(appt)}`
+        : "JADWAL TERBOOKING untuk nomor ini: tidak ada (hasil get_my_appointments, sudah dimuat).",
+    );
+  } catch (e) {
+    console.error("[wa-ai-reply] jadwal terbooking gagal dimuat", e);
+  }
+  // Pertanyaan soal jadwal/booking: muat jadwal kosong tercepat (alat tetap boleh dipanggil untuk tanggal/terapis tertentu).
+  if (/jadwal|kosong|slot|booking|\bbook\b|reschedule|pindah|undur|hari ini|besok|lusa|senin|selasa|rabu|kamis|jumat|sabtu|minggu|jam\s*\d|\bpagi\b|\bsiang\b|\bsore\b|\bmalam\b/i.test(patientText)) {
+    try {
+      const sl: any = await runTool(ctx, "get_available_slots", {});
+      if (sl?.days?.length) {
+        const days = sl.days.map((d: any) => ({
+          date: d.date,
+          formatted_message: d.formatted_message,
+          therapists: (d.therapists || []).map((t: any) => ({ therapist_id: t.therapist_id, name: t.name, gender: t.gender, times: t.times })),
+        }));
+        preloaded.push(`JADWAL KOSONG TERCEPAT (hasil get_available_slots tanpa filter, sudah dimuat; slot ini sudah boleh dipakai untuk create_booking/reschedule_booking): ${JSON.stringify(days)}`);
+      } else {
+        preloaded.push("JADWAL KOSONG TERCEPAT: tidak ada slot kosong dalam 7 hari ke depan (hasil get_available_slots, sudah dimuat).");
+      }
+    } catch (e) {
+      console.error("[wa-ai-reply] jadwal kosong gagal dimuat", e);
+    }
+  }
+  if (preloaded.length) {
+    extra += `\n\n${preloaded.join("\n")}\nData di atas sudah dimuat: JANGAN memanggil lookup_patient atau get_my_appointments lagi, dan panggil get_available_slots hanya bila perlu tanggal/terapis/gender yang berbeda dari data di atas.`;
+  }
   if (known) {
     try {
       const pts = await loadPatients(ctx);
@@ -975,7 +1033,7 @@ async function prepareContext(ctx: Ctx, known: boolean): Promise<string> {
         .filter((p: any) => p.therapist_history?.length)
         .map((p: any) => `${p.nickname || p.full_name}: ${p.therapist_history.slice(0, 3).map((t: any) => `${t.name} (${t.sessions} sesi, id ${t.therapist_id})`).join(", ")}`);
       if (lines.length) {
-        extra = `\nTerapis yang pernah menangani (urut terbanyak; utamakan saat menawarkan jadwal): ${lines.join("; ")}.`;
+        extra += `\nTerapis yang pernah menangani (urut terbanyak; utamakan saat menawarkan jadwal): ${lines.join("; ")}.`;
       }
     } catch (e) {
       console.error("[wa-ai-reply] riwayat terapis gagal dimuat", e);
@@ -1239,7 +1297,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
       const fast = await lightReply(transcript, String(msg.body || ""), msg.msg_type);
       reply = fast.handled
         ? fast.reply
-        : await runAgent(ctx, transcript, hint + (await prepareContext(ctx, (known || []).length > 0)));
+        : await runAgent(ctx, transcript, hint + (await prepareContext(ctx, (known || []).length > 0, String(msg.body || ""))));
     }
     const bookingPlan = ctx.actions.find((a) => a.type === "create_booking");
     const reschedPlan = ctx.actions.find((a) => a.type === "reschedule_booking");
@@ -1719,7 +1777,7 @@ async function runEvalCase(admin: Admin, clinicId: string, knowledge: string | n
   const fast = /Pasien:/.test(lastLine)
     ? await lightReply(evalTranscript, lastBody, /^hadir$/i.test(lastBody.trim()) ? "button" : "text")
     : { handled: false, reply: "" };
-  const reply = fast.handled ? fast.reply : await runAgent(ctx, evalTranscript, hint + (await prepareContext(ctx, !!known)));
+  const reply = fast.handled ? fast.reply : await runAgent(ctx, evalTranscript, hint + (await prepareContext(ctx, !!known, lastBody)));
   const acts = ctx.actions.filter((a) => ACTION_TYPES.includes(a.type));
   const handoff = !!ctx.handoff;
   const actionText = acts.map((a) => a.type + (a.kind ? `:${a.kind}` : "") + (a.to ? ` -> ${a.to}` : a.start ? ` @ ${String(a.start).slice(0, 16)}` : "")).join("; ");
@@ -2175,7 +2233,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
         : "Nomor ini BELUM tercatat di database pasien (anggap pasien baru; tetap boleh panggil lookup_patient).";
 
       const fast = await lightReply(transcript, String(msg.body || ""), msg.msg_type);
-      reply = fast.handled ? fast.reply : await runAgent(ctx, transcript, hint + (await prepareContext(ctx, !!known)));
+      reply = fast.handled ? fast.reply : await runAgent(ctx, transcript, hint + (await prepareContext(ctx, !!known, String(msg.body || ""))));
     }
 
     // Serah-terima: diam, pasien tidak dibalas. Booking berhasil: konfirmasi dikirim sistem.
