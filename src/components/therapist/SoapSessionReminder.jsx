@@ -33,13 +33,15 @@ const SoapSessionReminder = ({ today }) => {
         <AlertTriangle className="h-[18px] w-[18px]" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[13.5px] font-bold leading-tight text-[#10242F] lg:text-[15px]">Isi SOAP {firstName} sebelum sesi berakhir</p>
+        <p className="text-[13.5px] font-bold leading-tight text-[#10242F] lg:text-[15px]">
+          {session.soapMissing ? `Lengkapi ${session.soapMissing} ${firstName} sebelum sesi berakhir` : `Isi SOAP ${firstName} sebelum sesi berakhir`}
+        </p>
         <p className={cn('mt-0.5 text-xs leading-snug', style.sub)}>
           Sesi {fmtClock(session.slot.start)}–{fmtClock(session.slot.end)} · {sisa}
         </p>
       </div>
       <button type="button" onClick={open} className={cn('h-9 shrink-0 rounded-xl px-3.5 text-sm font-bold transition', style.btn)}>
-        Isi SOAP
+        {session.soapMissing ? `Isi ${session.soapMissing}` : 'Isi SOAP'}
       </button>
       <span className={cn('absolute bottom-0 left-0 h-[3px] transition-[width] duration-500', style.fill)} style={{ width: `${Math.round(progress * 100)}%` }} />
     </div>

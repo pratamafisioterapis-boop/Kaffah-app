@@ -4,14 +4,20 @@
 
 export const REMINDER_WARN_MIN = 15;
 export const REMINDER_CRIT_MIN = 5;
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
+
 const DEFAULT_SLOT_MIN = 60;
+// Kaffah: satu sesi terapi = 90 menit. Slot hasil tukar shift / jadwal pengganti kadang
+// tersimpan 60 menit (default), jadi untuk pengingat SOAP durasinya tidak boleh kurang dari ini.
+const KAFFAH_SLOT_MIN = 90;
 const OPEN_STATUSES = ['confirmed', 'rescheduled'];
 
-export const slotOf = (appointment) => {
+export const slotOf = (appointment, clinicId) => {
   if (!appointment?.appointment_date) return null;
   const start = new Date(appointment.appointment_date).getTime();
   if (Number.isNaN(start)) return null;
-  const duration = Number(appointment.duration_minutes) > 0 ? Number(appointment.duration_minutes) : DEFAULT_SLOT_MIN;
+  const stored = Number(appointment.duration_minutes) > 0 ? Number(appointment.duration_minutes) : DEFAULT_SLOT_MIN;
+  const duration = clinicId === KAFFAH_CLINIC_ID ? Math.max(stored, KAFFAH_SLOT_MIN) : stored;
   return { start, end: start + duration * 60000, durationMin: duration };
 };
 

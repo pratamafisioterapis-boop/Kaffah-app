@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
 import { isSoapFirstActiveOn, todayWita } from '@/lib/soapFirst';
 import { isApptOpen, slotOf } from '@/lib/soapReminder';
@@ -23,8 +24,8 @@ const firstDiagnosis = (d, labels) => {
   return UUID_RE.test(first) ? '' : String(first);
 };
 
-const normalize = (r, labels, soapRecapIds) => {
-  const slot = slotOf(r.appointment);
+const normalize = (r, labels, soapRecapIds, clinicId) => {
+  const slot = slotOf(r.appointment, clinicId);
   return {
     id: r.id,
     patientId: r.actual_patient_id || r.patient_id || null,
@@ -54,6 +55,8 @@ export const useNow = (intervalMs = 30000) => {
 
 // Sesi terapis hari ini (dari daily_recaps + slot appointment) untuk banner agenda dan pengingat SOAP.
 export const useTherapistToday = (therapistId) => {
+  const { userDetails } = useAuth();
+  const clinicId = userDetails?.clinic_id;
   const { settings, loaded: soapLoaded } = useSoapFirstSettings();
   const today = todayWita();
   const soapActive = isSoapFirstActiveOn(settings, today);
@@ -95,12 +98,12 @@ export const useTherapistToday = (therapistId) => {
           }
         });
       }
-      const list = (data || []).map((r) => normalize(r, labels, soapRecapIds));
+      const list = (data || []).map((r) => normalize(r, labels, soapRecapIds, clinicId));
       list.sort((a, b) => (a.slot?.start ?? Infinity) - (b.slot?.start ?? Infinity));
       setSessions(list);
     }
     setLoading(false);
-  }, [therapistId, today]);
+  }, [therapistId, today, clinicId]);
 
   useEffect(() => {
     load();
