@@ -1286,6 +1286,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
       : "nomor baru / belum terdaftar";
 
     let reply: string;
+    let modelTag = "";
     let imageNote = "";
     if (!isTextLike(msg.msg_type)) {
       ctx.handoff = { reason: `Pasien mengirim ${msg.msg_type}; diserahkan ke admin`, priority: "normal" };
@@ -1309,9 +1310,11 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
         ? "Nomor ini tercatat sebagai pasien terdaftar (panggil lookup_patient untuk detail)."
         : "Nomor ini BELUM tercatat di database pasien (anggap pasien baru; tetap boleh panggil lookup_patient).";
       const fast = await lightReply(transcript, String(msg.body || ""), msg.msg_type);
+      const agentModel = isFaqLike(transcript, String(msg.body || "")) ? FAST_MODEL : MODEL;
+      modelTag = fast.handled ? `${FAST_MODEL}, balasan baku` : agentModel;
       reply = fast.handled
         ? fast.reply
-        : await runAgent(ctx, transcript, hint + (await prepareContext(ctx, (known || []).length > 0, String(msg.body || ""))), isFaqLike(transcript, String(msg.body || "")) ? FAST_MODEL : MODEL);
+        : await runAgent(ctx, transcript, hint + (await prepareContext(ctx, (known || []).length > 0, String(msg.body || ""))), agentModel);
     }
     const bookingPlan = ctx.actions.find((a) => a.type === "create_booking");
     const reschedPlan = ctx.actions.find((a) => a.type === "reschedule_booking");
@@ -1331,7 +1334,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
       msg.body && msg.body.trim() ? msg.body : `[${msg.msg_type}]`,
       ...(imageNote ? ["", "🖼️ Hasil baca gambar (untuk admin, TIDAK dikirim ke pasien):", imageNote] : []),
       "",
-      "🤖 Draf balasan AI:",
+      `🤖 Draf balasan AI${modelTag ? ` (${modelTag.replace(/^claude-/, "")})` : ""}:`,
       reply,
     ];
     if (bookingPlan) {
@@ -1520,7 +1523,7 @@ async function handleTelegramUpdate(admin: Admin, update: any) {
     } else {
       // Draf tidak tercatat (mis. pengiriman sempat timeout): ambil konteks dari isi pesan yang di-reply.
       const mm = String(replied.text || "").match(
-        /^📩[^\n]*\nDari:[^\n]*\n\n([\s\S]*?)\n\n(?:🖼️[\s\S]*?\n\n)?🤖 Draf balasan AI:\n([\s\S]*?)(?:\n\n(?:📅|🔁|❌|📎|⚠️|↩️)|$)/u,
+        /^📩[^\n]*\nDari:[^\n]*\n\n([\s\S]*?)\n\n(?:🖼️[\s\S]*?\n\n)?🤖 Draf balasan AI(?: \([^)]*\))?:\n([\s\S]*?)(?:\n\n(?:📅|🔁|❌|📎|⚠️|↩️)|$)/u,
       );
       if (mm) {
         patientMsg = mm[1].trim();
