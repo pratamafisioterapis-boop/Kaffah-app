@@ -47,6 +47,7 @@ const HELP = [
   "/uji  uji regresi AI (soal tetap) dan bandingkan dengan uji sebelumnya",
   "/aturan  daftar arahan, /hapus N  hapus arahan",
   "/status  status AI",
+  "Grup revisi: buat grup baru, tambahkan bot (jadikan admin), lalu ketik /grup_revisi di grup itu.",
 ].join("\n");
 
 function json(body: unknown, status = 200) {
@@ -126,6 +127,15 @@ const reply = (text: string) => tg("sendMessage", { chat_id: CHAT_ID, text, disa
 async function handleUpdate(update: any) {
   const msg = update?.message;
   if (!msg || typeof msg.text !== "string") return;
+  // Pesan owner di grup (mis. grup revisi AI) diteruskan ke wa-ai-reply, yang memeriksa grupnya.
+  if (String(msg.chat?.id) !== CHAT_ID && String(msg.from?.id) === CHAT_ID && ["group", "supergroup"].includes(String(msg.chat?.type))) {
+    await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/wa-ai-reply`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
+      body: JSON.stringify({ telegram_update: update }),
+    }).catch(() => null);
+    return;
+  }
   // Hanya chat pribadi milik owner yang dilayani.
   if (String(msg.chat?.id) !== CHAT_ID || String(msg.from?.id) !== CHAT_ID) return;
 
