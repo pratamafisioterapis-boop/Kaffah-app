@@ -62,7 +62,7 @@ const WaApiKeySection = () => {
 
     return (
         <div className="bg-white p-4 rounded-app-sm border border-slate-200 mb-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                 <div className="flex items-center gap-2">
                     <KeyRound className="w-5 h-5 text-indigo-600" />
                     <div>
@@ -125,12 +125,12 @@ const WaApiKeySection = () => {
                             placeholder="Contoh: 08123456789"
                         />
                     </div>
-                    <div className="md:col-span-2 flex items-center justify-between pt-2">
+                    <div className="md:col-span-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
                         <div className="flex items-center gap-2">
                             <Switch checked={enabled} onCheckedChange={setEnabled} />
                             <span className="text-sm text-slate-600">Aktifkan integrasi WhatsApp untuk klinik ini</span>
                         </div>
-                        <Button onClick={handleSave} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700">
+                        <Button onClick={handleSave} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto">
                             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                             Simpan API Key
                         </Button>
@@ -564,8 +564,8 @@ const TemplateEditor = ({ categoryId, availablePlaceholders }) => {
 const WhatsAppSettings = ({ hideApiKey = false }) => {
     return (
         <div className="space-y-6">
-            <div className="bg-white p-6 rounded-app border border-slate-200 shadow-sm">
-                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <div className="bg-white p-4 sm:p-6 rounded-app border border-slate-200 shadow-sm">
+                <h2 className="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2">
                     <MessageCircle className="w-6 h-6 text-green-600" />
                     WhatsApp Automation
                 </h2>
@@ -577,21 +577,21 @@ const WhatsAppSettings = ({ hideApiKey = false }) => {
             {!hideApiKey && <WaApiKeySection />}
 
             <Tabs defaultValue="booking_appointment" className="w-full">
-                <TabsList className="bg-white border border-slate-200 p-1 rounded-app h-auto flex flex-wrap items-center gap-1 mb-6">
+                <TabsList className="bg-white border border-slate-200 p-1 rounded-app h-auto w-full justify-start flex-nowrap sm:flex-wrap overflow-x-auto items-center gap-1 mb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     {CATEGORIES.map(cat => (
                         <TabsTrigger
                             key={cat.id}
                             value={cat.id}
-                            className="data-[state=active]:bg-green-50 data-[state=active]:text-green-700 px-4 py-2 rounded-app-sm"
+                            className="data-[state=active]:bg-green-50 data-[state=active]:text-green-700 px-3 sm:px-4 py-2 rounded-app-sm shrink-0"
                         >
                             {cat.label}
                         </TabsTrigger>
                     ))}
-                    <div className="w-px self-stretch bg-slate-200 mx-1" />
-                    <TabsTrigger value="ai" className="data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 px-4 py-2 rounded-app-sm gap-2">
+                    <div className="w-px self-stretch bg-slate-200 mx-1 shrink-0" />
+                    <TabsTrigger value="ai" className="data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 px-3 sm:px-4 py-2 rounded-app-sm gap-2 shrink-0">
                         <Bot className="w-3 h-3" /> Asisten AI
                     </TabsTrigger>
-                    <TabsTrigger value="logs" className="data-[state=active]:bg-slate-100 px-4 py-2 rounded-app-sm gap-2">
+                    <TabsTrigger value="logs" className="data-[state=active]:bg-slate-100 px-3 sm:px-4 py-2 rounded-app-sm gap-2 shrink-0">
                         <History className="w-3 h-3" /> Riwayat
                     </TabsTrigger>
                 </TabsList>

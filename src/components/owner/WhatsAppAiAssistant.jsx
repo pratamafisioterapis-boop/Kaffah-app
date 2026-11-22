@@ -193,19 +193,19 @@ const WhatsAppAiAssistant = () => {
   return (
     <div className="space-y-6">
       <Card>
-        <CardContent className="p-6 space-y-6">
-          <div className="flex items-start justify-between gap-4">
+        <CardContent className="p-4 sm:p-6 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
             <div className="flex items-start gap-3">
-              <Bot className="w-6 h-6 text-indigo-600 mt-0.5" />
+              <Bot className="w-6 h-6 text-indigo-600 mt-0.5 shrink-0" />
               <div>
-                <h3 className="text-lg font-bold text-slate-800">Asisten AI Balasan WhatsApp</h3>
+                <h3 className="text-base sm:text-lg font-bold text-slate-800">Asisten AI Balasan WhatsApp</h3>
                 <p className="text-sm text-slate-500">
                   Membalas pertanyaan jadwal, harga, dan lokasi, serta membuat booking. Kasus berisiko, home care, dan
                   komplain selalu diserahkan ke admin.
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center justify-between sm:justify-start gap-2 shrink-0 rounded-app-sm bg-slate-50 border border-slate-200 px-3 py-2 sm:bg-transparent sm:border-0 sm:p-0">
               <Label htmlFor="ai-enabled" className="text-sm">{form.enabled ? 'Aktif' : 'Mati'}</Label>
               <Switch
                 id="ai-enabled"
@@ -223,7 +223,7 @@ const WhatsAppAiAssistant = () => {
           )}
 
           {canEdit && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-app-sm border border-indigo-200 bg-indigo-50 px-3 py-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-app-sm border border-indigo-200 bg-indigo-50 px-3 py-3">
               <div className="text-sm text-indigo-900">
                 <div className="font-semibold">Pengaturan cepat: aktif terus, tunggu admin 3 → 2 → 1 menit</div>
                 <div className="text-xs text-indigo-700">
@@ -234,6 +234,7 @@ const WhatsAppAiAssistant = () => {
                 type="button"
                 variant="outline"
                 size="sm"
+                className="w-full sm:w-auto"
                 onClick={() =>
                   setForm((f) => ({ ...f, enabled: true, mode: 'live', ai_mode: 'silent_only', delayMinutes: 3, delay2Minutes: 2, delay3Minutes: 1, testPhones: '' }))
                 }
@@ -275,7 +276,7 @@ const WhatsAppAiAssistant = () => {
                 value={form.ai_mode}
                 disabled={!canEdit}
                 onChange={(e) => setForm((f) => ({ ...f, ai_mode: e.target.value }))}
-                className="w-full rounded-app-sm border border-slate-200 bg-white px-3 py-2 text-sm"
+                className="w-full rounded-app-sm border border-slate-200 bg-white px-3 py-2 text-base sm:text-sm"
               >
                 {MODES.map((m) => (
                   <option key={m.value} value={m.value}>{m.label}</option>
@@ -345,11 +346,11 @@ const WhatsAppAiAssistant = () => {
               {DAYS.map((d) => {
                 const h = form.hours[d.key];
                 return (
-                  <div key={d.key} className="flex items-center gap-2 border border-slate-200 rounded-app-sm px-3 py-2">
+                  <div key={d.key} className="flex flex-wrap items-center gap-2 border border-slate-200 rounded-app-sm px-3 py-2">
                     <span className="w-16 text-sm font-medium text-slate-700">{d.label}</span>
                     <Input
                       type="time"
-                      className="w-28"
+                      className="w-28 flex-1 min-w-[6.5rem] sm:flex-none"
                       value={h ? h[0] : ''}
                       disabled={!canEdit || !h}
                       onChange={(e) => setHour(d.key, 0, e.target.value)}
@@ -357,7 +358,7 @@ const WhatsAppAiAssistant = () => {
                     <span className="text-slate-400">–</span>
                     <Input
                       type="time"
-                      className="w-28"
+                      className="w-28 flex-1 min-w-[6.5rem] sm:flex-none"
                       value={h ? h[1] : ''}
                       disabled={!canEdit || !h}
                       onChange={(e) => setHour(d.key, 1, e.target.value)}
@@ -408,8 +409,8 @@ const WhatsAppAiAssistant = () => {
           </div>
 
           {canEdit && (
-            <div className="flex justify-end">
-              <Button onClick={handleSave} disabled={!dirty || saving}>
+            <div className="flex justify-end sticky bottom-3 z-10">
+              <Button className="w-full sm:w-auto shadow-md" onClick={handleSave} disabled={!dirty || saving}>
                 {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                 Simpan pengaturan
               </Button>
@@ -421,14 +422,14 @@ const WhatsAppAiAssistant = () => {
       <WhatsAppAiChats />
 
       <Card>
-        <CardContent className="p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-slate-800">Riwayat balasan AI</h3>
+        <CardContent className="p-4 sm:p-6 space-y-4">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-base sm:text-lg font-bold text-slate-800">Riwayat balasan AI</h3>
             <Button variant="outline" size="sm" onClick={() => fetchLogs(clinicId)} disabled={logsLoading}>
               <RefreshCcw className={`w-4 h-4 mr-2 ${logsLoading ? 'animate-spin' : ''}`} /> Muat ulang
             </Button>
           </div>
-          <Table>
+          <div className="-mx-1 overflow-x-auto"><Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Waktu</TableHead>
@@ -474,7 +475,7 @@ const WhatsAppAiAssistant = () => {
                 );
               })}
             </TableBody>
-          </Table>
+          </Table></div>
         </CardContent>
       </Card>
     </div>

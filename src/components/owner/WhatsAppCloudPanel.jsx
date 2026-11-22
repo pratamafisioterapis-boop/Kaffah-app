@@ -72,8 +72,8 @@ const ConnectionTab = () => {
     <div className="space-y-5 max-w-2xl">
       {acc && (
         <div className="border border-slate-200 rounded-app p-4 space-y-2 bg-slate-50">
-          <div className="flex items-center justify-between">
-            <p className="font-medium text-slate-800 flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="font-medium text-slate-800 flex items-center gap-2 break-words min-w-0">
               <CheckCircle2 className="w-4 h-4 text-green-600" />
               {acc.verified_name || 'Terhubung'} · {acc.display_phone}
             </p>
@@ -112,7 +112,7 @@ const ConnectionTab = () => {
         </div>
         <div>
           <Label>Access Token (System User, permanen)</Label>
-          <Input type="password" autoComplete="off" value={form.access_token}
+          <Input type="password" autoComplete="off" className="text-base sm:text-sm" value={form.access_token}
             placeholder={acc ? 'Kosongkan bila tidak diganti' : 'EAAG…'}
             onChange={(e) => setForm({ ...form, access_token: e.target.value })} />
           <p className="text-xs text-slate-500 mt-1">
@@ -120,7 +120,7 @@ const ConnectionTab = () => {
             System Users, izin <code>whatsapp_business_management</code> dan <code>whatsapp_business_messaging</code>.
           </p>
         </div>
-        <Button onClick={save} disabled={busy || !form.waba_id || !form.phone_number_id}>
+        <Button className="w-full sm:w-auto" onClick={save} disabled={busy || !form.waba_id || !form.phone_number_id}>
           {busy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plug className="w-4 h-4 mr-2" />}
           {acc ? 'Perbarui koneksi' : 'Hubungkan'}
         </Button>
@@ -129,7 +129,7 @@ const ConnectionTab = () => {
       <div className="border border-slate-200 rounded-app p-4 space-y-2">
         <p className="text-sm font-medium text-slate-800">Webhook (didaftarkan sekali di Meta)</p>
         <div className="flex gap-2">
-          <Input readOnly value={webhookUrl} />
+          <Input readOnly value={webhookUrl} className="min-w-0 text-xs sm:text-sm" />
           <Button variant="outline" size="icon" onClick={() => navigator.clipboard?.writeText(webhookUrl)}><Copy className="w-4 h-4" /></Button>
         </div>
         <p className="text-xs text-slate-500">
@@ -179,7 +179,7 @@ const TemplatesTab = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <p className="text-sm text-slate-600">Template wajib disetujui Meta sebelum bisa dipakai di luar jendela 24 jam.</p>
         <Button variant="outline" size="sm" onClick={sync} disabled={busy}>
           <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${busy ? 'animate-spin' : ''}`} /> Sinkronkan dari Meta
@@ -190,9 +190,9 @@ const TemplatesTab = () => {
         {rows.length === 0 && <p className="text-sm text-slate-500">Belum ada template.</p>}
         {rows.map((t) => (
           <div key={t.id} className="border border-slate-200 rounded-app p-3 bg-white">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="font-mono text-sm font-medium truncate">{t.name}</span>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-x-2 gap-y-1 min-w-0 flex-wrap">
+                <span className="font-mono text-sm font-medium break-all">{t.name}</span>
                 <Badge className={STATUS_STYLE[t.status] || ''}>{t.status}</Badge>
                 <span className="text-xs text-slate-400">{t.category} · {t.language}</span>
               </div>
@@ -204,7 +204,7 @@ const TemplatesTab = () => {
         ))}
       </div>
 
-      <div className="border border-slate-200 rounded-app p-4 space-y-3 max-w-2xl">
+      <div className="border border-slate-200 rounded-app p-3 sm:p-4 space-y-3 max-w-2xl">
         <p className="font-medium text-slate-800 text-sm">Ajukan template baru</p>
         <div className="grid sm:grid-cols-2 gap-3">
           <div>
@@ -234,7 +234,7 @@ const TemplatesTab = () => {
           <Label>Footer (opsional)</Label>
           <Input value={f.footer_text} onChange={(e) => setF({ ...f, footer_text: e.target.value })} />
         </div>
-        <Button onClick={create} disabled={busy || !f.name || !f.body}>
+        <Button className="w-full sm:w-auto" onClick={create} disabled={busy || !f.name || !f.body}>
           {busy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />} Ajukan ke Meta
         </Button>
       </div>
@@ -318,14 +318,14 @@ const BroadcastTab = () => {
         </div>
         {tplBody && <p className="text-xs text-slate-600 bg-slate-50 rounded-md p-2 whitespace-pre-wrap">{tplBody}</p>}
         <div>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between">
             <Label>Penerima — satu per baris: <code>nomor, isi {'{{1}}'}, isi {'{{2}}'}</code></Label>
             <Button variant="link" size="sm" onClick={loadPatients}>Isi dari data pasien</Button>
           </div>
           <Textarea rows={8} value={raw} onChange={(e) => setRaw(e.target.value)} placeholder={'08123456789, Ibu Sari'} />
           <p className="text-xs text-slate-500 mt-1">{parseRecipients().length} baris. Nomor ganda otomatis digabung.</p>
         </div>
-        <Button onClick={start} disabled={busy || !!running || !tpl || !name || !raw.trim()}>
+        <Button className="w-full sm:w-auto" onClick={start} disabled={busy || !!running || !tpl || !name || !raw.trim()}>
           {busy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />} Kirim broadcast
         </Button>
         {running && (
@@ -359,7 +359,7 @@ const BroadcastRow = ({ b, onResume }) => {
       });
   }, [b.id, b.status]);
   return (
-    <div className="border border-slate-200 rounded-app p-3 text-sm flex items-center justify-between gap-3">
+    <div className="border border-slate-200 rounded-app p-3 text-sm flex flex-wrap items-center justify-between gap-3">
       <div className="min-w-0">
         <p className="font-medium truncate">{b.name} <span className="text-xs text-slate-400 font-normal">· {b.template_name}</span></p>
         {stat && (
@@ -376,13 +376,13 @@ const BroadcastRow = ({ b, onResume }) => {
 };
 
 const WhatsAppCloudPanel = () => (
-  <div className="bg-white p-6 rounded-app border border-slate-200 shadow-sm">
+  <div className="bg-white p-4 sm:p-6 rounded-app border border-slate-200 shadow-sm">
     <div className="mb-4">
       <h3 className="text-lg font-bold text-slate-800">WhatsApp Cloud API (langsung ke Meta)</h3>
       <p className="text-sm text-slate-500">Koneksi resmi tanpa vendor perantara: inbox, template, dan broadcast.</p>
     </div>
     <Tabs defaultValue="connection">
-      <TabsList className="mb-4">
+      <TabsList className="mb-4 grid w-full grid-cols-3 sm:inline-flex sm:w-auto">
         <TabsTrigger value="connection">Koneksi</TabsTrigger>
         <TabsTrigger value="templates">Template</TabsTrigger>
         <TabsTrigger value="broadcast">Broadcast</TabsTrigger>
