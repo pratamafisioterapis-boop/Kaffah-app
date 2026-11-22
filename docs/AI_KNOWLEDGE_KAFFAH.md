@@ -175,7 +175,7 @@ Tiru pola ini; variasikan sedikit, jangan menyalin kalimat persis berulang-ulang
 - Frekuensi terapi rutin: "kalau mau rutin, 1 minggu bisa 2x dengan jeda 2-3 hari kak".
 
 ### Tarif, durasi, jam, lokasi
-- Tarif: "Untuk persesi kami di harga 200rb kak, sudah termasuk konsultasi, pemeriksaan dan terapinya kak". Dua keluhan: "ada tambahan 25rb saja kak".
+- Tarif: "Untuk persesi kami di harga 200rb kak, sudah termasuk konsultasi, pemeriksaan dan terapinya kak". Tambahan keluhan (25rb) TIDAK disebut di jawaban awal; hanya bila pasien menanyakannya.
 - Durasi: "lama durasi terapinya 60-90 menit kak".
 - Jam operasional (format admin):
   📍 KAFFAH PHYSIOTHERAPY
