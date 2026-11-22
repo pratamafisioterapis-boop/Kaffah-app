@@ -24,8 +24,8 @@ export const C = {
 export const DocHeader = ({ clinic, title, subtitle }) => (
   <>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <img src={clinic?.logo_url || '/clinara-logo.png'} alt="logo" style={{ width: '64px', height: 'auto', objectFit: 'contain', display: 'block' }} loading="lazy" decoding="async" />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+        <img src={clinic?.logo_url || '/clinara-logo.png'} alt="logo" style={{ width: '92px', height: 'auto', objectFit: 'contain', display: 'block', flex: 'none' }} loading="lazy" decoding="async" />
         <div>
           <div style={{ fontSize: '17px', fontWeight: 700, letterSpacing: '0.1em', color: C.navy }}>
             {(clinic?.name || '').toUpperCase()}
@@ -37,7 +37,7 @@ export const DocHeader = ({ clinic, title, subtitle }) => (
         </div>
       </div>
       <div style={{ textAlign: 'right', flex: 'none' }}>
-        <div style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '0.14em', color: C.navy, lineHeight: 1.1 }}>{title}</div>
+        <div style={{ fontSize: '20px', fontWeight: 700, letterSpacing: '0.12em', color: C.navy, lineHeight: 1.1, whiteSpace: 'nowrap' }}>{title}</div>
         {subtitle && <div style={{ fontSize: '11.5px', color: C.muted, marginTop: '5px' }}>{subtitle}</div>}
       </div>
     </div>
@@ -52,7 +52,7 @@ export const DocSignature = ({ data, clinic, signatureUrl }) => (
         {(data?.tempat || 'Balikpapan')}, {formatDate(data?.document_date)}
       </div>
       <div style={{ fontSize: '10.5px', fontWeight: 600, letterSpacing: '0.12em', color: C.muted }}>FISIOTERAPIS</div>
-      <div style={{ position: 'relative', height: '86px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div style={{ position: 'relative', height: '78px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
         {signatureUrl && (
           <img src={signatureUrl} alt="signature" style={{ maxHeight: '80px', maxWidth: '170px' }} loading="lazy" decoding="async" />
         )}
@@ -60,7 +60,7 @@ export const DocSignature = ({ data, clinic, signatureUrl }) => (
           <img
             src={clinic.stamp_url}
             alt="stamp"
-            style={{ position: 'absolute', right: '-26px', bottom: 0, maxHeight: '85px', maxWidth: '85px', objectFit: 'contain', opacity: 0.9 }} loading="lazy" decoding="async" />
+            style={{ position: 'absolute', right: '-8px', bottom: 0, maxHeight: '72px', maxWidth: '72px', objectFit: 'contain', opacity: 0.9 }} loading="lazy" decoding="async" />
         )}
       </div>
       <div style={{ height: '1px', background: C.text }} />
@@ -74,8 +74,8 @@ export const DocSignature = ({ data, clinic, signatureUrl }) => (
 
 export const InfoPanel = ({ rows, columns = 3 }) => (
   <div style={{
-    background: C.tint, borderRadius: '8px', padding: '16px 20px', marginTop: '20px',
-    display: 'grid', gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: '14px 20px',
+    background: C.tint, borderRadius: '8px', padding: '14px 20px', marginTop: '16px',
+    display: 'grid', gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: '12px 20px',
   }}>
     {rows.map(([label, value, span]) => (
       <div key={label} style={span ? { gridColumn: `span ${span}` } : undefined}>

@@ -40,7 +40,7 @@ const SuratKeteranganTemplateKaffah = forwardRef(({ data, clinic }, ref) => {
         width: '210mm',
         minHeight: '297mm',
         boxSizing: 'border-box',
-        padding: '48px 52px 40px',
+        padding: '40px 52px 32px',
         display: 'flex',
         flexDirection: 'column',
         fontFamily: "'Inter', Arial, sans-serif",
