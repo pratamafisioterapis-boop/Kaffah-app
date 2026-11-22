@@ -2120,15 +2120,15 @@ function isIgnoredPhone(st: any, waId: string): boolean {
 
 /**
  * Lama menunggu admin sebelum AI membalas (mode live), bertahap sejak balasan admin terakhir:
- * pesan pertama = delay_seconds (3 menit), setelah AI sudah membalas sekali = delay2_seconds (2 menit),
- * setelah dua kali atau lebih = delay3_seconds (1 menit). Balasan admin manusia (aplikasi atau
+ * pesan pertama = delay_seconds (2 menit), setelah AI sudah membalas sekali = delay2_seconds (1 menit),
+ * setelah dua kali atau lebih = delay3_seconds (30 detik). Balasan admin manusia (aplikasi atau
  * dasbor/ponsel Watzap) mengulang dari tahap pertama. Pesan pasien berderet dihitung dari yang terakhir
  * karena tiap pesan baru menghitung ulang dari waktunya sendiri.
  */
 async function liveWaitSeconds(admin: Admin, conv: any, st: any): Promise<number> {
-  const s1 = Math.max(MIN_DELAY_SECONDS, Number(st.delay_seconds ?? 180));
-  const s2 = Math.max(MIN_DELAY_SECONDS, Number(st.delay2_seconds ?? 120));
-  const s3 = Math.max(MIN_DELAY_SECONDS, Number(st.delay3_seconds ?? 60));
+  const s1 = Math.max(MIN_DELAY_SECONDS, Number(st.delay_seconds ?? 120));
+  const s2 = Math.max(MIN_DELAY_SECONDS, Number(st.delay2_seconds ?? 60));
+  const s3 = Math.max(MIN_DELAY_SECONDS, Number(st.delay3_seconds ?? 30));
   try {
     const { data: logs } = await admin.from("wa_ai_logs").select("created_at")
       .eq("conversation_id", conv.id).eq("mode", "live").eq("outcome", "replied")
@@ -2214,7 +2214,7 @@ async function enqueue(admin: Admin, conversationId: string, messageId: string) 
   }
   // Semua pesan (juga jam tutup dan nomor uji) menunggu minimal 30 detik: pesan beruntun dijawab
   // satu kali dan balasan tidak terkesan seperti bot.
-  // Mode live: jeda bertahap (3 -> 2 -> 1 menit) sejak pesan pasien terakhir; pengujinya tanpa jeda.
+  // Mode live: jeda bertahap (2 menit -> 1 menit -> 30 detik) sejak pesan pasien terakhir; pengujinya tanpa jeda.
   const stepWait = isTester || d.delaySeconds === 0 ? d.delaySeconds : await liveWaitSeconds(admin, conv, st);
   const delay = Math.max(MIN_DELAY_SECONDS, stepWait);
   const { data: row, error } = await admin.from("wa_ai_queue").insert({
@@ -2225,7 +2225,7 @@ async function enqueue(admin: Admin, conversationId: string, messageId: string) 
 
   // Jeda pendek diproses langsung di sini (lebih cepat dari penyapu per menit); penyapu tetap
   // menjadi cadangan. Klaim atomik mencegah dua pekerja memproses item yang sama.
-  if (delay <= 90) {
+  if (delay <= 130) {
     await new Promise((r) => setTimeout(r, (delay + Math.random() * 8) * 1000));
     const { data: claimed } = await admin.from("wa_ai_queue")
       .update({ status: "processing", attempts: 1, updated_at: new Date().toISOString() })

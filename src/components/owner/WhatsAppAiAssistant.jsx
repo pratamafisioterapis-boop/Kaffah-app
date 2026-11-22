@@ -68,9 +68,9 @@ const WhatsAppAiAssistant = () => {
     enabled: !!r.enabled,
     mode: r.mode || 'simulate',
     ai_mode: r.ai_mode || 'both',
-    delayMinutes: Math.round((r.delay_seconds ?? 300) / 60),
-    delay2Minutes: Math.round((r.delay2_seconds ?? 120) / 60),
-    delay3Minutes: Math.round((r.delay3_seconds ?? 60) / 60),
+    delaySeconds: Math.round(r.delay_seconds ?? 120),
+    delay2Seconds: Math.round(r.delay2_seconds ?? 60),
+    delay3Seconds: Math.round(r.delay3_seconds ?? 30),
     closedDelayMinutes: Math.round((r.closed_delay_seconds ?? 0) / 60),
     hours: r.business_hours || {},
     testPhones: (r.test_phones || []).join('\n'),
@@ -145,9 +145,9 @@ const WhatsAppAiAssistant = () => {
       enabled: form.enabled,
       mode: form.mode,
       ai_mode: form.ai_mode,
-      delay_seconds: Math.min(3600, Math.max(0, Math.round(Number(form.delayMinutes) || 0) * 60)),
-      delay2_seconds: Math.min(3600, Math.max(60, Math.round(Number(form.delay2Minutes) || 0) * 60)),
-      delay3_seconds: Math.min(3600, Math.max(60, Math.round(Number(form.delay3Minutes) || 0) * 60)),
+      delay_seconds: Math.min(3600, Math.max(0, Math.round(Number(form.delaySeconds) || 0))),
+      delay2_seconds: Math.min(3600, Math.max(30, Math.round(Number(form.delay2Seconds) || 0))),
+      delay3_seconds: Math.min(3600, Math.max(30, Math.round(Number(form.delay3Seconds) || 0))),
       closed_delay_seconds: Math.min(3600, Math.max(0, Math.round(Number(form.closedDelayMinutes) || 0) * 60)),
       business_hours: form.hours,
       test_phones: phones,
@@ -225,7 +225,7 @@ const WhatsAppAiAssistant = () => {
           {canEdit && (
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-app-sm border border-indigo-200 bg-indigo-50 px-3 py-3">
               <div className="text-sm text-indigo-900">
-                <div className="font-semibold">Pengaturan cepat: aktif terus, tunggu admin 3 → 2 → 1 menit</div>
+                <div className="font-semibold">Pengaturan cepat: aktif terus, tunggu admin 2 menit → 1 menit → 30 detik</div>
                 <div className="text-xs text-indigo-700">
                   Live, tanpa batas jam, semua pasien. Setelah menekan tombol, klik &quot;Simpan pengaturan&quot;.
                 </div>
@@ -236,7 +236,7 @@ const WhatsAppAiAssistant = () => {
                 size="sm"
                 className="w-full sm:w-auto"
                 onClick={() =>
-                  setForm((f) => ({ ...f, enabled: true, mode: 'live', ai_mode: 'silent_only', delayMinutes: 3, delay2Minutes: 2, delay3Minutes: 1, testPhones: '' }))
+                  setForm((f) => ({ ...f, enabled: true, mode: 'live', ai_mode: 'silent_only', delaySeconds: 120, delay2Seconds: 60, delay3Seconds: 30, testPhones: '' }))
                 }
               >
                 Terapkan
@@ -286,43 +286,46 @@ const WhatsAppAiAssistant = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ai-delay">Tunggu admin (menit) sejak pesan pasien terakhir</Label>
+              <Label htmlFor="ai-delay">Tunggu admin (detik) sejak pesan pasien terakhir</Label>
               <Input
                 id="ai-delay"
                 type="number"
                 min={0}
-                max={60}
-                value={form.delayMinutes}
+                max={3600}
+                step={10}
+                value={form.delaySeconds}
                 disabled={!canEdit || form.ai_mode === 'closed_only'}
-                onChange={(e) => setForm((f) => ({ ...f, delayMinutes: e.target.value }))}
+                onChange={(e) => setForm((f) => ({ ...f, delaySeconds: e.target.value }))}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ai-delay2">Tunggu admin (menit) setelah AI membalas sekali</Label>
+              <Label htmlFor="ai-delay2">Tunggu admin (detik) setelah AI membalas sekali</Label>
               <Input
                 id="ai-delay2"
                 type="number"
-                min={1}
-                max={60}
-                value={form.delay2Minutes}
+                min={30}
+                max={3600}
+                step={10}
+                value={form.delay2Seconds}
                 disabled={!canEdit}
-                onChange={(e) => setForm((f) => ({ ...f, delay2Minutes: e.target.value }))}
+                onChange={(e) => setForm((f) => ({ ...f, delay2Seconds: e.target.value }))}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ai-delay3">Tunggu admin (menit) setelah AI membalas dua kali atau lebih</Label>
+              <Label htmlFor="ai-delay3">Tunggu admin (detik) setelah AI membalas dua kali atau lebih</Label>
               <Input
                 id="ai-delay3"
                 type="number"
-                min={1}
-                max={60}
-                value={form.delay3Minutes}
+                min={30}
+                max={3600}
+                step={10}
+                value={form.delay3Seconds}
                 disabled={!canEdit}
-                onChange={(e) => setForm((f) => ({ ...f, delay3Minutes: e.target.value }))}
+                onChange={(e) => setForm((f) => ({ ...f, delay3Seconds: e.target.value }))}
               />
-              <p className="text-xs text-slate-500">Balasan admin mengulang hitungan dari menit pertama.</p>
+              <p className="text-xs text-slate-500">Balasan admin mengulang hitungan dari tahap pertama. Minimal 30 detik.</p>
             </div>
 
             <div className="space-y-2">
