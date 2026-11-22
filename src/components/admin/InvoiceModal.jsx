@@ -47,22 +47,6 @@ const receiptDayPhrase = (recapDate, isKaffah) => {
   return `tanggal ${tgl}`;
 };
 
-// Pesan WA untuk pasien cicilan paket. DP: sopan mengingatkan pelunasan di sesi berikutnya.
-const installmentDocName = (inst) =>
-  inst?.kind === 'purchase' ? 'Kwitansi DP Paket' : inst?.kind === 'payoff' ? 'Kwitansi Pelunasan Paket' : 'Kwitansi Terapi';
-const installmentNote = (inst, paidNow) => {
-  const rp = (n) => `Rp ${Math.max(Math.round(Number(n) || 0), 0).toLocaleString('id-ID')}`;
-  // Sapaan = nickname pasien di database (sudah memuat sapaan, mis. "Bu Endang", "Mas Aris").
-  const sapa = (inst?.salutation || '').trim() || 'Bapak/Ibu';
-  if (inst?.kind === 'purchase') {
-    return `Pembayaran yang kami terima untuk paket ini berupa DP sebesar *${rp(paidNow)}*. ` +
-      `Dengan hormat, kami mohon kesediaan ${sapa} untuk melunasi sisa pembayaran paket sebesar *${rp((inst.total || 0) - (Number(paidNow) || 0))}* pada pertemuan sesi berikutnya.\n\n` +
-      `Terima kasih atas pengertian dan kerja samanya.\n\n`;
-  }
-  if (inst?.kind === 'payoff') return `Pembayaran paket ini telah *lunas*. Terima kasih atas kepercayaan ${sapa}.\n\n`;
-  return '';
-};
-
 const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
   const { userDetails } = useAuth();
   const [detailData, setDetailData]       = useState(null);
@@ -348,24 +332,8 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       pdfGeneratedAt = rec?.generated_at || null;
     }
 
-    // Cicilan paket (Kaffah): DP tampil "belum lunas" dengan sisa tagihan; pelunasan tampil "lunas".
-    // Sisa dihitung saat invoice terbit (total - DP) sehingga kwitansi lama tidak berubah setelah pelunasan.
-    let installment = null;
-    if (recap.package_installment_total != null) {
-      installment = { kind: 'purchase', total: Number(recap.package_installment_total), paidBefore: 0 };
-    } else if (recap.installment_payoff) {
-      const { data: st } = await supabase.rpc('package_installment_status', { p_recap_id: recap.id });
-      if (st?.kind === 'payoff') installment = { kind: 'payoff', total: Number(st.total), paidBefore: Number(st.paid) };
-    }
-
-    if (installment && recap.patient_id) {
-      const { data: pat } = await supabase.from('patients').select('nickname').eq('id', recap.patient_id).maybeSingle();
-      installment.salutation = pat?.nickname || '';
-    }
-
     setDetailData({
       ...recap,
-      installment,
       pdf_generated_at: pdfGeneratedAt,
       use_modern_layout: useModernLayout,
       tiered_line: tieredLine,
@@ -742,10 +710,8 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
 
       // 4. Siapkan pesan caption
       const clinicName = detailData?.clinic?.name || '';
-      const captionInst = templateData.installment;
       const caption =
-        `Berikut *${installmentDocName(captionInst)}* ${receiptDayPhrase(data?.recap_date, (templateData.clinic?.id || detailData?.clinic?.id) === KAFFAH_CLINIC_ID)}.\n\n` +
-        installmentNote(captionInst, templateData.amount) +
+        `Berikut *Kwitansi Terapi* ${receiptDayPhrase(data?.recap_date, (templateData.clinic?.id || detailData?.clinic?.id) === KAFFAH_CLINIC_ID)}.\n\n` +
         `Terima kasih telah mempercayakan pemulihan di *${clinicName}*.\n` +
         `Semoga lekas membaik dan sehat selalu.\n\n` +
         `*Salam Sehat,*\n` +
@@ -900,12 +866,8 @@ const handleSendManualWA = async () => {
 
   const clinicName = detailData?.clinic?.name || '';
   const invoiceLink = `${window.location.origin}/i/${data.id}`;
-  const inst = templateData.installment;
-  const docName = installmentDocName(inst);
-  const instNote = installmentNote(inst, templateData.amount);
   const message =
-    `Berikut *${docName}* ${receiptDayPhrase(data?.recap_date, (templateData.clinic?.id || detailData?.clinic?.id) === KAFFAH_CLINIC_ID)}.\n\n` +
-    instNote +
+    `Berikut *Kwitansi Terapi* ${receiptDayPhrase(data?.recap_date, (templateData.clinic?.id || detailData?.clinic?.id) === KAFFAH_CLINIC_ID)}.\n\n` +
     `Terima kasih telah mempercayakan pemulihan di *${clinicName}*.\n` +
     `Semoga lekas membaik dan sehat selalu.\n\n` +
     (isOneOff ? '' : `Lihat/unduh kwitansi:\n${invoiceLink}\n\n`) +
