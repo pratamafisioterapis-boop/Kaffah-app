@@ -15,6 +15,7 @@ import {
 import ClinicalDocumentPreviewModal from './ClinicalDocumentPreviewModal';
 import SuratKeteranganTemplate from './SuratKeteranganTemplate';
 import DiagnosisServiceField from './DiagnosisServiceField';
+import { isKaffahClinic, sendClinicalDocViaWa } from '@/lib/clinicalDocWhatsApp';
 
 const emptyForm = {
   patient_id: '',
@@ -106,6 +107,19 @@ const SuratKeteranganForm = ({ onSaved }) => {
     if (!form.therapist_id) return 'Pilih fisioterapis.';
     if (!form.diagnosa.trim()) return 'Diagnosa wajib diisi.';
     return null;
+  };
+
+  // Kirim WhatsApp (khusus Kaffah): PDF langsung bila jendela 24 jam terbuka, selain itu template + tombol.
+  const handleSendWhatsApp = async (pdf) => {
+    await sendClinicalDocViaWa({
+      docType: 'surat_keterangan',
+      patientId: form.patient_id,
+      phone: previewData?.phone || form.phone,
+      pdf,
+      fileName: `Surat_Keterangan_${(previewData?.patient_name || 'Pasien').replace(/[^a-zA-Z0-9]+/g, '_')}`,
+      docDate: previewData?.document_date || form.document_date,
+      toast,
+    });
   };
 
   const handlePreview = () => {
@@ -235,6 +249,7 @@ const SuratKeteranganForm = ({ onSaved }) => {
         onClose={() => setPreviewData(null)}
         title="Surat Keterangan Fisioterapi"
         fileName={`Surat_Keterangan_${(previewData?.patient_name || 'Pasien').replace(/\s+/g, '_')}`}
+        onSend={isKaffahClinic(clinic) ? handleSendWhatsApp : undefined}
       >
         {previewData && <SuratKeteranganTemplate data={previewData} clinic={clinic} />}
       </ClinicalDocumentPreviewModal>
