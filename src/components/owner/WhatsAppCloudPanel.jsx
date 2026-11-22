@@ -69,9 +69,9 @@ const ConnectionTab = () => {
 
   const nameOk = acc?.name_status === 'APPROVED';
   return (
-    <div className="space-y-5 max-w-2xl">
+    <div className="grid gap-6 lg:grid-cols-2 lg:items-start max-w-5xl">
       {acc && (
-        <div className="border border-slate-200 rounded-app p-4 space-y-2 bg-slate-50">
+        <div className="lg:col-span-2 border border-slate-200 rounded-app p-4 space-y-2 bg-slate-50">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="font-medium text-slate-800 flex items-center gap-2 break-words min-w-0">
               <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -186,7 +186,7 @@ const TemplatesTab = () => {
         </Button>
       </div>
 
-      <div className="grid gap-3">
+      <div className="grid gap-3 lg:grid-cols-2">
         {rows.length === 0 && <p className="text-sm text-slate-500">Belum ada template.</p>}
         {rows.map((t) => (
           <div key={t.id} className="border border-slate-200 rounded-app p-3 bg-white">
@@ -204,7 +204,7 @@ const TemplatesTab = () => {
         ))}
       </div>
 
-      <div className="border border-slate-200 rounded-app p-3 sm:p-4 space-y-3 max-w-2xl">
+      <div className="border border-slate-200 rounded-app p-3 sm:p-4 space-y-3 max-w-3xl">
         <p className="font-medium text-slate-800 text-sm">Ajukan template baru</p>
         <div className="grid sm:grid-cols-2 gap-3">
           <div>
@@ -304,7 +304,7 @@ const BroadcastTab = () => {
   const tplBody = templates.find((t) => t.name === tpl)?.components?.find((c) => c.type === 'BODY')?.text || '';
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-4xl">
       <div className="space-y-3">
         <div className="grid sm:grid-cols-2 gap-3">
           <div><Label>Nama broadcast</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>

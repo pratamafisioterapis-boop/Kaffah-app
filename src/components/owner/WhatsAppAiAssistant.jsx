@@ -244,10 +244,10 @@ const WhatsAppAiAssistant = () => {
             </div>
           )}
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
+          <div className="grid gap-x-6 gap-y-5 md:grid-cols-2 lg:grid-cols-3 lg:[&>*:first-child]:col-span-3">
+            <div className="space-y-2 md:col-span-2">
               <Label>Mode kerja</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                   { v: 'review', t: 'Review Telegram', d: 'Draf balasan untuk SETIAP pesan pasien dikirim ke Telegram owner. Tidak ada pesan ke pasien dan tidak ada booking.' },
                   { v: 'simulate', t: 'Simulasi', d: 'Hanya mencatat rencana balasan di riwayat. Tidak ada pesan terkirim.' },
@@ -342,7 +342,7 @@ const WhatsAppAiAssistant = () => {
           <div className="space-y-2">
             <Label>Jam operasional klinik (WITA)</Label>
             <p className="text-xs text-slate-500">Di luar jam ini dihitung sebagai jam tutup.</p>
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
               {DAYS.map((d) => {
                 const h = form.hours[d.key];
                 return (
