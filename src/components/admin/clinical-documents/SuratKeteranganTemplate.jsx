@@ -1,5 +1,7 @@
 import React, { forwardRef, useEffect, useState } from 'react';
 import { stripSignatureBackground } from '@/lib/signatureImage';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
+import SuratKeteranganTemplateKaffah from './SuratKeteranganTemplateKaffah';
 
 const formatDate = (value) => {
   if (!value) return '-';
@@ -16,85 +18,7 @@ const calcAge = (birthDate) => {
   return Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000));
 };
 
-const C = {
-  navy: '#1f3a5f',
-  blue: '#2f6fb0',
-  text: '#1c2733',
-  muted: '#5b6b7c',
-  body: '#46576a',
-  line: '#e3e8ee',
-  chipLine: '#cfd8e3',
-  tint: '#eef4fa',
-};
-
-// Kop dan blok tanda tangan dipakai bersama Resume Medis dan Surat Keterangan
-// (gaya "Tabel Klinis", senada dengan kwitansi).
-const DocHeader = ({ clinic, title, subtitle }) => (
-  <>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <img src={clinic?.logo_url || '/clinara-logo.png'} alt="logo" style={{ width: '64px', height: 'auto', objectFit: 'contain', display: 'block' }} loading="lazy" decoding="async" />
-        <div>
-          <div style={{ fontSize: '17px', fontWeight: 700, letterSpacing: '0.1em', color: C.navy }}>
-            {(clinic?.name || '').toUpperCase()}
-          </div>
-          <div style={{ fontSize: '11.5px', lineHeight: 1.55, color: C.muted, marginTop: '5px' }}>
-            {clinic?.address || ''}
-            {(clinic?.phone || clinic?.email) && <><br />{[clinic?.phone, clinic?.email].filter(Boolean).join('  ·  ')}</>}
-          </div>
-        </div>
-      </div>
-      <div style={{ textAlign: 'right', flex: 'none' }}>
-        <div style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '0.14em', color: C.navy, lineHeight: 1.1 }}>{title}</div>
-        {subtitle && <div style={{ fontSize: '11.5px', color: C.muted, marginTop: '5px' }}>{subtitle}</div>}
-      </div>
-    </div>
-    <div style={{ height: '2px', background: C.navy, marginTop: '20px' }} />
-  </>
-);
-
-const DocSignature = ({ data, clinic, signatureUrl }) => (
-  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-    <div style={{ width: '230px', textAlign: 'center', position: 'relative' }}>
-      <div style={{ fontSize: '12.5px', marginBottom: '6px' }}>
-        {(data?.tempat || 'Balikpapan')}, {formatDate(data?.document_date)}
-      </div>
-      <div style={{ fontSize: '10.5px', fontWeight: 600, letterSpacing: '0.12em', color: C.muted }}>FISIOTERAPIS</div>
-      <div style={{ position: 'relative', height: '86px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-        {signatureUrl && (
-          <img src={signatureUrl} alt="signature" style={{ maxHeight: '80px', maxWidth: '170px' }} loading="lazy" decoding="async" />
-        )}
-        {clinic?.stamp_url && (
-          <img
-            src={clinic.stamp_url}
-            alt="stamp"
-            style={{ position: 'absolute', right: '-26px', bottom: 0, maxHeight: '85px', maxWidth: '85px', objectFit: 'contain', opacity: 0.9 }} loading="lazy" decoding="async" />
-        )}
-      </div>
-      <div style={{ height: '1px', background: C.text }} />
-      <div style={{ fontSize: '13px', fontWeight: 600, marginTop: '8px' }}>{data?.therapist_name || '-'}</div>
-      {data?.therapist_license && (
-        <div style={{ fontSize: '11px', color: C.muted, marginTop: '2px' }}>SIPF: {data.therapist_license}</div>
-      )}
-    </div>
-  </div>
-);
-
-const InfoPanel = ({ rows, columns = 3 }) => (
-  <div style={{
-    background: C.tint, borderRadius: '8px', padding: '16px 20px', marginTop: '20px',
-    display: 'grid', gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: '14px 20px',
-  }}>
-    {rows.map(([label, value, span]) => (
-      <div key={label} style={span ? { gridColumn: `span ${span}` } : undefined}>
-        <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.1em', color: C.muted, textTransform: 'uppercase' }}>{label}</div>
-        <div style={{ fontSize: '13px', fontWeight: 600, marginTop: '3px' }}>{value}</div>
-      </div>
-    ))}
-  </div>
-);
-
-const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
+const SuratKeteranganTemplateDefault = forwardRef(({ data, clinic }, ref) => {
   const age = data?.age ?? calcAge(data?.birth_date);
 
   // Strip the signature scan's background to transparent and boost contrast,
@@ -114,59 +38,118 @@ const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
     return () => { cancelled = true; };
   }, [data?.therapist_signature_url]);
 
-  const para = { fontSize: '13.5px', lineHeight: 1.9, margin: 0 };
-
   return (
     <div
       ref={ref}
       style={{
         width: '210mm',
         minHeight: '297mm',
-        boxSizing: 'border-box',
-        padding: '48px 52px 40px',
-        display: 'flex',
-        flexDirection: 'column',
-        fontFamily: "'Inter', Arial, sans-serif",
+        fontFamily: 'Inter, Arial, sans-serif',
         background: '#fff',
-        color: C.text,
+        color: '#0f172a',
         position: 'relative',
+        padding: '40px 50px',
       }}
     >
-      <DocHeader
-        clinic={clinic}
-        title="SURAT KETERANGAN"
-        subtitle={['Keterangan Fisioterapi', data?.document_number].filter(Boolean).join(' · ')}
-      />
+      {/* LETTERHEAD — logo pinned left, text truly centered on the page via a mirrored spacer column */}
+      <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr 96px', alignItems: 'center', gap: '16px', paddingBottom: '18px' }}>
+        <div>
+          <img src={clinic?.logo_url || '/clinara-logo.png'} alt="logo" style={{ width: '84px', height: '84px', objectFit: 'contain' }} loading="lazy" decoding="async" />
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ fontWeight: 800, fontSize: '19px', margin: 0, letterSpacing: '0.6px', color: '#0f172a' }}>
+            {(clinic?.name || '').toUpperCase()}
+          </p>
+          <p style={{ fontSize: '11.5px', color: '#475569', margin: '6px 0 0', lineHeight: 1.6 }}>
+            {clinic?.address || '-'}
+          </p>
+          <p style={{ fontSize: '11.5px', color: '#475569', margin: '2px 0 0' }}>
+            {[clinic?.phone, clinic?.email].filter(Boolean).join('  •  ')}
+          </p>
+        </div>
+        <div />
+      </div>
+      <div style={{ height: '3px', background: 'linear-gradient(90deg, #0f172a 0%, #4f46e5 50%, #0f172a 100%)', borderRadius: '2px' }} />
 
-      <p style={{ ...para, marginTop: '34px' }}>
-        <strong>{clinic?.name || ''}</strong> menerangkan bahwa pasien berikut:
-      </p>
+      {/* TITLE */}
+      <div style={{ textAlign: 'center', marginTop: '32px' }}>
+        <p style={{ fontSize: '10px', letterSpacing: '3px', color: '#4f46e5', fontWeight: 700, margin: 0 }}>DOKUMEN RESMI</p>
+        <p style={{ fontWeight: 800, fontSize: '19px', letterSpacing: '0.8px', margin: '8px 0 0' }}>
+          SURAT KETERANGAN FISIOTERAPI
+        </p>
+        <div style={{ width: '64px', height: '3px', background: '#4f46e5', borderRadius: '2px', margin: '10px auto 0' }} />
+        <p style={{ fontSize: '12px', color: '#475569', margin: '12px 0 0' }}>
+          No. {data?.document_number || '-'}
+        </p>
+      </div>
 
-      <InfoPanel
-        columns={2}
-        rows={[
-          ['Nama', data?.patient_name || '-'],
-          ['Usia', age != null ? `${age} Tahun` : '-'],
-          ['Jenis Kelamin', data?.gender || '-'],
-          ['Telepon', data?.phone || '-'],
-          ['Alamat', data?.address || '-', 2],
-          ['Diagnosa', data?.diagnosa || '-', 2],
-        ]}
-      />
+      {/* BODY */}
+      <div style={{ marginTop: '32px', fontSize: '13px', lineHeight: 1.9 }}>
+        <p style={{ margin: 0 }}>
+          Yang bertanda tangan di bawah ini, fisioterapis di <strong>{clinic?.name || ''}</strong>, dengan ini menerangkan bahwa:
+        </p>
 
-      <p style={{ ...para, marginTop: '22px' }}>
-        {data?.keterangan_tambahan
-          ? data.keterangan_tambahan
-          : `Pasien tersebut telah menjalani perawatan fisioterapi di ${clinic?.name || 'klinik kami'}.`}
-      </p>
-      <p style={{ ...para, marginTop: '14px' }}>
-        Surat keterangan ini dibuat untuk dipergunakan sebagaimana mestinya.
-      </p>
+        <div style={{ margin: '18px 0', padding: '18px 24px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+          {[
+            ['Nama', data?.patient_name || '-'],
+            ['Usia', age != null ? `${age} Tahun` : '-'],
+            ['Jenis Kelamin', data?.gender || '-'],
+            ['Alamat', data?.address || '-'],
+            ['Telepon', data?.phone || '-'],
+            ['Diagnosa', data?.diagnosa || '-'],
+          ].map(([label, value]) => (
+            <div key={label} style={{ display: 'flex', fontSize: '13px', marginBottom: '7px' }}>
+              <span style={{ width: '150px', color: '#64748b' }}>{label}</span>
+              <span style={{ width: '16px', color: '#64748b' }}>:</span>
+              <span style={{ fontWeight: 700 }}>{value}</span>
+            </div>
+          ))}
+        </div>
 
-      <div style={{ flex: 1, minHeight: '28px' }} />
-      <DocSignature data={data} clinic={clinic} signatureUrl={signatureUrl} />
+        <p style={{ margin: 0 }}>
+          {data?.keterangan_tambahan
+            ? data.keterangan_tambahan
+            : 'benar merupakan pasien yang telah menjalani perawatan fisioterapi di klinik kami.'}
+        </p>
+
+        <p style={{ marginTop: '18px' }}>
+          Demikian surat keterangan fisioterapi ini diberikan untuk digunakan sebagaimana mestinya.
+        </p>
+      </div>
+
+      {/* SIGNATURE */}
+      <div style={{ marginTop: '56px', display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ textAlign: 'center', width: '250px' }}>
+          <p style={{ fontSize: '13px', margin: 0 }}>
+            {(data?.tempat || 'Balikpapan')}, {formatDate(data?.document_date)}
+          </p>
+          <p style={{ fontSize: '13px', margin: '4px 0 0' }}>Fisioterapis,</p>
+          <div style={{ position: 'relative', height: '95px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+            {signatureUrl && (
+              <img src={signatureUrl} style={{ maxHeight: '90px', maxWidth: '190px' }} loading="lazy" decoding="async" />
+            )}
+            {clinic?.stamp_url && (
+              <img
+                src={clinic.stamp_url}
+                style={{ position: 'absolute', left: 0, bottom: 0, maxHeight: '85px', maxWidth: '85px', objectFit: 'contain', opacity: 0.92 }} loading="lazy" decoding="async" />
+            )}
+          </div>
+          <div style={{ borderTop: '1px solid #0f172a', width: '190px', margin: '4px auto 0' }} />
+          <p style={{ fontSize: '13px', fontWeight: 700, margin: '6px 0 0' }}>{data?.therapist_name || '-'}</p>
+          {data?.therapist_license && (
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#475569', margin: '2px 0 0' }}>SIPF: {data.therapist_license}</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 });
+
+// Kaffah memakai desain surat sendiri (senada dengan kwitansi).
+const SuratKeteranganTemplate = forwardRef((props, ref) => (
+  props.clinic?.id === KAFFAH_CLINIC_ID
+    ? <SuratKeteranganTemplateKaffah ref={ref} {...props} />
+    : <SuratKeteranganTemplateDefault ref={ref} {...props} />
+));
 
 export default SuratKeteranganTemplate;
