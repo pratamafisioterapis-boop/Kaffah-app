@@ -19,6 +19,84 @@ const formatDate = (value) => {
   return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
 };
 
+const C = {
+  navy: '#1f3a5f',
+  blue: '#2f6fb0',
+  text: '#1c2733',
+  muted: '#5b6b7c',
+  body: '#46576a',
+  line: '#e3e8ee',
+  chipLine: '#cfd8e3',
+  tint: '#eef4fa',
+};
+
+// Kop dan blok tanda tangan dipakai bersama Resume Medis dan Surat Keterangan
+// (gaya "Tabel Klinis", senada dengan kwitansi).
+const DocHeader = ({ clinic, title, subtitle }) => (
+  <>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <img src={clinic?.logo_url || '/clinara-logo.png'} alt="logo" style={{ width: '64px', height: 'auto', objectFit: 'contain', display: 'block' }} loading="lazy" decoding="async" />
+        <div>
+          <div style={{ fontSize: '17px', fontWeight: 700, letterSpacing: '0.1em', color: C.navy }}>
+            {(clinic?.name || '').toUpperCase()}
+          </div>
+          <div style={{ fontSize: '11.5px', lineHeight: 1.55, color: C.muted, marginTop: '5px' }}>
+            {clinic?.address || ''}
+            {(clinic?.phone || clinic?.email) && <><br />{[clinic?.phone, clinic?.email].filter(Boolean).join('  ·  ')}</>}
+          </div>
+        </div>
+      </div>
+      <div style={{ textAlign: 'right', flex: 'none' }}>
+        <div style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '0.14em', color: C.navy, lineHeight: 1.1 }}>{title}</div>
+        {subtitle && <div style={{ fontSize: '11.5px', color: C.muted, marginTop: '5px' }}>{subtitle}</div>}
+      </div>
+    </div>
+    <div style={{ height: '2px', background: C.navy, marginTop: '20px' }} />
+  </>
+);
+
+const DocSignature = ({ data, clinic, signatureUrl }) => (
+  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+    <div style={{ width: '230px', textAlign: 'center', position: 'relative' }}>
+      <div style={{ fontSize: '12.5px', marginBottom: '6px' }}>
+        {(data?.tempat || 'Balikpapan')}, {formatDate(data?.document_date)}
+      </div>
+      <div style={{ fontSize: '10.5px', fontWeight: 600, letterSpacing: '0.12em', color: C.muted }}>FISIOTERAPIS</div>
+      <div style={{ position: 'relative', height: '86px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+        {signatureUrl && (
+          <img src={signatureUrl} alt="signature" style={{ maxHeight: '80px', maxWidth: '170px' }} loading="lazy" decoding="async" />
+        )}
+        {clinic?.stamp_url && (
+          <img
+            src={clinic.stamp_url}
+            alt="stamp"
+            style={{ position: 'absolute', right: '-26px', bottom: 0, maxHeight: '85px', maxWidth: '85px', objectFit: 'contain', opacity: 0.9 }} loading="lazy" decoding="async" />
+        )}
+      </div>
+      <div style={{ height: '1px', background: C.text }} />
+      <div style={{ fontSize: '13px', fontWeight: 600, marginTop: '8px' }}>{data?.therapist_name || '-'}</div>
+      {data?.therapist_license && (
+        <div style={{ fontSize: '11px', color: C.muted, marginTop: '2px' }}>SIPF: {data.therapist_license}</div>
+      )}
+    </div>
+  </div>
+);
+
+const InfoPanel = ({ rows, columns = 3 }) => (
+  <div style={{
+    background: C.tint, borderRadius: '8px', padding: '16px 20px', marginTop: '20px',
+    display: 'grid', gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: '14px 20px',
+  }}>
+    {rows.map(([label, value, span]) => (
+      <div key={label} style={span ? { gridColumn: `span ${span}` } : undefined}>
+        <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.1em', color: C.muted, textTransform: 'uppercase' }}>{label}</div>
+        <div style={{ fontSize: '13px', fontWeight: 600, marginTop: '3px' }}>{value}</div>
+      </div>
+    ))}
+  </div>
+);
+
 const ResumeMedisTemplateDefault = forwardRef(({ data, clinic }, ref) => {
   const programTerapi = data?.program_terapi || [];
   const otherProgram = data?.program_terapi_lainnya;
@@ -40,6 +118,13 @@ const ResumeMedisTemplateDefault = forwardRef(({ data, clinic }, ref) => {
     return () => { cancelled = true; };
   }, [data?.therapist_signature_url]);
 
+  const labelCell = { width: '150px', padding: '13px 16px 13px 0', borderBottom: `1px solid ${C.line}`, verticalAlign: 'top' };
+  const valueCell = { padding: '13px 0', borderBottom: `1px solid ${C.line}`, verticalAlign: 'top' };
+  const labelMain = { fontSize: '12px', fontWeight: 600, color: C.navy, letterSpacing: '0.02em' };
+  const labelSub = { fontSize: '10.5px', color: C.muted, marginTop: '2px' };
+  const bodyText = { fontSize: '13px', lineHeight: 1.65, whiteSpace: 'pre-wrap', margin: 0 };
+  const th = { fontSize: '10.5px', fontWeight: 600, letterSpacing: '0.1em', color: C.muted, textAlign: 'left', padding: '0 0 9px', borderBottom: `2px solid ${C.navy}` };
+
   return (
     <div
       ref={ref}
@@ -51,176 +136,97 @@ const ResumeMedisTemplateDefault = forwardRef(({ data, clinic }, ref) => {
         // a near-blank second page even though the real content fits.
         minHeight: 'calc(297mm - 2px)',
         boxSizing: 'border-box',
-        fontFamily: 'Inter, Arial, sans-serif',
+        padding: '48px 52px 40px',
+        display: 'flex',
+        flexDirection: 'column',
+        fontFamily: "'Inter', Arial, sans-serif",
         background: '#fff',
-        color: '#0f172a',
+        color: C.text,
         position: 'relative',
       }}
     >
-      {/* HEADER */}
-      <div style={{
-        background: 'linear-gradient(120deg, #0f172a 0%, #312e81 100%)',
-        padding: '20px 40px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ background: '#fff', borderRadius: '10px', padding: '8px', display: 'flex' }}>
-            <img src={clinic?.logo_url || '/clinara-logo.png'} alt="logo" style={{ width: '46px', height: '46px', objectFit: 'contain' }} loading="lazy" decoding="async" />
-          </div>
-          <div>
-            <p style={{ color: '#fff', fontWeight: 800, fontSize: '15px', letterSpacing: '0.5px', margin: 0 }}>
-              {(clinic?.name || '').toUpperCase()}
-            </p>
-            <p style={{ color: '#c7d2fe', fontSize: '10.5px', margin: '4px 0 0', lineHeight: 1.5, maxWidth: '320px' }}>
-              {clinic?.address || '-'}
-            </p>
-            <p style={{ color: '#c7d2fe', fontSize: '10.5px', margin: '2px 0 0' }}>
-              {[clinic?.phone, clinic?.email].filter(Boolean).join('  •  ')}
-            </p>
-          </div>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <p style={{ color: '#818cf8', fontWeight: 700, fontSize: '11px', letterSpacing: '2px', margin: 0 }}>DOKUMEN MEDIS</p>
-          <p style={{ color: '#fff', fontWeight: 800, fontSize: '22px', margin: '2px 0 0' }}>RESUME MEDIS</p>
-        </div>
-      </div>
+      <DocHeader
+        clinic={clinic}
+        title="RESUME MEDIS"
+        subtitle={['Medical Resume', data?.document_number].filter(Boolean).join(' · ')}
+      />
 
-      <div style={{ padding: '22px 40px 28px' }}>
-        {/* PATIENT INFO */}
-        <div style={{
-          border: '1px solid #e2e8f0',
-          borderRadius: '14px',
-          padding: '14px 20px',
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          columnGap: '32px',
-          rowGap: '6px',
-          background: '#f8fafc',
-        }}>
-          {[
-            ['No. Rekam Medis', data?.medical_record_number || '-'],
-            ['Nama Pasien', data?.patient_name || '-'],
-            ['Tanggal Lahir', formatDate(data?.birth_date)],
-            ['Jenis Kelamin', data?.gender || '-'],
-            ['Fisioterapis', data?.therapist_name || '-'],
-            ['Tanggal Resume', formatDate(data?.document_date)],
-          ].map(([label, value]) => (
-            <div key={label} style={{ display: 'flex', fontSize: '12px' }}>
-              <span style={{ width: '130px', color: '#64748b', fontWeight: 600 }}>{label}</span>
-              <span style={{ marginRight: '8px', color: '#64748b' }}>:</span>
-              <span style={{ fontWeight: 700, color: '#0f172a' }}>{value}</span>
-            </div>
-          ))}
-        </div>
+      <InfoPanel
+        rows={[
+          ['No. Rekam Medis', data?.medical_record_number || '-'],
+          ['Nama Pasien', data?.patient_name || '-'],
+          ['Tanggal Lahir', formatDate(data?.birth_date)],
+          ['Jenis Kelamin', data?.gender || '-'],
+          ['Fisioterapis', data?.therapist_name || '-'],
+          ['Tanggal Resume', formatDate(data?.document_date)],
+        ]}
+      />
 
-        {/* CLINICAL SECTIONS */}
-        {[
-          { key: 'anamnesa', label: 'Anamnesa', color: '#6366f1' },
-          { key: 'pemeriksaan_fisik', label: 'Pemeriksaan Fisik', color: '#0ea5e9' },
-          { key: 'diagnosa', label: 'Diagnosa', color: '#f59e0b' },
-        ].map((section) => (
-          <div key={section.key} style={{ marginTop: '12px' }}>
-            <div style={{
-              borderLeft: `4px solid ${section.color}`,
-              padding: '10px 16px',
-              background: '#fff',
-              border: '1px solid #e2e8f0',
-              borderLeftWidth: '4px',
-              borderLeftColor: section.color,
-              borderRadius: '10px',
-            }}>
-              <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.6px', color: section.color, margin: '0 0 5px', textTransform: 'uppercase' }}>
-                {section.label}
-              </p>
-              <p style={{ fontSize: '12px', lineHeight: 1.45, margin: 0, whiteSpace: 'pre-wrap' }}>
-                {data?.[section.key] || '-'}
-              </p>
-            </div>
-          </div>
-        ))}
-
-        {/* PROGRAM TERAPI */}
-        <div style={{ marginTop: '12px' }}>
-          <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.6px', color: '#334155', margin: '0 0 8px', textTransform: 'uppercase' }}>
-            Program Terapi
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '16px', rowGap: '6px' }}>
-            {Object.entries(PROGRAM_TERAPI_LABELS).map(([key, label]) => {
-              const checked = programTerapi.includes(key);
-              return (
-                <div key={key} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', lineHeight: '16px' }}>
-                  <span style={{
-                    width: '14px', height: '14px', borderRadius: '3px', boxSizing: 'border-box',
-                    border: `1.5px solid ${checked ? '#4f46e5' : '#cbd5e1'}`,
-                    background: checked ? '#4f46e5' : '#fff',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                    // A box centered on the full line-height sits visibly
-                    // above the text's own ink (line-height reserves more
-                    // space above cap-height than below the baseline), so
-                    // nudge it down to align with the label instead.
-                    marginTop: '2px',
-                  }}>
-                    {checked && (
-                      <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M1 3.5L3.2 5.7L8 1" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                  </span>
-                  <span style={{ color: checked ? '#0f172a' : '#94a3b8', fontWeight: checked ? 600 : 400, lineHeight: '16px' }}>{label}</span>
-                </div>
-              );
-            })}
-          </div>
-          {otherProgram && (
-            <p style={{ fontSize: '12px', marginTop: '8px' }}>
-              <span style={{ color: '#64748b', fontWeight: 600 }}>Lainnya: </span>{otherProgram}
-            </p>
-          )}
-        </div>
-
-        {/* REKOMENDASI */}
-        <div style={{ marginTop: '12px' }}>
-          <div style={{
-            background: '#eef2ff',
-            border: '1px solid #c7d2fe',
-            borderRadius: '10px',
-            padding: '10px 16px',
-          }}>
-            <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.6px', color: '#4338ca', margin: '0 0 4px', textTransform: 'uppercase' }}>
-              Rekomendasi Fisioterapi
-            </p>
-            <p style={{ fontSize: '12px', margin: 0, fontWeight: 600 }}>{data?.rekomendasi || '-'}</p>
-          </div>
-        </div>
-
-        {/* SIGNATURE */}
-        <div style={{ marginTop: '22px', display: 'flex', justifyContent: 'flex-end' }}>
-          <div style={{ textAlign: 'center', width: '260px' }}>
-            <p style={{ fontSize: '12px', margin: 0 }}>
-              {(data?.tempat || 'Balikpapan')}, {formatDate(data?.document_date)}
-            </p>
-            <p style={{ fontSize: '12px', margin: '4px 0 0' }}>Fisioterapis,</p>
-            <div style={{ position: 'relative', height: '70px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-              {signatureUrl && (
-                <img src={signatureUrl} style={{ maxHeight: '65px', maxWidth: '160px' }} loading="lazy" decoding="async" />
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '22px' }}>
+        <thead>
+          <tr>
+            <th style={{ ...th, width: '150px' }}>PEMERIKSAAN</th>
+            <th style={th}>CATATAN KLINIS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={labelCell}><div style={labelMain}>Anamnesa</div><div style={labelSub}>Keluhan pasien</div></td>
+            <td style={valueCell}><p style={bodyText}>{data?.anamnesa || '-'}</p></td>
+          </tr>
+          <tr>
+            <td style={labelCell}><div style={labelMain}>Pemeriksaan Fisik</div><div style={labelSub}>Temuan objektif</div></td>
+            <td style={valueCell}><p style={bodyText}>{data?.pemeriksaan_fisik || '-'}</p></td>
+          </tr>
+          <tr>
+            <td style={labelCell}><div style={labelMain}>Diagnosa</div><div style={labelSub}>Fisioterapi</div></td>
+            <td style={valueCell}><p style={{ ...bodyText, fontWeight: 700, color: C.navy }}>{data?.diagnosa || '-'}</p></td>
+          </tr>
+          <tr>
+            <td style={labelCell}><div style={labelMain}>Program Terapi</div><div style={labelSub}>Modalitas</div></td>
+            <td style={valueCell}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
+                {Object.entries(PROGRAM_TERAPI_LABELS).map(([key, label]) => {
+                  const on = programTerapi.includes(key);
+                  return (
+                    <div key={key} style={{
+                      minHeight: '34px', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                      fontSize: '12px', padding: '4px 8px', textAlign: 'center', borderRadius: '8px',
+                      border: `1px solid ${on ? C.navy : C.chipLine}`,
+                      background: on ? C.navy : 'transparent',
+                      color: on ? '#ffffff' : C.muted,
+                      fontWeight: on ? 700 : 400,
+                    }}>
+                      {on && (
+                        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" style={{ flex: 'none' }}>
+                          <path d="M2.5 6.3 5 8.8 9.6 3.6" fill="none" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                      {label}
+                    </div>
+                  );
+                })}
+              </div>
+              {otherProgram && (
+                <p style={{ fontSize: '12.5px', margin: '10px 0 0' }}>
+                  <span style={{ color: C.muted }}>Lainnya: </span>{otherProgram}
+                </p>
               )}
-              {clinic?.stamp_url && (
-                <img
-                  src={clinic.stamp_url}
-                  style={{ position: 'absolute', left: 0, bottom: 0, maxHeight: '65px', maxWidth: '65px', objectFit: 'contain' }} loading="lazy" decoding="async" />
-              )}
-            </div>
-            <div style={{ borderTop: '1px solid #0f172a', width: '180px', margin: '4px auto 0' }} />
-            <p style={{ fontSize: '12.5px', fontWeight: 700, margin: '6px 0 0', whiteSpace: 'nowrap' }}>{data?.therapist_name || '-'}</p>
-            {data?.therapist_license && (
-              <p style={{ fontSize: '11px', fontWeight: 600, color: '#475569', margin: '2px 0 0', whiteSpace: 'nowrap' }}>SIPF: {data.therapist_license}</p>
-            )}
-          </div>
-        </div>
-      </div>
+            </td>
+          </tr>
+          <tr>
+            <td style={{ ...labelCell, background: C.tint, borderBottom: 'none', paddingLeft: '12px', borderRadius: '8px 0 0 8px' }}>
+              <div style={labelMain}>Rekomendasi</div><div style={labelSub}>Tindak lanjut</div>
+            </td>
+            <td style={{ ...valueCell, background: C.tint, borderBottom: 'none', paddingRight: '12px', borderRadius: '0 8px 8px 0' }}>
+              <p style={{ ...bodyText, fontWeight: 600 }}>{data?.rekomendasi || '-'}</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style={{ flex: 1, minHeight: '28px' }} />
+      <DocSignature data={data} clinic={clinic} signatureUrl={signatureUrl} />
     </div>
   );
 });
