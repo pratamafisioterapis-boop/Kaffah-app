@@ -771,7 +771,9 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
           p_caption:  caption,
           p_file_url: fileUrl,
           p_filename: fileName,
-          p_template_ok: templateOk,
+          // Argumen baru hanya dikirim bila perlu (Kaffah, kwitansi biasa), sehingga klinik lain tetap
+          // memanggil fungsi dengan 5 argumen dan aman walau migrasi belum diterapkan.
+          ...(templateOk ? { p_template_ok: true } : {}),
         });
         if (sendErr) throw new Error(sendErr.message);
         const sendId = sent?.send_id;
