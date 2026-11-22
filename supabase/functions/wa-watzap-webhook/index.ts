@@ -21,8 +21,11 @@ declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
 async function notifyAi(admin: any, waMessageId: string) {
   try {
     const { data: m } = await admin.from("wa_inbox_messages")
-      .select("id, conversation_id, direction").eq("wa_message_id", waMessageId).maybeSingle();
+      .select("id, conversation_id, direction, msg_type").eq("wa_message_id", waMessageId).maybeSingle();
     if (!m || m.direction !== "in") return;
+    // Gambar, dokumen, voice note, stiker, dll. dilewati: AI tidak membaca dan tidak membalasnya
+    // (hanya teks dan tombol template yang diproses; admin menangani lampiran).
+    if (m.msg_type !== "text" && m.msg_type !== "button") return;
     const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/wa-ai-reply`, {
       method: "POST",
       headers: {
