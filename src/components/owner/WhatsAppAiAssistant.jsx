@@ -68,8 +68,8 @@ const WhatsAppAiAssistant = () => {
     enabled: !!r.enabled,
     mode: r.mode || 'simulate',
     ai_mode: r.ai_mode || 'both',
-    delaySeconds: Math.round(r.delay_seconds ?? 120),
-    delay2Seconds: Math.round(r.delay2_seconds ?? 60),
+    delaySeconds: Math.round(r.delay_seconds ?? 65),
+    delay2Seconds: Math.round(r.delay2_seconds ?? 45),
     delay3Seconds: Math.round(r.delay3_seconds ?? 30),
     closedDelayMinutes: Math.round((r.closed_delay_seconds ?? 0) / 60),
     hours: r.business_hours || {},
@@ -225,7 +225,7 @@ const WhatsAppAiAssistant = () => {
           {canEdit && (
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-app-sm border border-indigo-200 bg-indigo-50 px-3 py-3">
               <div className="text-sm text-indigo-900">
-                <div className="font-semibold">Pengaturan cepat: aktif terus, tunggu admin 2 menit → 1 menit → 30 detik</div>
+                <div className="font-semibold">Pengaturan cepat: aktif terus, tunggu admin 65 → 45 → 30 detik</div>
                 <div className="text-xs text-indigo-700">
                   Live, tanpa batas jam, semua pasien. Setelah menekan tombol, klik &quot;Simpan pengaturan&quot;.
                 </div>
@@ -236,7 +236,7 @@ const WhatsAppAiAssistant = () => {
                 size="sm"
                 className="w-full sm:w-auto"
                 onClick={() =>
-                  setForm((f) => ({ ...f, enabled: true, mode: 'live', ai_mode: 'silent_only', delaySeconds: 120, delay2Seconds: 60, delay3Seconds: 30, testPhones: '' }))
+                  setForm((f) => ({ ...f, enabled: true, mode: 'live', ai_mode: 'silent_only', delaySeconds: 65, delay2Seconds: 45, delay3Seconds: 30, testPhones: '' }))
                 }
               >
                 Terapkan
@@ -297,6 +297,7 @@ const WhatsAppAiAssistant = () => {
                 disabled={!canEdit || form.ai_mode === 'closed_only'}
                 onChange={(e) => setForm((f) => ({ ...f, delaySeconds: e.target.value }))}
               />
+              <p className="text-xs text-slate-500">Balasan tiba ±25 detik setelah jeda (penyapu + AI menyusun jawaban).</p>
             </div>
 
             <div className="space-y-2">
