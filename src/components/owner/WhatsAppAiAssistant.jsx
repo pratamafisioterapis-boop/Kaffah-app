@@ -69,6 +69,8 @@ const WhatsAppAiAssistant = () => {
     mode: r.mode || 'simulate',
     ai_mode: r.ai_mode || 'both',
     delayMinutes: Math.round((r.delay_seconds ?? 300) / 60),
+    delay2Minutes: Math.round((r.delay2_seconds ?? 120) / 60),
+    delay3Minutes: Math.round((r.delay3_seconds ?? 60) / 60),
     closedDelayMinutes: Math.round((r.closed_delay_seconds ?? 0) / 60),
     hours: r.business_hours || {},
     testPhones: (r.test_phones || []).join('\n'),
@@ -144,6 +146,8 @@ const WhatsAppAiAssistant = () => {
       mode: form.mode,
       ai_mode: form.ai_mode,
       delay_seconds: Math.min(3600, Math.max(0, Math.round(Number(form.delayMinutes) || 0) * 60)),
+      delay2_seconds: Math.min(3600, Math.max(60, Math.round(Number(form.delay2Minutes) || 0) * 60)),
+      delay3_seconds: Math.min(3600, Math.max(60, Math.round(Number(form.delay3Minutes) || 0) * 60)),
       closed_delay_seconds: Math.min(3600, Math.max(0, Math.round(Number(form.closedDelayMinutes) || 0) * 60)),
       business_hours: form.hours,
       test_phones: phones,
@@ -221,7 +225,7 @@ const WhatsAppAiAssistant = () => {
           {canEdit && (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-app-sm border border-indigo-200 bg-indigo-50 px-3 py-3">
               <div className="text-sm text-indigo-900">
-                <div className="font-semibold">Pengaturan cepat: aktif terus, balas bila admin diam 3 menit</div>
+                <div className="font-semibold">Pengaturan cepat: aktif terus, tunggu admin 3 → 2 → 1 menit</div>
                 <div className="text-xs text-indigo-700">
                   Live, tanpa batas jam, semua pasien. Setelah menekan tombol, klik &quot;Simpan pengaturan&quot;.
                 </div>
@@ -231,7 +235,7 @@ const WhatsAppAiAssistant = () => {
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  setForm((f) => ({ ...f, enabled: true, mode: 'live', ai_mode: 'silent_only', delayMinutes: 3, testPhones: '' }))
+                  setForm((f) => ({ ...f, enabled: true, mode: 'live', ai_mode: 'silent_only', delayMinutes: 3, delay2Minutes: 2, delay3Minutes: 1, testPhones: '' }))
                 }
               >
                 Terapkan
@@ -291,6 +295,33 @@ const WhatsAppAiAssistant = () => {
                 disabled={!canEdit || form.ai_mode === 'closed_only'}
                 onChange={(e) => setForm((f) => ({ ...f, delayMinutes: e.target.value }))}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ai-delay2">Tunggu admin (menit) setelah AI membalas sekali</Label>
+              <Input
+                id="ai-delay2"
+                type="number"
+                min={1}
+                max={60}
+                value={form.delay2Minutes}
+                disabled={!canEdit}
+                onChange={(e) => setForm((f) => ({ ...f, delay2Minutes: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ai-delay3">Tunggu admin (menit) setelah AI membalas dua kali atau lebih</Label>
+              <Input
+                id="ai-delay3"
+                type="number"
+                min={1}
+                max={60}
+                value={form.delay3Minutes}
+                disabled={!canEdit}
+                onChange={(e) => setForm((f) => ({ ...f, delay3Minutes: e.target.value }))}
+              />
+              <p className="text-xs text-slate-500">Balasan admin mengulang hitungan dari menit pertama.</p>
             </div>
 
             <div className="space-y-2">

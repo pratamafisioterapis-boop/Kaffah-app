@@ -2117,6 +2117,49 @@ function isIgnoredPhone(st: any, waId: string): boolean {
   return list.includes(normalizePhone(waId));
 }
 
+
+/**
+ * Lama menunggu admin sebelum AI membalas (mode live), bertahap sejak balasan admin terakhir:
+ * pesan pertama = delay_seconds (3 menit), setelah AI sudah membalas sekali = delay2_seconds (2 menit),
+ * setelah dua kali atau lebih = delay3_seconds (1 menit). Balasan admin manusia (aplikasi atau
+ * dasbor/ponsel Watzap) mengulang dari tahap pertama. Pesan pasien berderet dihitung dari yang terakhir
+ * karena tiap pesan baru menghitung ulang dari waktunya sendiri.
+ */
+async function liveWaitSeconds(admin: Admin, conv: any, st: any): Promise<number> {
+  const s1 = Math.max(MIN_DELAY_SECONDS, Number(st.delay_seconds ?? 180));
+  const s2 = Math.max(MIN_DELAY_SECONDS, Number(st.delay2_seconds ?? 120));
+  const s3 = Math.max(MIN_DELAY_SECONDS, Number(st.delay3_seconds ?? 60));
+  try {
+    const { data: logs } = await admin.from("wa_ai_logs").select("created_at")
+      .eq("conversation_id", conv.id).eq("mode", "live").eq("outcome", "replied")
+      .order("created_at", { ascending: false }).limit(5);
+    if (!logs?.length) return s1;
+
+    const norm = (t: string) => String(t || "").replace(/\s+/g, " ").trim().toLowerCase();
+    const { data: outs } = await admin.from("wa_inbox_messages").select("body, sent_by, created_at")
+      .eq("conversation_id", conv.id).eq("direction", "out").order("created_at", { ascending: false }).limit(40);
+    const aiTexts = new Set((outs || []).filter((o: any) => !o.sent_by).map((o: any) => norm(o.body)));
+    let lastHuman = 0;
+    for (const o of outs || []) if (o.sent_by) lastHuman = Math.max(lastHuman, Date.parse(o.created_at));
+    try {
+      const { items } = await watzapHistory(admin, conv.clinic_id, conv.wa_id);
+      for (const i of items) {
+        const text = String(i.message || "").trim();
+        if (i.is_from_me !== true || i.type === "template" || !text || aiTexts.has(norm(text))) continue;
+        const t = Date.parse(`${String(i.timestamp).replace(" ", "T")}+07:00`);
+        if (Number.isFinite(t)) lastHuman = Math.max(lastHuman, t);
+      }
+    } catch (e) {
+      console.error("[wa-ai-reply] riwayat Watzap untuk jeda bertahap gagal; memakai data inbox saja", e);
+    }
+    const n = logs.filter((l: any) => Date.parse(l.created_at) > lastHuman).length;
+    return n === 0 ? s1 : n === 1 ? s2 : s3;
+  } catch (e) {
+    console.error("[wa-ai-reply] hitung jeda bertahap gagal", e);
+    return s1;
+  }
+}
+
 /** Terima pesan masuk baru: tentukan apakah AI boleh bertindak, lalu masukkan ke antrean. */
 async function enqueue(admin: Admin, conversationId: string, messageId: string) {
   const { data: conv } = await admin.from("wa_inbox_conversations")
@@ -2171,8 +2214,9 @@ async function enqueue(admin: Admin, conversationId: string, messageId: string) 
   }
   // Semua pesan (juga jam tutup dan nomor uji) menunggu minimal 30 detik: pesan beruntun dijawab
   // satu kali dan balasan tidak terkesan seperti bot.
-  // Mode live: jeda ditentukan pengaturan di frontend (mis. 3 menit sejak pesan pasien terakhir).
-  const delay = Math.max(MIN_DELAY_SECONDS, d.delaySeconds);
+  // Mode live: jeda bertahap (3 -> 2 -> 1 menit) sejak pesan pasien terakhir; pengujinya tanpa jeda.
+  const stepWait = isTester || d.delaySeconds === 0 ? d.delaySeconds : await liveWaitSeconds(admin, conv, st);
+  const delay = Math.max(MIN_DELAY_SECONDS, stepWait);
   const { data: row, error } = await admin.from("wa_ai_queue").insert({
     clinic_id: clinicId, conversation_id: conversationId, message_id: messageId,
     due_at: new Date(now.getTime() + delay * 1000).toISOString(),
