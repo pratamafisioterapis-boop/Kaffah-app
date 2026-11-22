@@ -80,7 +80,7 @@ const SuratKeteranganTemplateKaffah = forwardRef(({ data, clinic }, ref) => {
         Surat keterangan ini dibuat untuk dipergunakan sebagaimana mestinya.
       </p>
 
-      <div style={{ flex: 1, minHeight: '28px' }} />
+      <div style={{ height: '56px' }} />
       <DocSignature data={data} clinic={clinic} signatureUrl={signatureUrl} />
     </div>
   );
