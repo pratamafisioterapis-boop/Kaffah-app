@@ -72,6 +72,7 @@ const WhatsAppAiAssistant = () => {
     closedDelayMinutes: Math.round((r.closed_delay_seconds ?? 0) / 60),
     hours: r.business_hours || {},
     testPhones: (r.test_phones || []).join('\n'),
+    ignoredPhones: (r.ignored_phones || []).join('\n'),
   });
 
   const fetchLogs = useCallback(async (cid) => {
@@ -129,6 +130,7 @@ const WhatsAppAiAssistant = () => {
       if (!ok) return;
     }
     const phones = form.testPhones.split(/[\n,;]+/).map(normalizePhone).filter((p) => p.length >= 9);
+    const ignored = [...new Set(form.ignoredPhones.split(/[\n,;]+/).map(normalizePhone).filter((p) => p.length >= 9))];
     if (form.enabled && form.mode === 'live' && phones.length === 0) {
       const ok = await confirmAction(
         'Daftar nomor uji kosong, artinya AI akan melayani SEMUA pasien. Lanjutkan?',
@@ -145,6 +147,7 @@ const WhatsAppAiAssistant = () => {
       closed_delay_seconds: Math.min(3600, Math.max(0, Math.round(Number(form.closedDelayMinutes) || 0) * 60)),
       business_hours: form.hours,
       test_phones: phones,
+      ignored_phones: ignored,
       updated_at: new Date().toISOString(),
     };
     const { data, error } = await supabase
@@ -355,6 +358,21 @@ const WhatsAppAiAssistant = () => {
             />
             <p className="text-xs text-slate-500">
               Bila diisi, AI HANYA melayani nomor-nomor ini (masa uji). Kosongkan untuk melayani semua pasien.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="ai-ignored">Nomor yang dikecualikan (satu per baris)</Label>
+            <Textarea
+              id="ai-ignored"
+              rows={3}
+              placeholder="0812xxxxxxx"
+              value={form.ignoredPhones}
+              disabled={!canEdit}
+              onChange={(e) => setForm((f) => ({ ...f, ignoredPhones: e.target.value }))}
+            />
+            <p className="text-xs text-slate-500">
+              AI tidak pernah membalas dan tidak membuat draf untuk nomor-nomor ini (mis. nomor admin sendiri).
             </p>
           </div>
 
