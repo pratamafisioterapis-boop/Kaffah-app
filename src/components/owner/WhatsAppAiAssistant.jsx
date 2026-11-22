@@ -31,7 +31,7 @@ const DAYS = [
 const MODES = [
   { value: 'both', label: 'Jam buka + jam tutup', hint: 'Jam buka: AI membalas bila admin diam. Jam tutup: AI membalas langsung.' },
   { value: 'closed_only', label: 'Hanya saat jam tutup', hint: 'AI tidak menyentuh chat selama klinik buka.' },
-  { value: 'silent_only', label: 'Hanya saat admin diam', hint: 'AI membalas kapan pun admin tidak menjawab dalam waktu yang ditentukan.' },
+  { value: 'silent_only', label: 'Aktif terus (tanpa jam tertentu)', hint: 'AI membalas kapan pun, bila admin tidak menjawab dalam waktu tunggu sejak pesan pasien terakhir. Bila admin sudah menjawab, AI diam sampai pasien membalas lagi.' },
 ];
 
 const OUTCOME = {
@@ -215,6 +215,27 @@ const WhatsAppAiAssistant = () => {
             </div>
           )}
 
+          {canEdit && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-app-sm border border-indigo-200 bg-indigo-50 px-3 py-3">
+              <div className="text-sm text-indigo-900">
+                <div className="font-semibold">Pengaturan cepat: aktif terus, balas bila admin diam 3 menit</div>
+                <div className="text-xs text-indigo-700">
+                  Live, tanpa batas jam, semua pasien. Setelah menekan tombol, klik &quot;Simpan pengaturan&quot;.
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setForm((f) => ({ ...f, enabled: true, mode: 'live', ai_mode: 'silent_only', delayMinutes: 3, testPhones: '' }))
+                }
+              >
+                Terapkan
+              </Button>
+            </div>
+          )}
+
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Mode kerja</Label>
@@ -257,7 +278,7 @@ const WhatsAppAiAssistant = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ai-delay">Tunggu admin (menit), saat jam buka</Label>
+              <Label htmlFor="ai-delay">Tunggu admin (menit) sejak pesan pasien terakhir</Label>
               <Input
                 id="ai-delay"
                 type="number"
