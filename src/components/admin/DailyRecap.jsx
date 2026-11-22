@@ -237,7 +237,7 @@ useEffect(() => {
           setRecaps(prev =>
             prev.map(r =>
               r.id === payload.new.id
-                ? { ...r, invoice_wa_status: payload.new.invoice_wa_status, invoice_wa_sent_at: payload.new.invoice_wa_sent_at }
+                ? { ...r, invoice_wa_status: payload.new.invoice_wa_status, invoice_wa_sent_at: payload.new.invoice_wa_sent_at, soap_completed_at: payload.new.soap_completed_at }
                 : r
             )
           );
@@ -420,6 +420,12 @@ end_time: r.end_time,
     }
   }, [queryDateRange, currentPage, limit, debouncedSearch, sortConfig, toast, selectedTherapist, selectedPaymentMethod]);
 
+  // TTV tersimpan -> trigger database baru mencap SOAP selesai sesaat kemudian; muat ulang daftar.
+  useEffect(() => {
+    const onVitals = () => { fetchRecaps(); };
+    window.addEventListener('recap-vitals-saved', onVitals);
+    return () => window.removeEventListener('recap-vitals-saved', onVitals);
+  }, [fetchRecaps]);
   const loadPortalSent = useCallback(async (recapList) => {
     const ids = [...new Set((recapList || []).map((r) => getPortalPatient(r)?.id).filter(Boolean))];
     if (ids.length === 0) { setPortalSentMap({}); return; }

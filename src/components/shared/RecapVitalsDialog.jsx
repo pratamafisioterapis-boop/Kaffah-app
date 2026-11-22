@@ -70,6 +70,13 @@ const RecapVitalsDialog = ({ open, onOpenChange, recap, existing = null, onDone 
       setConfirmOpen(false);
       onOpenChange(false);
       if (onDone) onDone();
+      // Trigger database mencap SOAP selesai sesaat setelah TTV tersimpan: beri tahu daftar recap & dashboard terapis.
+      const notify = () => {
+        window.dispatchEvent(new CustomEvent('recap-vitals-saved'));
+        window.dispatchEvent(new CustomEvent('medical-record-updated'));
+      };
+      notify();
+      setTimeout(notify, 1500);
     } catch (err) {
       setConfirmOpen(false);
       toast({ variant: 'destructive', title: 'Gagal menyimpan TTV', description: err.message });
