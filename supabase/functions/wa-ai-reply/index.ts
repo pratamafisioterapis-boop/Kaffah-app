@@ -726,7 +726,7 @@ function recordUsage(model: string, usage: any) {
 
 let useLongCache = true; // turun ke false bila API menolak cache 1 jam
 
-async function callClaude(system: string, messages: any[]) {
+async function callClaude(system: string, messages: any[], model: string = MODEL) {
   const key = Deno.env.get("ANTHROPIC_API_KEY");
   if (!key) throw new Error("ANTHROPIC_API_KEY belum diset");
   // cache_control pada blok system men-cache alat + system prompt (dibaca ulang dengan harga ~10%).
@@ -742,7 +742,7 @@ async function callClaude(system: string, messages: any[]) {
         ...(long ? { "anthropic-beta": "extended-cache-ttl-2025-04-11" } : {}),
       },
       body: JSON.stringify({
-        model: MODEL,
+        model,
         max_tokens: 1024,
         system: [{ type: "text", text: system, cache_control: long ? { type: "ephemeral", ttl: "1h" } : { type: "ephemeral" } }],
         tools: TOOLS,
@@ -758,7 +758,7 @@ async function callClaude(system: string, messages: any[]) {
     data = await res.json();
   }
   if (!res.ok) throw new Error(`Anthropic ${res.status}: ${data?.error?.message || "unknown"}`);
-  recordUsage(MODEL, data.usage);
+  recordUsage(model, data.usage);
   return data;
 }
 
@@ -805,14 +805,28 @@ async function lightReply(transcript: string, lastBody: string, msgType: string)
   }
 }
 
-async function runAgent(ctx: Ctx, transcript: string, hint: string): Promise<string> {
+const SCHEDULE_RE = /jadwal|kosong|slot|booking|\bbook\b|reschedule|pindah|undur|majukan|batal|cancel|hari ini|besok|lusa|senin|selasa|rabu|kamis|jumat|sabtu|minggu|jam\s*\d|\bpagi\b|\bsiang\b|\bsore\b|\bmalam\b|daftar|tunggu|waiting|\bhadir\b/i;
+const FAQ_HAIKU = (Deno.env.get("WA_AI_FAQ_HAIKU") ?? "1") !== "0";
+
+/** Pertanyaan umum (harga, alamat, keluhan, dll.) tanpa urusan jadwal: cukup model murah. */
+function isFaqLike(transcript: string, lastBody: string): boolean {
+  if (!FAQ_HAIKU) return false;
+  if (SCHEDULE_RE.test(lastBody)) return false;
+  // Pesan klinik terakhir tidak boleh sedang membahas jadwal/booking (balasan pasien bisa hanya "iya"/"boleh").
+  const lines = transcript.split("\n").filter((l) => /\] Klinik/.test(l));
+  const lastClinic = lines[lines.length - 1] || "";
+  if (/jam|jadwal|🕒|booking|slot|reschedule|cancel|terapi dihari|dijadwalkan|nama/i.test(lastClinic)) return false;
+  return true;
+}
+
+async function runAgent(ctx: Ctx, transcript: string, hint: string, model: string = MODEL): Promise<string> {
   const messages: any[] = [{
     role: "user",
     content: `${contextHeader(ctx, hint)}\n\nPercakapan WhatsApp terbaru (pesan terakhir dari pasien, balas pesan itu):\n\n${transcript}`,
   }];
   const system = systemPrompt(ctx);
   for (let turn = 0; turn < MAX_TURNS; turn++) {
-    const out = await callClaude(system, messages);
+    const out = await callClaude(system, messages, model);
     messages.push({ role: "assistant", content: out.content });
     const uses = (out.content || []).filter((b: any) => b.type === "tool_use");
     if (out.stop_reason !== "tool_use" || !uses.length) {
@@ -1297,7 +1311,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
       const fast = await lightReply(transcript, String(msg.body || ""), msg.msg_type);
       reply = fast.handled
         ? fast.reply
-        : await runAgent(ctx, transcript, hint + (await prepareContext(ctx, (known || []).length > 0, String(msg.body || ""))));
+        : await runAgent(ctx, transcript, hint + (await prepareContext(ctx, (known || []).length > 0, String(msg.body || ""))), isFaqLike(transcript, String(msg.body || "")) ? FAST_MODEL : MODEL);
     }
     const bookingPlan = ctx.actions.find((a) => a.type === "create_booking");
     const reschedPlan = ctx.actions.find((a) => a.type === "reschedule_booking");
@@ -1777,7 +1791,7 @@ async function runEvalCase(admin: Admin, clinicId: string, knowledge: string | n
   const fast = /Pasien:/.test(lastLine)
     ? await lightReply(evalTranscript, lastBody, /^hadir$/i.test(lastBody.trim()) ? "button" : "text")
     : { handled: false, reply: "" };
-  const reply = fast.handled ? fast.reply : await runAgent(ctx, evalTranscript, hint + (await prepareContext(ctx, !!known, lastBody)));
+  const reply = fast.handled ? fast.reply : await runAgent(ctx, evalTranscript, hint + (await prepareContext(ctx, !!known, lastBody)), isFaqLike(evalTranscript, lastBody) ? FAST_MODEL : MODEL);
   const acts = ctx.actions.filter((a) => ACTION_TYPES.includes(a.type));
   const handoff = !!ctx.handoff;
   const actionText = acts.map((a) => a.type + (a.kind ? `:${a.kind}` : "") + (a.to ? ` -> ${a.to}` : a.start ? ` @ ${String(a.start).slice(0, 16)}` : "")).join("; ");
@@ -2233,7 +2247,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
         : "Nomor ini BELUM tercatat di database pasien (anggap pasien baru; tetap boleh panggil lookup_patient).";
 
       const fast = await lightReply(transcript, String(msg.body || ""), msg.msg_type);
-      reply = fast.handled ? fast.reply : await runAgent(ctx, transcript, hint + (await prepareContext(ctx, !!known, String(msg.body || ""))));
+      reply = fast.handled ? fast.reply : await runAgent(ctx, transcript, hint + (await prepareContext(ctx, !!known, String(msg.body || ""))), isFaqLike(transcript, String(msg.body || "")) ? FAST_MODEL : MODEL);
     }
 
     // Serah-terima: diam, pasien tidak dibalas. Booking berhasil: konfirmasi dikirim sistem.
