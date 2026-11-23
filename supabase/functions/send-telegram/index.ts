@@ -107,6 +107,27 @@ Deno.serve(async (req) => {
       }
     } catch (_) { /* lanjut kirim */ }
 
+    // Notifikasi pengajuan override: tambahkan tombol Setujui/Tolak kalau pengajuan
+    // pending-nya dapat dipastikan (tepat satu yang cocok dengan baris "nama - alasan").
+    let replyMarkup: unknown = undefined;
+    if (message.includes("Pengajuan pengecualian")) {
+      try {
+        const line = (message.split("\n")[1] ?? "").trim();
+        const { data: pend } = await supabase
+          .from("soap_overrides")
+          .select("id, requested_by_name, reason")
+          .eq("clinic_id", ALLOWED_CLINIC_ID)
+          .eq("status", "pending");
+        const hits = (pend ?? []).filter((r: any) => `${r.requested_by_name ?? "Admin"} - ${String(r.reason).trim()}` === line);
+        if (hits.length === 1) {
+          replyMarkup = { inline_keyboard: [[
+            { text: "✅ Setujui", callback_data: `ov:a:${hits[0].id}` },
+            { text: "❌ Tolak", callback_data: `ov:r:${hits[0].id}` },
+          ]] };
+        }
+      } catch (_) { /* kirim tanpa tombol */ }
+    }
+
     let status = "failed";
     let error: string | null = null;
     try {
@@ -117,6 +138,7 @@ Deno.serve(async (req) => {
           chat_id: CHAT_ID,
           text: message,
           disable_web_page_preview: true,
+          ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
         }),
       });
       const data = await res.json().catch(() => ({}));
