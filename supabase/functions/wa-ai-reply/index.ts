@@ -189,6 +189,17 @@ const TOOLS = [
     },
   },
   {
+    name: "hold_reminder",
+    description:
+      "Tahan pengingat terapi otomatis (template pagi) untuk jadwal pasien yang SUDAH terbooking, karena pasien memberi tahu ingin/akan reschedule atau tidak bisa hadir tetapi belum menentukan hari/jam pengganti. Jadwal di sistem TETAP ada (tidak dipindah atau dibatalkan) sampai pasien memutuskan. appointment_id harus dari get_my_appointments. Jangan dipanggil bila pasien hanya bertanya jadwal atau sudah jelas akan hadir; jadwal home care diserahkan ke admin.",
+    input_schema: {
+      type: "object",
+      properties: { appointment_id: { type: "string" } },
+      required: ["appointment_id"],
+      additionalProperties: false,
+    },
+  },
+  {
     name: "send_brochure",
     description:
       "Kirim gambar flyer resmi ke pasien. paket_reguler = tarif per sesi dan paket 3/6/12 sesi; recovery = Recovery Program/sport massage. Pakai saat pasien menanyakan paket/daftar harga atau program recovery, paling banyak sekali per flyer dalam percakapan. Gambar dikirim sebelum balasan teksmu.",
@@ -584,6 +595,26 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
       if (error) return { ok: false, error: `gagal membatalkan: ${error.message}` };
       ctx.actions.push({ type: "cancel_booking", ...plan });
       return { ok: true };
+    }
+
+    case "hold_reminder": {
+      const appt = ctx.myAppointments?.get(String(input.appointment_id));
+      if (!appt) return { ok: false, error: "jadwal ini tidak ditemukan untuk nomor ini; panggil get_my_appointments dulu" };
+      if (appt.is_homecare) return { ok: false, error: "jadwal home care: serahkan ke admin" };
+      const w = witaParts(new Date(appt.appointment_date));
+      const plan = { appointment_id: appt.id, at: `${w.date} ${w.time}` };
+      if (ctx.mode === "simulate") {
+        ctx.actions.push({ type: "hold_reminder", simulated: true, ...plan });
+        return { ok: true, simulated: true };
+      }
+      // Pengingat pagi yang masih menunggu dibatalkan; jadwal pasien tidak diubah (fungsi database).
+      const { data, error } = await ctx.admin.rpc("hold_reminder_for_appointment", {
+        p_appointment_id: appt.id,
+        p_clinic_id: ctx.clinicId,
+      });
+      if (error) return { ok: false, error: `gagal menahan pengingat: ${error.message}` };
+      ctx.actions.push({ type: "hold_reminder", ...plan, result: data });
+      return { ok: true, note: "Pengingat otomatis ditahan; jadwal pasien tetap ada." };
     }
 
     case "send_brochure": {
