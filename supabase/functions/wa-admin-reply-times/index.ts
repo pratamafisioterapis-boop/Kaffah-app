@@ -110,7 +110,7 @@ async function fillAdminReplyTimes(admin: Admin) {
   const { data: logs } = await admin.from("wa_ai_logs")
     .select("id, clinic_id, conversation_id, inbound_message_id, created_at, wa_inbox_conversations(wa_id)")
     .eq("mode", "live").is("admin_replied_at", null)
-    .or("outcome.eq.handoff,skip_reason.eq.admin_sudah_membalas_via_watzap")
+    .or("outcome.eq.handoff,skip_reason.in.(admin_sudah_membalas_via_watzap,admin_sudah_membalas,sudah_diserahkan_ke_admin,ai_dimatikan_untuk_chat_ini)")
     .gte("created_at", new Date(now - 48 * 3600e3).toISOString())
     .lte("created_at", new Date(now - 2 * 60e3).toISOString())
     .not("inbound_message_id", "is", null)
@@ -147,10 +147,15 @@ async function fillAdminReplyTimes(admin: Admin) {
       .sort((a, b) => a.t - b.t);
     for (const l of ls) {
       const tIn = Date.parse(inbound.get(l.inbound_message_id)?.created_at || l.created_at);
-      const nextIn = msgs.find((x) => !x.me && x.t > tIn + 60e3);
+      // Waktu pesan pasien menurut Watzap (pesan masuk terdekat dengan catatan inbox), lalu balasan
+      // admin pertama SETELAH itu. Pesan admin sebelum pesan pasien adalah balasan untuk pesan lain.
+      const patient = msgs.filter((x) => !x.me && Math.abs(x.t - tIn) <= 180e3)
+        .sort((a, b) => Math.abs(a.t - tIn) - Math.abs(b.t - tIn))[0];
+      const base = patient ? patient.t : tIn;
+      const nextIn = msgs.find((x) => !x.me && x.t > base + 60e3);
       const first = msgs.find((x) =>
         x.me && x.type !== "template" && x.text.trim() && !aiTexts.has(norm(x.text)) &&
-        x.t > tIn - 60e3 && x.t < tIn + 12 * 3600e3 && (!nextIn || x.t < nextIn.t)
+        x.t >= base && x.t < base + 12 * 3600e3 && (!nextIn || x.t < nextIn.t)
       );
       if (!first) continue;
       await admin.from("wa_ai_logs").update({ admin_replied_at: new Date(first.t).toISOString() }).eq("id", l.id);
