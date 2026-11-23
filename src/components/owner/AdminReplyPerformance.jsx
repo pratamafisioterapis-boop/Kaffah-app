@@ -1,65 +1,64 @@
 import React, { useEffect, useState } from 'react';
-import { Bot, Clock, MessageSquare, Moon, Sun, Zap } from 'lucide-react';
+import { Bot, Moon, Sun, User } from 'lucide-react';
 import FinanceTile, { TileEmpty, TileLoading } from '@/components/owner/finance/FinanceTile';
-import { ADMIN_SHIFTS, fetchAdminReplyPerformance, formatDuration } from '@/lib/adminReplyPerformance';
+import { ADMIN_SHIFTS, fetchAdminReplyPerformance, formatDuration, speedGrade } from '@/lib/adminReplyPerformance';
+
+const TONE = {
+  green: 'bg-emerald-100 text-emerald-700',
+  amber: 'bg-amber-100 text-amber-700',
+  red: 'bg-red-100 text-red-700',
+};
 
 const fmtDate = (d) => {
   const [y, m, day] = d.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, day)).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
 };
-const fmtMinutes = (min) => (min == null ? '21.00' : `${String(Math.floor(min / 60)).padStart(2, '0')}.${String(Math.floor(min % 60)).padStart(2, '0')}`);
 
-const Stat = ({ label, value, hint }) => (
-  <div className="rounded-xl bg-slate-50 px-3 py-2">
-    <div className="text-[11px] text-slate-500">{label}</div>
-    <div className="text-base font-bold text-slate-800 tabular-nums">{value}</div>
-    {hint ? <div className="text-[10px] text-slate-400">{hint}</div> : null}
+const Row = ({ label, value }) => (
+  <div className="flex items-baseline justify-between gap-3 border-t border-slate-100 py-2 text-sm first:border-t-0">
+    <span className="text-slate-500">{label}</span>
+    <span className="text-right font-semibold text-slate-800 tabular-nums">{value}</span>
   </div>
 );
 
-const PersonCard = ({ shift, stats, icon: Icon }) => (
-  <FinanceTile title={`${shift.name} · ${shift.label}`} icon={Icon}>
-    {stats.total === 0 ? <TileEmpty>Belum ada pesan pasien pada jam kerja ini.</TileEmpty> : (
-      <div className="space-y-3">
-        <div>
-          <div className="text-[11px] text-slate-500">Waktu balas admin (median)</div>
-          <div className="text-3xl font-extrabold text-slate-800 tabular-nums">{formatDuration(stats.adminMedian)}</div>
-          <div className="text-[11px] text-slate-400">rata-rata {formatDuration(stats.adminMean)} · {stats.replied} balasan terdeteksi</div>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <Stat label="Pesan masuk" value={stats.total} hint={stats.ack ? `+${stats.ack} tak perlu dibalas` : undefined} />
-          <Stat label="Diserahkan ke admin" value={stats.handoff} />
-          <Stat label="Dibalas ≤ 5 mnt" value={stats.within5 == null ? '–' : `${stats.within5}%`} />
-          <Stat label="Dibalas ≤ 15 mnt" value={stats.within15 == null ? '–' : `${stats.within15}%`} />
-          <Stat label="Tanpa balasan >24 jam" value={stats.unanswered} />
-          <Stat label="Menunggu data waktu" value={stats.awaitingData} hint="diisi tiap 20 mnt" />
-        </div>
-      </div>
-    )}
-  </FinanceTile>
-);
-
-/** Bar perbandingan waktu balas: makin pendek makin bagus. */
-const CompareBars = ({ items }) => {
-  const max = Math.max(...items.map((i) => i.value || 0), 1);
+/** Kartu satu admin: rata-rata balas dalam bahasa sederhana. */
+const AdminCard = ({ shift, stats, icon: Icon }) => {
+  const grade = speedGrade(stats.avg);
   return (
-    <div className="space-y-3">
-      {items.map((i) => (
-        <div key={i.label}>
-          <div className="mb-1 flex justify-between text-xs">
-            <span className="font-semibold text-slate-700">{i.label}</span>
-            <span className="tabular-nums text-slate-600">{formatDuration(i.value)}</span>
+    <FinanceTile title={`${shift.name} · jam ${shift.label}`} icon={Icon}>
+      {stats.total === 0 ? (
+        <TileEmpty>Belum ada pesan pasien di jam kerja {shift.name} pada periode ini.</TileEmpty>
+      ) : (
+        <>
+          <div className="mb-3">
+            <div className="text-xs text-slate-500">Rata-rata admin membalas dalam</div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-3xl font-extrabold text-slate-800 tabular-nums">{stats.timed ? formatDuration(stats.avg) : '–'}</span>
+              {grade && <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${TONE[grade.tone]}`}>{grade.label}</span>}
+            </div>
+            {!stats.timed && stats.handled > 0 && (
+              <div className="mt-1 text-xs text-slate-400">Waktu balasan sedang dihitung (diperbarui tiap 20 menit).</div>
+            )}
           </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
-            <div className={`h-full rounded-full ${i.color}`} style={{ width: `${i.value ? Math.max(3, (i.value / max) * 100) : 0}%` }} />
-          </div>
-        </div>
-      ))}
-    </div>
+          <Row label="Pesan yang ditangani admin" value={stats.handled} />
+          <Row label="Dibalas dalam 5 menit" value={stats.timed ? `${stats.within5} dari ${stats.timed}` : '–'} />
+          <Row label="Dibalas lebih dari 15 menit" value={stats.timed ? stats.over15 : '–'} />
+          <Row label="Tercepat / terlama" value={stats.timed ? `${formatDuration(stats.fastest)} / ${formatDuration(stats.slowest)}` : '–'} />
+          {stats.noReply > 0 && <Row label="Tidak terlihat balasan (lewat 24 jam)" value={stats.noReply} />}
+        </>
+      )}
+    </FinanceTile>
   );
 };
 
-/** Performa admin membalas pesan WhatsApp pasien dibanding draf AI (khusus Kaffah). */
+const SEGMENTS = [
+  { key: 'ai', label: 'Dijawab AI', color: 'bg-emerald-500', dot: 'bg-emerald-500' },
+  { key: 'adminFirst', label: 'Dijawab admin lebih dulu', color: 'bg-indigo-500', dot: 'bg-indigo-500' },
+  { key: 'handoff', label: 'Diserahkan AI ke admin', color: 'bg-amber-400', dot: 'bg-amber-400' },
+  { key: 'ack', label: 'Tidak perlu dibalas (ok, siap, dll.)', color: 'bg-slate-300', dot: 'bg-slate-300' },
+];
+
+/** Performa admin membalas pesan WhatsApp pasien dibanding AI (khusus Kaffah). */
 const AdminReplyPerformance = ({ dateRange }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -79,90 +78,107 @@ const AdminReplyPerformance = ({ dateRange }) => {
 
   if (loading) return <TileLoading />;
   if (error) return <TileEmpty>Gagal memuat performa admin: {error}</TileEmpty>;
-  if (!data || data.rowCount === 0) {
-    return <TileEmpty>Belum ada pesan pasien pada periode ini.</TileEmpty>;
+  if (!data || data.all.total === 0) {
+    return <TileEmpty>Belum ada pesan pasien pada periode ini. Coba pilih rentang tanggal yang lebih panjang.</TileEmpty>;
   }
 
   const { sila, dinda, all, outside, days } = data;
-  
+  const totalPct = (n) => (all.total ? Math.round((n / all.total) * 100) : 0);
+
   return (
     <div className="space-y-4">
-      <p className="text-xs text-slate-500">
-        Waktu balas dihitung dari pesan pasien masuk sampai balasan admin pertama di WhatsApp. Pesan dinilai milik admin yang bertugas saat pesan masuk:
-        Sila 09.00–17.00, Dinda 17.00 sampai tombol <em>Akhiri Sesi</em> pasien terakhir malam itu (jika tidak ada, sampai 21.00).
-        {outside > 0 ? ` ${outside} pesan masuk di luar jam kerja dan tidak dihitung.` : ''}
-      </p>
+      {/* Ringkasan satu kalimat */}
+      <FinanceTile title="Ringkasan periode ini" icon={User}>
+        <p className="text-base leading-relaxed text-slate-700">
+          Ada <b>{all.total} pesan pasien</b> pada jam kerja admin.{' '}
+          <b className="text-emerald-600">{all.ai}</b> dijawab AI sendiri,{' '}
+          <b className="text-indigo-600">{all.adminFirst}</b> dijawab admin lebih dulu,{' '}
+          <b className="text-amber-600">{all.handoff}</b> diserahkan AI ke admin
+          {all.ack ? <>, dan {all.ack} tidak perlu dibalas</> : null}.
+        </p>
+        <div className="mt-4 flex h-3 w-full overflow-hidden rounded-full bg-slate-100" role="img" aria-label="Pembagian siapa yang menjawab pesan">
+          {SEGMENTS.map((s) => (all[s.key] ? (
+            <div key={s.key} className={s.color} style={{ width: `${(all[s.key] / all.total) * 100}%` }} />
+          ) : null))}
+        </div>
+        <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
+          {SEGMENTS.map((s) => (
+            <div key={s.key} className="flex items-center gap-2 text-sm">
+              <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${s.dot}`} />
+              <span className="text-slate-600">{s.label}</span>
+              <span className="ml-auto font-semibold text-slate-800 tabular-nums">{all[s.key]} <span className="font-normal text-slate-400">({totalPct(all[s.key])}%)</span></span>
+            </div>
+          ))}
+        </div>
+        {outside > 0 && (
+          <p className="mt-3 text-xs text-slate-400">{outside} pesan masuk di luar jam kerja admin dan tidak dinilai.</p>
+        )}
+      </FinanceTile>
 
+      {/* Kartu per admin + AI */}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <PersonCard shift={ADMIN_SHIFTS[0]} stats={sila} icon={Sun} />
-        <PersonCard shift={ADMIN_SHIFTS[1]} stats={dinda} icon={Moon} />
-        <FinanceTile title="AI" icon={Bot}>
-          {all.aiCount === 0 ? <TileEmpty>Belum ada balasan AI.</TileEmpty> : (
-            <div className="space-y-3">
-              <div>
-                <div className="text-[11px] text-slate-500">Waktu balas AI (median)</div>
-                <div className="text-3xl font-extrabold text-slate-800 tabular-nums">{formatDuration(all.aiMedian)}</div>
-                <div className="text-[11px] text-slate-400">sudah termasuk jeda tunggu admin yang diatur</div>
+        <AdminCard shift={ADMIN_SHIFTS[0]} stats={sila} icon={Sun} />
+        <AdminCard shift={ADMIN_SHIFTS[1]} stats={dinda} icon={Moon} />
+        <FinanceTile title="AI Asisten" icon={Bot}>
+          {all.ai === 0 ? <TileEmpty>AI belum menjawab pesan pada periode ini.</TileEmpty> : (
+            <>
+              <div className="mb-3">
+                <div className="text-xs text-slate-500">AI menjawab sendiri</div>
+                <div className="text-3xl font-extrabold text-slate-800 tabular-nums">{all.ai} <span className="text-base font-semibold text-slate-400">pesan</span></div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Stat label="Dibalas AI" value={all.aiReplied} />
-                <Stat label="Diserahkan ke admin" value={all.handoff} />
-                <Stat label="Ketepatan vs admin" value={all.aiAccuracy == null ? '–' : `${all.aiAccuracy}%`} hint={all.scored ? `${all.scored} dinilai (mode review)` : 'hanya mode review'} />
-              </div>
-            </div>
+              <Row label="Menjawab setelah rata-rata" value={formatDuration(all.aiAvg)} />
+              <Row label="Dari seluruh pesan" value={`${totalPct(all.ai)}%`} />
+              <p className="pt-2 text-xs text-slate-400">
+                AI sengaja menunggu sebentar supaya admin sempat menjawab lebih dulu, jadi waktu ini bukan kecepatan maksimalnya.
+              </p>
+            </>
           )}
         </FinanceTile>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <FinanceTile title="Admin vs AI: waktu balas (median)" icon={Zap}>
-          <CompareBars
-            items={[
-              { label: 'Sila', value: sila.adminMedian, color: 'bg-amber-400' },
-              { label: 'Dinda', value: dinda.adminMedian, color: 'bg-indigo-400' },
-              { label: 'AI', value: all.aiMedian, color: 'bg-emerald-500' },
-            ]}
-          />
-        </FinanceTile>
-        <FinanceTile title="Siapa membalas lebih dulu" icon={MessageSquare}>
-          {all.contested === 0 ? <TileEmpty>Belum ada pesan yang bisa dijawab AI pada periode ini.</TileEmpty> : (
-            <div className="grid grid-cols-2 gap-2">
-              <Stat label="Pesan dibandingkan" value={all.contested} hint="tanpa serah-terima & tak perlu dibalas" />
-              <Stat label="Admin lebih dulu" value={`${all.adminFirst} (${all.adminWinPct}%)`} />
-              <Stat label="AI lebih dulu" value={`${all.aiReplied} (${100 - all.adminWinPct}%)`} />
-              <Stat label="Pesan beruntun digabung" value={data.merged} hint="dijawab sekali" />
-            </div>
-          )}
-        </FinanceTile>
-      </div>
-
-      <FinanceTile title="Per hari (median waktu balas)" icon={Clock}>
+      {/* Per hari */}
+      <FinanceTile title="Rincian per hari" icon={User}>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[520px] text-sm">
+          <table className="w-full min-w-[560px] text-sm">
             <thead>
               <tr className="text-left text-[11px] uppercase tracking-wide text-slate-400">
-                <th className="py-1.5 pr-2 font-semibold">Tanggal</th>
-                <th className="py-1.5 pr-2 font-semibold">Sila</th>
-                <th className="py-1.5 pr-2 font-semibold">Dinda</th>
-                <th className="py-1.5 pr-2 font-semibold">Shift Dinda selesai</th>
-                <th className="py-1.5 font-semibold">AI</th>
+                <th className="py-1.5 pr-3 font-semibold">Hari</th>
+                <th className="py-1.5 pr-3 text-right font-semibold">Pesan</th>
+                <th className="py-1.5 pr-3 text-right font-semibold">AI</th>
+                <th className="py-1.5 pr-3 text-right font-semibold">Admin</th>
+                <th className="py-1.5 pr-3 text-right font-semibold">Diserahkan</th>
+                <th className="py-1.5 pr-3 text-right font-semibold">Rata-rata Sila</th>
+                <th className="py-1.5 text-right font-semibold">Rata-rata Dinda</th>
               </tr>
             </thead>
             <tbody>
               {days.map((d) => (
                 <tr key={d.date} className="border-t border-slate-100 tabular-nums">
-                  <td className="py-1.5 pr-2 font-medium text-slate-700">{fmtDate(d.date)}</td>
-                  <td className="py-1.5 pr-2">{d.sila.total ? `${formatDuration(d.sila.adminMedian)} (${d.sila.total})` : '–'}</td>
-                  <td className="py-1.5 pr-2">{d.dinda.total ? `${formatDuration(d.dinda.adminMedian)} (${d.dinda.total})` : '–'}</td>
-                  <td className="py-1.5 pr-2 text-slate-500">{fmtMinutes(d.dindaEnd)}{d.dindaEnd == null ? '' : ' (Akhiri Sesi)'}</td>
-                  <td className="py-1.5">{d.ai.aiCount ? formatDuration(d.ai.aiMedian) : '–'}</td>
+                  <td className="py-2 pr-3 font-medium text-slate-700">{fmtDate(d.date)}</td>
+                  <td className="py-2 pr-3 text-right">{d.all.total}</td>
+                  <td className="py-2 pr-3 text-right">{d.all.ai}</td>
+                  <td className="py-2 pr-3 text-right">{d.all.adminFirst}</td>
+                  <td className="py-2 pr-3 text-right">{d.all.handoff}</td>
+                  <td className="py-2 pr-3 text-right">{d.sila.timed ? formatDuration(d.sila.avg) : '–'}</td>
+                  <td className="py-2 text-right">{d.dinda.timed ? formatDuration(d.dinda.avg) : '–'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="mt-2 text-[11px] text-slate-400">Angka dalam kurung = jumlah pesan pasien pada shift itu.</p>
       </FinanceTile>
+
+      <details className="rounded-2xl border border-slate-100 bg-white p-4 text-sm text-slate-600">
+        <summary className="cursor-pointer font-semibold text-slate-700">Cara membaca angka ini</summary>
+        <ul className="mt-2 list-disc space-y-1.5 pl-5">
+          <li>Sila bertugas jam 09.00–17.00. Dinda bertugas dari 17.00 sampai tombol <em>Akhiri Sesi</em> pasien terakhir malam itu; jika tidak ada, sampai 21.00.</li>
+          <li>Pesan dinilai milik admin yang bertugas saat pesan itu masuk. Pesan di luar jam kerja tidak dinilai.</li>
+          <li>&quot;Rata-rata admin membalas&quot; dihitung dari pesan pasien masuk sampai balasan admin pertama di WhatsApp, hanya untuk pesan yang dijawab admin (dijawab lebih dulu dari AI atau diserahkan AI).</li>
+          <li>Pesan yang dijawab AI tidak punya waktu balas admin, karena memang tidak dijawab admin.</li>
+          <li>Pesan beruntun dari pasien yang sama dihitung satu kali. &quot;Ok&quot;, &quot;siap&quot;, dan sejenisnya dihitung terpisah sebagai tidak perlu dibalas.</li>
+          <li>Waktu balasan admin diperbarui tiap 20 menit, jadi pesan yang baru masuk bisa tampil &quot;–&quot; sebentar.</li>
+        </ul>
+      </details>
     </div>
   );
 };

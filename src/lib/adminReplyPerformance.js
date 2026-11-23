@@ -56,11 +56,9 @@ export const formatDuration = (ms) => {
   return `${h} j${m % 60 ? ` ${m % 60} mnt` : ''}`;
 };
 
-const QUALITY = ['sesuai', 'sebagian', 'tidak', 'koreksi'];
-
 /**
- * Jenis pesan menurut log AI:
- *  ai          : AI membalas (live) atau menyusun draf (review)
+ * Jenis pesan menurut log AI (hanya mode live, yaitu AI membalas pasien sungguhan):
+ *  ai          : AI membalas sendiri
  *  admin_first : admin sudah membalas lewat WhatsApp sebelum AI
  *  handoff     : diserahkan ke admin (AI tidak boleh menjawab)
  *  ack         : "ok"/"siap", tidak perlu dibalas
@@ -68,76 +66,67 @@ const QUALITY = ['sesuai', 'sebagian', 'tidak', 'koreksi'];
  */
 export const classifyLog = (l) => {
   if (l.outcome === 'handoff') return 'handoff';
-  if (l.outcome === 'replied' || l.outcome === 'simulated') return 'ai';
+  if (l.outcome === 'replied') return 'ai';
   if (l.outcome === 'skipped') {
-    if (l.skipReason === 'ada_pesan_lebih_baru') return 'merged';
-    if (l.skipReason === 'tidak_perlu_dibalas') return 'ack';
-    if (l.skipReason === 'admin_sudah_membalas_via_watzap') return 'admin_first';
+    const r = l.skipReason || '';
+    if (r === 'ada_pesan_lebih_baru') return 'merged';
+    if (r === 'tidak_perlu_dibalas') return 'ack';
+    if (r.startsWith('admin_sudah_membalas')) return 'admin_first';
+    // Chat sudah di tangan admin / AI dimatikan untuk chat itu: admin yang harus menjawab.
+    if (r === 'sudah_diserahkan_ke_admin' || r === 'ai_dimatikan_untuk_chat_ini') return 'handoff';
   }
   return 'other';
 };
 
+/** Penilaian kecepatan dalam kata-kata (berdasarkan rata-rata waktu balas admin, ms). */
+export const speedGrade = (ms) => {
+  if (ms == null) return null;
+  if (ms <= 2 * 60e3) return { label: 'Sangat cepat', tone: 'green' };
+  if (ms <= 5 * 60e3) return { label: 'Cepat', tone: 'green' };
+  if (ms <= 15 * 60e3) return { label: 'Cukup', tone: 'amber' };
+  return { label: 'Perlu ditingkatkan', tone: 'red' };
+};
+
 /**
- * rows: [{ inboundAt, aiAt, outcome, skipReason, mode, verdict, adminRepliedAt }] (ms atau null).
+ * rows: [{ inboundAt, aiAt, outcome, skipReason, adminRepliedAt }] (ms atau null).
  * Hanya pesan yang masuk saat jam kerja yang dinilai; sisanya dihitung "di luar jam kerja".
- * `now` dipakai menandai pesan lama tanpa balasan admin yang terdeteksi.
+ * Waktu balas admin hanya ada untuk pesan yang ditangani admin (diserahkan / dijawab lebih dulu).
  */
 export const computePerformance = (rows, lastEndByDate = {}, now = Date.now()) => {
   const people = { sila: [], dinda: [] };
   let outside = 0;
-  let merged = 0;
   rows.forEach((r) => {
     const kind = classifyLog(r);
-    if (kind === 'merged') { merged += 1; return; }
-    if (kind === 'other') return;
+    if (kind === 'merged' || kind === 'other') return;
     const who = shiftOwnerAt(r.inboundAt, lastEndByDate);
     if (!who) { outside += 1; return; }
     people[who].push({ ...r, kind });
   });
 
-  const summarize = (all) => {
-    const ack = all.filter((r) => r.kind === 'ack').length;
-    const list = all.filter((r) => r.kind !== 'ack');
-    const ai = list.filter((r) => r.kind === 'ai');
-    const adminFirst = list.filter((r) => r.kind === 'admin_first');
-    const handoff = list.filter((r) => r.kind === 'handoff');
-
-    // Siapa membalas lebih dulu (pesan yang bisa dijawab AI): admin bila sudah membalas sebelum AI.
-    const adminWon = (r) => r.kind === 'admin_first' || (r.adminRepliedAt != null && r.adminRepliedAt < r.aiAt);
-    const contested = [...ai, ...adminFirst];
-    const adminWins = contested.filter(adminWon).length;
-
-    // Waktu balas admin: pesan yang diserahkan / dijawab admin lebih dulu / admin membalas setelah draf.
-    const adminRows = list.filter((r) => r.adminRepliedAt != null && (r.kind !== 'ai' || r.mode === 'review' || adminWon(r)));
-    const adminTimes = adminRows.map((r) => Math.max(0, r.adminRepliedAt - r.inboundAt));
-    const pendingData = list.filter((r) => (r.kind === 'handoff' || r.kind === 'admin_first') && r.adminRepliedAt == null);
-    const unanswered = pendingData.filter((r) => now - r.inboundAt > 24 * 3600e3).length;
-
-    const aiTimes = ai.filter((r) => !adminWon(r)).map((r) => Math.max(0, r.aiAt - r.inboundAt));
-    const quality = Object.fromEntries(QUALITY.map((q) => [q, list.filter((r) => r.verdict === q).length]));
-    const scored = QUALITY.reduce((a, q) => a + quality[q], 0);
-    const pairs = ai.filter((r) => r.mode === 'review' && r.adminRepliedAt != null);
+  const summarize = (list) => {
+    const count = (k) => list.filter((r) => r.kind === k).length;
+    const handled = list.filter((r) => r.kind === 'admin_first' || r.kind === 'handoff');
+    const times = handled.filter((r) => r.adminRepliedAt != null).map((r) => Math.max(0, r.adminRepliedAt - r.inboundAt));
+    const noData = handled.filter((r) => r.adminRepliedAt == null);
+    const aiTimes = list.filter((r) => r.kind === 'ai' && r.aiAt != null).map((r) => Math.max(0, r.aiAt - r.inboundAt));
     return {
       total: list.length,
-      ack,
-      handoff: handoff.length,
-      aiReplied: ai.length - ai.filter(adminWon).length,
-      adminFirst: contested.filter(adminWon).length,
-      contested: contested.length,
-      adminWinPct: pct(adminWins, contested.length),
-      replied: adminTimes.length,
-      awaitingData: pendingData.length - unanswered,
-      unanswered,
-      adminMedian: median(adminTimes),
-      adminMean: mean(adminTimes),
-      within5: pct(adminTimes.filter((t) => t <= 5 * 60e3).length, adminTimes.length),
-      within15: pct(adminTimes.filter((t) => t <= 15 * 60e3).length, adminTimes.length),
-      aiCount: aiTimes.length,
-      aiMedian: median(aiTimes),
-      quality,
-      aiAccuracy: scored ? Math.round(((quality.sesuai + quality.sebagian * 0.5) / scored) * 100) : null,
-      scored,
-      pairs: pairs.length,
+      ai: count('ai'),
+      adminFirst: count('admin_first'),
+      handoff: count('handoff'),
+      ack: count('ack'),
+      handled: handled.length,
+      timed: times.length,
+      avg: mean(times),
+      median: median(times),
+      fastest: times.length ? Math.min(...times) : null,
+      slowest: times.length ? Math.max(...times) : null,
+      within5: times.filter((t) => t <= 5 * 60e3).length,
+      over15: times.filter((t) => t > 15 * 60e3).length,
+      // Pesan yang sudah >24 jam tanpa balasan admin terdeteksi vs yang masih menunggu pembaruan data.
+      noReply: noData.filter((r) => now - r.inboundAt > 24 * 3600e3).length,
+      pending: noData.filter((r) => now - r.inboundAt <= 24 * 3600e3).length,
+      aiAvg: mean(aiTimes),
     };
   };
 
@@ -152,7 +141,7 @@ export const computePerformance = (rows, lastEndByDate = {}, now = Date.now()) =
     dindaEnd: lastEndByDate[date] ?? null,
     sila: summarize(byDay[date].sila),
     dinda: summarize(byDay[date].dinda),
-    ai: summarize([...byDay[date].sila, ...byDay[date].dinda]),
+    all: summarize([...byDay[date].sila, ...byDay[date].dinda]),
   }));
 
   return {
@@ -160,7 +149,6 @@ export const computePerformance = (rows, lastEndByDate = {}, now = Date.now()) =
     dinda: summarize(people.dinda),
     all: summarize(all),
     outside,
-    merged,
     days,
   };
 };
@@ -179,9 +167,9 @@ export const fetchAdminReplyPerformance = async ({ startDate, endDate, clinicId 
   for (let page = 0; page < 30; page += 1) {
     const { data, error } = await supabase
       .from('wa_ai_logs')
-      .select('id, created_at, outcome, skip_reason, mode, verdict, admin_replied_at, inbound_message_id')
+      .select('id, created_at, outcome, skip_reason, admin_replied_at, inbound_message_id')
       .eq('clinic_id', clinicId)
-      .in('mode', ['live', 'review'])
+      .eq('mode', 'live')
       .gte('created_at', fromIso)
       .lte('created_at', toPadded)
       .not('inbound_message_id', 'is', null)
@@ -208,8 +196,6 @@ export const fetchAdminReplyPerformance = async ({ startDate, endDate, clinicId 
       aiAt: Date.parse(l.created_at),
       outcome: l.outcome,
       skipReason: l.skip_reason,
-      mode: l.mode,
-      verdict: l.verdict,
       adminRepliedAt: l.admin_replied_at ? Date.parse(l.admin_replied_at) : null,
     }))
     .filter((r) => Number.isFinite(r.inboundAt) && r.inboundAt >= lo && r.inboundAt <= hi);
