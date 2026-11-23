@@ -98,6 +98,9 @@ const AdminReplyPerformance = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const isDay = view === 'day';
+  const startDate = isDay ? day : dateRange?.startDate;
+  const endDate = isDay ? day : dateRange?.endDate;
 
   let range = { start: anchor, end: anchor };
   if (view === 'week') range = weekRange(anchor);
