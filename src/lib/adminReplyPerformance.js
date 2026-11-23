@@ -59,33 +59,74 @@ export const formatDuration = (ms) => {
 const QUALITY = ['sesuai', 'sebagian', 'tidak', 'koreksi'];
 
 /**
- * rows: [{ inboundAt, aiAt, outcome, verdict, adminRepliedAt }] (ms atau null).
- * Hanya pesan yang masuk saat jam kerja yang dinilai; sisanya dihitung "di luar jam kerja".
+ * Jenis pesan menurut log AI:
+ *  ai          : AI membalas (live) atau menyusun draf (review)
+ *  admin_first : admin sudah membalas lewat WhatsApp sebelum AI
+ *  handoff     : diserahkan ke admin (AI tidak boleh menjawab)
+ *  ack         : "ok"/"siap", tidak perlu dibalas
+ *  merged      : pesan beruntun, dijawab lewat pesan terbarunya (tidak dihitung ganda)
  */
-export const computePerformance = (rows, lastEndByDate = {}) => {
-  const people = {
-    sila: { rows: [] },
-    dinda: { rows: [] },
-  };
+export const classifyLog = (l) => {
+  if (l.outcome === 'handoff') return 'handoff';
+  if (l.outcome === 'replied' || l.outcome === 'simulated') return 'ai';
+  if (l.outcome === 'skipped') {
+    if (l.skipReason === 'ada_pesan_lebih_baru') return 'merged';
+    if (l.skipReason === 'tidak_perlu_dibalas') return 'ack';
+    if (l.skipReason === 'admin_sudah_membalas_via_watzap') return 'admin_first';
+  }
+  return 'other';
+};
+
+/**
+ * rows: [{ inboundAt, aiAt, outcome, skipReason, mode, verdict, adminRepliedAt }] (ms atau null).
+ * Hanya pesan yang masuk saat jam kerja yang dinilai; sisanya dihitung "di luar jam kerja".
+ * `now` dipakai menandai pesan lama tanpa balasan admin yang terdeteksi.
+ */
+export const computePerformance = (rows, lastEndByDate = {}, now = Date.now()) => {
+  const people = { sila: [], dinda: [] };
   let outside = 0;
+  let merged = 0;
   rows.forEach((r) => {
+    const kind = classifyLog(r);
+    if (kind === 'merged') { merged += 1; return; }
+    if (kind === 'other') return;
     const who = shiftOwnerAt(r.inboundAt, lastEndByDate);
     if (!who) { outside += 1; return; }
-    people[who].rows.push(r);
+    people[who].push({ ...r, kind });
   });
 
-  const summarize = (list) => {
-    const adminTimes = list.filter((r) => r.adminRepliedAt != null).map((r) => Math.max(0, r.adminRepliedAt - r.inboundAt));
-    const unanswered = list.filter((r) => r.adminRepliedAt == null && r.verdict === 'belum_dibalas').length;
-    const aiTimes = list.filter((r) => r.outcome === 'simulated' && r.aiAt != null).map((r) => Math.max(0, r.aiAt - r.inboundAt));
-    const handoff = list.filter((r) => r.outcome === 'handoff').length;
+  const summarize = (all) => {
+    const ack = all.filter((r) => r.kind === 'ack').length;
+    const list = all.filter((r) => r.kind !== 'ack');
+    const ai = list.filter((r) => r.kind === 'ai');
+    const adminFirst = list.filter((r) => r.kind === 'admin_first');
+    const handoff = list.filter((r) => r.kind === 'handoff');
+
+    // Siapa membalas lebih dulu (pesan yang bisa dijawab AI): admin bila sudah membalas sebelum AI.
+    const adminWon = (r) => r.kind === 'admin_first' || (r.adminRepliedAt != null && r.adminRepliedAt < r.aiAt);
+    const contested = [...ai, ...adminFirst];
+    const adminWins = contested.filter(adminWon).length;
+
+    // Waktu balas admin: pesan yang diserahkan / dijawab admin lebih dulu / admin membalas setelah draf.
+    const adminRows = list.filter((r) => r.adminRepliedAt != null && (r.kind !== 'ai' || r.mode === 'review' || adminWon(r)));
+    const adminTimes = adminRows.map((r) => Math.max(0, r.adminRepliedAt - r.inboundAt));
+    const pendingData = list.filter((r) => (r.kind === 'handoff' || r.kind === 'admin_first') && r.adminRepliedAt == null);
+    const unanswered = pendingData.filter((r) => now - r.inboundAt > 24 * 3600e3).length;
+
+    const aiTimes = ai.filter((r) => !adminWon(r)).map((r) => Math.max(0, r.aiAt - r.inboundAt));
     const quality = Object.fromEntries(QUALITY.map((q) => [q, list.filter((r) => r.verdict === q).length]));
     const scored = QUALITY.reduce((a, q) => a + quality[q], 0);
-    const pairs = list.filter((r) => r.adminRepliedAt != null && r.outcome === 'simulated' && r.aiAt != null);
-    const aiFaster = pairs.filter((r) => r.aiAt < r.adminRepliedAt).length;
+    const pairs = ai.filter((r) => r.mode === 'review' && r.adminRepliedAt != null);
     return {
       total: list.length,
+      ack,
+      handoff: handoff.length,
+      aiReplied: ai.length - ai.filter(adminWon).length,
+      adminFirst: contested.filter(adminWon).length,
+      contested: contested.length,
+      adminWinPct: pct(adminWins, contested.length),
       replied: adminTimes.length,
+      awaitingData: pendingData.length - unanswered,
       unanswered,
       adminMedian: median(adminTimes),
       adminMean: mean(adminTimes),
@@ -93,19 +134,14 @@ export const computePerformance = (rows, lastEndByDate = {}) => {
       within15: pct(adminTimes.filter((t) => t <= 15 * 60e3).length, adminTimes.length),
       aiCount: aiTimes.length,
       aiMedian: median(aiTimes),
-      handoff,
       quality,
       aiAccuracy: scored ? Math.round(((quality.sesuai + quality.sebagian * 0.5) / scored) * 100) : null,
       scored,
       pairs: pairs.length,
-      aiFasterPct: pct(aiFaster, pairs.length),
-      medianGap: pairs.length
-        ? median(pairs.map((r) => (r.adminRepliedAt - r.inboundAt) - (r.aiAt - r.inboundAt)))
-        : null,
     };
   };
 
-  const all = [...people.sila.rows, ...people.dinda.rows];
+  const all = [...people.sila, ...people.dinda];
   const byDay = {};
   all.forEach((r) => {
     const { date } = witaParts(r.inboundAt);
@@ -120,10 +156,11 @@ export const computePerformance = (rows, lastEndByDate = {}) => {
   }));
 
   return {
-    sila: summarize(people.sila.rows),
-    dinda: summarize(people.dinda.rows),
+    sila: summarize(people.sila),
+    dinda: summarize(people.dinda),
     all: summarize(all),
     outside,
+    merged,
     days,
   };
 };
@@ -142,10 +179,9 @@ export const fetchAdminReplyPerformance = async ({ startDate, endDate, clinicId 
   for (let page = 0; page < 30; page += 1) {
     const { data, error } = await supabase
       .from('wa_ai_logs')
-      .select('id, created_at, outcome, verdict, admin_replied_at, inbound_message_id')
+      .select('id, created_at, outcome, skip_reason, mode, verdict, admin_replied_at, inbound_message_id')
       .eq('clinic_id', clinicId)
-      .eq('mode', 'review')
-      .in('outcome', ['simulated', 'handoff'])
+      .in('mode', ['live', 'review'])
       .gte('created_at', fromIso)
       .lte('created_at', toPadded)
       .not('inbound_message_id', 'is', null)
@@ -171,6 +207,8 @@ export const fetchAdminReplyPerformance = async ({ startDate, endDate, clinicId 
       inboundAt: inboundTimes.get(l.inbound_message_id),
       aiAt: Date.parse(l.created_at),
       outcome: l.outcome,
+      skipReason: l.skip_reason,
+      mode: l.mode,
       verdict: l.verdict,
       adminRepliedAt: l.admin_replied_at ? Date.parse(l.admin_replied_at) : null,
     }))
