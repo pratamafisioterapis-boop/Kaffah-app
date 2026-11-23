@@ -165,6 +165,23 @@ async function handleUpdate(update: any) {
   if (!msg || typeof msg.text !== "string") return;
   // Pesan owner di grup (mis. grup revisi AI) diteruskan ke wa-ai-reply, yang memeriksa grupnya.
   if (String(msg.chat?.id) !== CHAT_ID && String(msg.from?.id) === CHAT_ID && ["group", "supergroup"].includes(String(msg.chat?.type))) {
+    // Reply ke notifikasi "AI tidak membalas pesan ini" = jawaban owner: dirapikan dan disimpan oleh
+    // wa-ai-revision-notify. Bila bukan reply ke notifikasi itu (handled=false), lanjut ke wa-ai-reply.
+    if (msg.reply_to_message?.message_id) {
+      const r = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/wa-ai-revision-notify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
+        body: JSON.stringify({
+          answer: {
+            chat_id: String(msg.chat.id),
+            reply_to_message_id: msg.reply_to_message.message_id,
+            message_id: msg.message_id,
+            text: msg.text,
+          },
+        }),
+      }).then((x) => x.json()).catch(() => null);
+      if (r?.handled) return;
+    }
     await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/wa-ai-reply`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
