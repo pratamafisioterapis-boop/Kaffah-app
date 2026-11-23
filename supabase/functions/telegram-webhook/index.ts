@@ -47,6 +47,9 @@ const HELP = [
   "/uji  uji regresi AI (soal tetap) dan bandingkan dengan uji sebelumnya",
   "/aturan  daftar arahan, /hapus N  hapus arahan",
   "/status  status AI",
+  "",
+  "Pengajuan override: reply notifikasinya dengan \"ok\" untuk menyetujui atau \"ga\" untuk menolak.",
+  "",
   "Grup revisi: buat grup baru, tambahkan bot (jadikan admin), lalu ketik /grup_revisi di grup itu.",
 ].join("\n");
 
@@ -138,6 +141,25 @@ async function handleUpdate(update: any) {
   }
   // Hanya chat pribadi milik owner yang dilayani.
   if (String(msg.chat?.id) !== CHAT_ID || String(msg.from?.id) !== CHAT_ID) return;
+
+  // Balasan "ok"/"ga" pada notifikasi pengajuan override = setujui/tolak.
+  const quoted = String(msg.reply_to_message?.text ?? "");
+  if (quoted.includes("Pengajuan pengecualian")) {
+    const word = msg.text.trim().toLowerCase().replace(/[.!\s]+$/g, "");
+    const approve = /^(ok|oke|okay|ya|y|setuju|acc)$/.test(word);
+    const reject = /^(ga|gak|nggak|ngga|tidak|tolak|no|n)$/.test(word);
+    if (approve || reject) {
+      const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      const { data, error } = await supabase.rpc("tg_decide_override", { p_text: quoted, p_approve: approve });
+      if (error || typeof data !== "string") {
+        console.error("tg_decide_override gagal:", error?.message);
+        await reply("⚠️ Gagal memproses perintah. Coba lagi atau putuskan lewat halaman Pengajuan di aplikasi.");
+      } else {
+        await reply(data);
+      }
+      return;
+    }
+  }
 
   // Koreksi draf AI WhatsApp (reply), aturan umum, dan perintah /skor /jeda /aturan /hapus /status
   // ditangani wa-ai-reply. Teks bebas yang bukan perintah jadwal juga dianggap arahan untuk AI.
