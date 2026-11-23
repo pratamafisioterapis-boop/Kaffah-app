@@ -15,7 +15,17 @@ const SoapViolationCard = ({ therapistId }) => {
   const [restoreTarget, setRestoreTarget] = useState(null);
   const [pendingIds, setPendingIds] = useState(new Set());
   const [reloadKey, setReloadKey] = useState(0);
-  const active = isSoapFirstActiveOn(settings, todayWita());
+  const [salaryScheme, setSalaryScheme] = useState(null);
+  // Terapis full salary tidak dikenai insentif per sesi, jadi kartu pelanggaran disembunyikan.
+  const active = isSoapFirstActiveOn(settings, todayWita()) && !!salaryScheme && salaryScheme !== 'full_salary';
+
+  useEffect(() => {
+    if (!therapistId) return undefined;
+    let cancelled = false;
+    supabase.from('therapists').select('salary_scheme').eq('id', therapistId).maybeSingle()
+      .then(({ data }) => { if (!cancelled) setSalaryScheme(data?.salary_scheme || 'full_salary'); });
+    return () => { cancelled = true; };
+  }, [therapistId]);
 
   useEffect(() => {
     if (!active || !therapistId) return undefined;
