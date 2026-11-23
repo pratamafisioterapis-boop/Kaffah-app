@@ -1132,7 +1132,7 @@ if (isCreate) {
                   )}
                   {isKaffahClinic && field.key !== 'plan' && (
                     <VoiceDictationButton
-                      disabled={isTemplateLocked(field.key) || sfLocked}
+                      disabled={sfLocked}
                       onAppend={(text) => {
                         if (field.key === 'assessment') setAssessmentAuto(false);
                         setFormData((prev) => ({
