@@ -87,6 +87,35 @@ async function recordReminderReply(
   }
 }
 
+// Tombol "Kirim Dokumen" pada template surat_keterangan_fisioterapi / resume_medis_fisioterapi (Kaffah).
+// Klik membuka jendela 24 jam; database lalu mengirim PDF yang menunggu. Mengembalikan true bila klik
+// ini cocok dengan dokumen yang menunggu (asisten AI tidak perlu membalasnya). Kegagalan di sini tidak
+// boleh menggagalkan respons webhook.
+async function recordDocButton(
+  admin: ReturnType<typeof createClient>,
+  clinicId: string,
+  msg: any,
+): Promise<boolean> {
+  try {
+    if (msg?.type !== "button") return false;
+    const label = String(msg.button?.payload || msg.button?.text || "").trim().toLowerCase();
+    if (label !== "kirim dokumen") return false;
+    const { data, error } = await admin.rpc("clinical_doc_on_button", {
+      p_clinic_id: clinicId,
+      p_context_id: msg.context?.id ?? null,
+      p_phone: msg.from ?? null,
+    });
+    if (error) {
+      console.error("[wa-watzap-webhook] kirim dokumen gagal", error.message);
+      return false;
+    }
+    return !!data;
+  } catch (e) {
+    console.error("[wa-watzap-webhook] kirim dokumen error", e);
+    return false;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
@@ -125,7 +154,8 @@ Deno.serve(async (req) => {
       for (const msg of v.messages || []) {
         await handleMessage(admin, cfg.clinic_id, v.contacts || [], msg, media);
         await recordReminderReply(admin, cfg.clinic_id, msg);
-        if (msg?.id) {
+        const docHandled = await recordDocButton(admin, cfg.clinic_id, msg);
+        if (msg?.id && !docHandled) {
           const p = notifyAi(admin, String(msg.id));
           if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(p);
           else await p;

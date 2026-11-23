@@ -18,6 +18,7 @@ import ClinicalDocumentPreviewModal from './ClinicalDocumentPreviewModal';
 import ResumeMedisTemplate from './ResumeMedisTemplate';
 import DiagnosisServiceField from './DiagnosisServiceField';
 import { PRAXIS_CLINIC_ID } from '@/lib/clinicIds';
+import { isKaffahClinic, sendClinicalDocViaWa } from '@/lib/clinicalDocWhatsApp';
 
 // Field tambahan khusus format resume medis Praxis.
 const PRAXIS_FIELDS = {
@@ -126,6 +127,19 @@ const ResumeMedisForm = ({ onSaved }) => {
         ? f.program_terapi.filter((k) => k !== key)
         : [...f.program_terapi, key],
     }));
+  };
+
+  // Kirim WhatsApp (khusus Kaffah): PDF langsung bila jendela 24 jam terbuka, selain itu template + tombol.
+  const handleSendWhatsApp = async (pdf) => {
+    await sendClinicalDocViaWa({
+      docType: 'resume_medis',
+      patientId: form.patient_id,
+      phone: selectedPatient?.phone,
+      pdf,
+      fileName: `Resume_Medis_${(previewData?.patient_name || 'Pasien').replace(/[^a-zA-Z0-9]+/g, '_')}`,
+      docDate: previewData?.document_date || form.document_date,
+      toast,
+    });
   };
 
   const buildDocumentData = () => {
@@ -318,6 +332,7 @@ const ResumeMedisForm = ({ onSaved }) => {
         onClose={() => setPreviewData(null)}
         title="Resume Medis"
         fileName={`Resume_Medis_${(previewData?.patient_name || 'Pasien').replace(/\s+/g, '_')}`}
+        onSend={isKaffahClinic(clinic) ? handleSendWhatsApp : undefined}
       >
         {previewData && <ResumeMedisTemplate data={previewData} clinic={clinic} />}
       </ClinicalDocumentPreviewModal>
