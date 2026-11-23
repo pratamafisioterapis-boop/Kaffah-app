@@ -60,7 +60,7 @@ type Ctx = {
   review?: boolean; // mode review (draf Telegram): waiting list tetap disimpan, aksi lain hanya simulasi
 };
 
-const AI_ACTOR = "Asisten AI WhatsApp";
+const AI_ACTOR = "AI Agent"; // tampil sebagai "By AI Agent" di notifikasi
 
 // Flyer yang boleh dikirim AI sebagai gambar (file di public/flyers, ikut ter-deploy bersama web).
 const BROCHURES: Record<string, { url: string; title: string }> = {
@@ -502,6 +502,8 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
         p_is_homecare: false,
         p_allow_overlap: false,
         p_is_manual: false,
+        p_action_by_name: AI_ACTOR, // notifikasi "By AI Agent" (booking online publik tetap "System")
+        p_action_by_role: "ai",
         p_guest_complaint: plan.complaint,
         p_guest_age: plan.age,
         p_guest_gender: plan.gender,
