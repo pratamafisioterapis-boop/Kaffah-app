@@ -47,6 +47,9 @@ const HELP = [
   "/uji  uji regresi AI (soal tetap) dan bandingkan dengan uji sebelumnya",
   "/aturan  daftar arahan, /hapus N  hapus arahan",
   "/status  status AI",
+  "",
+  "Pengajuan override: reply notifikasinya dengan \"ok\" untuk menyetujui atau \"ga\" untuk menolak.",
+  "",
   "Grup revisi: buat grup baru, tambahkan bot (jadikan admin), lalu ketik /grup_revisi di grup itu.",
 ].join("\n");
 
@@ -124,7 +127,40 @@ async function tg(method: string, payload: unknown) {
 
 const reply = (text: string) => tg("sendMessage", { chat_id: CHAT_ID, text, disable_web_page_preview: true });
 
+// Klik tombol Setujui/Tolak pada notifikasi pengajuan override.
+async function handleCallback(cb: any) {
+  const answer = (text: string) => tg("answerCallbackQuery", { callback_query_id: cb.id, text });
+  const msg = cb.message;
+  if (String(cb.from?.id) !== CHAT_ID || String(msg?.chat?.id) !== CHAT_ID) {
+    await answer("Tidak diizinkan.");
+    return;
+  }
+  const m = String(cb.data ?? "").match(/^ov:([ar]):([0-9a-f-]{36})$/);
+  if (!m) {
+    await answer("Tombol tidak dikenali.");
+    return;
+  }
+  const approve = m[1] === "a";
+  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const { data, error } = await supabase.rpc("tg_decide_override_id", { p_id: m[2], p_approve: approve });
+  if (error || typeof data !== "string") {
+    console.error("tg_decide_override_id gagal:", error?.message);
+    await answer("Gagal memproses. Coba lagi.");
+    return;
+  }
+  await answer(data.split("\n")[0]);
+  // Hapus tombol hanya kalau keputusan sudah final (bukan galat sementara).
+  if (!data.startsWith("⚠️")) {
+    await tg("editMessageReplyMarkup", { chat_id: CHAT_ID, message_id: msg.message_id, reply_markup: { inline_keyboard: [] } });
+  }
+  await tg("sendMessage", { chat_id: CHAT_ID, text: data, reply_to_message_id: msg.message_id, disable_web_page_preview: true });
+}
+
 async function handleUpdate(update: any) {
+  if (update?.callback_query) {
+    await handleCallback(update.callback_query);
+    return;
+  }
   const msg = update?.message;
   if (!msg || typeof msg.text !== "string") return;
   // Pesan owner di grup (mis. grup revisi AI) diteruskan ke wa-ai-reply, yang memeriksa grupnya.
@@ -138,6 +174,25 @@ async function handleUpdate(update: any) {
   }
   // Hanya chat pribadi milik owner yang dilayani.
   if (String(msg.chat?.id) !== CHAT_ID || String(msg.from?.id) !== CHAT_ID) return;
+
+  // Balasan "ok"/"ga" pada notifikasi pengajuan override = setujui/tolak.
+  const quoted = String(msg.reply_to_message?.text ?? "");
+  if (quoted.includes("Pengajuan pengecualian")) {
+    const word = msg.text.trim().toLowerCase().replace(/[.!\s]+$/g, "");
+    const approve = /^(ok|oke|okay|ya|y|setuju|acc)$/.test(word);
+    const reject = /^(ga|gak|nggak|ngga|tidak|tolak|no|n)$/.test(word);
+    if (approve || reject) {
+      const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      const { data, error } = await supabase.rpc("tg_decide_override", { p_text: quoted, p_approve: approve });
+      if (error || typeof data !== "string") {
+        console.error("tg_decide_override gagal:", error?.message);
+        await reply("⚠️ Gagal memproses perintah. Coba lagi atau putuskan lewat halaman Pengajuan di aplikasi.");
+      } else {
+        await reply(data);
+      }
+      return;
+    }
+  }
 
   // Koreksi draf AI WhatsApp (reply), aturan umum, dan perintah /skor /jeda /aturan /hapus /status
   // ditangani wa-ai-reply. Teks bebas yang bukan perintah jadwal juga dianggap arahan untuk AI.
@@ -200,7 +255,7 @@ async function handleAdmin(action: string) {
     const hook = await tg("setWebhook", {
       url,
       secret_token: SECRET,
-      allowed_updates: ["message"],
+      allowed_updates: ["message", "callback_query"],
       drop_pending_updates: true,
     });
     const cmds = await tg("setMyCommands", {
