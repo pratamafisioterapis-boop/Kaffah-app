@@ -14,10 +14,11 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const POLICY_SKIP =
-  /home ?care|komplain|kecewa|refund|kwitansi|invoice|reward|kode referral|darurat|lampiran|gambar|foto|voice|rekam medis|kerja ?sama|marketing|sponsor|noop|placeholder|nomor pribadi|barang tertinggal|setelah terapi|pasca terapi/i;
+  /home ?care|komplain|kecewa|refund|kwitansi|invoice|reward|kode referral|darurat|lampiran|gambar|foto|voice|rekam medis|kerja ?sama|marketing|sponsor|noop|placeholder|nomor pribadi|barang tertinggal|setelah terapi|pasca terapi|tidak perlu (dibalas|balasan)|sudah dibuat|sudah terbooking|konfirmasi otomatis/i;
 const FAST_MODEL = Deno.env.get("WA_AI_FAST_MODEL") || "claude-haiku-5-5";
 const MODEL = Deno.env.get("WA_AI_MODEL") || "claude-sonnet-5-5";
 const SUGGESTION_PREFIX = "SARAN_AI: "; // disimpan di wa_ai_logs.verdict_note (tidak dipakai log live)
+const SILENT_RE = /^(tidak perlu( dibalas| balasan)?|ga perlu( dibalas)?|gak perlu( dibalas)?|nggak perlu( dibalas)?|jangan dibalas|diam|skip|abaikan)[.! ]*$/i;
 const APPROVE_RE = /^(ok|oke|okay|okey|sip|siap|benar|betul|bener|mantap|setuju|acc|👍|✅)[.! ]*$/i;
 
 const reply = (body: unknown, status = 200) =>
@@ -167,9 +168,9 @@ async function notifyHandoff(admin: Admin, logId: string) {
         sug.answer,
         ...(sug.check ? ["", `⚠️ Perlu dicek: ${sug.check}`] : []),
         "",
-        "↩️ Reply \"ok\" bila saran ini sudah tepat. Bila belum, reply dengan jawaban yang benar (tanpa format khusus; kata-katanya saya rapikan, isinya tetap).",
+        "↩️ Reply \"ok\" bila saran ini sudah tepat, \"tidak perlu dibalas\" bila pesan ini memang tidak perlu dijawab, atau reply dengan jawaban yang benar (tanpa format khusus; kata-katanya saya rapikan, isinya tetap).",
       ]
-      : ["", "↩️ Reply pesan ini dengan jawaban yang seharusnya. Tanpa format khusus; kata-katanya saya rapikan, isinya tetap."]),
+      : ["", "↩️ Reply pesan ini dengan jawaban yang seharusnya (atau \"tidak perlu dibalas\"). Tanpa format khusus; kata-katanya saya rapikan, isinya tetap."]),
   ].join("\n");
   const id = await telegram(text, st.revision_chat_id);
   await admin.from("wa_ai_logs").update({
@@ -248,12 +249,15 @@ async function handleAnswer(admin: Admin, a: any) {
   const suggested = String(log.verdict_note || "").startsWith(SUGGESTION_PREFIX)
     ? String(log.verdict_note).slice(SUGGESTION_PREFIX.length).trim()
     : "";
-  const approving = APPROVE_RE.test(ownerText);
+  const silent = SILENT_RE.test(ownerText);
+  const approving = !silent && APPROVE_RE.test(ownerText);
   if (approving && !suggested) {
     await say("Belum ada saran AI untuk pesan ini. Reply dengan jawaban yang seharusnya, ya.");
     return reply({ handled: true });
   }
-  const { text: finalText, polished } = approving
+  const { text: finalText, polished } = silent
+    ? { text: "Pesan pasien seperti ini TIDAK perlu dibalas (balasan akhir kosong). Jangan menyerahkan ke admin dan jangan membuat jawaban baru.", polished: false }
+    : approving
     ? { text: suggested, polished: false }
     : await polish(patient, ownerText);
 
@@ -277,11 +281,13 @@ async function handleAnswer(admin: Admin, a: any) {
     const row = {
       clinic_id: log.clinic_id, title: `Revisi: ${patient.slice(0, 60)}`, wa_id: conv?.wa_id ?? null,
       transcript: `[${w.slice(0, 10)} ${w.slice(11, 16)}] Pasien: ${patient.slice(0, 600)}`,
-      expected: finalText.slice(0, 1500), expected_kind: "reply", source: "correction", source_ref: log.id, active: true,
+      expected: finalText.slice(0, 1500), expected_kind: silent ? "silent" : "reply", source: "correction", source_ref: log.id, active: true,
     };
     const { data: ex } = await admin.from("wa_ai_eval_cases").select("id").eq("source_ref", log.id).maybeSingle();
-    if (ex) await admin.from("wa_ai_eval_cases").update(row).eq("id", ex.id);
-    else await admin.from("wa_ai_eval_cases").insert(row);
+    const { error: evErr } = ex
+      ? await admin.from("wa_ai_eval_cases").update(row).eq("id", ex.id)
+      : await admin.from("wa_ai_eval_cases").insert(row);
+    if (evErr) console.error("[wa-ai-revision-notify] simpan soal uji gagal", evErr.message);
   } catch (e) {
     console.error("[wa-ai-revision-notify] simpan soal uji gagal", e);
   }
@@ -290,7 +296,9 @@ async function handleAnswer(admin: Admin, a: any) {
     "✅ Jawaban disimpan, AI memakainya mulai sekarang.",
     "",
     `Pasien: ${patient.slice(0, 300)}`,
-    `${approving ? "Jawaban (saran AI disetujui)" : polished ? "Jawaban (sudah dirapikan)" : "Jawaban"}: ${finalText.slice(0, 700)}`,
+    silent
+      ? "Dicatat: pesan seperti ini TIDAK perlu dibalas AI (balasan kosong)."
+      : `${approving ? "Jawaban (saran AI disetujui)" : polished ? "Jawaban (sudah dirapikan)" : "Jawaban"}: ${finalText.slice(0, 700)}`,
     "",
     "Kurang pas? Reply notifikasi aslinya lagi dengan jawaban baru; jawaban ini diganti.",
   ].join("\n"));
