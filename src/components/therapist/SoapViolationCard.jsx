@@ -8,14 +8,15 @@ import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
 import { fetchSoapViolations, isSoapFirstActiveOn, todayWita } from '@/lib/soapFirst';
 
 /** Jumlah sesi bulan ini yang melanggar aturan SOAP (khusus klinik dengan SOAP-first). */
-const SoapViolationCard = ({ therapistId }) => {
+const SoapViolationCard = ({ therapistId, salaryScheme }) => {
   const { settings } = useSoapFirstSettings();
   const [result, setResult] = useState(null);
   const [open, setOpen] = useState(false);
   const [restoreTarget, setRestoreTarget] = useState(null);
   const [pendingIds, setPendingIds] = useState(new Set());
   const [reloadKey, setReloadKey] = useState(0);
-  const active = isSoapFirstActiveOn(settings, todayWita());
+  // Terapis full salary tidak dikenai insentif per sesi, jadi kartu pelanggaran disembunyikan.
+  const active = isSoapFirstActiveOn(settings, todayWita()) && (salaryScheme || 'full_salary') !== 'full_salary';
 
   useEffect(() => {
     if (!active || !therapistId) return undefined;

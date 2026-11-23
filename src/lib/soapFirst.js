@@ -189,7 +189,15 @@ export const fetchSoapViolations = async ({ startDate, endDate, therapistId = nu
   if (therapistId) q = q.eq('therapist_id', therapistId);
   const { data, error } = await q;
   if (error) throw error;
-  const flagged = (await markIncentiveFlags(data || [], { strict: true })).filter((r) => r._incentiveZeroed);
+  // Terapis full salary tidak memakai insentif per sesi, jadi tidak ada pelanggaran SOAP untuk mereka.
+  const therapistIds = [...new Set((data || []).map((r) => r.therapist_id).filter(Boolean))];
+  const fullSalaryIds = new Set();
+  if (therapistIds.length) {
+    const { data: ths } = await supabase.from('therapists').select('id, salary_scheme').in('id', therapistIds);
+    (ths || []).forEach((t) => { if ((t.salary_scheme || 'full_salary') === 'full_salary') fullSalaryIds.add(t.id); });
+  }
+  const rows = (data || []).filter((r) => !fullSalaryIds.has(r.therapist_id));
+  const flagged = (await markIncentiveFlags(rows, { strict: true })).filter((r) => r._incentiveZeroed);
 
   const ids = [...new Set(flagged.flatMap((r) => parseDiagnosisIds(r.diagnosis)).filter((d) => UUID_RE.test(d)))];
   const labels = {};
