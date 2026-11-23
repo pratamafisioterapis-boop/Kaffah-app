@@ -1,5 +1,7 @@
 import React, { forwardRef, useEffect, useState } from 'react';
 import { stripSignatureBackground } from '@/lib/signatureImage';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
+import SuratKeteranganTemplateKaffah from './SuratKeteranganTemplateKaffah';
 
 const formatDate = (value) => {
   if (!value) return '-';
@@ -16,7 +18,7 @@ const calcAge = (birthDate) => {
   return Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000));
 };
 
-const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
+const SuratKeteranganTemplateDefault = forwardRef(({ data, clinic }, ref) => {
   const age = data?.age ?? calcAge(data?.birth_date);
 
   // Strip the signature scan's background to transparent and boost contrast,
@@ -142,5 +144,12 @@ const SuratKeteranganTemplate = forwardRef(({ data, clinic }, ref) => {
     </div>
   );
 });
+
+// Kaffah memakai desain surat sendiri (senada dengan kwitansi).
+const SuratKeteranganTemplate = forwardRef((props, ref) => (
+  props.clinic?.id === KAFFAH_CLINIC_ID
+    ? <SuratKeteranganTemplateKaffah ref={ref} {...props} />
+    : <SuratKeteranganTemplateDefault ref={ref} {...props} />
+));
 
 export default SuratKeteranganTemplate;

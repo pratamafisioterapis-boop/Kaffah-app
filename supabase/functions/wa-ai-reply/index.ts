@@ -1665,11 +1665,70 @@ const WATZAP_TZ = "+07:00"; // stempel waktu Watzap memakai WIB
 const watzapTime = (ts: string) => Date.parse(`${String(ts).replace(" ", "T")}${WATZAP_TZ}`);
 
 /**
+ * Mode live: isi waktu balasan admin pertama (admin_replied_at) untuk pesan yang ditangani manusia,
+ * yaitu diserahkan ke admin (handoff) atau sudah dibalas admin lewat Watzap sebelum AI. Dipakai
+ * tab "Performa Admin" di dashboard owner. Balasan AI sendiri (sent_by null di inbox) dikecualikan.
+ */
+async function fillAdminReplyTimes(admin: Admin) {
+  const now = Date.now();
+  const { data: logs } = await admin.from("wa_ai_logs")
+    .select("id, clinic_id, conversation_id, inbound_message_id, created_at, wa_inbox_conversations(wa_id)")
+    .eq("mode", "live").is("admin_replied_at", null)
+    .or("outcome.eq.handoff,skip_reason.eq.admin_sudah_membalas_via_watzap")
+    .gte("created_at", new Date(now - 48 * 3600e3).toISOString())
+    .lte("created_at", new Date(now - 2 * 60e3).toISOString())
+    .not("inbound_message_id", "is", null)
+    .order("created_at", { ascending: true }).limit(150);
+  if (!logs?.length) return;
+
+  const inbound = await inboundById(admin, logs.map((l: any) => l.inbound_message_id));
+  const convIds = [...new Set(logs.map((l: any) => l.conversation_id).filter(Boolean))];
+  const { data: aiOuts } = await admin.from("wa_inbox_messages").select("conversation_id, body")
+    .in("conversation_id", convIds).eq("direction", "out").is("sent_by", null)
+    .gte("created_at", new Date(now - 72 * 3600e3).toISOString());
+  const norm = (t: string) => t.replace(/\s+/g, " ").trim().toLowerCase();
+  const aiTexts = new Set((aiOuts || []).map((o: any) => norm(String(o.body || ""))));
+
+  const byWa = new Map<string, any[]>();
+  for (const l of logs) {
+    const wa = (l as any).wa_inbox_conversations?.wa_id;
+    if (!wa) continue;
+    byWa.set(wa, [...(byWa.get(wa) || []), l]);
+  }
+  let checked = 0;
+  for (const [wa, ls] of byWa) {
+    if (checked++ >= 30) break; // batas permintaan Watzap per jalan
+    let items: any[] = [];
+    try {
+      items = (await watzapHistory(admin, ls[0].clinic_id, wa)).items;
+    } catch (e) {
+      console.error("[wa-ai-reply] waktu balasan admin: riwayat Watzap gagal", wa, e);
+      continue;
+    }
+    const msgs = items
+      .map((i: any) => ({ t: watzapTime(i.timestamp), me: i.is_from_me === true, text: String(i.message || ""), type: i.type }))
+      .filter((i) => Number.isFinite(i.t))
+      .sort((a, b) => a.t - b.t);
+    for (const l of ls) {
+      const tIn = Date.parse(inbound.get(l.inbound_message_id)?.created_at || l.created_at);
+      const nextIn = msgs.find((x) => !x.me && x.t > tIn + 60e3);
+      const first = msgs.find((x) =>
+        x.me && x.type !== "template" && x.text.trim() && !aiTexts.has(norm(x.text)) &&
+        x.t > tIn - 60e3 && x.t < tIn + 12 * 3600e3 && (!nextIn || x.t < nextIn.t)
+      );
+      if (!first) continue;
+      await admin.from("wa_ai_logs").update({ admin_replied_at: new Date(first.t).toISOString() }).eq("id", l.id);
+    }
+  }
+}
+
+/**
  * Bandingkan draf AI (mode review) dengan balasan admin asli di Watzap, beri nilai
  * sesuai/sebagian/tidak, lalu kirim ringkasan skor ke Telegram owner.
  */
 async function dailyReport(admin: Admin) {
   const now = Date.now();
+  try { await fillAdminReplyTimes(admin); } catch (e) { console.error("[wa-ai-reply] waktu balasan admin gagal", e); }
   const { data: logs } = await admin.from("wa_ai_logs")
     .select("id, clinic_id, conversation_id, inbound_message_id, reply_text, outcome, verdict, created_at, wa_inbox_conversations(wa_id)")
     .eq("mode", "review").in("outcome", ["simulated", "handoff"]).is("evaluated_at", null)
@@ -1685,7 +1744,7 @@ async function dailyReport(admin: Admin) {
     if (!wa) continue;
     byWa.set(wa, [...(byWa.get(wa) || []), l]);
   }
-  const toJudge: { log: any; patient: string; draft: string; admin: string }[] = [];
+  const toJudge: { log: any; patient: string; draft: string; admin: string; repliedAt: string }[] = [];
   let checked = 0;
   for (const [wa, ls] of byWa) {
     if (checked++ >= 25) break; // batas permintaan Watzap per jalan
@@ -1714,12 +1773,14 @@ async function dailyReport(admin: Admin) {
         continue;
       }
       const adminText = replies.map((r) => r.text).join("\n").slice(0, 1500);
+      // Waktu balasan admin pertama (untuk tab Performa Admin di dashboard owner).
+      const repliedAt = new Date(replies[0].t).toISOString();
       if (l.verdict) {
         // Sudah dinilai owner lewat Telegram: cukup simpan balasan admin.
-        await admin.from("wa_ai_logs").update({ admin_reply: adminText, evaluated_at: new Date().toISOString() }).eq("id", l.id);
+        await admin.from("wa_ai_logs").update({ admin_reply: adminText, admin_replied_at: repliedAt, evaluated_at: new Date().toISOString() }).eq("id", l.id);
         continue;
       }
-      toJudge.push({ log: l, patient: String(inb?.body || "").slice(0, 600), draft: String(l.reply_text || ""), admin: adminText });
+      toJudge.push({ log: l, patient: String(inb?.body || "").slice(0, 600), draft: String(l.reply_text || ""), admin: adminText, repliedAt });
     }
   }
 
@@ -1754,6 +1815,7 @@ async function dailyReport(admin: Admin) {
       if (!c || !["sesuai", "sebagian", "tidak"].includes(v.verdict)) continue;
       await admin.from("wa_ai_logs").update({
         admin_reply: c.admin,
+        admin_replied_at: c.repliedAt,
         verdict: v.verdict,
         verdict_note: String(v.note || "").slice(0, 300),
         evaluated_at: new Date().toISOString(),
@@ -2465,6 +2527,16 @@ Deno.serve(async (req) => {
     const { data: sec } = await admin.from("wa_ai_cron_secret").select("token").limit(1).maybeSingle();
     if (!token || !sec?.token || token !== sec.token) return json({ error: "Forbidden" }, 403);
     const w = run(dailyReport(admin));
+    if (typeof EdgeRuntime === "undefined") await w;
+    return json({ accepted: true }, 202);
+  }
+
+  // Isi waktu balasan admin (cron tiap 20 menit atau manual): token rahasia yang sama.
+  if (p.fill_admin_times) {
+    const token = req.headers.get("x-cron-token") || "";
+    const { data: sec } = await admin.from("wa_ai_cron_secret").select("token").limit(1).maybeSingle();
+    if (!token || !sec?.token || token !== sec.token) return json({ error: "Forbidden" }, 403);
+    const w = run(fillAdminReplyTimes(admin));
     if (typeof EdgeRuntime === "undefined") await w;
     return json({ accepted: true }, 202);
   }

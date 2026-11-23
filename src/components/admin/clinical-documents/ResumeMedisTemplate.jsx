@@ -1,7 +1,8 @@
 import React, { forwardRef, useEffect, useState } from 'react';
 import { stripSignatureBackground } from '@/lib/signatureImage';
-import { PRAXIS_CLINIC_ID } from '@/lib/clinicIds';
+import { PRAXIS_CLINIC_ID, KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import ResumeMedisTemplatePraxis from './ResumeMedisTemplatePraxis';
+import ResumeMedisTemplateKaffah from './ResumeMedisTemplateKaffah';
 
 const PROGRAM_TERAPI_LABELS = {
   tens: 'TENS',
@@ -225,11 +226,12 @@ const ResumeMedisTemplateDefault = forwardRef(({ data, clinic }, ref) => {
   );
 });
 
-// Praxis memakai format resume medis tabel sendiri.
-const ResumeMedisTemplate = forwardRef((props, ref) => (
-  props.clinic?.id === PRAXIS_CLINIC_ID
-    ? <ResumeMedisTemplatePraxis ref={ref} {...props} />
-    : <ResumeMedisTemplateDefault ref={ref} {...props} />
-));
+// Praxis dan Kaffah memakai format resume medis sendiri.
+const ResumeMedisTemplate = forwardRef((props, ref) => {
+  const clinicId = props.clinic?.id;
+  if (clinicId === PRAXIS_CLINIC_ID) return <ResumeMedisTemplatePraxis ref={ref} {...props} />;
+  if (clinicId === KAFFAH_CLINIC_ID) return <ResumeMedisTemplateKaffah ref={ref} {...props} />;
+  return <ResumeMedisTemplateDefault ref={ref} {...props} />;
+});
 
 export default ResumeMedisTemplate;
