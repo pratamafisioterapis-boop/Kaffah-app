@@ -76,7 +76,10 @@ async function suggestAnswer(
   admin: Admin, clinicId: string, conversationId: string, upTo: string, patient: string, reason: string,
 ): Promise<{ answer: string; check: string } | null> {
   const key = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!key) return null;
+  if (!key) {
+    console.error("[wa-ai-revision-notify] saran jawaban: ANTHROPIC_API_KEY tidak ada");
+    return null;
+  }
   try {
     const { data: set } = await admin.from("wa_ai_settings").select("knowledge_override").eq("clinic_id", clinicId).maybeSingle();
     const knowledge = String(set?.knowledge_override || "").trim();
@@ -92,7 +95,7 @@ async function suggestAnswer(
       headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 600,
+        max_tokens: 3000, // cukup longgar; batas kecil membuat jawaban terpotong
         system: `${SUGGEST_SYSTEM}\n\nKNOWLEDGE KLINIK\n${knowledge.slice(0, 40000)}`,
         messages: [{
           role: "user",
@@ -103,8 +106,19 @@ async function suggestAnswer(
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`);
     const out = (data.content || []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("").trim();
-    if (!out) return null;
+    if (!out) {
+      console.error("[wa-ai-revision-notify] saran jawaban: model tidak mengembalikan teks", JSON.stringify(data).slice(0, 300));
+      return null;
+    }
     const m = out.match(/^PERLU CEK:\s*([^\n]*)\n+([\s\S]+)$/i);
+    if (!m && /^PERLU CEK:/i.test(out)) {
+      console.error("[wa-ai-revision-notify] saran jawaban: hanya baris PERLU CEK, tanpa jawaban", out.slice(0, 200), data?.stop_reason);
+      return null;
+    }
+    if (data?.stop_reason === "max_tokens") {
+      console.error("[wa-ai-revision-notify] saran jawaban terpotong (max_tokens), tidak dipakai");
+      return null;
+    }
     const answer = (m ? m[2] : out).trim().slice(0, 1200);
     return answer.length >= 2 ? { answer, check: m ? m[1].trim().slice(0, 300) : "" } : null;
   } catch (e) {
@@ -186,7 +200,7 @@ async function polish(patient: string, answer: string): Promise<{ text: string; 
       headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
       body: JSON.stringify({
         model: FAST_MODEL,
-        max_tokens: 500,
+        max_tokens: 1500,
         system: POLISH_SYSTEM,
         messages: [{
           role: "user",
