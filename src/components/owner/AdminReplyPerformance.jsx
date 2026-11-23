@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Bot, Moon, Sun, User } from 'lucide-react';
+import { Bot, ChevronLeft, ChevronRight, Moon, Sun, User } from 'lucide-react';
 import FinanceTile, { TileEmpty, TileLoading } from '@/components/owner/finance/FinanceTile';
-import { ADMIN_SHIFTS, fetchAdminReplyPerformance, formatDuration, speedGrade } from '@/lib/adminReplyPerformance';
+import { ADMIN_SHIFTS, fetchAdminReplyPerformance, formatDuration, speedGrade, witaParts } from '@/lib/adminReplyPerformance';
 
 const TONE = {
   green: 'bg-emerald-100 text-emerald-700',
@@ -12,6 +12,20 @@ const TONE = {
 const fmtDate = (d) => {
   const [y, m, day] = d.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, day)).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+};
+
+const shiftDate = (date, delta) => {
+  const [y, m, d] = date.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + delta));
+  return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-${String(t.getUTCDate()).padStart(2, '0')}`;
+};
+const fmtLong = (d) => {
+  const [y, m, day] = d.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, day)).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+};
+const fmtShort = (d) => {
+  const [y, m, day] = d.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, day)).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 };
 
 const Row = ({ label, value }) => (
@@ -27,7 +41,7 @@ const AdminCard = ({ shift, stats, icon: Icon }) => {
   return (
     <FinanceTile title={`${shift.name} · jam ${shift.label}`} icon={Icon}>
       {stats.total === 0 ? (
-        <TileEmpty>Belum ada pesan pasien di jam kerja {shift.name} pada periode ini.</TileEmpty>
+        <TileEmpty>Belum ada pesan pasien di jam kerja {shift.name} pada waktu ini.</TileEmpty>
       ) : (
         <>
           <div className="mb-3">
@@ -60,26 +74,60 @@ const SEGMENTS = [
 
 /** Performa admin membalas pesan WhatsApp pasien dibanding AI (khusus Kaffah). */
 const AdminReplyPerformance = ({ dateRange }) => {
+  const today = witaParts(Date.now()).date;
+  // Bawaan: ringkasan PER HARI (hari ini). Bisa pindah hari, atau lihat seluruh periode dashboard.
+  const [view, setView] = useState('day');
+  const [day, setDay] = useState(today);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const isDay = view === 'day';
+  const startDate = isDay ? day : dateRange?.startDate;
+  const endDate = isDay ? day : dateRange?.endDate;
 
   useEffect(() => {
-    if (!dateRange?.startDate || !dateRange?.endDate) return undefined;
+    if (!startDate || !endDate) return undefined;
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetchAdminReplyPerformance({ startDate: dateRange.startDate, endDate: dateRange.endDate })
+    fetchAdminReplyPerformance({ startDate, endDate })
       .then((r) => { if (!cancelled) setData(r); })
       .catch((e) => { console.error('Gagal memuat performa admin', e); if (!cancelled) setError(e.message || 'Gagal memuat data'); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [dateRange?.startDate, dateRange?.endDate]);
+  }, [startDate, endDate]);
 
-  if (loading) return <TileLoading />;
-  if (error) return <TileEmpty>Gagal memuat performa admin: {error}</TileEmpty>;
+  const periodLabel = isDay
+    ? (day === today ? `Hari ini · ${fmtLong(day)}` : fmtLong(day))
+    : `${fmtShort(dateRange.startDate)} – ${fmtShort(dateRange.endDate)}`;
+
+  const picker = (
+    <div className="space-y-2">
+      <div className="inline-flex rounded-full bg-slate-100 p-1 text-sm font-semibold">
+        <button type="button" onClick={() => setView('day')} className={`rounded-full px-4 py-1.5 transition-colors ${isDay ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>Per hari</button>
+        <button type="button" onClick={() => setView('range')} className={`rounded-full px-4 py-1.5 transition-colors ${!isDay ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>Seluruh periode</button>
+      </div>
+      {isDay && (
+        <div className="flex items-center gap-2">
+          <button type="button" aria-label="Hari sebelumnya" onClick={() => setDay(shiftDate(day, -1))} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border bg-white text-slate-600 active:scale-95"><ChevronLeft className="h-5 w-5" /></button>
+          <input type="date" value={day} max={today} onChange={(e) => e.target.value && setDay(e.target.value)} className="h-10 min-w-0 flex-1 rounded-full border bg-white px-4 text-center text-sm font-semibold text-slate-700" />
+          <button type="button" aria-label="Hari berikutnya" disabled={day >= today} onClick={() => setDay(shiftDate(day, 1))} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border bg-white text-slate-600 active:scale-95 disabled:opacity-30"><ChevronRight className="h-5 w-5" /></button>
+          {day !== today && <button type="button" onClick={() => setDay(today)} className="h-10 shrink-0 rounded-full bg-indigo-50 px-4 text-sm font-semibold text-indigo-600">Hari ini</button>}
+        </div>
+      )}
+      <div className="text-xs text-slate-500">{isDay ? fmtLong(day) : `Mengikuti pilihan Periode di atas: ${periodLabel}`}</div>
+    </div>
+  );
+
+  if (loading) return <div className="space-y-4">{picker}<TileLoading /></div>;
+  if (error) return <div className="space-y-4">{picker}<TileEmpty>Gagal memuat performa admin: {error}</TileEmpty></div>;
   if (!data || data.all.total === 0) {
-    return <TileEmpty>Belum ada pesan pasien pada periode ini. Coba pilih rentang tanggal yang lebih panjang.</TileEmpty>;
+    return (
+      <div className="space-y-4">
+        {picker}
+        <TileEmpty>{isDay ? 'Belum ada pesan pasien pada jam kerja admin di hari ini.' : 'Belum ada pesan pasien pada periode ini.'}{isDay ? ' Coba pilih hari lain.' : ' Coba pilih rentang tanggal yang lebih panjang.'}</TileEmpty>
+      </div>
+    );
   }
 
   const { sila, dinda, all, outside, days } = data;
@@ -87,8 +135,9 @@ const AdminReplyPerformance = ({ dateRange }) => {
 
   return (
     <div className="space-y-4">
+      {picker}
       {/* Ringkasan satu kalimat */}
-      <FinanceTile title="Ringkasan periode ini" icon={User}>
+      <FinanceTile title={isDay ? (day === today ? 'Ringkasan hari ini' : `Ringkasan ${fmtShort(day)}`) : 'Ringkasan seluruh periode'} icon={User}>
         <p className="text-base leading-relaxed text-slate-700">
           Ada <b>{all.total} pesan pasien</b> pada jam kerja admin.{' '}
           <b className="text-emerald-600">{all.ai}</b> dijawab AI sendiri,{' '}
@@ -136,7 +185,8 @@ const AdminReplyPerformance = ({ dateRange }) => {
         </FinanceTile>
       </div>
 
-      {/* Per hari */}
+      {/* Per hari (hanya saat melihat seluruh periode) */}
+      {!isDay && (
       <FinanceTile title="Rincian per hari" icon={User}>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] text-sm">
@@ -166,7 +216,9 @@ const AdminReplyPerformance = ({ dateRange }) => {
             </tbody>
           </table>
         </div>
+        <p className="mt-2 text-xs text-slate-400">Ketuk &quot;Per hari&quot; di atas untuk melihat satu hari saja.</p>
       </FinanceTile>
+      )}
 
       <details className="rounded-2xl border border-slate-100 bg-white p-4 text-sm text-slate-600">
         <summary className="cursor-pointer font-semibold text-slate-700">Cara membaca angka ini</summary>
