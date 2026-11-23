@@ -32,6 +32,7 @@ declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
 type Admin = ReturnType<typeof adminClient>;
 const MODEL = Deno.env.get("WA_AI_MODEL") || "claude-sonnet-5-5";
 const MAX_TURNS = 8;
+const ACK_DELAY_SECONDS = 300; // balasan konfirmasi "Hadir"/"siap" menunggu lebih lama: admin sering menanggapi sendiri (reaksi emoji dari HP tidak terbaca sistem)
 const MIN_DELAY_SECONDS = 30; // tunggu pesan beruntun pasien agar dijawab satu kali
 const MAX_BOOKINGS_PER_RUN = 3;
 const DEFAULT_MIN_DELAY_SECONDS = 120; // jeda minimal sebelum AI menjawab (bisa diubah owner lewat Telegram)
@@ -2191,9 +2192,11 @@ async function enqueue(admin: Admin, conversationId: string, messageId: string) 
   if (testPhones.length && !isTester) return; // uji terbatas: hanya nomor uji
 
   const { data: msg } = await admin.from("wa_inbox_messages")
-    .select("id, direction, msg_type").eq("id", messageId).maybeSingle();
+    .select("id, direction, msg_type, body").eq("id", messageId).maybeSingle();
   if (!msg || msg.direction !== "in") return;
   if (["reaction", "sticker"].includes(msg.msg_type)) return;
+  const isAck = (msg.msg_type === "button" && /^hadir$/i.test(String(msg.body || "").trim())) ||
+    (msg.msg_type === "text" && isClosingText(String(msg.body || "")));
 
   const now = new Date();
   // Penguji tidak menunggu jeda; jam aktif tetap berlaku agar pengaturan bisa diuji.
@@ -2216,7 +2219,7 @@ async function enqueue(admin: Admin, conversationId: string, messageId: string) 
   // satu kali dan balasan tidak terkesan seperti bot.
   // Mode live: jeda bertahap (2 menit -> 1 menit -> 30 detik) sejak pesan pasien terakhir; pengujinya tanpa jeda.
   const stepWait = isTester || d.delaySeconds === 0 ? d.delaySeconds : await liveWaitSeconds(admin, conv, st);
-  const delay = Math.max(MIN_DELAY_SECONDS, stepWait);
+  const delay = Math.max(MIN_DELAY_SECONDS, isTester ? stepWait : isAck ? Math.max(stepWait, ACK_DELAY_SECONDS) : stepWait);
   const { data: row, error } = await admin.from("wa_ai_queue").insert({
     clinic_id: clinicId, conversation_id: conversationId, message_id: messageId,
     due_at: new Date(now.getTime() + delay * 1000).toISOString(),
