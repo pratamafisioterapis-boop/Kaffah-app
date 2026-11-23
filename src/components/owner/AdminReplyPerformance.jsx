@@ -28,6 +28,22 @@ const fmtShort = (d) => {
   return new Date(Date.UTC(y, m - 1, day)).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 };
 
+const pad2 = (n) => String(n).padStart(2, '0');
+const toIso = (t) => `${t.getUTCFullYear()}-${pad2(t.getUTCMonth() + 1)}-${pad2(t.getUTCDate())}`;
+const fromIso = (d) => { const [y, m, day] = d.split('-').map(Number); return new Date(Date.UTC(y, m - 1, day)); };
+// Minggu = Senin–Minggu yang memuat tanggal itu.
+const weekRange = (d) => {
+  const t = fromIso(d);
+  const back = (t.getUTCDay() + 6) % 7;
+  const start = new Date(t.getTime() - back * 86400e3);
+  return { start: toIso(start), end: toIso(new Date(start.getTime() + 6 * 86400e3)) };
+};
+const monthRange = (d) => {
+  const t = fromIso(d);
+  return { start: toIso(new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), 1))), end: toIso(new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0))) };
+};
+const fmtMonth = (d) => fromIso(d).toLocaleDateString('id-ID', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+
 const Row = ({ label, value }) => (
   <div className="flex items-baseline justify-between gap-3 border-t border-slate-100 py-2 text-sm first:border-t-0">
     <span className="text-slate-500">{label}</span>
@@ -73,20 +89,27 @@ const SEGMENTS = [
 ];
 
 /** Performa admin membalas pesan WhatsApp pasien dibanding AI (khusus Kaffah). */
-const AdminReplyPerformance = ({ dateRange }) => {
+const AdminReplyPerformance = () => {
   const today = witaParts(Date.now()).date;
-  // Bawaan: ringkasan PER HARI (hari ini). Bisa pindah hari, atau lihat seluruh periode dashboard.
-  const [view, setView] = useState('day');
-  const [day, setDay] = useState(today);
+  // Bawaan: ringkasan hari ini. Bisa diganti Minggu / Bulan / Kustom, dan digeser maju-mundur.
+  const [view, setView] = useState('day'); // day | week | month | custom
+  const [anchor, setAnchor] = useState(today); // tanggal acuan untuk hari/minggu/bulan
+  const [custom, setCustom] = useState({ start: shiftDate(today, -6), end: today });
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const isDay = view === 'day';
-  const startDate = isDay ? day : dateRange?.startDate;
-  const endDate = isDay ? day : dateRange?.endDate;
+
+  let range = { start: anchor, end: anchor };
+  if (view === 'week') range = weekRange(anchor);
+  else if (view === 'month') range = monthRange(anchor);
+  else if (view === 'custom') range = custom;
+  const startDate = range.start;
+  const endDate = range.end;
+  const isDay = startDate === endDate;
+  const validRange = startDate && endDate && startDate <= endDate;
 
   useEffect(() => {
-    if (!startDate || !endDate) return undefined;
+    if (!validRange) return undefined;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -95,37 +118,59 @@ const AdminReplyPerformance = ({ dateRange }) => {
       .catch((e) => { console.error('Gagal memuat performa admin', e); if (!cancelled) setError(e.message || 'Gagal memuat data'); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [startDate, endDate]);
+  }, [startDate, endDate, validRange]);
 
-  const periodLabel = isDay
-    ? (day === today ? `Hari ini · ${fmtLong(day)}` : fmtLong(day))
-    : `${fmtShort(dateRange.startDate)} – ${fmtShort(dateRange.endDate)}`;
+  const stepBack = () => setAnchor(view === 'month' ? shiftDate(monthRange(anchor).start, -1) : shiftDate(anchor, view === 'week' ? -7 : -1));
+  const stepNext = () => setAnchor(view === 'month' ? shiftDate(monthRange(anchor).end, 1) : shiftDate(anchor, view === 'week' ? 7 : 1));
+  const atEnd = range.end >= today;
+  const heading = view === 'day' ? (anchor === today ? `Hari ini · ${fmtLong(anchor)}` : fmtLong(anchor))
+    : view === 'week' ? `${fmtShort(range.start)} – ${fmtShort(range.end)}`
+    : view === 'month' ? fmtMonth(anchor)
+    : validRange ? `${fmtShort(range.start)} – ${fmtShort(range.end)}` : 'Pilih tanggal awal dan akhir';
+  const tabs = [['day', 'Hari'], ['week', 'Minggu'], ['month', 'Bulan'], ['custom', 'Kustom']];
+  const navBtn = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border bg-white text-slate-600 active:scale-95 disabled:opacity-30';
 
   const picker = (
     <div className="space-y-2">
-      <div className="inline-flex rounded-full bg-slate-100 p-1 text-sm font-semibold">
-        <button type="button" onClick={() => setView('day')} className={`rounded-full px-4 py-1.5 transition-colors ${isDay ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>Per hari</button>
-        <button type="button" onClick={() => setView('range')} className={`rounded-full px-4 py-1.5 transition-colors ${!isDay ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>Seluruh periode</button>
+      <div className="grid grid-cols-4 rounded-full bg-slate-100 p-1 text-sm font-semibold">
+        {tabs.map(([key, label]) => (
+          <button key={key} type="button" onClick={() => { setView(key); if (key !== 'custom') setAnchor(today); }}
+            className={`rounded-full py-1.5 transition-colors ${view === key ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>{label}</button>
+        ))}
       </div>
-      {isDay && (
+      {view === 'custom' ? (
+        <div className="grid grid-cols-2 gap-2">
+          <label className="text-xs text-slate-500">Dari
+            <input type="date" value={custom.start} max={today} onChange={(e) => e.target.value && setCustom((c) => ({ ...c, start: e.target.value }))} className="mt-1 h-10 w-full rounded-full border bg-white px-3 text-center text-sm font-semibold text-slate-700" />
+          </label>
+          <label className="text-xs text-slate-500">Sampai
+            <input type="date" value={custom.end} max={today} onChange={(e) => e.target.value && setCustom((c) => ({ ...c, end: e.target.value }))} className="mt-1 h-10 w-full rounded-full border bg-white px-3 text-center text-sm font-semibold text-slate-700" />
+          </label>
+        </div>
+      ) : (
         <div className="flex items-center gap-2">
-          <button type="button" aria-label="Hari sebelumnya" onClick={() => setDay(shiftDate(day, -1))} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border bg-white text-slate-600 active:scale-95"><ChevronLeft className="h-5 w-5" /></button>
-          <input type="date" value={day} max={today} onChange={(e) => e.target.value && setDay(e.target.value)} className="h-10 min-w-0 flex-1 rounded-full border bg-white px-4 text-center text-sm font-semibold text-slate-700" />
-          <button type="button" aria-label="Hari berikutnya" disabled={day >= today} onClick={() => setDay(shiftDate(day, 1))} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border bg-white text-slate-600 active:scale-95 disabled:opacity-30"><ChevronRight className="h-5 w-5" /></button>
-          {day !== today && <button type="button" onClick={() => setDay(today)} className="h-10 shrink-0 rounded-full bg-indigo-50 px-4 text-sm font-semibold text-indigo-600">Hari ini</button>}
+          <button type="button" aria-label="Sebelumnya" onClick={stepBack} className={navBtn}><ChevronLeft className="h-5 w-5" /></button>
+          <div className="flex h-10 min-w-0 flex-1 items-center justify-center rounded-full border bg-white px-3 text-center text-sm font-semibold text-slate-700">
+            <span className="truncate">{heading}</span>
+          </div>
+          <button type="button" aria-label="Berikutnya" disabled={atEnd} onClick={stepNext} className={navBtn}><ChevronRight className="h-5 w-5" /></button>
         </div>
       )}
-      <div className="text-xs text-slate-500">{isDay ? fmtLong(day) : `Mengikuti pilihan Periode di atas: ${periodLabel}`}</div>
+      {view === 'day' && (
+        <input type="date" value={anchor} max={today} onChange={(e) => e.target.value && setAnchor(e.target.value)} className="h-9 w-full rounded-full border bg-white px-3 text-center text-xs text-slate-500" aria-label="Pilih tanggal" />
+      )}
+      {!validRange && <div className="text-xs text-red-500">Tanggal awal tidak boleh setelah tanggal akhir.</div>}
     </div>
   );
 
+  if (!validRange) return <div className="space-y-4">{picker}</div>;
   if (loading) return <div className="space-y-4">{picker}<TileLoading /></div>;
   if (error) return <div className="space-y-4">{picker}<TileEmpty>Gagal memuat performa admin: {error}</TileEmpty></div>;
   if (!data || data.all.total === 0) {
     return (
       <div className="space-y-4">
         {picker}
-        <TileEmpty>{isDay ? 'Belum ada pesan pasien pada jam kerja admin di hari ini.' : 'Belum ada pesan pasien pada periode ini.'}{isDay ? ' Coba pilih hari lain.' : ' Coba pilih rentang tanggal yang lebih panjang.'}</TileEmpty>
+        <TileEmpty>{isDay ? 'Belum ada pesan pasien pada jam kerja admin di hari ini. Coba pilih hari lain.' : 'Belum ada pesan pasien pada jam kerja admin di rentang ini. Coba rentang lain.'}</TileEmpty>
       </div>
     );
   }
@@ -137,7 +182,7 @@ const AdminReplyPerformance = ({ dateRange }) => {
     <div className="space-y-4">
       {picker}
       {/* Ringkasan satu kalimat */}
-      <FinanceTile title={isDay ? (day === today ? 'Ringkasan hari ini' : `Ringkasan ${fmtShort(day)}`) : 'Ringkasan seluruh periode'} icon={User}>
+      <FinanceTile title={view === 'day' ? (anchor === today ? 'Ringkasan hari ini' : `Ringkasan ${fmtShort(anchor)}`) : view === 'week' ? 'Ringkasan minggu ini' : view === 'month' ? `Ringkasan ${fmtMonth(anchor)}` : 'Ringkasan rentang terpilih'} icon={User}>
         <p className="text-base leading-relaxed text-slate-700">
           Ada <b>{all.total} pesan pasien</b> pada jam kerja admin.{' '}
           <b className="text-emerald-600">{all.ai}</b> dijawab AI sendiri,{' '}
@@ -216,7 +261,7 @@ const AdminReplyPerformance = ({ dateRange }) => {
             </tbody>
           </table>
         </div>
-        <p className="mt-2 text-xs text-slate-400">Ketuk &quot;Per hari&quot; di atas untuk melihat satu hari saja.</p>
+        <p className="mt-2 text-xs text-slate-400">Pilih &quot;Hari&quot; di atas untuk melihat satu hari saja.</p>
       </FinanceTile>
       )}
 

@@ -437,9 +437,9 @@ setTherapists(enrichedTherapists);
             {isKaffah && (
               <TabsTrigger
                 value="admin-performance"
-                className="rounded-app text-sm font-semibold transition-[background-color,color,box-shadow,transform] duration-150 ease-out active:scale-[0.97] motion-reduce:transition-none data-[state=active]:bg-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md text-app-muted"
+                className="rounded-app px-1 text-[12px] sm:text-sm whitespace-nowrap font-semibold transition-[background-color,color,box-shadow,transform] duration-150 ease-out active:scale-[0.97] motion-reduce:transition-none data-[state=active]:bg-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md text-app-muted"
               >
-                <span className="sm:hidden">Admin</span><span className="hidden sm:inline">Performa Admin</span>
+                Performa Admin
               </TabsTrigger>
             )}
           </TabsList>
@@ -511,7 +511,7 @@ setTherapists(enrichedTherapists);
 
           {isKaffah && (
             <TabsContent value="admin-performance" className="animate-in fade-in-0 duration-150 focus-visible:outline-none focus-visible:ring-0">
-              <AdminReplyPerformance dateRange={dateRange} />
+              <AdminReplyPerformance />
             </TabsContent>
           )}
         </Tabs>
