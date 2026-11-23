@@ -41,6 +41,9 @@ const isTextLike = (t: string) => t === "text" || t === "button";
 // Serah-terima ke admin dilakukan DIAM-DIAM: pesan pasien tidak dibalas AI sama sekali, admin yang
 // membalas. Teks ini hanya muncul di log/Telegram, tidak pernah dikirim ke pasien.
 const SILENT_HANDOFF_NOTE = "(tidak dibalas AI; diserahkan ke admin)";
+// Pasien kadang mengetik dengan font dekoratif Unicode (mis. "𝙱𝚊𝚒𝚔 𝚔𝚊𝚔"). NFKC mengubahnya menjadi huruf biasa
+// supaya pola kata kunci (jadwal, besok, dll.) dan model mengenalinya. Hanya untuk dibaca AI; inbox tidak diubah.
+const nk = (t: unknown) => String(t ?? "").normalize("NFKC");
 
 type Ctx = {
   admin: Admin;
@@ -1266,6 +1269,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
   const { data: msg } = await admin.from("wa_inbox_messages")
     .select("id, direction, msg_type, body, created_at, media_path, media_mime").eq("id", messageId).maybeSingle();
   if (!msg || msg.direction !== "in" || msg.msg_type === "reaction") return;
+  msg.body = nk(msg.body);
 
   const { data: log, error: claimErr } = await admin.from("wa_ai_logs").insert({
     clinic_id: clinicId, conversation_id: conversationId, inbound_message_id: messageId,
@@ -1314,6 +1318,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
       const { data: hist } = await admin.from("wa_inbox_messages")
         .select("direction, body, msg_type, created_at").eq("conversation_id", conversationId)
         .lte("created_at", msg.created_at).order("created_at", { ascending: false }).limit(20);
+      for (const h of hist || []) h.body = nk(h.body);
       const transcript = await buildTranscript(admin, clinicId, conv.wa_id, hist || [], msg.msg_type, Date.parse(msg.created_at));
       const hint = (known || []).length
         ? "Nomor ini tercatat sebagai pasien terdaftar (panggil lookup_patient untuk detail)."
@@ -2263,6 +2268,7 @@ async function enqueue(admin: Admin, conversationId: string, messageId: string) 
   const { data: msg } = await admin.from("wa_inbox_messages")
     .select("id, direction, msg_type, body").eq("id", messageId).maybeSingle();
   if (!msg || msg.direction !== "in") return;
+  msg.body = nk(msg.body);
   if (["reaction", "sticker"].includes(msg.msg_type)) return;
   const isAck = (msg.msg_type === "button" && /^hadir$/i.test(String(msg.body || "").trim())) ||
     (msg.msg_type === "text" && isClosingText(String(msg.body || "")));
@@ -2361,6 +2367,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
   const { data: msg } = await admin.from("wa_inbox_messages")
     .select("id, direction, msg_type, body, created_at").eq("id", messageId).maybeSingle();
   if (!msg || msg.direction !== "in") return;
+  msg.body = nk(msg.body);
 
   const base = { clinic_id: clinicId, conversation_id: conversationId, inbound_message_id: messageId, mode };
   // Klaim pesan ini; pemrosesan ganda berhenti di sini.
@@ -2421,6 +2428,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
       const { data: hist } = await admin.from("wa_inbox_messages")
         .select("direction, body, msg_type, created_at").eq("conversation_id", conversationId)
         .order("created_at", { ascending: false }).limit(20);
+      for (const h of hist || []) h.body = nk(h.body);
       const transcript = await buildTranscript(admin, clinicId, conv.wa_id, hist || [], msg.msg_type);
 
       const variants = phoneVariants(conv.wa_id);
