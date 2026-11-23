@@ -49,6 +49,8 @@ const PatientSourceChart = React.lazy(lazyRetry(() => import('@/components/owner
 const PromoUsageWidget = React.lazy(lazyRetry(() => import('@/components/owner/operational/PromoUsageWidget'), 'PromoUsageWidget'));
 const SoapViolationWidget = React.lazy(lazyRetry(() => import('@/components/owner/operational/SoapViolationWidget'), 'SoapViolationWidget'));
 import { OWNER_NAV_ITEMS } from '@/lib/navItems';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
+const AdminReplyPerformance = React.lazy(lazyRetry(() => import('@/components/owner/AdminReplyPerformance'), 'AdminReplyPerformance'));
 const AttendanceManagement = React.lazy(lazyRetry(() => import('@/pages/admin/AttendanceManagement'), 'AttendanceManagement'));
 const OwnerDecreesPage = React.lazy(lazyRetry(() => import('@/pages/owner/OwnerDecreesPage'), 'OwnerDecreesPage'));
 const OwnerExerciseReviews = React.lazy(lazyRetry(() => import('@/pages/owner/OwnerExerciseReviews'), 'OwnerExerciseReviews'));
@@ -93,7 +95,8 @@ const safeExtractNumber = (response) => {
 const OwnerDashboardHome = () => {
   const { toast } = useToast();
   const location = useLocation();
-  const { clinicName } = useAuth();
+  const { clinicName, userDetails } = useAuth();
+  const isKaffah = userDetails?.clinic_id === KAFFAH_CLINIC_ID;
 
   // Initialize state from localStorage or default to last 30 days
   const [dateRange, setDateRange] = useState(() => {
@@ -418,7 +421,7 @@ setTherapists(enrichedTherapists);
 
         {/* ── Tabs ── */}
         <Tabs defaultValue="operational" className="w-full space-y-5">
-          <TabsList className="grid w-full grid-cols-2 bg-white border border-app-border p-1 rounded-app-lg shadow-sm sticky top-2 z-10">
+          <TabsList className={`grid w-full ${isKaffah ? 'grid-cols-3' : 'grid-cols-2'} bg-white border border-app-border p-1 rounded-app-lg shadow-sm sticky top-2 z-10`}>
             <TabsTrigger
               value="operational"
               className="rounded-app text-sm font-semibold transition-[background-color,color,box-shadow,transform] duration-150 ease-out active:scale-[0.97] motion-reduce:transition-none data-[state=active]:bg-app-accent data-[state=active]:text-white data-[state=active]:shadow-md text-app-muted"
@@ -431,6 +434,14 @@ setTherapists(enrichedTherapists);
             >
               Finance
             </TabsTrigger>
+            {isKaffah && (
+              <TabsTrigger
+                value="admin-performance"
+                className="rounded-app text-sm font-semibold transition-[background-color,color,box-shadow,transform] duration-150 ease-out active:scale-[0.97] motion-reduce:transition-none data-[state=active]:bg-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md text-app-muted"
+              >
+                Performa Admin
+              </TabsTrigger>
+            )}
           </TabsList>
           
           <TabsContent value="operational" className="animate-in fade-in-0 duration-150 focus-visible:outline-none focus-visible:ring-0">
@@ -497,6 +508,12 @@ setTherapists(enrichedTherapists);
           <TabsContent value="finance" className="space-y-4 animate-in fade-in-0 duration-150 focus-visible:outline-none focus-visible:ring-0">
             <RevenueOverview dateRange={dateRange} />
           </TabsContent>
+
+          {isKaffah && (
+            <TabsContent value="admin-performance" className="animate-in fade-in-0 duration-150 focus-visible:outline-none focus-visible:ring-0">
+              <AdminReplyPerformance dateRange={dateRange} />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </>

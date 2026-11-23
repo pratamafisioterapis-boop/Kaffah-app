@@ -1669,7 +1669,7 @@ async function dailyReport(admin: Admin) {
     if (!wa) continue;
     byWa.set(wa, [...(byWa.get(wa) || []), l]);
   }
-  const toJudge: { log: any; patient: string; draft: string; admin: string }[] = [];
+  const toJudge: { log: any; patient: string; draft: string; admin: string; repliedAt: string }[] = [];
   let checked = 0;
   for (const [wa, ls] of byWa) {
     if (checked++ >= 25) break; // batas permintaan Watzap per jalan
@@ -1698,12 +1698,14 @@ async function dailyReport(admin: Admin) {
         continue;
       }
       const adminText = replies.map((r) => r.text).join("\n").slice(0, 1500);
+      // Waktu balasan admin pertama (untuk tab Performa Admin di dashboard owner).
+      const repliedAt = new Date(replies[0].t).toISOString();
       if (l.verdict) {
         // Sudah dinilai owner lewat Telegram: cukup simpan balasan admin.
-        await admin.from("wa_ai_logs").update({ admin_reply: adminText, evaluated_at: new Date().toISOString() }).eq("id", l.id);
+        await admin.from("wa_ai_logs").update({ admin_reply: adminText, admin_replied_at: repliedAt, evaluated_at: new Date().toISOString() }).eq("id", l.id);
         continue;
       }
-      toJudge.push({ log: l, patient: String(inb?.body || "").slice(0, 600), draft: String(l.reply_text || ""), admin: adminText });
+      toJudge.push({ log: l, patient: String(inb?.body || "").slice(0, 600), draft: String(l.reply_text || ""), admin: adminText, repliedAt });
     }
   }
 
@@ -1738,6 +1740,7 @@ async function dailyReport(admin: Admin) {
       if (!c || !["sesuai", "sebagian", "tidak"].includes(v.verdict)) continue;
       await admin.from("wa_ai_logs").update({
         admin_reply: c.admin,
+        admin_replied_at: c.repliedAt,
         verdict: v.verdict,
         verdict_note: String(v.note || "").slice(0, 300),
         evaluated_at: new Date().toISOString(),
