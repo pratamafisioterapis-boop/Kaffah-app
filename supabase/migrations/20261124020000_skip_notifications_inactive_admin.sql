@@ -21,7 +21,6 @@ $fn$;
 
 REVOKE ALL ON FUNCTION public.trg_skip_notifications_inactive_admin() FROM PUBLIC, anon, authenticated;
 
-DROP TRIGGER IF EXISTS aa_skip_notifications_inactive_admin ON public.notifications;
-CREATE TRIGGER aa_skip_notifications_inactive_admin
+CREATE OR REPLACE TRIGGER aa_skip_notifications_inactive_admin
   BEFORE INSERT ON public.notifications
   FOR EACH ROW EXECUTE FUNCTION public.trg_skip_notifications_inactive_admin();
