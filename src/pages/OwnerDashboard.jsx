@@ -439,7 +439,7 @@ setTherapists(enrichedTherapists);
                 value="admin-performance"
                 className="rounded-app text-sm font-semibold transition-[background-color,color,box-shadow,transform] duration-150 ease-out active:scale-[0.97] motion-reduce:transition-none data-[state=active]:bg-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md text-app-muted"
               >
-                Performa Admin
+                <span className="sm:hidden">Admin</span><span className="hidden sm:inline">Performa Admin</span>
               </TabsTrigger>
             )}
           </TabsList>
