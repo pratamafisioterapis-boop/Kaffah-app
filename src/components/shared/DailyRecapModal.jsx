@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import PackageInfoCard from './PackageInfoCard';
 import RecapInvoiceItems, { itemsNetTotal } from './RecapInvoiceItems';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import RecapRefundPanel from '@/components/admin/RecapRefundPanel';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import ExtendPackageModal from './ExtendPackageModal';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -2475,6 +2476,7 @@ setFormData({
                             <div className="space-y-3">
                                 <h3 className="text-sm font-bold text-slate-800 border-b pb-2">Pembayaran</h3>
                                 {fPayment}
+                                {mode === 'edit' && initialData?.id && <RecapRefundPanel recapId={initialData.id} />}
                             </div>
                         </div>
                     </div>
@@ -2507,6 +2509,7 @@ setFormData({
                                 <h3 className="text-sm font-bold text-slate-800 border-b pb-2">Pembayaran</h3>
                                 {fPayment}
                                 {fDiscount}
+                                {mode === 'edit' && initialData?.id && <RecapRefundPanel recapId={initialData.id} />}
                             </div>
                         </div>
                     </div>

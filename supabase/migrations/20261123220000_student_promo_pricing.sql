@@ -2,10 +2,10 @@
 -- Pasien berusia <= student_max_age tahun (pada tanggal rekap) otomatis memakai harga promo
 -- pelajar, TANPA perlu memilih diskon manual. Syarat (semua harus terpenuhi):
 --   * sesi tunggal (bukan pembelian paket multi-sesi)
---   * bukan homecare, bukan XTRATIME, bukan Konsultasi / Free
+--   * bukan homecare, bukan Konsultasi / Free (XTRATIME tetap dapat promo)
 -- Harga promo per tipe pasien (hasil penentuan label otomatis dari diagnosa):
---   NORMAL (1 keluhan)   -> 150.000
---   DUA KELUHAN          -> 175.000
+--   NORMAL (1 keluhan)   -> 150.000   (XTRATIME mengikuti NORMAL)
+--   DUA KELUHAN          -> 175.000   (XTRATIME+DUA KELUHAN mengikuti DUA KELUHAN)
 --   RECOVERY             -> 220.000
 --   RECOVERY+TREATMENT   -> 250.000
 --   HOMECARE             -> tetap harga homecare (promo tidak berlaku)
@@ -139,10 +139,12 @@ BEGIN
     SELECT p.price INTO v_base FROM clinic_service_prices p
     WHERE p.clinic_id = d.clinic_id AND p.patient_type_id = v_type_id;
 
-    -- Promo pelajar/anak otomatis: sesi tunggal, usia <= batas, bukan homecare/xtratime/konsultasi.
+    -- Promo pelajar/anak otomatis: sesi tunggal, usia <= batas, bukan homecare/konsultasi/free.
     v_student_price := CASE v_label
       WHEN 'NORMAL' THEN cfg.student_price_normal
+      WHEN 'XTRATIME' THEN cfg.student_price_normal
       WHEN 'DUA KELUHAN' THEN cfg.student_price_two_complaints
+      WHEN 'XTRATIME+DUA KELUHAN' THEN cfg.student_price_two_complaints
       WHEN 'RECOVERY' THEN cfg.student_price_recovery
       WHEN 'RECOVERY+TREATMENT' THEN cfg.student_price_recovery_treatment
       ELSE 0
