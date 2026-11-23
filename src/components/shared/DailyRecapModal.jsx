@@ -1975,6 +1975,9 @@ setFormData({
                                         <Label className="block whitespace-nowrap">Nominal (Rp)</Label>
                                         <Input type="number" value={sfEdit && sfFinalAmount != null ? sfFinalAmount : (formData.amount ?? '')} onChange={e => handleChange('amount', e.target.value)} placeholder="0" disabled={sfActive || isPackageSessionLocked || (isKwitansi && invoiceItems.length > 0)}/>
                                         {sfEdit && sfFinalAmount == null && quote?.error && <p className="text-[11px] text-red-600">{quote.error}</p>}
+                                        {sfEdit && quote?.student_promo && (
+                                            <p className="text-[11px] text-emerald-700">Promo pelajar otomatis (usia {quote.student_age} tahun, sesi tunggal).</p>
+                                        )}
                                         {sfEdit && quote?.nebulizer_base_applied && (
                                             <p className="text-[11px] text-slate-500">Memakai harga dasar nebulizer (diagnosa tunggal + tindakan nebulizer).</p>
                                         )}
