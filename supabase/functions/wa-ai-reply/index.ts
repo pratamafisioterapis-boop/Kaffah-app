@@ -321,7 +321,7 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
       const ids = [...ctx.allowedPatientIds];
       const variants = phoneVariants(ctx.conv.wa_id);
       const startToday = witaTimestamp(witaParts(ctx.now).date, "00:00");
-      const cols = "id, patient_id, therapist_id, appointment_date, status, guest_name, is_homecare, patients(full_name, nickname)";
+      const cols = "id, patient_id, therapist_id, appointment_date, duration_minutes, status, guest_name, is_homecare, patients(full_name, nickname)";
       const [byPatient, byGuest] = await Promise.all([
         ids.length
           ? ctx.admin.from("appointments").select(cols).eq("clinic_id", ctx.clinicId).in("patient_id", ids)
@@ -541,10 +541,23 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
         (s) => s.therapist_id === input.therapist_id && s.slot_start.slice(0, 5) === time,
       );
       if (!fresh) return { ok: false, error: "slot baru saja terisi; tawarkan jam lain" };
+      // Cek bentrok yang sama dengan jalur booking (check_slot_availability), jadwal ini sendiri
+      // dikecualikan. Update biasa tidak punya penjaga bentrok di database.
+      const duration = Number(appt.duration_minutes) || fresh.duration_minutes || 60;
+      const { data: free, error: availErr } = await ctx.admin.rpc("check_slot_availability", {
+        p_therapist_id: input.therapist_id,
+        p_start_time: plan.to,
+        p_duration_minutes: duration,
+        p_exclude_id: appt.id,
+      });
+      if (availErr) return { ok: false, error: `gagal cek bentrok: ${availErr.message}` };
+      if (free !== true) return { ok: false, error: "slot baru saja terisi atau bentrok; tawarkan jam lain" };
       const { error } = await ctx.admin.from("appointments").update({
-        // Sama dengan jalur reschedule di aplikasi (status 'rescheduled') agar tercatat di laporan.
+        // Sama dengan jalur reschedule di aplikasi (AppointmentDetailModal): status 'rescheduled',
+        // tanggal/terapis/durasi baru. Rekap harian disesuaikan trigger database.
         appointment_date: plan.to,
         therapist_id: input.therapist_id,
+        duration_minutes: duration,
         status: "rescheduled",
         action_by_name: AI_ACTOR,
         action_by_role: "ai",
