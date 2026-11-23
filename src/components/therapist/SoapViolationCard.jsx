@@ -8,15 +8,24 @@ import { useSoapFirstSettings } from '@/hooks/useSoapFirst';
 import { fetchSoapViolations, isSoapFirstActiveOn, todayWita } from '@/lib/soapFirst';
 
 /** Jumlah sesi bulan ini yang melanggar aturan SOAP (khusus klinik dengan SOAP-first). */
-const SoapViolationCard = ({ therapistId, salaryScheme }) => {
+const SoapViolationCard = ({ therapistId }) => {
   const { settings } = useSoapFirstSettings();
   const [result, setResult] = useState(null);
   const [open, setOpen] = useState(false);
   const [restoreTarget, setRestoreTarget] = useState(null);
   const [pendingIds, setPendingIds] = useState(new Set());
   const [reloadKey, setReloadKey] = useState(0);
+  const [salaryScheme, setSalaryScheme] = useState(null);
   // Terapis full salary tidak dikenai insentif per sesi, jadi kartu pelanggaran disembunyikan.
-  const active = isSoapFirstActiveOn(settings, todayWita()) && (salaryScheme || 'full_salary') !== 'full_salary';
+  const active = isSoapFirstActiveOn(settings, todayWita()) && !!salaryScheme && salaryScheme !== 'full_salary';
+
+  useEffect(() => {
+    if (!therapistId) return undefined;
+    let cancelled = false;
+    supabase.from('therapists').select('salary_scheme').eq('id', therapistId).maybeSingle()
+      .then(({ data }) => { if (!cancelled) setSalaryScheme(data?.salary_scheme || 'full_salary'); });
+    return () => { cancelled = true; };
+  }, [therapistId]);
 
   useEffect(() => {
     if (!active || !therapistId) return undefined;
