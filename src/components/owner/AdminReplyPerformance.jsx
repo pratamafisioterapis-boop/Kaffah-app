@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Bot, Clock, MessageSquareReply, Moon, Sun, Zap } from 'lucide-react';
+import { Bot, Clock, MessageSquare, Moon, Sun, Zap } from 'lucide-react';
 import FinanceTile, { TileEmpty, TileLoading } from '@/components/owner/finance/FinanceTile';
 import { ADMIN_SHIFTS, fetchAdminReplyPerformance, formatDuration } from '@/lib/adminReplyPerformance';
 
@@ -124,7 +124,7 @@ const AdminReplyPerformance = ({ dateRange }) => {
             ]}
           />
         </FinanceTile>
-        <FinanceTile title="Siapa membalas lebih dulu" icon={MessageSquareReply}>
+        <FinanceTile title="Siapa membalas lebih dulu" icon={MessageSquare}>
           {all.contested === 0 ? <TileEmpty>Belum ada pesan yang bisa dijawab AI pada periode ini.</TileEmpty> : (
             <div className="grid grid-cols-2 gap-2">
               <Stat label="Pesan dibandingkan" value={all.contested} hint="tanpa serah-terima & tak perlu dibalas" />
