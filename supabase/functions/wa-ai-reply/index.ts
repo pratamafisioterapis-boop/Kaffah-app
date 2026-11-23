@@ -32,6 +32,7 @@ declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
 type Admin = ReturnType<typeof adminClient>;
 const MODEL = Deno.env.get("WA_AI_MODEL") || "claude-sonnet-5-5";
 const MAX_TURNS = 8;
+const ACK_DELAY_SECONDS = 300; // balasan konfirmasi "Hadir"/"siap" menunggu lebih lama: admin sering menanggapi sendiri (reaksi emoji dari HP tidak terbaca sistem)
 const MIN_DELAY_SECONDS = 30; // tunggu pesan beruntun pasien agar dijawab satu kali
 const MAX_BOOKINGS_PER_RUN = 3;
 const DEFAULT_MIN_DELAY_SECONDS = 120; // jeda minimal sebelum AI menjawab (bisa diubah owner lewat Telegram)
@@ -59,7 +60,7 @@ type Ctx = {
   review?: boolean; // mode review (draf Telegram): waiting list tetap disimpan, aksi lain hanya simulasi
 };
 
-const AI_ACTOR = "Asisten AI WhatsApp";
+const AI_ACTOR = "AI Agent"; // tampil sebagai "By AI Agent" di notifikasi
 
 // Flyer yang boleh dikirim AI sebagai gambar (file di public/flyers, ikut ter-deploy bersama web).
 const BROCHURES: Record<string, { url: string; title: string }> = {
@@ -320,7 +321,7 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
       const ids = [...ctx.allowedPatientIds];
       const variants = phoneVariants(ctx.conv.wa_id);
       const startToday = witaTimestamp(witaParts(ctx.now).date, "00:00");
-      const cols = "id, patient_id, therapist_id, appointment_date, status, guest_name, is_homecare, patients(full_name, nickname)";
+      const cols = "id, patient_id, therapist_id, appointment_date, duration_minutes, status, guest_name, is_homecare, patients(full_name, nickname)";
       const [byPatient, byGuest] = await Promise.all([
         ids.length
           ? ctx.admin.from("appointments").select(cols).eq("clinic_id", ctx.clinicId).in("patient_id", ids)
@@ -501,6 +502,8 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
         p_is_homecare: false,
         p_allow_overlap: false,
         p_is_manual: false,
+        p_action_by_name: AI_ACTOR, // notifikasi "By AI Agent" (booking online publik tetap "System")
+        p_action_by_role: "ai",
         p_guest_complaint: plan.complaint,
         p_guest_age: plan.age,
         p_guest_gender: plan.gender,
@@ -540,10 +543,23 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
         (s) => s.therapist_id === input.therapist_id && s.slot_start.slice(0, 5) === time,
       );
       if (!fresh) return { ok: false, error: "slot baru saja terisi; tawarkan jam lain" };
+      // Cek bentrok yang sama dengan jalur booking (check_slot_availability), jadwal ini sendiri
+      // dikecualikan. Update biasa tidak punya penjaga bentrok di database.
+      const duration = Number(appt.duration_minutes) || fresh.duration_minutes || 60;
+      const { data: free, error: availErr } = await ctx.admin.rpc("check_slot_availability", {
+        p_therapist_id: input.therapist_id,
+        p_start_time: plan.to,
+        p_duration_minutes: duration,
+        p_exclude_id: appt.id,
+      });
+      if (availErr) return { ok: false, error: `gagal cek bentrok: ${availErr.message}` };
+      if (free !== true) return { ok: false, error: "slot baru saja terisi atau bentrok; tawarkan jam lain" };
       const { error } = await ctx.admin.from("appointments").update({
-        // Sama dengan jalur reschedule di aplikasi (status 'rescheduled') agar tercatat di laporan.
+        // Sama dengan jalur reschedule di aplikasi (AppointmentDetailModal): status 'rescheduled',
+        // tanggal/terapis/durasi baru. Rekap harian disesuaikan trigger database.
         appointment_date: plan.to,
         therapist_id: input.therapist_id,
+        duration_minutes: duration,
         status: "rescheduled",
         action_by_name: AI_ACTOR,
         action_by_role: "ai",
@@ -2253,9 +2269,11 @@ async function enqueue(admin: Admin, conversationId: string, messageId: string) 
   if (testPhones.length && !isTester) return; // uji terbatas: hanya nomor uji
 
   const { data: msg } = await admin.from("wa_inbox_messages")
-    .select("id, direction, msg_type").eq("id", messageId).maybeSingle();
+    .select("id, direction, msg_type, body").eq("id", messageId).maybeSingle();
   if (!msg || msg.direction !== "in") return;
   if (["reaction", "sticker"].includes(msg.msg_type)) return;
+  const isAck = (msg.msg_type === "button" && /^hadir$/i.test(String(msg.body || "").trim())) ||
+    (msg.msg_type === "text" && isClosingText(String(msg.body || "")));
 
   const now = new Date();
   // Penguji tidak menunggu jeda; jam aktif tetap berlaku agar pengaturan bisa diuji.
@@ -2278,7 +2296,7 @@ async function enqueue(admin: Admin, conversationId: string, messageId: string) 
   // satu kali dan balasan tidak terkesan seperti bot.
   // Mode live: jeda bertahap (2 menit -> 1 menit -> 30 detik) sejak pesan pasien terakhir; pengujinya tanpa jeda.
   const stepWait = isTester || d.delaySeconds === 0 ? d.delaySeconds : await liveWaitSeconds(admin, conv, st);
-  const delay = Math.max(MIN_DELAY_SECONDS, stepWait);
+  const delay = Math.max(MIN_DELAY_SECONDS, isTester ? stepWait : isAck ? Math.max(stepWait, ACK_DELAY_SECONDS) : stepWait);
   const { data: row, error } = await admin.from("wa_ai_queue").insert({
     clinic_id: clinicId, conversation_id: conversationId, message_id: messageId,
     due_at: new Date(now.getTime() + delay * 1000).toISOString(),
