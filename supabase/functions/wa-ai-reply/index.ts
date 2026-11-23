@@ -543,29 +543,21 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
         (s) => s.therapist_id === input.therapist_id && s.slot_start.slice(0, 5) === time,
       );
       if (!fresh) return { ok: false, error: "slot baru saja terisi; tawarkan jam lain" };
-      // Cek bentrok yang sama dengan jalur booking (check_slot_availability), jadwal ini sendiri
-      // dikecualikan. Update biasa tidak punya penjaga bentrok di database.
-      const duration = Number(appt.duration_minutes) || fresh.duration_minutes || 60;
-      const { data: free, error: availErr } = await ctx.admin.rpc("check_slot_availability", {
+      // Kunci + cek bentrok + pindah dalam satu langkah di database (reschedule_appointment_safe);
+      // jadwal ini sendiri dikecualikan dari cek bentrok. Galat database dikembalikan sebagai pesan biasa.
+      const { error } = await ctx.admin.rpc("reschedule_appointment_safe", {
+        p_appointment_id: appt.id,
+        p_clinic_id: ctx.clinicId,
         p_therapist_id: input.therapist_id,
-        p_start_time: plan.to,
-        p_duration_minutes: duration,
-        p_exclude_id: appt.id,
+        p_start: plan.to,
+        p_duration_minutes: Number(appt.duration_minutes) || fresh.duration_minutes || 60,
+        p_action_by_name: AI_ACTOR,
+        p_action_by_role: "ai",
       });
-      if (availErr) return { ok: false, error: `gagal cek bentrok: ${availErr.message}` };
-      if (free !== true) return { ok: false, error: "slot baru saja terisi atau bentrok; tawarkan jam lain" };
-      const { error } = await ctx.admin.from("appointments").update({
-        // Sama dengan jalur reschedule di aplikasi (AppointmentDetailModal): status 'rescheduled',
-        // tanggal/terapis/durasi baru. Rekap harian disesuaikan trigger database.
-        appointment_date: plan.to,
-        therapist_id: input.therapist_id,
-        duration_minutes: duration,
-        status: "rescheduled",
-        action_by_name: AI_ACTOR,
-        action_by_role: "ai",
-        updated_at: new Date().toISOString(),
-      }).eq("id", appt.id).eq("clinic_id", ctx.clinicId).neq("status", "cancelled");
-      if (error) return { ok: false, error: `gagal memindahkan jadwal: ${error.message}` };
+      if (error) {
+        const m = String(error.message || "");
+        return { ok: false, error: /bentrok|di-booking/i.test(m) ? "slot baru saja terisi atau bentrok; tawarkan jam lain" : `gagal memindahkan jadwal: ${m}` };
+      }
       ctx.actions.push({ type: "reschedule_booking", ...plan });
       return { ok: true, note: "Konfirmasi perubahan jadwal dikirim otomatis oleh sistem." };
     }
