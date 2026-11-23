@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import PackageInfoCard from './PackageInfoCard';
 import RecapInvoiceItems, { itemsNetTotal } from './RecapInvoiceItems';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import RecapRefundPanel from '@/components/admin/RecapRefundPanel';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import ExtendPackageModal from './ExtendPackageModal';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -1975,6 +1976,9 @@ setFormData({
                                         <Label className="block whitespace-nowrap">Nominal (Rp)</Label>
                                         <Input type="number" value={sfEdit && sfFinalAmount != null ? sfFinalAmount : (formData.amount ?? '')} onChange={e => handleChange('amount', e.target.value)} placeholder="0" disabled={sfActive || isPackageSessionLocked || (isKwitansi && invoiceItems.length > 0)}/>
                                         {sfEdit && sfFinalAmount == null && quote?.error && <p className="text-[11px] text-red-600">{quote.error}</p>}
+                                        {sfEdit && quote?.student_promo && (
+                                            <p className="text-[11px] text-emerald-700">Promo pelajar otomatis (usia {quote.student_age} tahun, sesi tunggal).</p>
+                                        )}
                                         {sfEdit && quote?.nebulizer_base_applied && (
                                             <p className="text-[11px] text-slate-500">Memakai harga dasar nebulizer (diagnosa tunggal + tindakan nebulizer).</p>
                                         )}
@@ -2472,6 +2476,7 @@ setFormData({
                             <div className="space-y-3">
                                 <h3 className="text-sm font-bold text-slate-800 border-b pb-2">Pembayaran</h3>
                                 {fPayment}
+                                {mode === 'edit' && initialData?.id && <RecapRefundPanel recapId={initialData.id} />}
                             </div>
                         </div>
                     </div>
@@ -2504,6 +2509,7 @@ setFormData({
                                 <h3 className="text-sm font-bold text-slate-800 border-b pb-2">Pembayaran</h3>
                                 {fPayment}
                                 {fDiscount}
+                                {mode === 'edit' && initialData?.id && <RecapRefundPanel recapId={initialData.id} />}
                             </div>
                         </div>
                     </div>
