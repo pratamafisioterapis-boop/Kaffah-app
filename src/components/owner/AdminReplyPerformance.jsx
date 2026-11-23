@@ -22,19 +22,18 @@ const PersonCard = ({ shift, stats, icon: Icon }) => (
     {stats.total === 0 ? <TileEmpty>Belum ada pesan pasien pada jam kerja ini.</TileEmpty> : (
       <div className="space-y-3">
         <div>
-          <div className="text-[11px] text-slate-500">Rata-rata waktu balas (median)</div>
+          <div className="text-[11px] text-slate-500">Waktu balas admin (median)</div>
           <div className="text-3xl font-extrabold text-slate-800 tabular-nums">{formatDuration(stats.adminMedian)}</div>
-          <div className="text-[11px] text-slate-400">rata-rata {formatDuration(stats.adminMean)}</div>
+          <div className="text-[11px] text-slate-400">rata-rata {formatDuration(stats.adminMean)} · {stats.replied} balasan terdeteksi</div>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <Stat label="Pesan masuk" value={stats.total} />
-          <Stat label="Belum dibalas" value={stats.unanswered} />
+          <Stat label="Pesan masuk" value={stats.total} hint={stats.ack ? `+${stats.ack} tak perlu dibalas` : undefined} />
+          <Stat label="Diserahkan ke admin" value={stats.handoff} />
           <Stat label="Dibalas ≤ 5 mnt" value={stats.within5 == null ? '–' : `${stats.within5}%`} />
           <Stat label="Dibalas ≤ 15 mnt" value={stats.within15 == null ? '–' : `${stats.within15}%`} />
+          <Stat label="Tanpa balasan >24 jam" value={stats.unanswered} />
+          <Stat label="Menunggu data waktu" value={stats.awaitingData} hint="diisi tiap 20 mnt" />
         </div>
-        {stats.replied < stats.total - stats.unanswered && (
-          <p className="text-[11px] text-slate-400">Sebagian pesan belum punya data waktu balas (diisi skor harian pukul 21.40).</p>
-        )}
       </div>
     )}
   </FinanceTile>
@@ -81,12 +80,11 @@ const AdminReplyPerformance = ({ dateRange }) => {
   if (loading) return <TileLoading />;
   if (error) return <TileEmpty>Gagal memuat performa admin: {error}</TileEmpty>;
   if (!data || data.rowCount === 0) {
-    return <TileEmpty>Belum ada data pada periode ini. Data muncul dari pesan pasien yang dibuatkan draf AI (mode review).</TileEmpty>;
+    return <TileEmpty>Belum ada pesan pasien pada periode ini.</TileEmpty>;
   }
 
   const { sila, dinda, all, outside, days } = data;
-  const q = all.quality;
-
+  
   return (
     <div className="space-y-4">
       <p className="text-xs text-slate-500">
@@ -98,19 +96,18 @@ const AdminReplyPerformance = ({ dateRange }) => {
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <PersonCard shift={ADMIN_SHIFTS[0]} stats={sila} icon={Sun} />
         <PersonCard shift={ADMIN_SHIFTS[1]} stats={dinda} icon={Moon} />
-        <FinanceTile title="AI (draf)" icon={Bot}>
-          {all.aiCount === 0 ? <TileEmpty>Belum ada draf AI.</TileEmpty> : (
+        <FinanceTile title="AI" icon={Bot}>
+          {all.aiCount === 0 ? <TileEmpty>Belum ada balasan AI.</TileEmpty> : (
             <div className="space-y-3">
               <div>
-                <div className="text-[11px] text-slate-500">Rata-rata waktu draf (median)</div>
+                <div className="text-[11px] text-slate-500">Waktu balas AI (median)</div>
                 <div className="text-3xl font-extrabold text-slate-800 tabular-nums">{formatDuration(all.aiMedian)}</div>
                 <div className="text-[11px] text-slate-400">sudah termasuk jeda tunggu admin yang diatur</div>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <Stat label="Draf dibuat" value={all.aiCount} />
+                <Stat label="Dibalas AI" value={all.aiReplied} />
                 <Stat label="Diserahkan ke admin" value={all.handoff} />
-                <Stat label="Ketepatan vs admin" value={all.aiAccuracy == null ? '–' : `${all.aiAccuracy}%`} hint={`${all.scored} dinilai`} />
-                <Stat label="Sesuai / Sebagian / Tidak" value={`${q.sesuai}/${q.sebagian}/${q.tidak + q.koreksi}`} />
+                <Stat label="Ketepatan vs admin" value={all.aiAccuracy == null ? '–' : `${all.aiAccuracy}%`} hint={all.scored ? `${all.scored} dinilai (mode review)` : 'hanya mode review'} />
               </div>
             </div>
           )}
@@ -127,13 +124,13 @@ const AdminReplyPerformance = ({ dateRange }) => {
             ]}
           />
         </FinanceTile>
-        <FinanceTile title="Pesan yang dibalas keduanya" icon={MessageSquareReply}>
-          {all.pairs === 0 ? <TileEmpty>Belum ada pesan yang dibalas admin dan dibuatkan draf AI.</TileEmpty> : (
+        <FinanceTile title="Siapa membalas lebih dulu" icon={MessageSquareReply}>
+          {all.contested === 0 ? <TileEmpty>Belum ada pesan yang bisa dijawab AI pada periode ini.</TileEmpty> : (
             <div className="grid grid-cols-2 gap-2">
-              <Stat label="Pesan dibandingkan" value={all.pairs} />
-              <Stat label="AI lebih cepat" value={`${all.aiFasterPct}%`} hint="dari pesan tsb" />
-              <Stat label="Selisih (median)" value={formatDuration(Math.abs(all.medianGap))} hint={all.medianGap >= 0 ? 'AI lebih cepat' : 'Admin lebih cepat'} />
-              <Stat label="Admin belum membalas" value={all.unanswered} />
+              <Stat label="Pesan dibandingkan" value={all.contested} hint="tanpa serah-terima & tak perlu dibalas" />
+              <Stat label="Admin lebih dulu" value={`${all.adminFirst} (${all.adminWinPct}%)`} />
+              <Stat label="AI lebih dulu" value={`${all.aiReplied} (${100 - all.adminWinPct}%)`} />
+              <Stat label="Pesan beruntun digabung" value={data.merged} hint="dijawab sekali" />
             </div>
           )}
         </FinanceTile>
