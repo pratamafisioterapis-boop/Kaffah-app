@@ -158,6 +158,56 @@ async function recordAdminEcho(admin: any, clinicId: string, d: any) {
 }
 
 /**
+ * Event "outgoing_message" Bablast membawa ISI pesan keluar (balasan AI Bablast, balasan manual agen
+ * dari dashboard/HP, blast API). Dicatat sebagai balasan keluar dengan isi asli supaya wa-ai-reply
+ * melihat riwayat utuh dan melewati pasien yang sudah dibalas admin. Kiriman AI kita sendiri sudah
+ * tercatat saat dikirim (wa_message_id sama) dan dilewati. Placeholder dari recordAdminEcho (status
+ * sent/delivered yang datang lebih dulu) diganti isi aslinya.
+ */
+async function recordOutgoing(admin: any, clinicId: string, d: any) {
+  try {
+    const wamid = String(d?.wa_message_id ?? d?.message_id ?? "");
+    const to = String(d?.to_phone ?? d?.to ?? "").replace(/@.*$/, "").replace(/\D/g, "");
+    const content = typeof d?.content === "string" ? d.content.trim() : "";
+    if (!wamid || to.length < 8 || d?.message_type !== "text" || !content) return;
+    if (/@g\.us|@broadcast|status@/.test(String(d?.to ?? ""))) return;
+    const lookup = async () =>
+      (await admin.from("wa_inbox_messages").select("id, body").eq("wa_message_id", wamid).maybeSingle()).data;
+    let known = await lookup();
+    if (!known) {
+      await new Promise((r) => setTimeout(r, 2500)); // beri waktu pencatatan kiriman AI kita selesai
+      known = await lookup();
+    }
+    if (known) {
+      if (String(known.body || "").startsWith("(balasan admin dari HP/dashboard Bablast")) {
+        await admin.from("wa_inbox_messages").update({ body: content }).eq("id", known.id);
+      }
+      return;
+    }
+    const { data: conv } = await admin.from("wa_inbox_conversations").select("id")
+      .eq("clinic_id", clinicId).eq("wa_id", to).maybeSingle();
+    if (!conv) return;
+    const at = Date.parse(String(d?.timestamp ?? ""));
+    const iso = new Date(Number.isFinite(at) ? at : Date.now()).toISOString();
+    const { error } = await admin.from("wa_inbox_messages").insert({
+      clinic_id: clinicId,
+      conversation_id: conv.id,
+      direction: "out",
+      msg_type: "text",
+      body: content,
+      wa_message_id: wamid,
+      status: "sent",
+      status_at: iso,
+      channel: "bablast",
+      created_at: iso,
+    });
+    if (error && error.code !== "23505") console.error("[wa-watzap-webhook] catat pesan keluar gagal", error.message);
+  } catch (e) {
+    console.error("[wa-watzap-webhook] catat pesan keluar error", e);
+  }
+}
+
+/**
  * Payload Bablast (nomor WA Web):
  *   { event:"incoming_message", sender_code, data:{ message_id, from:"62..@s.whatsapp.net",
  *     from_phone, from_name, message_type, content, media_url, timestamp(ISO), channel:"unofficial" } }
@@ -244,8 +294,10 @@ Deno.serve(async (req) => {
       // hanya tebakan dan sengaja tanpa notifyAi / catat balasan tombol. Payload mentah
       // selalu tersimpan di wa_watzap_raw.
       if (payload?.sender_code !== undefined) {
-        // Bablast: incoming_message diproses; status pesan keluar menandai balasan admin; sisanya dilewati.
-        if (payload.event !== "incoming_message") {
+        // Bablast: incoming_message diproses; outgoing_message dicatat dengan isinya; status pesan keluar menandai balasan admin; sisanya dilewati.
+        if (payload.event === "outgoing_message") {
+          await recordOutgoing(admin, cfg.clinic_id, payload.data);
+        } else if (payload.event !== "incoming_message") {
           await recordAdminEcho(admin, cfg.clinic_id, payload.data);
         } else {
           const b = fromBablast(payload);
