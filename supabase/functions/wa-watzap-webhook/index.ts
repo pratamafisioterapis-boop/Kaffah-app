@@ -222,12 +222,17 @@ function fromBablast(p: any): { msg: any; contacts: any[] } | null {
   const from = String(d.from_phone ?? d.from ?? "").replace(/@.*$/, "").replace(/\D/g, "");
   if (from.length < 8) return null;
   const ms = Date.parse(String(d.timestamp ?? ""));
+  // Pasien membalas (mengutip) pesan tertentu: Bablast meneruskan objek pesan Meta di metadata.message,
+  // dengan context.id = wamid pesan yang dikutip. Dipakai AI untuk tahu pesan mana yang dijawab.
+  const mm = d.metadata?.message;
+  const quotedId = mm?.context?.id ?? mm?.context?.message_id ?? d.metadata?.context?.id ?? d.context?.id;
   return {
     msg: {
       id: String(d.message_id ?? `bablast-${from}-${Date.now()}`),
       from,
       type: "text",
       text: { body: d.content },
+      ...(quotedId ? { context: { id: String(quotedId) } } : {}),
       timestamp: Number.isFinite(ms) ? String(Math.floor(ms / 1000)) : undefined,
     },
     contacts: d.from_name ? [{ wa_id: from, profile: { name: String(d.from_name) } }] : [],
