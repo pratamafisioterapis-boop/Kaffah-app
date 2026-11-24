@@ -78,3 +78,12 @@ export const appendSubjective = (existing, addition) => {
   const base = String(existing || '').replace(/\s+$/, '');
   return base ? `${base}\n\n${addition}` : addition;
 };
+
+const NRS_LINE_RE = /\*\*Skala Nyeri \(NRS\):\*\*\s*(\d{1,2})\s*\/\s*10/i;
+
+/** NRS yang tercatat di Subjective hasil dikte / isian cepat (null bila tidak ada). */
+export const nrsFromSubjective = (subjective) => {
+  const m = NRS_LINE_RE.exec(subjective || '');
+  const n = m ? Number(m[1]) : NaN;
+  return Number.isFinite(n) && n >= 0 && n <= 10 ? n : null;
+};

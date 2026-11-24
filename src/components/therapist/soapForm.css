@@ -1,0 +1,22 @@
+/* Tampilan form SOAP terapis (desain "Satu Halaman" + "Lanjutan Kilat").
+   Token app-* ditimpa hanya di dalam .soap-v2, jadi chip, tombol, dan template builder
+   di form ini ikut palet teal tanpa mengubah tema aplikasi lain. */
+.soap-v2 {
+  --app-font: 'Plus Jakarta Sans', 'Albert Sans', 'Segoe UI', system-ui, sans-serif;
+  --app-accent: #0E7C7B;
+  --app-accent-hover: #0A6362;
+  --app-accent-bright: #0E7C7B;
+  --app-accent-soft: #E3F2F1;
+  --app-accent-rgb: 14 124 123;
+  --app-accent-hover-rgb: 10 99 98;
+  --app-accent-bright-rgb: 14 124 123;
+  --app-accent-soft-rgb: 227 242 241;
+  --app-border-rgb: 213 225 226;
+  --app-ink-rgb: 16 36 47;
+  --primary: 179 80% 28%;
+  --ring: 179 80% 28%;
+  font-family: var(--app-font);
+  color: #10242F;
+}
+.soap-v2 h1, .soap-v2 h2, .soap-v2 h3, .soap-v2 h4 { font-family: var(--app-font); letter-spacing: -0.005em; }
+.soap-v2 .font-mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; }
