@@ -2444,6 +2444,15 @@ async function liveWaitSeconds(admin: Admin, conv: any, st: any): Promise<number
   }
 }
 
+/**
+ * Saklar per jalur dari dashboard owner (ai_watzap_enabled / ai_bablast_enabled).
+ * Jalur mati: AI diam total untuk pesan di jalur itu (tanpa balasan, tanpa draf Telegram, tanpa serah-terima).
+ */
+async function channelOff(admin: Admin, st: any, messageId: string): Promise<boolean> {
+  const { data } = await admin.from("wa_inbox_messages").select("channel").eq("id", messageId).maybeSingle();
+  return data?.channel === "bablast" ? st.ai_bablast_enabled === false : st.ai_watzap_enabled === false;
+}
+
 /** Terima pesan masuk baru: tentukan apakah AI boleh bertindak, lalu masukkan ke antrean. */
 async function enqueue(admin: Admin, conversationId: string, messageId: string) {
   const { data: conv } = await admin.from("wa_inbox_conversations")
@@ -2454,6 +2463,7 @@ async function enqueue(admin: Admin, conversationId: string, messageId: string) 
   const { data: st } = await admin.from("wa_ai_settings").select("*").eq("clinic_id", clinicId).maybeSingle();
   if (!st?.enabled) return; // MATI: tidak melakukan apa pun, tidak mencatat apa pun.
   if (isIgnoredPhone(st, conv.wa_id)) return; // nomor admin sendiri: tanpa balasan & tanpa draf Telegram
+  if (await channelOff(admin, st, messageId)) return; // jalur dimatikan owner: diam total
 
   // Mode review: semua pesan pasien -> draf AI ke Telegram owner, setelah jeda minimal
   // (pesan beruntun digabung: hanya pesan terbaru yang dibuatkan draf).
@@ -2568,6 +2578,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
   const { data: st } = await admin.from("wa_ai_settings").select("*").eq("clinic_id", clinicId).maybeSingle();
   if (!st?.enabled) return; // dimatikan selagi menunggu di antrean
   if (isIgnoredPhone(st, conv.wa_id)) return;
+  if (await channelOff(admin, st, messageId)) return; // jalur dimatikan owner selagi menunggu di antrean
   // Jalur pesan: nomor Kimmy (Bablast) dibalas lewat Bablast; nomor resmi lewat Watzap.
   const { data: chRow } = await admin.from("wa_inbox_messages").select("channel").eq("id", messageId).maybeSingle();
   const viaBablast = chRow?.channel === "bablast";
