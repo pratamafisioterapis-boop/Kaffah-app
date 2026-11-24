@@ -1020,59 +1020,6 @@ async function runAgent(ctx: Ctx, transcript: string, hint: string, model: strin
 
 // ------------------------------------------------------------------ pengiriman WA
 
-// Pengalihan pasien nomor Kimmy (Bablast) ke nomor resmi (Watzap) lewat template Meta.
-const REDIRECT_TEMPLATE = "lanjut_chat_nomor_resmi";
-const REDIRECT_BODY = "Halo kak 👋 Terima kasih sudah menghubungi Kaffah Physiotherapy. Nomor WhatsApp ini adalah nomor resmi kami, sama seperti nomor yang kakak hubungi sebelumnya. Supaya kakak bisa kami bantu lebih cepat, percakapan kita lanjutkan di sini ya. Silakan balas pesan ini 🙏";
-
-/** "sent" = template terkirim; "recent" = sudah dikirim <24 jam lalu; "failed" = gagal (mis. belum disetujui Meta). */
-async function sendRedirectTemplate(admin: Admin, clinicId: string, conv: any): Promise<"sent" | "recent" | "failed"> {
-  const since = new Date(Date.now() - 24 * 3600e3).toISOString();
-  const { count } = await admin.from("wa_inbox_messages").select("id", { count: "exact", head: true })
-    .eq("conversation_id", conv.id).eq("direction", "out").eq("template_name", REDIRECT_TEMPLATE).gte("created_at", since);
-  if (count) return "recent";
-  const { data: wa } = await admin.from("wa_settings").select("api_key, enabled, inbox_enabled").eq("clinic_id", clinicId).maybeSingle();
-  if (!wa?.inbox_enabled || !wa.enabled || !wa.api_key) return "failed";
-  try {
-    const res = await fetch("https://api.watzap.id/v1/waba_send_message_template", {
-      method: "POST",
-      signal: AbortSignal.timeout(30000),
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        api_key: wa.api_key,
-        phone_no: normalizePhone(conv.wa_id),
-        template_name: REDIRECT_TEMPLATE,
-        template_language: "id",
-        parameter: [{}],
-      }),
-    });
-    let out: any = {};
-    try { out = JSON.parse(await res.text()); } catch { /* kosong */ }
-    const ok = res.ok && out?.ack === "successfully";
-    if (!ok) {
-      console.error("[wa-ai-reply] template pengalihan ditolak", res.status, JSON.stringify(out).slice(0, 300));
-      return "failed";
-    }
-    const now = new Date().toISOString();
-    await admin.from("wa_inbox_messages").insert({
-      clinic_id: clinicId,
-      conversation_id: conv.id,
-      direction: "out",
-      msg_type: "template",
-      template_name: REDIRECT_TEMPLATE,
-      body: REDIRECT_BODY,
-      wa_message_id: out?.wamid ?? null,
-      status: "sent",
-      status_at: now,
-      sent_by: null,
-      channel: "waba",
-    });
-    return "sent";
-  } catch (e) {
-    console.error("[wa-ai-reply] template pengalihan error", e);
-    return "failed";
-  }
-}
-
 /** Kirim teks sesi lewat sender WABA Bablast (nomor Kimmy). API key disimpan sebagai secret BABLAST_WABA_API_KEY. */
 async function sendTextBablast(admin: Admin, clinicId: string, conv: any, body: string, msgType = "text") {
   const key = Deno.env.get("BABLAST_WABA_API_KEY");
@@ -1631,7 +1578,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
       lines.push("", `📎 Akan kirim gambar: ${b.title} (${b.url})`);
     }
     if (ctx.handoff) lines.push("", `⚠️ AI akan menyerahkan ke admin: ${ctx.handoff.reason}`);
-    if (msg.channel === "bablast") lines.push("", "📱 Balas pasien ini dari nomor Kimmy (Bablast), BUKAN dari nomor resmi Watzap. AI tidak bisa membaca balasan admin di Bablast, jadi cek riwayat chat dulu.");
+    if (msg.channel === "bablast") lines.push("", "📱 Balas pasien ini dari nomor Kimmy (Bablast), BUKAN dari nomor resmi Watzap. Bila balasan admin tidak terbaca AI (isi tidak tercatat), cek riwayat chat dulu.");
     lines.push("", "↩️ Balas pesan ini dengan jawaban yang benar untuk mengoreksi AI, atau \"ok\" bila sudah tepat.");
     const tgId = await sendTelegram(lines.join("\n"));
 
@@ -2625,7 +2572,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
   const { data: chRow } = await admin.from("wa_inbox_messages").select("channel").eq("id", messageId).maybeSingle();
   const viaBablast = chRow?.channel === "bablast";
   const channel: "waba" | "bablast" = viaBablast ? "bablast" : "waba";
-  // Bablast tidak meneruskan isi balasan admin (tanpa echo & tanpa API riwayat), jadi AI buta konteks
+  // Bila isi balasan admin tidak terbaca (hanya placeholder dari event status), AI buta konteks
   // di percakapan yang sudah ditangani admin. Bila admin membalas dalam 48 jam terakhir, AI hanya
   // menyusun draf ke Telegram (tidak membalas langsung); bila admin sudah membalas pesan ini, diam.
   let adminInvolved = false;
@@ -2687,19 +2634,13 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
       !(fresh.ai_handoff_at && Date.parse(msg.created_at) > Date.parse(fresh.ai_handoff_at));
     if (fresh?.ai_paused || freshHandoff) return await skip("status_chat_berubah");
 
-    // Pasien nomor Kimmy (Bablast): arahkan ke nomor resmi lewat template (sekali per 24 jam) supaya
-    // percakapan berlanjut di Watzap dengan riwayat lengkap. Template gagal (mis. belum disetujui Meta)
-    // atau kunci Bablast tidak ada -> lepas klaim lalu draf ke Telegram, jadi pesan tidak terlewat.
+    // Pasien nomor Kimmy (Bablast): dibalas langsung lewat Bablast, tanpa pengalihan ke nomor lain.
+    // Balasan admin (HP/dashboard) masuk lewat webhook outgoing_message dengan isinya, jadi riwayat utuh.
+    // Jendela 24 jam Meta tertutup (teks bebas tidak boleh) atau kunci Bablast tidak ada -> lepas klaim
+    // lalu draf ke Telegram, supaya pesan tidak terlewat.
     if (viaBablast && mode === "live") {
       const wabaWindowOpen = !!conv.last_inbound_at && Date.now() - Date.parse(conv.last_inbound_at) < 23 * 3600e3;
-      if (!wabaWindowOpen) {
-        const r = await sendRedirectTemplate(admin, clinicId, conv);
-        if (r === "sent") return await finish({ outcome: "replied", reply_text: "(template pengalihan ke nomor resmi terkirim)", planned_actions: [{ type: "redirect_template" }] });
-        if (r === "recent") return await skip("sudah_dialihkan_24_jam");
-        await admin.from("wa_ai_logs").delete().eq("id", log.id);
-        return await reviewToTelegram(admin, conversationId, messageId);
-      }
-      if (!Deno.env.get("BABLAST_WABA_API_KEY")) {
+      if (!wabaWindowOpen || !Deno.env.get("BABLAST_WABA_API_KEY")) {
         await admin.from("wa_ai_logs").delete().eq("id", log.id);
         return await reviewToTelegram(admin, conversationId, messageId);
       }
@@ -2743,7 +2684,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
         : { count: 0 };
       const lanjutChat = msg.msg_type === "button" && /lanjut chat/i.test(String(msg.body || ""));
       const hint = (lanjutChat
-        ? "Pasien menekan tombol \"Lanjut chat\" dari pesan pengalihan nomor resmi. Pesan sebelumnya mungkin masuk lewat nomor Kimmy (Bablast) dan ada di riwayat: JAWAB pertanyaan terakhir pasien yang belum terjawab, jangan minta pasien mengulang. Bila tidak ada pertanyaan, sapa singkat dan tanyakan keperluannya. "
+        ? "Pasien menekan tombol \"Lanjut chat\" . Pesan sebelumnya ada di riwayat: JAWAB pertanyaan terakhir pasien yang belum terjawab, jangan minta pasien mengulang. Bila tidak ada pertanyaan, sapa singkat dan tanyakan keperluannya. "
         : "") + (known
         ? "Nomor ini tercatat sebagai pasien terdaftar (panggil lookup_patient untuk detail)."
         : "Nomor ini BELUM tercatat di database pasien (anggap pasien baru; tetap boleh panggil lookup_patient).");
