@@ -21,6 +21,7 @@ import PlanChecklist from '@/components/therapist/PlanChecklist';
 import VoiceDictationButton from '@/components/therapist/VoiceDictationButton';
 import { SoapContinuationPrompt, applyProgressNote } from '@/components/therapist/SoapContinuation';
 import QuickFollowUp from '@/components/therapist/QuickFollowUp';
+import AutoGrowTextarea from '@/components/therapist/AutoGrowTextarea';
 import { previousVas, currentProgressVas } from '@/components/therapist/ObjectiveProgressUpdate';
 import SubjectiveDictationBox from '@/components/therapist/SubjectiveDictationBox';
 import SubjectiveQuickFields from '@/components/therapist/SubjectiveQuickFields';
@@ -942,18 +943,12 @@ if (isCreate) {
               : (<><span className="sm:hidden">{recordId ? 'Edit Catatan' : 'Catatan SOAP'}</span><span className="hidden sm:inline">{recordId ? 'Edit Catatan Medis' : 'Buat Catatan Medis (SOAP)'}</span></>)}
           </h2>
           {dateParam && (
-            <span className="flex items-center gap-1 text-app-accent font-medium text-xs mt-0.5">
+            <span className="mt-0.5 flex items-center gap-1 whitespace-nowrap text-xs font-medium text-app-accent">
               <CalendarDays className="w-3.5 h-3.5 shrink-0" />
-              {format(new Date(dateParam), 'dd MMMM yyyy', { locale: id })}
+              {format(new Date(dateParam), 'd MMM yyyy', { locale: id })}
             </span>
           )}
         </div>
-        {isKaffahClinic && recordId && isValidUUID(recordId) && (
-          <SoapPatientPdfButton
-            record={{ id: recordId, patient_id: formData.patient_id }}
-            className="shrink-0 gap-1.5 rounded-app border-emerald-200 text-xs text-emerald-700 hover:bg-emerald-50"
-          />
-        )}
         {formData.patient_id && isValidUUID(formData.patient_id) && latestRecord && (
           <div className="flex items-center gap-1.5 shrink-0">
             <Button
@@ -998,6 +993,12 @@ if (isCreate) {
                     <b className="block truncate text-sm text-[#10242F]">{pn}</b>
                     <small className="text-xs text-[#546A72]">{[pkg || 'Non-paket', isContinuing ? 'Kunjungan lanjutan' : (latestRecord ? null : 'Kunjungan pertama')].filter(Boolean).join(' · ')}</small>
                   </div>
+                  {isKaffahClinic && recordId && isValidUUID(recordId) && (
+                    <SoapPatientPdfButton
+                      record={{ id: recordId, patient_id: formData.patient_id }}
+                      className="ml-auto h-9 shrink-0 gap-1 rounded-lg border-app-accent/30 px-2.5 text-xs text-app-accent hover:bg-white"
+                    />
+                  )}
                 </div>
               );
             })()}
@@ -1015,7 +1016,12 @@ if (isCreate) {
             {sfActive && (
               <div className={`${isPWA ? 'px-4 py-3' : 'px-6 py-4'} border-b border-[#F2A93B]/40 bg-[#FDF0D8] text-[#7A4700] text-xs leading-relaxed space-y-1`}>
                 <p className="font-bold">🔒 SOAP diisi sebelum pasien membayar</p>
-                <p>Isi SOAP dengan lengkap (S, O, A, P) dan pilih diagnosa. Admin baru dapat menagih pasien setelah SOAP selesai. SOAP yang diisi asal-asalan akan dianggap tidak diisi dan jasa insentif sesi tersebut tidak dihitung.</p>
+                <p className="sm:hidden">Isi S, O, A, P dan diagnosa dengan lengkap sebelum pasien membayar.</p>
+                <details className="sm:hidden">
+                  <summary className="cursor-pointer font-semibold underline-offset-2">Aturan lengkap</summary>
+                  <p className="mt-1">Admin baru dapat menagih pasien setelah SOAP selesai. SOAP yang diisi asal-asalan dianggap tidak diisi dan jasa insentif sesi tersebut tidak dihitung.</p>
+                </details>
+                <p className="hidden sm:block">Isi SOAP dengan lengkap (S, O, A, P) dan pilih diagnosa. Admin baru dapat menagih pasien setelah SOAP selesai. SOAP yang diisi asal-asalan akan dianggap tidak diisi dan jasa insentif sesi tersebut tidak dihitung.</p>
                 {recapInfo?.soap_completed_at && !sfLocked && (
                   <p className="text-emerald-700 font-medium">SOAP sudah tercatat selesai ({format(new Date(recapInfo.soap_completed_at), 'HH:mm')}).</p>
                 )}
@@ -1159,9 +1165,9 @@ if (isCreate) {
             )}
 
             {vitalsLine && (
-              <div className={`${isPWA ? 'px-4 py-3' : 'px-6 py-4'} border-b bg-cyan-50/50 flex items-start gap-3`}>
+              <div className={`${isPWA ? 'px-4 py-3' : 'px-4 py-3 sm:px-6 sm:py-4'} border-b bg-cyan-50/50 flex flex-wrap items-start gap-x-3 gap-y-2`}>
                 <Activity className="w-4 h-4 text-cyan-700 mt-0.5 shrink-0" />
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 basis-[70%]">
                   <p className="text-xs font-semibold uppercase tracking-wider text-cyan-800">Tanda Vital</p>
                   <p className="text-sm text-slate-800 break-words">{vitalsLine}</p>
                   {recapVitals?.notes && <p className="text-xs text-slate-500 mt-0.5">{recapVitals.notes}</p>}
@@ -1169,7 +1175,7 @@ if (isCreate) {
                 <button
                   type="button"
                   onClick={insertVitalsToObjective}
-                  className="shrink-0 rounded-full border border-cyan-200 bg-white px-2.5 py-1 text-xs font-semibold text-cyan-700 hover:bg-cyan-50"
+                  className="h-9 w-full shrink-0 rounded-full border border-cyan-200 bg-white px-3 text-xs font-semibold text-cyan-700 hover:bg-cyan-50 sm:h-auto sm:w-auto sm:py-1"
                 >
                   Sisipkan ke Objective
                 </button>
@@ -1193,7 +1199,7 @@ if (isCreate) {
                   id={`soap-sec-${field.key}`}
                   className={`scroll-mt-16 min-w-0 overflow-hidden rounded-[14px] border border-[#D5E1E2] bg-white ${field.key === 'plan' ? 'md:col-span-2' : ''}`}
                 >
-                  <div className="flex items-center gap-2 px-3.5 py-1.5">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-3.5 py-1.5">
                     <button
                       type="button"
                       onClick={() => toggleSec(field.key)}
@@ -1217,6 +1223,7 @@ if (isCreate) {
                         : <span className="shrink-0 rounded-full bg-[#FBE6E3] px-2.5 py-[3px] text-[11px] font-bold text-[#B03226]">Kosong</span>}
                       <ChevronDown className={`h-4 w-4 shrink-0 text-[#546A72] transition-transform md:hidden ${openSec[field.key] ? 'rotate-180' : ''}`} aria-hidden="true" />
                     </button>
+                    <div className={`order-last flex w-full flex-wrap items-center justify-end gap-2 pb-1.5 md:contents ${openSec[field.key] ? '' : 'max-md:hidden'}`}>
                     {field.key === 'assessment' && (
                       <span className="ml-auto flex items-center gap-1.5">
                         {assessmentAuto ? (
@@ -1254,6 +1261,7 @@ if (isCreate) {
                         {field.key === 'objective' ? <Stethoscope className="h-4 w-4" /> : <Wand2 className="h-4 w-4" />}
                       </button>
                     )}
+                    </div>
                   </div>
                   <div id={`soap-body-${field.key}`} className={`border-t border-[#D5E1E2] px-3.5 pb-4 pt-3.5 ${openSec[field.key] ? '' : 'hidden md:block'}`}>
                   {field.key === 'plan' ? (
@@ -1330,7 +1338,7 @@ if (isCreate) {
                       }}
                     />
                   )}
-                  <Textarea
+                  <AutoGrowTextarea
                     readOnly={isTemplateLocked(field.key)}
                     placeholder={isTemplateLocked(field.key) ? `Pilih & isi template di atas, lalu klik "Masukkan ke ${field.label}". Setelah itu teks bisa diedit.` : field.placeholder}
                     className={`bg-slate-50/80 border-slate-200 resize-none rounded-app focus:bg-white focus:border-slate-300 transition-colors ${
@@ -1384,7 +1392,7 @@ if (isCreate) {
                   )}
                 </span>
               </div>
-              <Textarea
+              <AutoGrowTextarea
                 placeholder="Terisi otomatis dari template edukasi setelah diagnosa dipilih. Bisa diedit."
                 className={`bg-slate-50/80 border-slate-200 resize-none rounded-app focus:bg-white focus:border-slate-300 transition-colors ${isPWA ? 'min-h-[150px] text-base' : 'min-h-[150px] md:min-h-[300px]'}`}
                 value={formData.education}
@@ -1398,7 +1406,7 @@ if (isCreate) {
             </div>
 
             {/* Submit */}
-            <div className="sticky bottom-0 z-20 flex items-center gap-2 border-t border-[#D5E1E2] bg-white px-3.5 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] shadow-[0_-4px_12px_rgba(16,36,47,0.06)]">
+            <div className={`sticky ${filledByAdmin ? 'bottom-0' : 'bottom-[calc(72px+env(safe-area-inset-bottom,0px))]'} z-20 flex items-center gap-2 border-t border-[#D5E1E2] bg-white px-3.5 py-2.5 lg:bottom-0 lg:pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] shadow-[0_-4px_12px_rgba(16,36,47,0.06)]`}>
               <button
                 type="button"
                 className="h-11 shrink-0 rounded-xl px-3 text-sm font-semibold text-[#546A72] hover:bg-slate-100"
