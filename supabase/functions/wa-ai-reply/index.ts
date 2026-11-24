@@ -1073,10 +1073,10 @@ async function sendRedirectTemplate(admin: Admin, clinicId: string, conv: any): 
   }
 }
 
-/** Kirim teks sesi lewat sender WABA Bablast (nomor Kimmy). API key disimpan sebagai secret BABLAST_API_KEY. */
+/** Kirim teks sesi lewat sender WABA Bablast (nomor Kimmy). API key disimpan sebagai secret BABLAST_WABA_API_KEY. */
 async function sendTextBablast(admin: Admin, clinicId: string, conv: any, body: string, msgType = "text") {
-  const key = Deno.env.get("BABLAST_API_KEY");
-  if (!key) throw new Error("BABLAST_API_KEY belum diatur");
+  const key = Deno.env.get("BABLAST_WABA_API_KEY");
+  if (!key) throw new Error("BABLAST_WABA_API_KEY belum diatur");
   const res = await fetch("https://api.bablast.id/waba/send", {
     method: "POST",
     signal: AbortSignal.timeout(30000),
@@ -1577,7 +1577,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
     } else {
       // Konteks sampai pesan ini saja, supaya draf sesuai dengan pesan yang sedang ditinjau.
       const { data: hist } = await admin.from("wa_inbox_messages")
-        .select("direction, body, msg_type, created_at, reply_to_wa_message_id").eq("conversation_id", conversationId)
+        .select("direction, body, msg_type, created_at, reply_to_wa_message_id").eq("conversation_id", conversationId).neq("status", "failed") // pesan keluar yang gagal terkirim tidak sampai ke pasien: jangan dianggap terkirim
         .lte("created_at", msg.created_at).order("created_at", { ascending: false }).limit(20);
       for (const h of hist || []) h.body = nk(h.body);
       const transcript = await buildTranscript(admin, clinicId, conv.wa_id, hist || [], msg.msg_type, Date.parse(msg.created_at));
@@ -2141,7 +2141,7 @@ async function evalTranscriptForLog(admin: Admin, conversationId: string, inboun
   const { data: m } = await admin.from("wa_inbox_messages").select("created_at").eq("id", inboundMessageId).maybeSingle();
   if (!m) return null;
   const { data: hist } = await admin.from("wa_inbox_messages")
-    .select("direction, body, msg_type, created_at").eq("conversation_id", conversationId)
+    .select("direction, body, msg_type, created_at").eq("conversation_id", conversationId).neq("status", "failed") // pesan keluar yang gagal terkirim tidak sampai ke pasien: jangan dianggap terkirim
     .lte("created_at", m.created_at).order("created_at", { ascending: false }).limit(8);
   if (!hist?.length) return null;
   return hist.reverse().map((h: any) => {
@@ -2556,7 +2556,12 @@ async function enqueue(admin: Admin, conversationId: string, messageId: string) 
   // satu kali dan balasan tidak terkesan seperti bot.
   // Mode live: jeda bertahap (2 menit -> 1 menit -> 30 detik) sejak pesan pasien terakhir; pengujinya tanpa jeda.
   const stepWait = isTester || d.delaySeconds === 0 ? d.delaySeconds : await liveWaitSeconds(admin, conv, st);
-  const delay = Math.max(MIN_DELAY_SECONDS, isTester ? stepWait : isAck ? Math.max(stepWait, ACK_DELAY_SECONDS) : stepWait);
+  // Tombol "Lanjut chat" (pengalihan dari nomor Kimmy): pasien sudah menunggu sejak pertanyaan awal,
+  // jadi dijawab langsung tanpa jeda tunggu pesan beruntun.
+  const isLanjutChat = msg.msg_type === "button" && /lanjut chat/i.test(String(msg.body || ""));
+  const delay = isLanjutChat
+    ? 2
+    : Math.max(MIN_DELAY_SECONDS, isTester ? stepWait : isAck ? Math.max(stepWait, ACK_DELAY_SECONDS) : stepWait);
   const { data: row, error } = await admin.from("wa_ai_queue").insert({
     clinic_id: clinicId, conversation_id: conversationId, message_id: messageId,
     due_at: new Date(now.getTime() + delay * 1000).toISOString(),
@@ -2673,7 +2678,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
 
     const { count: appReplies } = await admin.from("wa_inbox_messages")
       .select("id", { count: "exact", head: true })
-      .eq("conversation_id", conversationId).eq("direction", "out").gt("created_at", msg.created_at);
+      .eq("conversation_id", conversationId).eq("direction", "out").neq("status", "failed").gt("created_at", msg.created_at);
     if (appReplies) return await skip("admin_sudah_membalas");
 
     const { data: fresh } = await admin.from("wa_inbox_conversations")
@@ -2694,7 +2699,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
         await admin.from("wa_ai_logs").delete().eq("id", log.id);
         return await reviewToTelegram(admin, conversationId, messageId);
       }
-      if (!Deno.env.get("BABLAST_API_KEY")) {
+      if (!Deno.env.get("BABLAST_WABA_API_KEY")) {
         await admin.from("wa_ai_logs").delete().eq("id", log.id);
         return await reviewToTelegram(admin, conversationId, messageId);
       }
@@ -2726,7 +2731,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
       reply = "";
     } else {
       const { data: hist } = await admin.from("wa_inbox_messages")
-        .select("direction, body, msg_type, created_at, reply_to_wa_message_id").eq("conversation_id", conversationId)
+        .select("direction, body, msg_type, created_at, reply_to_wa_message_id").eq("conversation_id", conversationId).neq("status", "failed") // pesan keluar yang gagal terkirim tidak sampai ke pasien: jangan dianggap terkirim
         .order("created_at", { ascending: false }).limit(20);
       for (const h of hist || []) h.body = nk(h.body);
       const transcript = await buildTranscript(admin, clinicId, conv.wa_id, hist || [], msg.msg_type, undefined, !viaBablast);
