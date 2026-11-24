@@ -2443,10 +2443,13 @@ async function waitingListScan(admin: Admin) {
       const first = fresh[0];
       const nama = String(it.patient_name || "").replace(/^ka\s+/i, "").trim() || "kak";
       const sapaan = /^(ibu|bu|bapak|pak|mba|mbak|mas|kak)\b/i.test(nama) ? nama : `kak ${nama}`;
+      // Salam sesuai jam WITA (bukan "Halo"): pagi sampai 10.59, siang 11.00-14.59, sore 15.00-17.59, malam sesudahnya.
+      const jamNow = witaParts(nowD).minutes / 60;
+      const salam = jamNow < 11 ? "Selamat pagi" : jamNow < 15 ? "Selamat siang" : jamNow < 18 ? "Selamat sore" : "Selamat malam";
       // AI mengabari pasien langsung lewat WhatsApp (mode live, jendela 24 jam masih terbuka), satu slot untuk satu pasien.
       const offer = fresh.find((f) => !offeredWa.has(`${f.date}|${f.therapist.id}|${f.time}`));
       const waText = offer
-        ? `Halo ${sapaan}, kami ingin menginformasikan kalau ${dayText(offer.date)} ada pasien yang cancel di jam ${offer.time} dengan ${shortTherapist(offer.therapist)}, apakah berkenan kami jadwalkan? 🙏`
+        ? `${salam} ${sapaan}, kami ingin menginformasikan kalau ${dayText(offer.date)} ada pasien yang cancel di jam ${offer.time} dengan ${shortTherapist(offer.therapist)}, apakah berkenan kami jadwalkan? 🙏`
         : "";
       let waStatus = "slot ini sudah ditawarkan ke pasien lain";
       if (offer) {
@@ -2472,7 +2475,7 @@ async function waitingListScan(admin: Admin) {
         ...(waStatus === "terkirim"
           ? ["✅ AI sudah mengabari pasien lewat WhatsApp:", waText]
           : [`Draf WA (BELUM dikirim ke pasien: ${waStatus}; kirim dari halaman Waiting List → "Kabari via WA"):`,
-            `Halo ${sapaan}, kami ingin menginformasikan kalau ${dayText(first.date)} ada pasien yang cancel di jam ${first.time} dengan ${shortTherapist(first.therapist)}, apakah berkenan kami jadwalkan? 🙏`]),
+            `${salam} ${sapaan}, kami ingin menginformasikan kalau ${dayText(first.date)} ada pasien yang cancel di jam ${first.time} dengan ${shortTherapist(first.therapist)}, apakah berkenan kami jadwalkan? 🙏`]),
       ].join("\n");
       try {
         await sendTelegram(msg);
