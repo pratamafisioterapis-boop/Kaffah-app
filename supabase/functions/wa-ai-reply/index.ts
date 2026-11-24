@@ -1525,7 +1525,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
       lines.push("", `📎 Akan kirim gambar: ${b.title} (${b.url})`);
     }
     if (ctx.handoff) lines.push("", `⚠️ AI akan menyerahkan ke admin: ${ctx.handoff.reason}`);
-    if (msg.channel === "bablast") lines.push("", "📱 Balas pasien ini dari nomor Kimmy (Bablast), BUKAN dari nomor resmi Watzap.");
+    if (msg.channel === "bablast") lines.push("", "📱 Balas pasien ini dari nomor Kimmy (Bablast), BUKAN dari nomor resmi Watzap. AI tidak bisa membaca balasan admin di Bablast, jadi cek riwayat chat dulu.");
     lines.push("", "↩️ Balas pesan ini dengan jawaban yang benar untuk mengoreksi AI, atau \"ok\" bila sudah tepat.");
     const tgId = await sendTelegram(lines.join("\n"));
 
@@ -2514,7 +2514,22 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
   const { data: chRow } = await admin.from("wa_inbox_messages").select("channel").eq("id", messageId).maybeSingle();
   const viaBablast = chRow?.channel === "bablast";
   const channel: "waba" | "bablast" = viaBablast ? "bablast" : "waba";
-  if (st.mode === "review") {
+  // Bablast tidak meneruskan isi balasan admin (tanpa echo & tanpa API riwayat), jadi AI buta konteks
+  // di percakapan yang sudah ditangani admin. Bila admin membalas dalam 48 jam terakhir, AI hanya
+  // menyusun draf ke Telegram (tidak membalas langsung); bila admin sudah membalas pesan ini, diam.
+  let adminInvolved = false;
+  if (viaBablast && st.mode === "live") {
+    const since = new Date(Date.now() - 48 * 3600e3).toISOString();
+    const { data: recent } = await admin.from("wa_inbox_messages").select("created_at")
+      .eq("conversation_id", conversationId).eq("direction", "out").like("body", "(balasan admin%")
+      .gte("created_at", since).order("created_at", { ascending: false }).limit(1);
+    adminInvolved = !!recent?.length;
+    if (adminInvolved) {
+      const { data: inb } = await admin.from("wa_inbox_messages").select("created_at").eq("id", messageId).maybeSingle();
+      if (inb && Date.parse(recent![0].created_at) > Date.parse(inb.created_at)) return; // admin sudah membalas pesan ini
+    }
+  }
+  if (st.mode === "review" || adminInvolved) {
     // Setelah jeda: hanya pesan pasien terbaru yang dibuatkan draf (yang lebih lama sudah tercakup).
     const { data: latest } = await admin.from("wa_inbox_messages")
       .select("id").eq("conversation_id", conversationId).eq("direction", "in")
