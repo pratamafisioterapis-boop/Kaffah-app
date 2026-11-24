@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ import QuickFollowUp from '@/components/therapist/QuickFollowUp';
 import { previousVas, currentProgressVas } from '@/components/therapist/ObjectiveProgressUpdate';
 import SubjectiveDictationBox from '@/components/therapist/SubjectiveDictationBox';
 import { appendSubjective } from '@/lib/soapDictation';
+import { soapDraftKey, loadSoapDraft, saveSoapDraft, clearSoapDraft, hasSoapContent, draftDiffers } from '@/lib/soapDraft';
 import LabRadiologyUpload from '@/components/therapist/LabRadiologyUpload';
 import SOAPHistoryModal from '@/components/therapist/SOAPHistoryModal';
 import SoapPatientPdfButton from '@/components/therapist/SoapPatientPdfButton';
@@ -105,6 +106,13 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
   // Buka-tutup bagian S/O/A/P hanya berlaku di layar kecil; di desktop semua bagian selalu terbuka.
   const [openSec, setOpenSec] = useState({ subjective: true });
   const toggleSec = (key) => setOpenSec((prev) => ({ ...prev, [key]: !prev[key] }));
+  // Draf otomatis: isian disimpan di perangkat supaya tidak hilang bila halaman ter-refresh,
+  // browser dimatikan sistem, atau layar mati sebelum sempat disimpan.
+  const draftKey = soapDraftKey(therapist?.id, dailyRecapId || recordId || paramPatientId || 'new');
+  const [pendingDraft, setPendingDraft] = useState(() => loadSoapDraft(soapDraftKey(therapist?.id, dailyRecapId || recordId || paramPatientId || 'new')));
+  const draftRef = useRef(null);
+  const baselineRef = useRef(null); // isi record yang baru dimuat dari server (mode edit)
+  const savedRef = useRef(false);
   const [formData, setFormData] = useState({
     patient_id: (paramPatientId !== 'select' && isValidUUID(paramPatientId)) ? paramPatientId : '',
     daily_recap_id: null,
@@ -412,6 +420,8 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
       record_type: data.record_type || 'SOAP'
     });
 
+    baselineRef.current = { subjective: data.subjective || '', objective: data.objective || '', assessment: data.assessment || '', plan: data.plan || '', education: data.education || '' };
+
     // Pastikan dropdown memiliki data pasien yang sedang diedit
     if (data.patient) {
       setPatients(prev => {
@@ -706,6 +716,8 @@ if (isCreate) {
          }
        }
 
+       savedRef.current = true;
+       clearSoapDraft(draftKey);
        navigate(-1);
        // Halaman tujuan baru terpasang setelah navigasi; kirim ulang agar status SOAP-nya ikut segar.
        setTimeout(() => {
@@ -803,6 +815,67 @@ if (isCreate) {
   // NRS hari ini wajib di kunjungan lanjutan bila kunjungan lalu sudah mencatat NRS.
   const nrsRequired = isContinuing && previousVas(latestRecord?.objective) !== null;
   const nrsMissing = nrsRequired && currentProgressVas(formData.objective) === null;
+
+  // ── Draf otomatis ──
+  const offerDraft = !!pendingDraft && !initialLoading && draftDiffers(pendingDraft, formData, diagnosis);
+  draftRef.current = { formData, diagnosis, continuation, assessmentAuto, educationAuto, templateBase, outsideChoiceState };
+  // Mode edit: simpan draf hanya bila isi sudah berbeda dari record di server.
+  const draftWorthSaving = () => {
+    const d = draftRef.current;
+    if (!hasSoapContent(d.formData, d.diagnosis)) return false;
+    if (recordId) {
+      const b = baselineRef.current;
+      if (!b) return false;
+      if (!draftDiffers({ formData: b, diagnosis: d.diagnosis }, d.formData, d.diagnosis)) return false;
+    }
+    return true;
+  };
+  const canAutosave = !!draftKey && !sfLocked && !offerDraft && !savedRef.current;
+  const writeDraft = () => {
+    if (!canAutosave || !draftWorthSaving()) return;
+    const d = draftRef.current;
+    const lab = JSON.stringify(d.formData.lab_radiology_data || null).length > 200000 ? null : d.formData.lab_radiology_data;
+    saveSoapDraft(draftKey, { ...d, formData: { ...d.formData, lab_radiology_data: lab } });
+  };
+  const writeDraftRef = useRef(writeDraft);
+  writeDraftRef.current = writeDraft;
+  useEffect(() => {
+    const t = setTimeout(() => writeDraftRef.current(), 600);
+    return () => clearTimeout(t);
+  }, [draftKey, sfLocked, offerDraft, formData, diagnosis, continuation, assessmentAuto, educationAuto, templateBase, outsideChoiceState]);
+  // Layar mati / pindah aplikasi / halaman ditutup: simpan seketika tanpa menunggu jeda.
+  useEffect(() => {
+    const flush = () => writeDraftRef.current();
+    const onVis = () => { if (document.visibilityState === 'hidden') flush(); };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pagehide', flush);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('pagehide', flush);
+    };
+  }, []);
+  const restoreDraft = () => {
+    const d = pendingDraft;
+    if (!d) return;
+    setFormData((prev) => ({
+      ...prev,
+      ...d.formData,
+      patient_id: prev.patient_id || d.formData?.patient_id || '',
+      daily_recap_id: prev.daily_recap_id ?? d.formData?.daily_recap_id ?? null,
+    }));
+    setDiagnosis(Array.isArray(d.diagnosis) ? d.diagnosis : []);
+    setContinuation(d.continuation || null);
+    setAssessmentAuto(!!d.assessmentAuto);
+    setEducationAuto(!!d.educationAuto);
+    setTemplateBase(d.templateBase || {});
+    setOutsideChoiceState(d.outsideChoiceState);
+    setPendingDraft(null);
+    toast({ title: 'Draf dipulihkan', description: 'Isian terakhir Anda sudah dikembalikan. Periksa lalu simpan.', className: 'bg-blue-50 border-blue-200 text-blue-800' });
+  };
+  const discardDraft = () => {
+    clearSoapDraft(draftKey);
+    setPendingDraft(null);
+  };
   const askContinuation = !recordId && !!latestRecord && prevDiagnosisLabels.length > 0;
 
   const patientOptions = patients.map(p => ({
@@ -890,6 +963,17 @@ if (isCreate) {
       <Card className={`border-slate-200 shadow-sm ${isPWA ? 'rounded-none border-x-0' : 'rounded-app-lg'}`}>
         <CardContent className="p-0">
           <form onSubmit={handleSubmit}>
+            {offerDraft && (
+              <div role="alert" className={`${isPWA ? 'px-4 py-3' : 'px-6 py-4'} border-b bg-amber-50 space-y-2`}>
+                <p className="text-sm text-amber-900">
+                  <strong>Ada isian yang belum tersimpan.</strong> Terakhir diketik {format(new Date(pendingDraft.savedAt), 'd MMM, HH:mm', { locale: id })}. Mungkin halaman sempat ter-refresh.
+                </p>
+                <div className="flex gap-2">
+                  <Button type="button" size="sm" className="bg-app-accent hover:bg-app-accent-hover" onClick={restoreDraft}>Pulihkan isian</Button>
+                  <Button type="button" size="sm" variant="outline" onClick={discardDraft}>Buang</Button>
+                </div>
+              </div>
+            )}
             {sfActive && (
               <div className={`${isPWA ? 'px-4 py-3' : 'px-6 py-4'} border-b bg-indigo-50 text-indigo-900 text-xs leading-relaxed space-y-1`}>
                 <p className="font-semibold">SOAP diisi sebelum pasien membayar</p>
@@ -962,6 +1046,7 @@ if (isCreate) {
                 objective={formData.objective}
                 disabled={sfLocked}
                 nrsRequired={nrsRequired}
+                prevVas={previousVas(latestRecord?.objective)}
                 onChange={({ subjective, objective }) => setFormData((prev) => ({ ...prev, subjective, objective }))}
               />
             )}
@@ -1291,6 +1376,8 @@ if (isCreate) {
               </div>
               <div className="flex justify-end gap-3">
               <Button type="button" variant="outline" className="rounded-app" onClick={() => {
+                savedRef.current = true;
+                clearSoapDraft(draftKey);
                 if (window.history.length > 1) {
                   navigate(-1);
                 } else {
