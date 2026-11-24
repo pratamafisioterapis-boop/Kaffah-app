@@ -106,7 +106,7 @@ const DurationInput = ({ value, onChange }) => {
             aria-pressed={unit === u}
             onClick={() => set({ unit: u, n: n || 1 })}
             className={cn(
-              'rounded-full px-2.5 py-2.5 text-sm transition-colors sm:py-1 sm:text-[13px]',
+              'rounded-full px-1 py-2.5 text-center text-[13px] transition-colors sm:px-2.5 sm:py-1',
               unit === u && n > 0 ? 'bg-app-accent font-medium text-white' : 'text-slate-600 hover:bg-slate-100'
             )}
           >
