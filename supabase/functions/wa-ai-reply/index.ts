@@ -241,6 +241,7 @@ const TOOLS = [
         time_to: { type: "string", description: "HH:MM batas akhir jam bila ada" },
         time_label: { type: "string", enum: ["pagi", "siang", "sore", "malam", "bebas"], description: "Dipakai bila jam tidak spesifik" },
         therapist_gender: { type: "string", enum: ["female", "male", "any"], description: "female = terapis wanita, male = terapis pria, any = bebas" },
+        therapist_name: { type: "string", description: "Sebagian nama terapis TERTENTU yang diminta pasien (mis. \"Nisa\"); kosongkan bila pasien tidak meminta terapis tertentu" },
         notes: { type: "string", description: "Catatan singkat untuk admin (keluhan, alasan, kondisi khusus)" },
       },
       additionalProperties: false,
@@ -730,6 +731,14 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
       const name = String(input.name || "").replace(/\s+/g, " ").trim().slice(0, 120) ||
         String(ctx.conv.contact_name || "").trim() || "Pasien WhatsApp";
       const local = phoneVariants(ctx.conv.wa_id)[1] || ctx.conv.wa_id; // format 08…
+      // Terapis tertentu yang diminta pasien (hanya bila nama cocok dengan tepat satu terapis aktif).
+      let preferredTherapistId: string | null = null;
+      const tq = String(input.therapist_name || "").toLowerCase().trim();
+      if (tq.length >= 3) {
+        const found = [...(await loadTherapists(ctx.admin, ctx.clinicId)).values()]
+          .filter((t: any) => String(t.name).toLowerCase().includes(tq));
+        if (found.length === 1) preferredTherapistId = (found[0] as any).id;
+      }
       const plan = {
         name,
         phone: local,
@@ -738,6 +747,7 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
         time_to: okTime(input.time_to),
         time_label: label,
         therapist_gender: gender,
+        preferred_therapist_id: preferredTherapistId,
         notes: String(input.notes || "").replace(/\s+/g, " ").trim().slice(0, 300) || null,
       };
       // Mode review tetap menyimpan waiting list (tidak mengirim pesan ke pasien); simulasi murni tidak.
@@ -757,6 +767,7 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
         time_to: plan.time_to,
         time_label: plan.time_label,
         therapist_gender: plan.therapist_gender,
+        preferred_therapist_id: plan.preferred_therapist_id,
         notes: plan.notes,
         updated_at: new Date().toISOString(),
       };
@@ -808,7 +819,7 @@ ATURAN PENTING
 - Jangan mengulang informasi atau kalimat yang sudah kamu tulis di balasan sebelumnya (mis. "terima kasih sudah menjelaskan kondisinya", "slot ... jam ... masih kosong"). Tiap balasan menjawab pesan terakhir pasien saja.
 - TOMBOL TEMPLATE: pesan pasien "Hadir" (tombol konfirmasi kehadiran dari template pengingat) dibalas singkat: "Terima kasih atas konfirmasinya ya {sapaan} 🙏". {sapaan} = sapaan yang dipakai klinik di pesan template sebelumnya pada percakapan (tampil di riwayat sebagai "Klinik (template otomatis)", mis. "Selamat Pagi Ibu Farida" -> "Ibu Farida"); bila ada beberapa template dengan sapaan berbeda (satu nomor banyak pasien) atau tidak ada, pakai "Kak". Jangan menambah hal lain. Pesan "Reschedule" (tombol) berarti pasien ingin memindah jadwal: bila pasien belum menyebut hari/jam baru, tanyakan "untuk reschedulenya, berkenan dijadwalkan dihari dan jam berapa {sapaan pada template, atau nama panggilan/nama guest}?" lalu proses sebagai RESCHEDULE di bawah. Pesan "Cancel" (tombol) diproses sebagai CANCEL di bawah.
 - PESAN BERUNTUN: bila pasien mengirim beberapa pesan beruntun yang belum dibalas, jawab sebagai SATU kesimpulan yang mencakup semuanya, bukan membalas satu per satu.
-- WAITING LIST: bila jadwal yang diinginkan pasien penuh atau tidak ada slot yang cocok dengan batasan pasien (hari, jam, atau terapis pria/wanita) dan pasien belum memilih alternatif (atau meminta dikabari bila ada yang batal): panggil add_to_waiting_list (isi preferred_date bila pasien menyebut hari, time_from/time_to atau time_label sesuai batasan jam, therapist_gender sesuai permintaan, notes singkat). Lalu balas: "Baik {sapaan}, apabila ada pasien yang cancel {kondisi pasien, mis. diatas jam 11 / hari Senin pagi / terapis wanita} maka akan kami infokan secepatnya 🙏". Jangan menjanjikan slot pasti. Jangan masukkan bila pasien sudah memilih jadwal lain atau tidak mau menunggu. BACA SELURUH RIWAYAT, termasuk pesan "Klinik" (balasan admin) sebelumnya, untuk memahami konteks: bila admin sudah menyebut "terapis perempuan penuh" atau pasien perempuan (ibu/mba) dilayani terapis perempuan dan pasien tidak meminta terapis laki-laki, isi therapist_gender = female; bila pasien menyebut batasan jam (mis. "jangan jam 12", "kalau ada pagi") masukkan ke time_from/time_to/time_label atau notes; isi preferred_date dengan hari yang dimaksud pasien (mis. "besok").
+- WAITING LIST: bila jadwal yang diinginkan pasien penuh atau tidak ada slot yang cocok dengan batasan pasien (hari, jam, atau terapis pria/wanita) dan pasien belum memilih alternatif (atau meminta dikabari bila ada yang batal): panggil add_to_waiting_list (isi preferred_date bila pasien menyebut hari, time_from/time_to atau time_label sesuai batasan jam, therapist_gender sesuai permintaan, therapist_name bila pasien meminta terapis TERTENTU (mis. "ka Nisa"), notes singkat). Lalu balas: "Baik {sapaan}, apabila ada pasien yang cancel {kondisi pasien, mis. diatas jam 11 / hari Senin pagi / terapis wanita} maka akan kami infokan secepatnya 🙏". Jangan menjanjikan slot pasti. Jangan masukkan bila pasien sudah memilih jadwal lain atau tidak mau menunggu. BACA SELURUH RIWAYAT, termasuk pesan "Klinik" (balasan admin) sebelumnya, untuk memahami konteks: bila admin sudah menyebut "terapis perempuan penuh" atau pasien perempuan (ibu/mba) dilayani terapis perempuan dan pasien tidak meminta terapis laki-laki, isi therapist_gender = female; bila pasien menyebut batasan jam (mis. "jangan jam 12", "kalau ada pagi") masukkan ke time_from/time_to/time_label atau notes; isi preferred_date dengan hari yang dimaksud pasien (mis. "besok").
 - REKOMENDASI TERAPIS: bila pasien (terutama pasien baru) bertanya \"ada rekomendasi fisionya?\" atau meminta dipilihkan, JANGAN menjawab \"bebas\" atau melempar pilihan kembali. Panggil recommend_therapist (isi age bila pasien menyebut usia, complaint_keywords dari keluhan pasien dalam Bahasa Indonesia + Inggris, therapist_ids dari terapis yang tersedia pada hari/jam yang dibahas, therapist_gender bila pasien meminta). Rekomendasikan SATU terapis teratas dengan alasan singkat yang wajar, mis. \"Untuk keluhan lutut di usia 66 tahun, kami sarankan dengan Fisio Dila ya kak, karena beliau cukup sering menangani pasien seusia dan keluhan serupa\", lalu tanyakan kesediaannya untuk dijadwalkan di hari/jam yang dibahas. JANGAN menyebut angka, jumlah pasien, atau statistik, dan jangan menjanjikan hasil terapi. Bila data tidak membedakan terapis, tawarkan jadwal terdekat saja. Pasien lama tetap memakai TERAPIS LANGGANAN. Bila pasien sudah menjawab \"bebas\" setelah kamu menawarkan terapis, pilih rekomendasi teratas dan lanjutkan booking.\n- TERAPIS TIDAK TERSEDIA: bila pasien menanyakan jadwal terapis tertentu pada hari tertentu dan terapis itu tidak punya slot, lihat therapists_unavailable dari get_available_slots (panggil dengan date dan therapist_id/therapist_name terapis itu). reason \"libur\" (libur, izin, sakit, cuti, atau tidak praktik): jawab bahwa jadwal terapis itu tidak tersedia di hari itu (mis. \"Untuk hari Minggu jadwal Ka Adi tidak tersedia ya kak\"), JANGAN menulis \"penuh\" dan JANGAN menyebut libur/off/sakit/izin/cuti; lalu tawarkan hari lain terapis yang sama atau terapis lain. Gunakan kata \"penuh\" HANYA bila reason \"penuh\" (slot terisi). Jangan menebak atau menyebut alasannya.\n- JAWABAN SETELAH TAWARAN JADWAL: bila pesan klinik terakhir berisi daftar jadwal/jam kosong lalu pasien membalas hanya \"ok\"/\"baik\"/\"siap\"/\"oke kak\" tanpa menyebut jam: (1) bila tawaran itu HANYA berisi SATU pilihan (satu hari + satu terapis + satu jam, mis. \"Sabtu 28 November, Nurfadilah, 15:00\"), anggap pasien SETUJU dengan pilihan itu: panggil get_available_slots untuk tanggal dan terapis tersebut (agar slot terdaftar), cek masih kosong, lalu langsung create_booking (pasien terdaftar: lookup_patient dulu; pasien baru: bila nama/keluhan belum ada, tanyakan itu saja). Bila slot sudah terisi, tawarkan jam lain terdekat. Pesan pasien bisa berupa reply/kutipan ke pesan jadwal tersebut: itu tetap berarti setuju. (2) bila tawaran berisi BEBERAPA pilihan (beberapa jam atau terapis), JANGAN diam dan jangan menebak: tanyakan singkat \"untuk jam berapa dan dengan siapa {sapaan}?\" (bila pasien jelas hanya menjawab \"ok\" untuk hal lain, atau sudah memilih jam, ikuti konteks). Aturan \"ok tidak perlu dibalas\" TIDAK berlaku di sini.\n- Pasien bilang akan mengabari nanti / belum pasti (mis. "rencana senin, nanti saya kabari"): cukup "baik kak, kami tunggu informasi selanjutnya ya". Jangan diserahkan ke admin.
 - Booking: panggil create_booking setelah pasien jelas memilih hari, jam, dan terapis (atau menyetujui tawaranmu). Pasien lama: pakai lookup_patient dan utamakan terapis yang paling sering menanganinya. Satu nomor banyak pasien: tanya siapa yang akan diterapi. Pasien baru: butuh nama (cukup nama yang diberikan pasien, apa pun bentuknya) dan keluhan (boleh samar). Nomor WA pasien memakai nomor percakapan ini; JANGAN menanyakannya kecuali pasien menyebut nomor lain.
 - TERAPIS LANGGANAN (pasien lama): sebelum menawarkan jadwal atau membooking, lihat therapist_history dari lookup_patient (urut dari yang paling sering menangani). Cek jadwal terapis urutan pertama dulu (get_available_slots dengan therapist_id-nya). Bila tidak ada jadwal yang cocok dengan hari/jam pasien, cek terapis berikutnya di therapist_history. Usahakan selalu terapis yang sudah pernah memegang pasien itu. Bila semua terapis tersebut tidak cocok, boleh menawarkan terapis lain, tetapi WAJIB minta persetujuan pasien dulu (mis. "untuk jam tersebut jadwal Ns X sudah penuh kak, apakah berkenan dengan terapis lain?") dan JANGAN membooking/memindah ke terapis lain sebelum pasien setuju. Bila pasien sendiri meminta terapis tertentu, ikuti permintaan pasien.
@@ -2277,6 +2288,38 @@ function shortTherapist(t: any): string {
   return `${t?.gender === "male" ? "Mas" : "Fisio"} ${first}`.trim();
 }
 
+
+/**
+ * AI mengabari pasien waiting list lewat WhatsApp bila ada slot yang cocok. Hanya mode live, nomor tidak
+ * dikecualikan, AI chat itu tidak dimatikan, dan pasien menulis dalam 24 jam terakhir (jendela balasan bebas).
+ * Mengembalikan "terkirim" atau alasan tidak dikirim (ditampilkan di Telegram).
+ */
+async function offerWaitingSlotViaWa(admin: Admin, st: any, it: any, text: string): Promise<string> {
+  if (!st?.enabled || st.mode !== "live") return "AI belum live";
+  const wa = normalizePhone(String(it.phone || ""));
+  if (!wa) return "nomor tidak valid";
+  let conv: any = null;
+  if (it.conversation_id) {
+    const { data } = await admin.from("wa_inbox_conversations").select("*").eq("id", it.conversation_id).maybeSingle();
+    conv = data;
+  }
+  if (!conv) {
+    const { data } = await admin.from("wa_inbox_conversations").select("*").eq("wa_id", wa)
+      .order("last_message_at", { ascending: false }).limit(1);
+    conv = data?.[0] ?? null;
+  }
+  if (!conv) return "belum pernah chat, tidak ada jendela 24 jam";
+  if (isIgnoredPhone(st, conv.wa_id)) return "nomor dikecualikan";
+  if (conv.ai_paused) return "AI dimatikan untuk chat ini";
+  const { data: last } = await admin.from("wa_inbox_messages").select("created_at, channel")
+    .eq("conversation_id", conv.id).eq("direction", "in").order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (!last || Date.now() - Date.parse(last.created_at) > 23.5 * 3600e3) return "jendela 24 jam sudah lewat";
+  const channel: "waba" | "bablast" = last.channel === "bablast" ? "bablast" : "waba";
+  if (channel === "bablast" ? st.ai_bablast_enabled === false : st.ai_watzap_enabled === false) return "jalur AI dimatikan";
+  await sendText(admin, conv.clinic_id, conv, text, channel);
+  return "terkirim";
+}
+
 /**
  * Peringatan waiting list ke Telegram owner (sekali per slot). Slot dianggap layak diberitahukan bila:
  * - pasien menyebut tanggal tertentu: ada slot cocok di tanggal itu; atau
@@ -2292,7 +2335,8 @@ async function waitingListScan(admin: Admin) {
   const dayPlus = (n: number) => witaParts(new Date(nowD.getTime() + n * 86400000)).date;
 
   const { data: items } = await admin.from("waiting_list").select("*").eq("status", "waiting").limit(60);
-  const { data: st } = await admin.from("wa_ai_settings").select("clinic_id").limit(1).maybeSingle();
+  const { data: st } = await admin.from("wa_ai_settings")
+    .select("clinic_id, enabled, mode, ignored_phones, ai_watzap_enabled, ai_bablast_enabled").limit(1).maybeSingle();
   const byClinic = new Map<string, any[]>();
   if (st?.clinic_id) byClinic.set(st.clinic_id, []);
   for (const it of items || []) byClinic.set(it.clinic_id, [...(byClinic.get(it.clinic_id) || []), it]);
@@ -2329,6 +2373,11 @@ async function waitingListScan(admin: Admin) {
     }
     if (!list.length) continue;
 
+    // Yang meminta terapis tertentu didahulukan, lalu yang lebih lama menunggu; satu slot hanya ditawarkan lewat WA ke satu pasien.
+    list.sort((a, b) =>
+      (a.preferred_therapist_id ? 0 : 1) - (b.preferred_therapist_id ? 0 : 1) ||
+      String(a.created_at || "").localeCompare(String(b.created_at || "")));
+    const offeredWa = new Set<string>();
     const { data: seen } = await admin.from("waiting_list_alerts").select("waiting_list_id, therapist_id, slot_date, slot_time")
       .in("waiting_list_id", list.map((i) => i.id));
     const seenKeys = new Set((seen || []).map((s: any) => `${s.waiting_list_id}|${s.therapist_id}|${s.slot_date}|${s.slot_time}`));
@@ -2343,6 +2392,7 @@ async function waitingListScan(admin: Admin) {
           const th = therapists.get(s.therapist_id);
           if (!th) continue;
           if (it.therapist_gender !== "any" && th.gender !== it.therapist_gender) continue;
+          if (it.preferred_therapist_id && s.therapist_id !== it.preferred_therapist_id) continue;
           const time = s.slot_start.slice(0, 5);
           if ((from && time < from) || (to && time > to)) continue;
           const isFreed = freed.has(`${d}|${s.therapist_id}|${time}`);
@@ -2363,6 +2413,22 @@ async function waitingListScan(admin: Admin) {
         : (() => { const [y, m, dd] = d.split("-").map(Number); return `hari ${HARI_ID[new Date(Date.UTC(y, m - 1, dd)).getUTCDay()]} ${dd}/${m}`; })();
       const first = fresh[0];
       const nama = String(it.patient_name || "").replace(/^ka\s+/i, "").trim() || "kak";
+      const sapaan = /^(ibu|bu|bapak|pak|mba|mbak|mas|kak)\b/i.test(nama) ? nama : `kak ${nama}`;
+      // AI mengabari pasien langsung lewat WhatsApp (mode live, jendela 24 jam masih terbuka), satu slot untuk satu pasien.
+      const offer = fresh.find((f) => !offeredWa.has(`${f.date}|${f.therapist.id}|${f.time}`));
+      const waText = offer
+        ? `Halo ${sapaan}, kami ingin menginformasikan kalau ${dayText(offer.date)} ada pasien yang cancel di jam ${offer.time} dengan ${shortTherapist(offer.therapist)}, apakah berkenan kami jadwalkan? 🙏`
+        : "";
+      let waStatus = "slot ini sudah ditawarkan ke pasien lain";
+      if (offer) {
+        try {
+          waStatus = await offerWaitingSlotViaWa(admin, st, it, waText);
+          if (waStatus === "terkirim") offeredWa.add(`${offer.date}|${offer.therapist.id}|${offer.time}`);
+        } catch (e) {
+          waStatus = `gagal kirim: ${String((e as Error).message || e).slice(0, 80)}`;
+          console.error("[wa-ai-reply] tawaran waiting list via WA gagal", e);
+        }
+      }
       const gen = it.therapist_gender === "female" ? "terapis wanita" : it.therapist_gender === "male" ? "terapis pria" : "terapis bebas";
       const want = `${it.preferred_date ? dayText(String(it.preferred_date)) : "tanggal bebas"}, ${wlTimeText(it)}, ${gen}`;
       const msg = [
@@ -2374,8 +2440,10 @@ async function waitingListScan(admin: Admin) {
         ...fresh.slice(0, 6).map((f) => `• ${dayText(f.date)} (${f.date}) · ${f.time} · ${shortTherapist(f.therapist)}${f.freed ? " · baru kosong (batal/pindah)" : ""}`),
         ...(fresh.length > 6 ? [`…dan ${fresh.length - 6} slot lain`] : []),
         "",
-        "Draf WA (BELUM dikirim ke pasien; kirim dari halaman Waiting List → \"Kabari via WA\"):",
-        `Halo kak ${nama}, kami ingin menginformasikan kalau ${dayText(first.date)} ada pasien yang cancel di jam ${first.time} dengan ${shortTherapist(first.therapist)}, apakah berkenan kami jadwalkan? 🙏`,
+        ...(waStatus === "terkirim"
+          ? ["✅ AI sudah mengabari pasien lewat WhatsApp:", waText]
+          : [`Draf WA (BELUM dikirim ke pasien: ${waStatus}; kirim dari halaman Waiting List → "Kabari via WA"):`,
+            `Halo ${sapaan}, kami ingin menginformasikan kalau ${dayText(first.date)} ada pasien yang cancel di jam ${first.time} dengan ${shortTherapist(first.therapist)}, apakah berkenan kami jadwalkan? 🙏`]),
       ].join("\n");
       try {
         await sendTelegram(msg);
