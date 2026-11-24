@@ -12,7 +12,7 @@ const SHORT = { better: 'Membaik', same: 'Tetap', worse: 'Memburuk' };
  * (kondisi umum, NRS, parameter); baris "Update Perkembangan" di Subjective dan "Update Kondisi"
  * di Objective ditulis langsung, tanpa dialog dan tanpa tombol terapkan.
  */
-const QuickFollowUp = ({ subjective, objective, onChange, disabled = false }) => {
+const QuickFollowUp = ({ subjective, objective, onChange, disabled = false, nrsRequired = false }) => {
   const [prevVas] = useState(() => previousVas(objective));
   const [overall, setOverall] = useState('');
   const [note, setNote] = useState('');
@@ -43,7 +43,7 @@ const QuickFollowUp = ({ subjective, objective, onChange, disabled = false }) =>
   };
 
   return (
-    <section aria-label="Lanjutan kilat" className="border-b border-slate-100 bg-app-soft/30 px-4 py-4 sm:px-6">
+    <section id="quick-followup" aria-label="Lanjutan kilat" className="border-b border-slate-100 bg-app-soft/30 px-4 py-4 sm:px-6">
       <div className="flex items-center gap-2">
         <Zap className="h-4 w-4 text-app-accent" aria-hidden="true" />
         <h3 className="text-sm font-semibold text-slate-900">Lanjutan kilat</h3>
@@ -88,7 +88,7 @@ const QuickFollowUp = ({ subjective, objective, onChange, disabled = false }) =>
               </button>
             ))}
           </div>
-          {vas === undefined && <p className="mt-1 text-xs text-amber-700">NRS hari ini belum diisi.</p>}
+          {vas === undefined && <p className={cn('mt-1 text-xs', nrsRequired ? 'font-semibold text-rose-600' : 'text-amber-700')} role={nrsRequired ? 'alert' : undefined}>{nrsRequired ? 'NRS hari ini wajib diisi karena kunjungan lalu sudah mencatat NRS.' : 'NRS hari ini belum diisi.'}</p>}
         </div>
 
         <div>

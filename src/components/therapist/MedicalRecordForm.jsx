@@ -21,6 +21,7 @@ import PlanChecklist from '@/components/therapist/PlanChecklist';
 import VoiceDictationButton from '@/components/therapist/VoiceDictationButton';
 import { SoapContinuationPrompt, applyProgressNote } from '@/components/therapist/SoapContinuation';
 import QuickFollowUp from '@/components/therapist/QuickFollowUp';
+import { previousVas, currentProgressVas } from '@/components/therapist/ObjectiveProgressUpdate';
 import SubjectiveDictationBox from '@/components/therapist/SubjectiveDictationBox';
 import { appendSubjective } from '@/lib/soapDictation';
 import LabRadiologyUpload from '@/components/therapist/LabRadiologyUpload';
@@ -101,6 +102,9 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
   const [prevDiagnosis, setPrevDiagnosis] = useState([]);
   const [continuation, setContinuation] = useState(null);
   const [reopenTemplate, setReopenTemplate] = useState({});
+  // Buka-tutup bagian S/O/A/P hanya berlaku di layar kecil; di desktop semua bagian selalu terbuka.
+  const [openSec, setOpenSec] = useState({ subjective: true });
+  const toggleSec = (key) => setOpenSec((prev) => ({ ...prev, [key]: !prev[key] }));
   const [formData, setFormData] = useState({
     patient_id: (paramPatientId !== 'select' && isValidUUID(paramPatientId)) ? paramPatientId : '',
     daily_recap_id: null,
@@ -539,6 +543,12 @@ const MedicalRecordForm = ({ therapist, basePath = '/therapist/records', filledB
       return;
     }
 
+    if (nrsMissing) {
+      toast({ variant: "destructive", title: "NRS hari ini wajib diisi", description: "Kunjungan lalu sudah mencatat NRS. Pilih skala nyeri hari ini di kartu Lanjutan kilat." });
+      document.getElementById('quick-followup')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
     if (!formData.plan.trim()) {
       toast({ variant: "destructive", title: "Plan belum diisi", description: "Centang minimal satu tindakan atau tulis catatan Plan." });
       return;
@@ -790,6 +800,9 @@ if (isCreate) {
     setContinuation('different');
   };
   const isContinuing = continuation === 'same';
+  // NRS hari ini wajib di kunjungan lanjutan bila kunjungan lalu sudah mencatat NRS.
+  const nrsRequired = isContinuing && previousVas(latestRecord?.objective) !== null;
+  const nrsMissing = nrsRequired && currentProgressVas(formData.objective) === null;
   const askContinuation = !recordId && !!latestRecord && prevDiagnosisLabels.length > 0;
 
   const patientOptions = patients.map(p => ({
@@ -948,6 +961,7 @@ if (isCreate) {
                 subjective={formData.subjective}
                 objective={formData.objective}
                 disabled={sfLocked}
+                nrsRequired={nrsRequired}
                 onChange={({ subjective, objective }) => setFormData((prev) => ({ ...prev, subjective, objective }))}
               />
             )}
@@ -1048,10 +1062,24 @@ if (isCreate) {
                   className={`scroll-mt-16 bg-white border-l ${field.accent} ${isPWA ? 'px-4 py-4' : 'px-6 py-5'} ${field.key === 'plan' ? 'md:col-span-2' : ''}`}
                 >
                   <div className="flex items-center gap-2 mb-2.5">
-                    <span className={`w-6 h-6 rounded-app-sm ${field.badge} text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-sm`}>
-                      {field.short}
-                    </span>
-                    <label className={`text-sm font-semibold ${field.labelColor}`}>{field.label}</label>
+                    <button
+                      type="button"
+                      onClick={() => toggleSec(field.key)}
+                      aria-expanded={!!openSec[field.key]}
+                      aria-controls={`soap-body-${field.key}`}
+                      className="flex min-h-[40px] min-w-0 flex-1 items-center gap-2 text-left md:pointer-events-none md:min-h-0 md:flex-none"
+                    >
+                      <span className={`w-6 h-6 rounded-app-sm ${field.badge} text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-sm`}>
+                        {field.short}
+                      </span>
+                      <span className={`text-sm font-semibold ${field.labelColor}`}>{field.label}</span>
+                      <span className="ml-auto flex items-center gap-1.5 text-xs text-slate-500 md:hidden">
+                        {String(formData[field.key] || '').trim()
+                          ? <span className="font-semibold text-emerald-700">✓ Terisi</span>
+                          : <span className="font-semibold text-amber-700">Kosong</span>}
+                        <ChevronDown className={`h-4 w-4 transition-transform ${openSec[field.key] ? 'rotate-180' : ''}`} aria-hidden="true" />
+                      </span>
+                    </button>
                     {field.key === 'assessment' && (
                       <span className="ml-auto flex items-center gap-1.5">
                         {assessmentAuto ? (
@@ -1090,6 +1118,7 @@ if (isCreate) {
                       </button>
                     )}
                   </div>
+                  <div id={`soap-body-${field.key}`} className={openSec[field.key] ? '' : 'hidden md:block'}>
                   {field.key === 'plan' ? (
                     <>
                     {isContinuing && (
@@ -1174,6 +1203,7 @@ if (isCreate) {
                   />
                   </>
                   )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -1229,7 +1259,10 @@ if (isCreate) {
                     <button
                       key={f.key}
                       type="button"
-                      onClick={() => document.getElementById(`soap-sec-${f.key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                      onClick={() => {
+                        setOpenSec((prev) => ({ ...prev, [f.key]: true }));
+                        setTimeout(() => document.getElementById(`soap-sec-${f.key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+                      }}
                       aria-label={`${f.label} ${ok ? 'lengkap' : 'belum diisi'}`}
                       className={`inline-flex h-8 items-center gap-1 rounded-full border px-2.5 text-xs font-semibold ${ok ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-800'}`}
                     >
@@ -1251,6 +1284,7 @@ if (isCreate) {
                   {(() => {
                     const kurang = soapFields.filter((f) => !String(formData[f.key] || '').trim()).map((f) => f.label);
                     if (linkedRecapId && isValidUUID(linkedRecapId) && diagnosis.length === 0) kurang.unshift('Diagnosa');
+                    if (nrsMissing) kurang.unshift('NRS hari ini');
                     return kurang.length ? `Kurang: ${kurang.join(', ')}` : 'Semua lengkap';
                   })()}
                 </span>

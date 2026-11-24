@@ -55,6 +55,13 @@ const Chip = ({ active, tone, onClick, children }) => (
 
 const vasTone = (n) => (n <= 3 ? 'bg-emerald-500 border-emerald-500 text-white' : n <= 6 ? 'bg-amber-500 border-amber-500 text-white' : 'bg-rose-500 border-rose-500 text-white');
 
+// NRS hari ini yang sudah dipilih di baris "Update Kondisi" (null bila belum).
+export const currentProgressVas = (text) => {
+  const line = PROGRESS_LINE_RE.exec(text || '')?.[0] || '';
+  const m = /nyeri sekarang\s*(\d{1,2})\/10/i.exec(line);
+  return m ? Number(m[1]) : null;
+};
+
 // Pasang / ganti / hapus baris "Update Kondisi" di Objective.
 export const applyProgressLine = (text, line) => {
   const base = (text || '').trim();
