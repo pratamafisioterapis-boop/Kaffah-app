@@ -154,6 +154,7 @@ export async function handleMessage(
   contacts: any[],
   msg: any,
   externalMedia?: ExternalMedia,
+  channel: "waba" | "bablast" = "waba",
 ) {
   const waId = msg.from as string;
   const profile = (contacts || []).find((c) => c.wa_id === waId)?.profile?.name;
@@ -196,6 +197,7 @@ export async function handleMessage(
     media_path: mediaPath,
     media_mime: mediaMime,
     status: "received",
+    channel,
     created_at: ts,
   });
   if (error) {
@@ -205,6 +207,17 @@ export async function handleMessage(
 
   // Reaksi bukan percakapan baru: jangan menaikkan unread / jendela 24 jam.
   if (msg.type === "reaction") return;
+
+  // Pesan lewat nomor WA Web (Bablast) tidak membuka jendela 24 jam WABA: last_inbound_at
+  // dipakai untuk menentukan boleh tidaknya teks bebas lewat nomor resmi.
+  if (channel === "bablast") {
+    await admin.from("wa_inbox_conversations").update({
+      last_message_at: ts,
+      last_preview: body.slice(0, 120),
+      unread_count: (conv.unread_count ?? 0) + 1,
+    }).eq("id", conv.id);
+    return;
+  }
 
   // Atomik di database: webhook yang datang bersamaan (mis. beberapa foto
   // beruntun) tidak boleh saling menimpa unread_count / last_inbound_at.
