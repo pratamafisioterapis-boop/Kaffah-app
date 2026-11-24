@@ -20,7 +20,7 @@ const EMPTY = { epa: [], manual: [], dose: {}, nebulizer: {}, exercises: {}, exD
 
 const PlanCard = ({ title, count, open, onToggleOpen, addLabel = 'Tambah', children, picker }) => (
   <section className="rounded-app-lg border border-slate-200 bg-white">
-    <header className="flex items-center justify-between gap-2 px-4 py-3">
+    <header className="flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4 sm:py-3">
       <div className="flex items-center gap-2">
         <h4 className="text-sm font-semibold text-slate-800">{title}</h4>
         {count > 0 && <span className="rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-600">{count}</span>}
@@ -37,7 +37,7 @@ const PlanCard = ({ title, count, open, onToggleOpen, addLabel = 'Tambah', child
         {open ? 'Tutup' : addLabel}
       </button>
     </header>
-    <div className="space-y-2 px-4 pb-4">{children}</div>
+    <div className="space-y-2 px-3 pb-3 sm:px-4 sm:pb-4">{children}</div>
     {open && <div className="border-t border-slate-100 bg-slate-50/60 px-4 py-3">{picker}</div>}
   </section>
 );

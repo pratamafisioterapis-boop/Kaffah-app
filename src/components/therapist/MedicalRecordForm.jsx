@@ -925,7 +925,7 @@ if (isCreate) {
     <div className={`soap-v2 ${isPWA ? "space-y-0" : "max-w-3xl mx-auto space-y-5"}`}>
 
       {/* ── Header ── */}
-      <div className={`flex items-center gap-2 ${isPWA ? 'px-4 py-3 bg-white border-b' : ''}`}>
+      <div className={`flex items-center gap-1.5 ${isPWA ? 'px-4 py-3 bg-white border-b' : 'px-1 sm:gap-2 sm:px-0'}`}>
         <Button variant="ghost" size="icon" aria-label="Kembali" className="shrink-0 rounded-app" onClick={() => {
           if (window.history.length > 1) {
             navigate(-1);
@@ -936,10 +936,10 @@ if (isCreate) {
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div className="min-w-0 flex-1">
-          <h2 className={`font-bold text-slate-900 truncate ${isPWA ? 'text-base' : 'text-xl'}`}>
+          <h2 className={`font-bold text-slate-900 truncate ${isPWA ? 'text-base' : 'text-base sm:text-xl'}`}>
             {isPWA
               ? (recordId ? 'Edit Catatan' : 'Catatan SOAP')
-              : (recordId ? 'Edit Catatan Medis' : 'Buat Catatan Medis (SOAP)')}
+              : (<><span className="sm:hidden">{recordId ? 'Edit Catatan' : 'Catatan SOAP'}</span><span className="hidden sm:inline">{recordId ? 'Edit Catatan Medis' : 'Buat Catatan Medis (SOAP)'}</span></>)}
           </h2>
           {dateParam && (
             <span className="flex items-center gap-1 text-app-accent font-medium text-xs mt-0.5">
@@ -961,7 +961,7 @@ if (isCreate) {
               size="sm"
               title="Salin SOAP terakhir"
               aria-label="Salin SOAP terakhir"
-              className="h-10 gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 rounded-app text-xs max-sm:w-10 max-sm:px-0"
+              className="h-10 gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 rounded-app text-xs max-sm:h-9 max-sm:w-9 max-sm:px-0"
               onClick={() => handleCopySOAP(latestRecord)}
             >
               <Copy className="w-4 h-4" />
@@ -972,7 +972,7 @@ if (isCreate) {
               size="sm"
               title="Lihat SOAP sebelumnya"
               aria-label="Lihat SOAP sebelumnya"
-              className="h-10 gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50 rounded-app text-xs max-sm:w-10 max-sm:px-0"
+              className="h-10 gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50 rounded-app text-xs max-sm:h-9 max-sm:w-9 max-sm:px-0"
               onClick={() => setIsHistoryOpen(true)}
             >
               <History className="w-4 h-4" />
@@ -1028,8 +1028,8 @@ if (isCreate) {
               </div>
             )}
 
-            {/* Nama Pasien */}
-            <div className={`${isPWA ? 'px-4 py-4' : 'px-6 py-5'} border-b bg-white`}>
+            {/* Nama Pasien (disembunyikan bila nama sudah tampil di header pasien) */}
+            <div className={`${isPWA ? 'px-4 py-4' : 'px-4 py-4 sm:px-6 sm:py-5'} border-b bg-white ${patients.some((x) => x.id === formData.patient_id) ? 'hidden' : ''}`}>
               <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Nama Pasien</label>
               <SearchableSelect
                 options={patientOptions}
@@ -1335,8 +1335,8 @@ if (isCreate) {
                     placeholder={isTemplateLocked(field.key) ? `Pilih & isi template di atas, lalu klik "Masukkan ke ${field.label}". Setelah itu teks bisa diedit.` : field.placeholder}
                     className={`bg-slate-50/80 border-slate-200 resize-none rounded-app focus:bg-white focus:border-slate-300 transition-colors ${
                       field.key === 'assessment'
-                        ? (isPWA ? 'min-h-[260px] text-base' : 'min-h-[300px]')
-                        : (isPWA ? 'min-h-[96px] text-base' : 'min-h-[130px]')
+                        ? (isPWA ? 'min-h-[170px] text-base' : 'min-h-[170px] md:min-h-[300px]')
+                        : (isPWA ? 'min-h-[96px] text-base' : 'min-h-[96px] md:min-h-[130px]')
                     }`}
                     value={formData[field.key]}
                     onChange={e => {
@@ -1386,7 +1386,7 @@ if (isCreate) {
               </div>
               <Textarea
                 placeholder="Terisi otomatis dari template edukasi setelah diagnosa dipilih. Bisa diedit."
-                className={`bg-slate-50/80 border-slate-200 resize-none rounded-app focus:bg-white focus:border-slate-300 transition-colors ${isPWA ? 'min-h-[260px] text-base' : 'min-h-[300px]'}`}
+                className={`bg-slate-50/80 border-slate-200 resize-none rounded-app focus:bg-white focus:border-slate-300 transition-colors ${isPWA ? 'min-h-[150px] text-base' : 'min-h-[150px] md:min-h-[300px]'}`}
                 value={formData.education}
                 onChange={(e) => {
                   setEducationAuto(false);
@@ -1419,7 +1419,14 @@ if (isCreate) {
                   const kurang = soapFields.filter((f) => !String(formData[f.key] || '').trim()).map((f) => f.label);
                   if (linkedRecapId && isValidUUID(linkedRecapId) && diagnosis.length === 0) kurang.unshift('Diagnosa');
                   if (nrsMissing) kurang.unshift('NRS hari ini');
-                  return kurang.length ? `Kurang: ${kurang.join(', ')}` : 'Semua lengkap';
+                  if (!kurang.length) return 'Semua lengkap';
+                  const short = { Diagnosa: 'Dx', Subjective: 'S', Objective: 'O', Assessment: 'A', Plan: 'P' };
+                  return (
+                    <>
+                      <span className="sm:hidden">Kurang: {kurang.map((k) => short[k] || k).join(', ')}</span>
+                      <span className="hidden sm:inline">Kurang: {kurang.join(', ')}</span>
+                    </>
+                  );
                 })()}
               </div>
               <Button type="submit" className="h-11 shrink-0 rounded-xl bg-app-accent px-5 font-bold hover:bg-app-accent-hover" disabled={loading}>
