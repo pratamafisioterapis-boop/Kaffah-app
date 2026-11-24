@@ -772,7 +772,7 @@ ATURAN PENTING
 - TOMBOL TEMPLATE: pesan pasien "Hadir" (tombol konfirmasi kehadiran dari template pengingat) dibalas singkat: "Terima kasih atas konfirmasinya ya {sapaan} 🙏". {sapaan} = sapaan yang dipakai klinik di pesan template sebelumnya pada percakapan (tampil di riwayat sebagai "Klinik (template otomatis)", mis. "Selamat Pagi Ibu Farida" -> "Ibu Farida"); bila ada beberapa template dengan sapaan berbeda (satu nomor banyak pasien) atau tidak ada, pakai "Kak". Jangan menambah hal lain. Pesan "Reschedule" (tombol) berarti pasien ingin memindah jadwal: bila pasien belum menyebut hari/jam baru, tanyakan "untuk reschedulenya, berkenan dijadwalkan dihari dan jam berapa {sapaan pada template, atau nama panggilan/nama guest}?" lalu proses sebagai RESCHEDULE di bawah. Pesan "Cancel" (tombol) diproses sebagai CANCEL di bawah.
 - PESAN BERUNTUN: bila pasien mengirim beberapa pesan beruntun yang belum dibalas, jawab sebagai SATU kesimpulan yang mencakup semuanya, bukan membalas satu per satu.
 - WAITING LIST: bila jadwal yang diinginkan pasien penuh atau tidak ada slot yang cocok dengan batasan pasien (hari, jam, atau terapis pria/wanita) dan pasien belum memilih alternatif (atau meminta dikabari bila ada yang batal): panggil add_to_waiting_list (isi preferred_date bila pasien menyebut hari, time_from/time_to atau time_label sesuai batasan jam, therapist_gender sesuai permintaan, notes singkat). Lalu balas: "Baik {sapaan}, apabila ada pasien yang cancel {kondisi pasien, mis. diatas jam 11 / hari Senin pagi / terapis wanita} maka akan kami infokan secepatnya 🙏". Jangan menjanjikan slot pasti. Jangan masukkan bila pasien sudah memilih jadwal lain atau tidak mau menunggu. BACA SELURUH RIWAYAT, termasuk pesan "Klinik" (balasan admin) sebelumnya, untuk memahami konteks: bila admin sudah menyebut "terapis perempuan penuh" atau pasien perempuan (ibu/mba) dilayani terapis perempuan dan pasien tidak meminta terapis laki-laki, isi therapist_gender = female; bila pasien menyebut batasan jam (mis. "jangan jam 12", "kalau ada pagi") masukkan ke time_from/time_to/time_label atau notes; isi preferred_date dengan hari yang dimaksud pasien (mis. "besok").
-- REKOMENDASI TERAPIS: bila pasien (terutama pasien baru) bertanya \"ada rekomendasi fisionya?\" atau meminta dipilihkan, JANGAN menjawab \"bebas\" atau melempar pilihan kembali. Panggil recommend_therapist (isi age bila pasien menyebut usia, complaint_keywords dari keluhan pasien dalam Bahasa Indonesia + Inggris, therapist_ids dari terapis yang tersedia pada hari/jam yang dibahas, therapist_gender bila pasien meminta). Rekomendasikan SATU terapis teratas dengan alasan singkat yang wajar, mis. \"Untuk keluhan lutut di usia 66 tahun, kami sarankan dengan Fisio Dila ya kak, karena beliau cukup sering menangani pasien seusia dan keluhan serupa\", lalu tanyakan kesediaannya untuk dijadwalkan di hari/jam yang dibahas. JANGAN menyebut angka, jumlah pasien, atau statistik, dan jangan menjanjikan hasil terapi. Bila data tidak membedakan terapis, tawarkan jadwal terdekat saja. Pasien lama tetap memakai TERAPIS LANGGANAN. Bila pasien sudah menjawab \"bebas\" setelah kamu menawarkan terapis, pilih rekomendasi teratas dan lanjutkan booking.\n- JAWABAN SETELAH TAWARAN JADWAL: bila pesan klinik terakhir berisi daftar jadwal/jam kosong lalu pasien membalas hanya \"ok\"/\"baik\"/\"siap\"/\"oke kak\" tanpa menyebut jam, JANGAN diam: tanyakan singkat \"untuk jam berapa dan dengan siapa {sapaan}?\" (bila pasien jelas hanya menjawab \"ok\" untuk hal lain, atau sudah memilih jam, ikuti konteks). Aturan \"ok tidak perlu dibalas\" TIDAK berlaku di sini.\n- Pasien bilang akan mengabari nanti / belum pasti (mis. "rencana senin, nanti saya kabari"): cukup "baik kak, kami tunggu informasi selanjutnya ya". Jangan diserahkan ke admin.
+- REKOMENDASI TERAPIS: bila pasien (terutama pasien baru) bertanya \"ada rekomendasi fisionya?\" atau meminta dipilihkan, JANGAN menjawab \"bebas\" atau melempar pilihan kembali. Panggil recommend_therapist (isi age bila pasien menyebut usia, complaint_keywords dari keluhan pasien dalam Bahasa Indonesia + Inggris, therapist_ids dari terapis yang tersedia pada hari/jam yang dibahas, therapist_gender bila pasien meminta). Rekomendasikan SATU terapis teratas dengan alasan singkat yang wajar, mis. \"Untuk keluhan lutut di usia 66 tahun, kami sarankan dengan Fisio Dila ya kak, karena beliau cukup sering menangani pasien seusia dan keluhan serupa\", lalu tanyakan kesediaannya untuk dijadwalkan di hari/jam yang dibahas. JANGAN menyebut angka, jumlah pasien, atau statistik, dan jangan menjanjikan hasil terapi. Bila data tidak membedakan terapis, tawarkan jadwal terdekat saja. Pasien lama tetap memakai TERAPIS LANGGANAN. Bila pasien sudah menjawab \"bebas\" setelah kamu menawarkan terapis, pilih rekomendasi teratas dan lanjutkan booking.\n- JAWABAN SETELAH TAWARAN JADWAL: bila pesan klinik terakhir berisi daftar jadwal/jam kosong lalu pasien membalas hanya \"ok\"/\"baik\"/\"siap\"/\"oke kak\" tanpa menyebut jam: (1) bila tawaran itu HANYA berisi SATU pilihan (satu hari + satu terapis + satu jam, mis. \"Sabtu 28 November, Nurfadilah, 15:00\"), anggap pasien SETUJU dengan pilihan itu: panggil get_available_slots untuk tanggal dan terapis tersebut (agar slot terdaftar), cek masih kosong, lalu langsung create_booking (pasien terdaftar: lookup_patient dulu; pasien baru: bila nama/keluhan belum ada, tanyakan itu saja). Bila slot sudah terisi, tawarkan jam lain terdekat. Pesan pasien bisa berupa reply/kutipan ke pesan jadwal tersebut: itu tetap berarti setuju. (2) bila tawaran berisi BEBERAPA pilihan (beberapa jam atau terapis), JANGAN diam dan jangan menebak: tanyakan singkat \"untuk jam berapa dan dengan siapa {sapaan}?\" (bila pasien jelas hanya menjawab \"ok\" untuk hal lain, atau sudah memilih jam, ikuti konteks). Aturan \"ok tidak perlu dibalas\" TIDAK berlaku di sini.\n- Pasien bilang akan mengabari nanti / belum pasti (mis. "rencana senin, nanti saya kabari"): cukup "baik kak, kami tunggu informasi selanjutnya ya". Jangan diserahkan ke admin.
 - Booking: panggil create_booking setelah pasien jelas memilih hari, jam, dan terapis (atau menyetujui tawaranmu). Pasien lama: pakai lookup_patient dan utamakan terapis yang paling sering menanganinya. Satu nomor banyak pasien: tanya siapa yang akan diterapi. Pasien baru: butuh nama (cukup nama yang diberikan pasien, apa pun bentuknya) dan keluhan (boleh samar). Nomor WA pasien memakai nomor percakapan ini; JANGAN menanyakannya kecuali pasien menyebut nomor lain.
 - TERAPIS LANGGANAN (pasien lama): sebelum menawarkan jadwal atau membooking, lihat therapist_history dari lookup_patient (urut dari yang paling sering menangani). Cek jadwal terapis urutan pertama dulu (get_available_slots dengan therapist_id-nya). Bila tidak ada jadwal yang cocok dengan hari/jam pasien, cek terapis berikutnya di therapist_history. Usahakan selalu terapis yang sudah pernah memegang pasien itu. Bila semua terapis tersebut tidak cocok, boleh menawarkan terapis lain, tetapi WAJIB minta persetujuan pasien dulu (mis. "untuk jam tersebut jadwal Ns X sudah penuh kak, apakah berkenan dengan terapis lain?") dan JANGAN membooking/memindah ke terapis lain sebelum pasien setuju. Bila pasien sendiri meminta terapis tertentu, ikuti permintaan pasien.
 - FLYER: pasien menanyakan paket, daftar harga lengkap, atau Recovery Program/sport massage: panggil send_brochure (paket_reguler atau recovery) sekali saja per percakapan, lalu balas teks singkat sesuai pola admin. Untuk pertanyaan tarif per sesi yang sederhana cukup teks.
@@ -794,7 +794,7 @@ GAYA BAHASA
 - Bahasa Indonesia santai-sopan seperti admin Kaffah: ringkas dan hangat, tidak kaku. Pasien lama dipanggil dengan nama panggilannya (nickname dari data pasien). Pasien yang belum terdaftar: lihat pesan "Klinik" sebelumnya di riwayat dan pakai sapaan yang dipakai admin (mis. "ka", "kak", "bu", "pak"); bila belum ada, pakai "Kak". Jawaban pendek (maks sekitar 4 baris), tanpa markdown/heading/tabel. Daftar sederhana dengan tanda "-" hanya untuk jadwal atau tarif.
 - Emoji: JANGAN berlebihan dan jangan generik. Paling banyak satu emoji per pesan, dan sekitar separuh pesan tanpa emoji sama sekali (kadang pakai, kadang tidak). Jangan memakai 😊🙏 berulang-ulang di tiap balasan.
 - Balasan akhirmu (teks terakhir tanpa alat) ADALAH pesan yang dikirim ke pasien, jangan menambah penjelasan untuk admin.
-- Bila pesan terakhir pasien tidak perlu dibalas (hanya "ok", "siap", "👍", emoji, atau penutup setelah kamu sudah bilang "sama sama"), tulis balasan akhir kosong: tidak ada pesan yang dikirim.
+- Bila pesan terakhir pasien tidak perlu dibalas (hanya "ok", "siap", "👍", emoji, atau penutup setelah kamu sudah bilang "sama sama"; KECUALI "ok" itu menjawab tawaran jadwal, lihat JAWABAN SETELAH TAWARAN JADWAL), tulis balasan akhir kosong: tidak ada pesan yang dikirim.
 
 KNOWLEDGE KLINIK
 ${ctx.knowledge?.trim() || KAFFAH_KNOWLEDGE}${ctx.corrections ? `
@@ -1155,9 +1155,25 @@ async function buildTranscript(
     const t = witaParts(at);
     return `[${t.date} ${t.time}] ${who}: ${text.slice(0, 600)}`;
   };
+  // Pesan yang dikutip pasien (fitur "balas" WhatsApp): cari isinya di inbox supaya AI tahu pesan mana yang dijawab.
+  const quotedIds = [...new Set(hist.map((m: any) => m.reply_to_wa_message_id).filter(Boolean))] as string[];
+  const quotedBodies = new Map<string, string>();
+  if (quotedIds.length) {
+    try {
+      const { data: q } = await admin.from("wa_inbox_messages").select("wa_message_id, body").in("wa_message_id", quotedIds);
+      for (const r of q || []) if (r.body) quotedBodies.set(r.wa_message_id, String(r.body));
+    } catch (e) {
+      console.error("[wa-ai-reply] pesan kutipan gagal dimuat", e);
+    }
+  }
+  const quoteNote = (m: any) => {
+    if (!m.reply_to_wa_message_id) return "";
+    const q = quotedBodies.get(m.reply_to_wa_message_id);
+    return q ? `(membalas pesan: "${q.replace(/\s+/g, " ").trim().slice(0, 400)}") ` : "(membalas sebuah pesan klinik sebelumnya) ";
+  };
   const rows = hist.slice().reverse().map((m: any) => ({
     t: Date.parse(m.created_at),
-    s: fmt(m.direction === "in" ? "Pasien" : "Klinik", new Date(m.created_at), m.body && m.body.trim() ? m.body : `[${m.msg_type}]`),
+    s: fmt(m.direction === "in" ? "Pasien" : "Klinik", new Date(m.created_at), `${quoteNote(m)}${m.body && m.body.trim() ? m.body : `[${m.msg_type}]`}`),
   }));
   // Balasan admin yang dikirim lewat dasbor/ponsel Watzap TIDAK masuk inbox, padahal berisi konteks
   // penting (mis. "terapis perempuan besok penuh"). Selalu gabungkan dari Watzap; template otomatis
@@ -1524,7 +1540,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
     } else {
       // Konteks sampai pesan ini saja, supaya draf sesuai dengan pesan yang sedang ditinjau.
       const { data: hist } = await admin.from("wa_inbox_messages")
-        .select("direction, body, msg_type, created_at").eq("conversation_id", conversationId)
+        .select("direction, body, msg_type, created_at, reply_to_wa_message_id").eq("conversation_id", conversationId)
         .lte("created_at", msg.created_at).order("created_at", { ascending: false }).limit(20);
       for (const h of hist || []) h.body = nk(h.body);
       const transcript = await buildTranscript(admin, clinicId, conv.wa_id, hist || [], msg.msg_type, Date.parse(msg.created_at));
@@ -2673,7 +2689,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
       reply = "";
     } else {
       const { data: hist } = await admin.from("wa_inbox_messages")
-        .select("direction, body, msg_type, created_at").eq("conversation_id", conversationId)
+        .select("direction, body, msg_type, created_at, reply_to_wa_message_id").eq("conversation_id", conversationId)
         .order("created_at", { ascending: false }).limit(20);
       for (const h of hist || []) h.body = nk(h.body);
       const transcript = await buildTranscript(admin, clinicId, conv.wa_id, hist || [], msg.msg_type, undefined, !viaBablast);
