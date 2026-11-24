@@ -2420,7 +2420,7 @@ setFormData({
                             <>
                                 {freeOverride?.status === 'rejected' && <p className="text-xs font-semibold text-red-600">Pengajuan sebelumnya ditolak{freeOverride.decision_note ? `: ${freeOverride.decision_note}` : ''}.</p>}
                                 <Button type="button" size="sm" className="h-8 text-xs" disabled={(formData.free_reason || '').trim().length < 5}
-                                    onClick={() => openOverride({ kind: 'free_patient', payload: {}, description: `Ajukan pasien Free dengan alasan "${(formData.free_reason || '').trim()}". Berlaku setelah disetujui owner.` })}>
+                                    onClick={() => openOverride({ kind: 'free_patient', payload: { free_reason: (formData.free_reason || '').trim() }, description: `Ajukan pasien Free dengan alasan "${(formData.free_reason || '').trim()}". Berlaku setelah disetujui owner.` })}>
                                     Ajukan persetujuan owner
                                 </Button>
                                 {(formData.free_reason || '').trim().length < 5 && <p className="text-[11px] text-amber-700">Isi alasan Free (minimal 5 karakter) untuk mengajukan.</p>}
