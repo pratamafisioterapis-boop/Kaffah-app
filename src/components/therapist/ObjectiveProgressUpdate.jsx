@@ -8,14 +8,14 @@ import { cn } from '@/lib/utils';
 
 export const PROGRESS_LINE_RE = /(^|\n)Update Kondisi:[^\n]*/i;
 
-const STATES = [
+export const STATES = [
   { key: 'better', label: 'Membaik', active: 'bg-emerald-600 border-emerald-600 text-white' },
   { key: 'same', label: 'Tetap', active: 'bg-slate-600 border-slate-600 text-white' },
   { key: 'worse', label: 'Memburuk', active: 'bg-rose-600 border-rose-600 text-white' },
 ];
 
 // Kalimat per parameter untuk tiap perubahan.
-const ITEMS = [
+export const ITEMS = [
   { key: 'tenderness', label: 'Nyeri tekan', text: { better: 'nyeri tekan berkurang', same: 'nyeri tekan tetap', worse: 'nyeri tekan meningkat' } },
   { key: 'spasm', label: 'Spasme / tegang otot', text: { better: 'spasme otot berkurang', same: 'spasme otot tetap', worse: 'spasme otot meningkat' } },
   { key: 'swelling', label: 'Bengkak', text: { better: 'bengkak berkurang', same: 'bengkak tetap', worse: 'bengkak bertambah' } },
@@ -33,7 +33,7 @@ const HOME_PROGRAM = [
 ];
 
 // Ambil skor nyeri "sekarang" dari Objective sebelumnya (hasil salinan), mis. "Nyeri 0-10: sekarang 6".
-const previousVas = (text) => {
+export const previousVas = (text) => {
   const m = /nyeri[^.\n]*?sekarang\D{0,3}(\d{1,2})(?!\d)/i.exec(text || '') || /NPRS[^\d\n]{0,20}(\d{1,2})(?!\d)/i.exec(text || '');
   const n = m ? Number(m[1]) : NaN;
   return Number.isFinite(n) && n >= 0 && n <= 10 ? n : null;
@@ -54,6 +54,22 @@ const Chip = ({ active, tone, onClick, children }) => (
 );
 
 const vasTone = (n) => (n <= 3 ? 'bg-emerald-500 border-emerald-500 text-white' : n <= 6 ? 'bg-amber-500 border-amber-500 text-white' : 'bg-rose-500 border-rose-500 text-white');
+
+// NRS hari ini yang sudah dipilih di baris "Update Kondisi" (null bila belum).
+export const currentProgressVas = (text) => {
+  const line = PROGRESS_LINE_RE.exec(text || '')?.[0] || '';
+  const m = /nyeri sekarang\s*(\d{1,2})\/10/i.exec(line);
+  return m ? Number(m[1]) : null;
+};
+
+// Pasang / ganti / hapus baris "Update Kondisi" di Objective.
+export const applyProgressLine = (text, line) => {
+  const base = (text || '').trim();
+  if (!line) return base.replace(PROGRESS_LINE_RE, '').trim();
+  return PROGRESS_LINE_RE.test(base)
+    ? base.replace(PROGRESS_LINE_RE, (_, lead) => `${lead}${line}`)
+    : [base, line].filter(Boolean).join('\n');
+};
 
 export const buildProgressLine = ({ vas, prevVas, states, home }) => {
   const parts = [];

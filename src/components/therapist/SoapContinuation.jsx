@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 
 export const PROGRESS_NOTE_RE = /(^|\n)Update Perkembangan:[^\n]*/i;
 
-const STATUS = [
+export const STATUS = [
   { key: 'Membaik', active: 'border-emerald-600 bg-emerald-600 text-white' },
   { key: 'Tetap', active: 'border-slate-600 bg-slate-600 text-white' },
   { key: 'Memburuk', active: 'border-rose-600 bg-rose-600 text-white' },
@@ -26,7 +26,7 @@ export const applyProgressNote = (text, line) => {
 
 // Baris "Update Perkembangan" harus satu baris: PROGRESS_NOTE_RE hanya mengganti baris pertama,
 // jadi Enter di kolom catatan dijadikan spasi agar sisa baris tidak menumpuk tiap ketikan.
-const buildNoteLine = (status, note) => {
+export const buildNoteLine = (status, note) => {
   const parts = [status, note.replace(/\s*\n+\s*/g, ' ').trim()].filter(Boolean);
   return parts.length ? `Update Perkembangan: ${parts.join('. ')}` : '';
 };
