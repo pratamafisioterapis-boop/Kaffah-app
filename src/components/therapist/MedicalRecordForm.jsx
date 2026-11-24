@@ -1464,6 +1464,7 @@ if (isCreate) {
                   onVariantSel={handleVariantSel}
                   currentText={formData[key]}
                   replaceableText={templateBase[key]}
+                  stickyActions
                   onApply={(text, opts) => { handleApplyTemplate(key)(text, opts); setTemplateDialog(null); }}
                   mode={key}
                 />

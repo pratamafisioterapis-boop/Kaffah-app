@@ -34,8 +34,8 @@ const ChoiceChips = ({ tok, value, onChange }) => {
   };
 
   return (
-    <span className="my-1.5 flex flex-wrap items-center gap-1.5 sm:contents">
-      {(tok.prefix || tok.hint) && <span className="text-xs text-slate-500 sm:mx-1">{tok.prefix || `${tok.hint}:`}</span>}
+    <span className="flex flex-wrap items-center gap-1.5 sm:contents">
+      {(tok.prefix || tok.hint) && <span className="w-full text-xs font-medium text-slate-500 sm:mx-1 sm:w-auto">{tok.prefix || `${tok.hint}:`}</span>}
       {tok.options.map((opt) => {
         const active = selected.includes(opt);
         return (
@@ -45,7 +45,7 @@ const ChoiceChips = ({ tok, value, onChange }) => {
             aria-pressed={active}
             onClick={() => toggle(opt)}
             className={cn(
-              'inline-flex min-h-[40px] items-center justify-center rounded-full border px-4 py-2 text-sm leading-none transition-[color,background-color,border-color,box-shadow,transform,opacity] active:scale-[0.97] max-sm:max-w-full max-sm:text-left max-sm:leading-snug sm:mx-0.5 sm:my-0.5 [@media(pointer:coarse)]:sm:min-h-[40px] sm:min-h-[32px] sm:whitespace-nowrap sm:px-3 sm:py-1 sm:align-middle sm:text-[13px]',
+              'inline-flex min-h-[38px] items-center justify-center rounded-full border px-3.5 py-1.5 text-[13px] leading-none transition-[color,background-color,border-color,box-shadow,transform,opacity] active:scale-[0.97] max-sm:max-w-full max-sm:text-left max-sm:leading-snug sm:mx-0.5 sm:my-0.5 [@media(pointer:coarse)]:sm:min-h-[40px] sm:min-h-[32px] sm:whitespace-nowrap sm:px-3 sm:py-1 sm:align-middle sm:text-[13px]',
               active
                 ? cn(tone(opt), 'font-medium shadow-sm')
                 : 'border-slate-200 bg-white text-slate-600 hover:border-app-accent/40 hover:bg-app-soft'
@@ -70,13 +70,13 @@ const DurationInput = ({ value, onChange }) => {
   const quick = [1, 2, 3, 5, 7];
 
   return (
-    <span className="my-1.5 flex w-full flex-col gap-2 rounded-app-lg border border-app-accent/15 bg-app-soft/60 p-2 sm:mx-1 sm:my-0 sm:inline-flex sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-1.5 sm:p-1 sm:align-middle">
-      <span className="flex items-center justify-between rounded-full border border-slate-200 bg-white sm:inline-flex sm:justify-start">
+    <span className="flex w-full flex-wrap items-center gap-2 sm:mx-1 sm:inline-flex sm:w-auto sm:gap-1.5 sm:rounded-app-lg sm:border sm:border-app-accent/15 sm:bg-app-soft/60 sm:p-1 sm:align-middle">
+      <span className="inline-flex w-[124px] flex-none items-center justify-between rounded-full border border-slate-200 bg-white sm:w-auto sm:justify-start">
         <button
           type="button"
           aria-label="Kurangi"
           onClick={() => set({ n: Math.max(0, n - 1) })}
-          className="flex h-11 w-11 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 active:scale-90 sm:h-8 sm:w-8 [@media(pointer:coarse)]:sm:h-10 [@media(pointer:coarse)]:sm:w-10"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 active:scale-90 sm:h-8 sm:w-8 [@media(pointer:coarse)]:sm:h-10 [@media(pointer:coarse)]:sm:w-10"
         >
           <Minus className="h-3.5 w-3.5" />
         </button>
@@ -87,18 +87,18 @@ const DurationInput = ({ value, onChange }) => {
           value={n || ''}
           placeholder="0"
           onChange={(e) => set({ n: Math.max(0, parseInt(e.target.value, 10) || 0) })}
-          className="h-11 min-w-0 flex-1 border-0 bg-transparent p-0 text-center text-base font-semibold sm:h-8 [@media(pointer:coarse)]:sm:h-10 sm:w-10 sm:flex-none sm:text-sm text-slate-800 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          className="h-10 min-w-0 flex-1 border-0 bg-transparent p-0 text-center text-base font-semibold sm:h-8 [@media(pointer:coarse)]:sm:h-10 sm:w-10 sm:flex-none sm:text-sm text-slate-800 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         />
         <button
           type="button"
           aria-label="Tambah"
           onClick={() => set({ n: n + 1 })}
-          className="flex h-11 w-11 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 active:scale-90 sm:h-8 sm:w-8 [@media(pointer:coarse)]:sm:h-10 [@media(pointer:coarse)]:sm:w-10"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 active:scale-90 sm:h-8 sm:w-8 [@media(pointer:coarse)]:sm:h-10 [@media(pointer:coarse)]:sm:w-10"
         >
           <Plus className="h-3.5 w-3.5" />
         </button>
       </span>
-      <span className="grid grid-cols-4 gap-0.5 rounded-full bg-white p-0.5 ring-1 ring-slate-200 sm:inline-flex">
+      <span className="grid min-w-[210px] flex-1 grid-cols-4 gap-0.5 rounded-full bg-white p-0.5 ring-1 ring-slate-200 sm:inline-flex sm:min-w-0 sm:flex-none">
         {DURATION_UNITS.map((u) => (
           <button
             key={u}
@@ -106,7 +106,7 @@ const DurationInput = ({ value, onChange }) => {
             aria-pressed={unit === u}
             onClick={() => set({ unit: u, n: n || 1 })}
             className={cn(
-              'rounded-full px-1 py-2.5 text-center text-[13px] transition-colors sm:px-2.5 sm:py-1',
+              'rounded-full px-1 py-2 text-center text-[13px] transition-colors sm:px-2.5 sm:py-1',
               unit === u && n > 0 ? 'bg-app-accent font-medium text-white' : 'text-slate-600 hover:bg-slate-100'
             )}
           >
@@ -115,13 +115,13 @@ const DurationInput = ({ value, onChange }) => {
         ))}
       </span>
       {n === 0 && (
-        <span className="flex flex-wrap gap-1.5 sm:inline-flex sm:gap-1">
+        <span className="flex w-full flex-wrap gap-1.5 sm:inline-flex sm:w-auto sm:gap-1">
           {quick.map((q) => (
             <button
               key={q}
               type="button"
               onClick={() => set({ n: q })}
-              className="h-10 min-w-[44px] rounded-full border border-slate-200 bg-white px-3 text-sm sm:h-7 [@media(pointer:coarse)]:sm:h-9 sm:min-w-[28px] sm:px-2 sm:text-xs text-slate-500 hover:border-app-accent/40 hover:text-app-accent"
+              className="h-9 min-w-[42px] rounded-full border border-slate-200 bg-white px-3 text-sm sm:h-7 [@media(pointer:coarse)]:sm:h-9 sm:min-w-[28px] sm:px-2 sm:text-xs text-slate-500 hover:border-app-accent/40 hover:text-app-accent"
             >
               {q}
             </button>
@@ -144,7 +144,7 @@ const FreeInput = ({ tok, value, onChange }) => {
       onChange={(e) => onChange(e.target.value)}
       style={{ '--w': `${width}ch` }}
       className={cn(
-        'my-1.5 block h-11 w-full rounded-app-sm border bg-white px-3 text-base text-slate-800 sm:mx-1 sm:my-0 sm:inline-block sm:h-8 [@media(pointer:coarse)]:sm:h-10 sm:w-[var(--w)] sm:max-w-full sm:px-2 sm:align-middle sm:text-sm outline-none transition-colors placeholder:text-slate-500 focus:border-app-accent-bright focus:ring-2 focus:ring-app-accent/15',
+        'block h-11 w-full min-w-0 rounded-app-sm border bg-white px-3 text-base text-slate-800 sm:mx-1 sm:my-0 sm:inline-block sm:h-8 [@media(pointer:coarse)]:sm:h-10 sm:w-[var(--w)] sm:max-w-full sm:px-2 sm:align-middle sm:text-sm outline-none transition-colors placeholder:text-slate-500 focus:border-app-accent-bright focus:ring-2 focus:ring-app-accent/15',
         value?.trim() ? 'border-app-accent/40 bg-app-soft/40' : 'border-dashed border-slate-300'
       )}
     />
@@ -160,7 +160,7 @@ const todayIso = () => {
 };
 
 const DateInput = ({ value, onChange }) => (
-  <span className="my-1.5 flex flex-wrap items-center gap-2 sm:mx-1 sm:my-0 sm:inline-flex sm:gap-1 sm:align-middle">
+  <span className="flex flex-wrap items-center gap-2 sm:mx-1 sm:inline-flex sm:gap-1 sm:align-middle">
     <input
       type="date"
       value={value || ''}
@@ -189,7 +189,7 @@ const ToggleSentence = ({ tok, value, onChange }) => (
     aria-pressed={!!value}
     onClick={() => onChange(value ? undefined : true)}
     className={cn(
-      'my-1 flex w-full items-start gap-2 rounded-app border px-3 py-2.5 text-left text-sm leading-snug sm:mr-1 sm:my-0.5 sm:inline-flex sm:w-auto sm:max-w-full sm:gap-1.5 sm:px-2.5 sm:py-1.5 sm:text-[13px] transition-[color,background-color,border-color,box-shadow,transform,opacity] active:scale-[0.99]',
+      'flex w-full items-start gap-2 rounded-app border px-3 py-2.5 text-left text-sm leading-snug sm:mr-1 sm:my-0.5 sm:inline-flex sm:w-auto sm:max-w-full sm:gap-1.5 sm:px-2.5 sm:py-1.5 sm:text-[13px] transition-[color,background-color,border-color,box-shadow,transform,opacity] active:scale-[0.99]',
       value
         ? 'border-app-accent bg-app-accent font-medium text-white shadow-sm'
         : 'border-dashed border-slate-300 bg-white text-slate-500 hover:border-app-accent/40 hover:bg-app-soft'
@@ -214,8 +214,8 @@ const ScaleChips = ({ tok, value, onChange }) => {
     return n <= 3 ? 'bg-emerald-500 border-emerald-500 text-white' : n <= 6 ? 'bg-amber-500 border-amber-500 text-white' : 'bg-rose-500 border-rose-500 text-white';
   };
   return (
-    <span className="my-1.5 flex flex-wrap items-center gap-1.5 sm:contents">
-      {tok.label && <span className="w-full text-xs text-slate-500 sm:mx-1 sm:w-auto">{tok.label}:</span>}
+    <span className="flex flex-wrap items-center gap-1.5 sm:contents">
+      {tok.label && <span className="w-full text-xs font-medium text-slate-500 sm:mx-1 sm:w-auto">{tok.label}:</span>}
       {nums.map((n) => (
         <button
           key={n}
@@ -223,7 +223,7 @@ const ScaleChips = ({ tok, value, onChange }) => {
           aria-pressed={value === n}
           onClick={() => onChange(value === n ? undefined : n)}
           className={cn(
-            'inline-flex h-10 min-w-[40px] items-center justify-center rounded-full border px-2 text-sm sm:mx-0.5 sm:my-0.5 sm:h-8 [@media(pointer:coarse)]:sm:h-10 sm:min-w-[32px] [@media(pointer:coarse)]:sm:min-w-[40px] sm:align-middle sm:text-[13px] leading-none transition-[color,background-color,border-color,box-shadow,transform,opacity] active:scale-[0.97]',
+            'inline-flex h-9 min-w-[38px] items-center justify-center rounded-full border px-2 text-sm sm:mx-0.5 sm:my-0.5 sm:h-8 [@media(pointer:coarse)]:sm:h-10 sm:min-w-[32px] [@media(pointer:coarse)]:sm:min-w-[40px] sm:align-middle sm:text-[13px] leading-none transition-[color,background-color,border-color,box-shadow,transform,opacity] active:scale-[0.97]',
             value === n ? cn(tone(Number(n)), 'font-semibold shadow-sm') : 'border-slate-200 bg-white text-slate-600 hover:border-app-accent/40 hover:bg-app-soft'
           )}
         >
@@ -235,7 +235,7 @@ const ScaleChips = ({ tok, value, onChange }) => {
 };
 
 const FormButtons = ({ tok, value, onOpen, onClear }) => (
-  <span className="my-1.5 flex flex-wrap items-center gap-1.5 sm:mx-1 sm:my-0 sm:inline-flex sm:align-middle">
+  <span className="flex flex-wrap items-center gap-1.5 sm:mx-1 sm:inline-flex sm:align-middle">
     {value?.text ? (
       <span className="inline-flex items-center gap-1.5 rounded-app border border-app-accent/40 bg-app-soft py-1 pl-3 pr-1.5 text-[13px] font-medium text-app-accent-hover">
         {value.text}
@@ -261,7 +261,7 @@ const renderToken = (tok, key, values, setValue, openForm) => {
   if (tok.t === 'gopen' || tok.t === 'gclose') return null;
   // Tanda baca yang berdiri sendiri (".", ",", ")") hanya berguna di teks yang mengalir;
   // di HP kontrol tampil satu per baris, jadi tanda baca itu cuma menjadi baris kosong.
-  if (tok.t === 'text' && /^[\s.,;:()]+$/.test(tok.v)) return <span key={key} className="max-sm:hidden">{tok.v}</span>;
+  if (tok.t === 'text' && (/^[\s.,;:()]+$/.test(tok.v) || /^\s*\/\d{1,3}[.,;]?\s*$/.test(tok.v))) return <span key={key} className="max-sm:hidden">{tok.v}</span>;
   if (tok.t === 'text') return <span key={key}>{tok.v}</span>;
   const value = values[tok.id];
   const onChange = (v) => setValue(tok.id, v);
@@ -274,6 +274,29 @@ const renderToken = (tok, key, values, setValue, openForm) => {
     case 'form': return <FormButtons key={key} tok={tok} value={value} onOpen={(f) => openForm(tok.id, f)} onClear={() => onChange(undefined)} />;
     default: return <FreeInput key={key} tok={tok} value={value} onChange={onChange} />;
   }
+};
+
+// Satuan pendek di belakang isian ("mmHg", "x/menit", "derajat") ikut satu baris dengan kolomnya,
+// supaya di HP tidak jatuh sendirian ke baris berikutnya.
+const UNIT_TAIL_RE = /^\s*(?:(?=[^\s]*[\p{L}%°])[\p{L}%/.°]{1,10}(?:\/[\p{L}]{1,6})?|\/\d{1,3})[.,;]?\s*$/u;
+const renderTokenList = (tokens, prefix, store, setter, openForm) => {
+  const out = [];
+  for (let i = 0; i < tokens.length; i += 1) {
+    const tok = tokens[i];
+    const next = tokens[i + 1];
+    if (tok.t === 'free' && next?.t === 'text' && UNIT_TAIL_RE.test(next.v)) {
+      out.push(
+        <span key={`${prefix}-${i}`} className="flex w-full items-center gap-2 sm:contents">
+          {renderToken(tok, `${prefix}-${i}a`, store, setter, openForm)}
+          <span className="shrink-0 text-sm text-slate-500">{next.v.trim().replace(/[.,;]$/, '')}</span>
+        </span>
+      );
+      i += 1;
+    } else {
+      out.push(renderToken(tok, `${prefix}-${i}`, store, setter, openForm));
+    }
+  }
+  return out;
 };
 
 // ───────────── Komponen utama ─────────────
@@ -295,7 +318,7 @@ const tokenSignature = (sentence) => JSON.stringify([sentence.kind, sentence.tok
  *                    sedang diedit, atau hasil template sebelumnya); teks di belakangnya tetap dipertahankan
  * @param onApply     (text, { replace }) => void
  */
-const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, replaceableText = '', onApply, compact = false, variables, previewOnly = false, defaultOpen = true, mode = 'subjective', embedded = false, variantSel, onVariantSel }) => {
+const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, replaceableText = '', onApply, compact = false, variables, previewOnly = false, defaultOpen = true, mode = 'subjective', embedded = false, stickyActions = false, variantSel, onVariantSel }) => {
   const [activeKey, setActiveKey] = useState(rawTemplates[0]?.key);
   const [valuesByKey, setValuesByKey] = useState({});
   // Diagnosa dengan beberapa varian template: terapis memilih varian, template yang dipakai = varian itu.
@@ -504,14 +527,14 @@ const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, repla
       {(open || embedded) && (
         <div className={cn('space-y-4 pb-4', embedded ? '' : compact ? 'px-4' : 'px-6')}>
           {templates.length > 1 && (
-            <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+            <div className="-mx-1 flex snap-x gap-1.5 overflow-x-auto px-1 pb-1 pr-8">
               {templates.map((t) => (
                 <button
                   key={t.key}
                   type="button"
                   onClick={() => setActiveKey(t.key)}
                   className={cn(
-                    'shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-xs',
+                    'shrink-0 snap-start rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors sm:px-3 sm:text-xs',
                     t.key === active.key
                       ? 'border-app-accent bg-app-accent text-white'
                       : 'border-slate-200 bg-white text-slate-600 hover:border-app-accent/40'
@@ -557,7 +580,7 @@ const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, repla
               ...(parsed?.sections || []).map((section) => ({ section, shared: false })),
             ].map(({ section, shared }, sIdx) => (
               <div key={`${sIdx}-${section.title}`}>
-                {(section.title || shared) && <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-app-accent-hover">
+                {(section.title || shared) && <div className="mb-1.5 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-app-accent-hover sm:text-xs">
                   <span>
                     {section.title}
                     {shared && templates.length > 1 && <span className="ml-1.5 font-normal normal-case tracking-normal text-slate-500">(berlaku untuk semua diagnosa)</span>}
@@ -584,8 +607,8 @@ const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, repla
                           // Kalimat tanpa isian hanya teks penjelas.
                           if (inputs.length === 0) {
                             return (
-                              <p key={si} className="px-1 text-sm leading-6 text-slate-600">
-                                {sentence.tokens.map((tok, ti) => renderToken(tok, `${si}-${ti}`, store, setter, openForm))}
+                              <p key={si} className="px-1 text-[13px] leading-5 text-slate-500 sm:text-sm sm:leading-6">
+                                {renderTokenList(sentence.tokens, `${si}`, store, setter, openForm)}
                               </p>
                             );
                           }
@@ -594,21 +617,21 @@ const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, repla
                             <div
                               key={si}
                               className={cn(
-                                'flex gap-2.5 rounded-app border px-3 py-2 transition-colors sm:gap-3 sm:py-2.5',
+                                'flex gap-2.5 rounded-app border px-3 py-2.5 transition-colors sm:gap-3',
                                 done ? 'border-app-accent/30 bg-app-soft/40' : 'border-slate-200 bg-white'
                               )}
                             >
                               <span
                                 aria-hidden="true"
                                 className={cn(
-                                  'mt-1.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border sm:mt-2',
+                                  'mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border sm:mt-2',
                                   done ? 'border-app-accent bg-app-accent text-white' : 'border-slate-300 bg-white'
                                 )}
                               >
                                 {done && <Check className="h-3 w-3" />}
                               </span>
-                              <div className="min-w-0 flex-1 text-[15px] leading-7 text-slate-700 sm:text-sm sm:leading-9">
-                                {sentence.tokens.map((tok, ti) => renderToken(tok, `${si}-${ti}`, store, setter, openForm))}
+                              <div className="flex min-w-0 flex-1 flex-col items-stretch gap-2 text-sm leading-6 text-slate-700 sm:block sm:leading-9">
+                                {renderTokenList(sentence.tokens, `${si}`, store, setter, openForm)}
                               </div>
                             </div>
                           );
@@ -624,16 +647,16 @@ const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, repla
                         const labelToks = sepIdx > 0 ? sentence.tokens.slice(0, sepIdx) : [];
                         const bodyToks = sepIdx > 0 ? sentence.tokens.slice(sepIdx + 1) : sentence.tokens;
                         return (
-                          <div key={si} className="flex flex-col gap-0.5 px-3 py-1.5 sm:flex-row sm:items-start sm:gap-3">
+                          <div key={si} className="flex flex-col gap-1.5 px-3 py-2.5 sm:flex-row sm:items-start sm:gap-3 sm:py-1.5">
                             {sepIdx > 0 ? (
-                              <div className="shrink-0 pt-0.5 text-[13px] font-medium leading-9 text-slate-600 sm:w-44">
+                              <div className="shrink-0 text-[13px] font-semibold leading-5 text-slate-700 sm:w-44 sm:pt-0.5 sm:font-medium sm:leading-9 sm:text-slate-600">
                                 {labelToks.map((tok, ti) => renderToken(tok, `l${si}-${ti}`, store, setter, openForm))}
                               </div>
                             ) : (
                               <span className="hidden pt-0.5 text-slate-300 sm:block sm:leading-9">•</span>
                             )}
-                            <div className="min-w-0 flex-1 text-[15px] leading-7 text-slate-700 sm:text-sm sm:leading-9">
-                              {bodyToks.map((tok, ti) => renderToken(tok, `b${si}-${ti}`, store, setter, openForm))}
+                            <div className="flex min-w-0 flex-1 flex-col items-stretch gap-2 text-sm leading-6 text-slate-700 sm:block sm:leading-9">
+                              {renderTokenList(bodyToks, `b${si}`, store, setter, openForm)}
                             </div>
                           </div>
                         );
@@ -664,7 +687,7 @@ const SubjectiveTemplateBuilder = ({ templates: rawTemplates, currentText, repla
           </div>
           </div>
 
-          <div className="soap-actions sticky bottom-0 z-10 -mx-1 flex items-center gap-2 border-t border-slate-200 bg-white px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2.5 sm:gap-3 sm:pt-3">
+          <div className={cn('soap-actions z-10 -mx-1 flex items-center gap-2 border-t border-slate-200 bg-white px-1 pt-2.5 sm:gap-3 sm:pt-3', stickyActions ? 'sticky bottom-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]' : 'pb-1')}>
             <div className="min-w-0 flex-1">
               <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
                 <div
