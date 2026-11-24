@@ -142,12 +142,28 @@ async function suggestAnswer(
   try {
     const { data: set } = await admin.from("wa_ai_settings").select("knowledge_override").eq("clinic_id", clinicId).maybeSingle();
     const knowledge = String(set?.knowledge_override || "").trim();
-    const { data: hist } = await admin.from("wa_inbox_messages")
-      .select("direction, body, created_at").eq("conversation_id", conversationId)
-      .lte("created_at", upTo).order("created_at", { ascending: false }).limit(8);
-    const history = (hist || []).slice().reverse()
-      .map((m: any) => `[${stamp(m.created_at)}] ${m.direction === "in" ? "Pasien" : "Klinik"}: ${String(m.body || "").trim().slice(0, 300)}`)
-      .filter((l: string) => l.length > 25).join("\n");
+    // Riwayat lengkap dari wa-ai-reply: inbox + balasan admin manual (ponsel/dasbor) + template otomatis.
+    let history = "";
+    try {
+      const r = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/wa-ai-reply`, {
+        method: "POST",
+        signal: AbortSignal.timeout(25000),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
+        body: JSON.stringify({ transcript_for: conversationId, until: upTo }),
+      });
+      const j = await r.json().catch(() => ({}));
+      history = String(j?.transcript || "").slice(-3500);
+    } catch (e) {
+      console.error("[wa-ai-revision-notify] riwayat lengkap gagal, pakai inbox saja", e);
+    }
+    if (!history) {
+      const { data: hist } = await admin.from("wa_inbox_messages")
+        .select("direction, body, created_at").eq("conversation_id", conversationId)
+        .lte("created_at", upTo).order("created_at", { ascending: false }).limit(8);
+      history = (hist || []).slice().reverse()
+        .map((m: any) => `[${stamp(m.created_at)}] ${m.direction === "in" ? "Pasien" : "Klinik"}: ${String(m.body || "").trim().slice(0, 300)}`)
+        .filter((l: string) => l.length > 25).join("\n");
+    }
     const appt = await appointmentContext(admin, clinicId, waId);
     const nowStamp = stamp(new Date().toISOString());
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -160,7 +176,7 @@ async function suggestAnswer(
         system: `${SUGGEST_SYSTEM}\n\nKNOWLEDGE KLINIK\n${knowledge.slice(0, 40000)}`,
         messages: [{
           role: "user",
-          content: `Sekarang: ${nowStamp} WITA.\n${appt}\n\nRiwayat singkat (hanya pesan yang tersimpan di inbox; balasan admin lewat ponsel/dasbor tidak tampil):\n${history}\n\nPesan pasien yang belum dibalas:\n${patient.slice(0, 800)}\n\nAlasan AI menyerahkan ke admin: ${reason.slice(0, 300)}`,
+          content: `Sekarang: ${nowStamp} WITA.\n${appt}\n\nRiwayat percakapan (termasuk balasan admin manual dan template otomatis):\n${history}\n\nPesan pasien yang belum dibalas:\n${patient.slice(0, 800)}\n\nAlasan AI menyerahkan ke admin: ${reason.slice(0, 300)}`,
         }],
       }),
     });

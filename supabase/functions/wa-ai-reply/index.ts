@@ -342,8 +342,15 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
             .gte("appointment_date", startToday).neq("status", "cancelled").order("appointment_date").limit(10)
           : Promise.resolve({ data: [] as any[] }),
         variants.length
-          ? ctx.admin.from("appointments").select(cols).eq("clinic_id", ctx.clinicId).in("guest_phone", variants)
-            .gte("appointment_date", startToday).neq("status", "cancelled").order("appointment_date").limit(10)
+          // guest_phone sering tersimpan dengan tanda baca ("0815-2269-9732"): cari lewat fungsi database.
+          ? ctx.admin.rpc("ai_guest_appointment_ids", { p_clinic_id: ctx.clinicId, p_wa_id: ctx.conv.wa_id, p_since: startToday })
+            .then(async ({ data: gid }: { data: any }) => {
+              const idsG = ((gid || []) as any[]).map((x) => (typeof x === "string" ? x : Object.values(x)[0] as string));
+              return idsG.length
+                ? await ctx.admin.from("appointments").select(cols).eq("clinic_id", ctx.clinicId).in("id", idsG)
+                  .neq("status", "cancelled").order("appointment_date").limit(10)
+                : { data: [] as any[] };
+            })
           : Promise.resolve({ data: [] as any[] }),
       ]);
       const therapists = await loadTherapists(ctx.admin, ctx.clinicId);
@@ -1020,7 +1027,9 @@ async function buildTranscript(
   // (pengingat jadwal) hanya untuk pesan tombol atau balasan teks singkat ("baik mbak", "siap").
   const norm = (t: string) => t.replace(/\s+/g, " ").trim().toLowerCase();
   const lastBody = String(hist[0]?.body || "").trim();
-  const wantTemplates = lastType === "button" || (lastType === "text" && lastBody.length <= 40);
+  // Template otomatis (pengingat, follow-up kondisi) selalu disertakan: balasan pasien yang panjang pun
+  // biasanya menjawab template itu, jadi AI harus tahu isinya.
+  const wantTemplates = true;
   try {
     const { items } = await watzapHistory(admin, clinicId, waId);
     const end = until ?? Number.POSITIVE_INFINITY;
@@ -1036,7 +1045,7 @@ async function buildTranscript(
       .slice(-12);
     for (const m of adminMsgs) rows.push({ t: m.t, s: fmt("Klinik", new Date(m.t), m.text) });
     if (wantTemplates) {
-      const since = (until ?? Date.now()) - 36 * 3600e3;
+      const since = (until ?? Date.now()) - 48 * 3600e3;
       for (const tp of all.filter((i) => i.type === "template" && i.t >= since).slice(-3)) {
         rows.push({ t: tp.t, s: fmt("Klinik (template otomatis)", new Date(tp.t), tp.text) });
       }
@@ -2627,6 +2636,26 @@ Deno.serve(async (req) => {
       return json({ ok: false }, 500);
     }
     return json({ ok: true });
+  }
+  // Riwayat percakapan lengkap (inbox + balasan admin manual + template dari Watzap) untuk fungsi lain
+  // (saran jawaban grup revisi).
+  if (p.transcript_for) {
+    try {
+      const { data: tc } = await admin.from("wa_inbox_conversations")
+        .select("id, clinic_id, wa_id").eq("id", String(p.transcript_for)).maybeSingle();
+      if (!tc) return json({ transcript: "" });
+      const until = p.until ? Date.parse(String(p.until)) : NaN;
+      let q = admin.from("wa_inbox_messages").select("direction, body, msg_type, created_at")
+        .eq("conversation_id", tc.id).order("created_at", { ascending: false }).limit(20);
+      if (Number.isFinite(until)) q = q.lte("created_at", new Date(until).toISOString());
+      const { data: th } = await q;
+      for (const h of th || []) h.body = nk(h.body);
+      const transcript = await buildTranscript(admin, tc.clinic_id, tc.wa_id, th || [], "text", Number.isFinite(until) ? until : undefined);
+      return json({ transcript });
+    } catch (e) {
+      console.error("[wa-ai-reply] transcript_for gagal", e);
+      return json({ transcript: "" });
+    }
   }
   if (!p.conversation_id || !p.message_id) return json({ error: "conversation_id & message_id wajib" }, 400);
   const w = run(enqueue(admin, String(p.conversation_id), String(p.message_id)));
