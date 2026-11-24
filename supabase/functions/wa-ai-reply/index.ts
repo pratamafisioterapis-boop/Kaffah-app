@@ -983,7 +983,40 @@ async function runAgent(ctx: Ctx, transcript: string, hint: string, model: strin
 
 // ------------------------------------------------------------------ pengiriman WA
 
-async function sendText(admin: Admin, clinicId: string, conv: any, body: string) {
+/** Kirim teks sesi lewat sender WABA Bablast (nomor Kimmy). API key disimpan sebagai secret BABLAST_API_KEY. */
+async function sendTextBablast(admin: Admin, clinicId: string, conv: any, body: string, msgType = "text") {
+  const key = Deno.env.get("BABLAST_API_KEY");
+  if (!key) throw new Error("BABLAST_API_KEY belum diatur");
+  const res = await fetch("https://api.bablast.id/waba/send", {
+    method: "POST",
+    signal: AbortSignal.timeout(30000),
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    body: JSON.stringify({ phone: normalizePhone(conv.wa_id), message: body }),
+  });
+  let out: any = {};
+  try { out = JSON.parse(await res.text()); } catch { /* kosong */ }
+  const ok = res.ok && out?.success === true;
+  const now = new Date().toISOString();
+  await admin.from("wa_inbox_messages").insert({
+    clinic_id: clinicId,
+    conversation_id: conv.id,
+    direction: "out",
+    msg_type: msgType,
+    body,
+    wa_message_id: ok ? (out?.data?.messages?.[0]?.id ?? null) : null,
+    status: ok ? "sent" : "failed",
+    error_message: ok ? null : String(out?.message || `HTTP ${res.status}`).slice(0, 500),
+    status_at: now,
+    sent_by: null, // balasan otomatis
+    channel: "bablast",
+  });
+  if (!ok) throw new Error(`Bablast menolak: ${out?.message || res.status}`);
+  await admin.from("wa_inbox_conversations")
+    .update({ last_message_at: now, last_preview: body.slice(0, 120) }).eq("id", conv.id);
+}
+
+async function sendText(admin: Admin, clinicId: string, conv: any, body: string, channel: "waba" | "bablast" = "waba") {
+  if (channel === "bablast") return await sendTextBablast(admin, clinicId, conv, body);
   const { data: wa } = await admin.from("wa_settings")
     .select("api_key, number_key, enabled, inbox_enabled")
     .eq("clinic_id", clinicId).maybeSingle();
@@ -1017,7 +1050,9 @@ async function sendText(admin: Admin, clinicId: string, conv: any, body: string)
     .update({ last_message_at: now, last_preview: body.slice(0, 120) }).eq("id", conv.id);
 }
 
-async function sendImage(admin: Admin, clinicId: string, conv: any, url: string, title: string) {
+async function sendImage(admin: Admin, clinicId: string, conv: any, url: string, title: string, channel: "waba" | "bablast" = "waba") {
+  // API sesi Bablast hanya terdokumentasi untuk teks: flyer dikirim sebagai judul + tautan.
+  if (channel === "bablast") return await sendTextBablast(admin, clinicId, conv, `${title}\n${url}`);
   const { data: wa } = await admin.from("wa_settings")
     .select("api_key, number_key, enabled, inbox_enabled")
     .eq("clinic_id", clinicId).maybeSingle();
@@ -1061,6 +1096,7 @@ async function buildTranscript(
   hist: any[],
   lastType: string,
   until?: number, // batas waktu (ms): abaikan pesan klinik setelah pesan yang sedang ditinjau
+  includeWatzap = true, // false untuk jalur Bablast (riwayat Watzap bukan untuk nomor ini)
 ): Promise<string> {
   const fmt = (who: string, at: Date, text: string) => {
     const t = witaParts(at);
@@ -1078,7 +1114,7 @@ async function buildTranscript(
   // Template otomatis (pengingat, follow-up kondisi) selalu disertakan: balasan pasien yang panjang pun
   // biasanya menjawab template itu, jadi AI harus tahu isinya.
   const wantTemplates = true;
-  try {
+  if (includeWatzap) try {
     const { items } = await watzapHistory(admin, clinicId, waId);
     const end = until ?? Number.POSITIVE_INFINITY;
     const knownOut = new Set(hist.filter((m: any) => m.direction !== "in").map((m: any) => norm(String(m.body || ""))));
@@ -1462,7 +1498,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
     const t = witaParts(new Date(msg.created_at));
     const lines = [
       `📩 Pesan pasien (${t.time} WITA)`,
-      `Dari: ${conv.contact_name || "-"} (+${conv.wa_id}), ${label}${msg.channel === "bablast" ? " · 📱 lewat nomor WA Web (Bablast)" : ""}`,
+      `Dari: ${conv.contact_name || "-"} (+${conv.wa_id}), ${label}${msg.channel === "bablast" ? " · 📱 lewat nomor Kimmy (Bablast)" : ""}`,
       "",
       msg.body && msg.body.trim() ? msg.body : `[${msg.msg_type}]`,
       ...(imageNote ? ["", "🖼️ Hasil baca gambar (untuk admin, TIDAK dikirim ke pasien):", imageNote] : []),
@@ -1489,7 +1525,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
       lines.push("", `📎 Akan kirim gambar: ${b.title} (${b.url})`);
     }
     if (ctx.handoff) lines.push("", `⚠️ AI akan menyerahkan ke admin: ${ctx.handoff.reason}`);
-    if (msg.channel === "bablast") lines.push("", "📱 Balas pasien ini dari Bablast/HP nomor WA Web, BUKAN dari nomor resmi.");
+    if (msg.channel === "bablast") lines.push("", "📱 Balas pasien ini dari nomor Kimmy (Bablast), BUKAN dari nomor resmi Watzap.");
     lines.push("", "↩️ Balas pesan ini dengan jawaban yang benar untuk mengoreksi AI, atau \"ok\" bila sudah tepat.");
     const tgId = await sendTelegram(lines.join("\n"));
 
@@ -2474,11 +2510,11 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
   const { data: st } = await admin.from("wa_ai_settings").select("*").eq("clinic_id", clinicId).maybeSingle();
   if (!st?.enabled) return; // dimatikan selagi menunggu di antrean
   if (isIgnoredPhone(st, conv.wa_id)) return;
-  // Pesan lewat nomor WA Web (Bablast): riwayat balasan admin di HP tidak bisa dicek dan
-  // pengiriman otomatis memakai nomor resmi, jadi hanya draf ke Telegram (bukan balas otomatis).
+  // Jalur pesan: nomor Kimmy (Bablast) dibalas lewat Bablast; nomor resmi lewat Watzap.
   const { data: chRow } = await admin.from("wa_inbox_messages").select("channel").eq("id", messageId).maybeSingle();
   const viaBablast = chRow?.channel === "bablast";
-  if (st.mode === "review" || (viaBablast && st.mode === "live")) {
+  const channel: "waba" | "bablast" = viaBablast ? "bablast" : "waba";
+  if (st.mode === "review") {
     // Setelah jeda: hanya pesan pasien terbaru yang dibuatkan draf (yang lebih lama sudah tercakup).
     const { data: latest } = await admin.from("wa_inbox_messages")
       .select("id").eq("conversation_id", conversationId).eq("direction", "in")
@@ -2527,7 +2563,8 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
 
     // Admin sering membalas lewat dasbor/ponsel Watzap: tanyakan langsung ke Watzap.
     let watzapVariant = "";
-    try {
+    // Jalur Bablast tidak ada di riwayat Watzap: hanya cek balasan keluar yang tercatat di inbox (di atas).
+    if (!viaBablast) try {
       const chk = await lastMessageFromClinic(admin, clinicId, conv.wa_id);
       watzapVariant = chk.variant;
       if (chk.fromClinic) return await skip("admin_sudah_membalas_via_watzap", `cek=${chk.variant}`);
@@ -2553,7 +2590,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
         .select("direction, body, msg_type, created_at").eq("conversation_id", conversationId)
         .order("created_at", { ascending: false }).limit(20);
       for (const h of hist || []) h.body = nk(h.body);
-      const transcript = await buildTranscript(admin, clinicId, conv.wa_id, hist || [], msg.msg_type);
+      const transcript = await buildTranscript(admin, clinicId, conv.wa_id, hist || [], msg.msg_type, undefined, !viaBablast);
 
       const variants = phoneVariants(conv.wa_id);
       const { count: known } = variants.length
@@ -2608,12 +2645,12 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
       await new Promise((r) => setTimeout(r, (3 + Math.random() * 6) * 1000));
       for (const b of brochures) {
         try {
-          await sendImage(admin, clinicId, conv, b.url, b.title);
+          await sendImage(admin, clinicId, conv, b.url, b.title, channel);
         } catch (e) {
           console.error("[wa-ai-reply] kirim flyer gagal", e);
         }
       }
-      if (sendBody) await sendText(admin, clinicId, conv, sendBody);
+      if (sendBody) await sendText(admin, clinicId, conv, sendBody, channel);
     }
     if (!ctx.handoff && conv.ai_handoff) {
       await admin.from("wa_inbox_conversations").update({ ai_handoff: false }).eq("id", conversationId);
