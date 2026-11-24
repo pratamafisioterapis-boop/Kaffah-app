@@ -20,6 +20,7 @@ const readStates = (objective) => {
 };
 
 const SHORT = { better: 'Membaik', same: 'Tetap', worse: 'Memburuk' };
+const TINY = { better: 'Baik', same: 'Tetap', worse: 'Buruk' };
 
 /**
  * Lanjutan kilat: satu kartu untuk kunjungan lanjutan. Terapis hanya menjawab perubahan
@@ -102,7 +103,7 @@ const QuickFollowUp = ({ subjective, objective, onChange, prevVas = null, disabl
               </button>
             ))}
           </div>
-          {vas === undefined && <p className={cn('mt-1 text-xs', nrsRequired ? 'font-semibold text-rose-600' : 'text-amber-700')} role={nrsRequired ? 'alert' : undefined}>{nrsRequired ? 'NRS hari ini wajib diisi karena kunjungan lalu sudah mencatat NRS.' : 'NRS hari ini belum diisi.'}</p>}
+          {vas === undefined && <p className={cn('mt-1 text-xs', nrsRequired ? 'font-semibold text-rose-600' : 'text-amber-700')} role={nrsRequired ? 'alert' : undefined}>{nrsRequired ? 'Wajib diisi: kunjungan lalu sudah ada NRS.' : 'NRS hari ini belum diisi.'}</p>}
         </div>
 
         <div>
@@ -124,9 +125,9 @@ const QuickFollowUp = ({ subjective, objective, onChange, prevVas = null, disabl
                       aria-pressed={states[it.key] === s.key}
                       aria-label={`${it.label} ${SHORT[s.key]}`}
                       onClick={() => toggleState(it.key, s.key)}
-                      className={cn('h-10 min-w-[44px] rounded-lg border px-2 text-xs transition-colors active:scale-[0.97]', states[it.key] === s.key ? cn(s.active, 'font-semibold') : 'border-slate-200 bg-white text-slate-600 hover:bg-app-soft')}
+                      className={cn('h-10 min-w-[46px] rounded-lg border px-1.5 text-xs transition-colors active:scale-[0.97]', states[it.key] === s.key ? cn(s.active, 'font-semibold') : 'border-slate-200 bg-white text-slate-600 hover:bg-app-soft')}
                     >
-                      {SHORT[s.key]}
+                      <span className="sm:hidden">{TINY[s.key]}</span><span className="hidden sm:inline">{SHORT[s.key]}</span>
                     </button>
                   ))}
                 </div>

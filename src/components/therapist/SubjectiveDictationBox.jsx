@@ -23,43 +23,43 @@ const SubjectiveDictationBox = ({ disabled = false, onApply }) => {
   };
 
   return (
-    <div className="mb-3 rounded-app-lg border border-app-accent/20 bg-white p-3.5">
-      <div className="flex items-center gap-2">
-        <Mic className="h-4 w-4 text-app-accent" aria-hidden="true" />
-        <h4 className="text-sm font-semibold text-slate-800">Dikte atau tulis keluhan</h4>
+    <div className="mb-3 rounded-xl border border-app-accent/20 bg-white p-3">
+      <div className="flex items-center gap-1.5">
+        <Mic className="h-4 w-4 shrink-0 text-app-accent" aria-hidden="true" />
+        <h4 className="text-sm font-bold text-slate-800">Dikte atau tulis keluhan</h4>
       </div>
-      <p className="mt-0.5 text-xs text-slate-500">Bicara bebas saja, tidak perlu memilih diagnosa atau template dulu.</p>
-      <div className="mt-2.5">
-        <VoiceDictationButton
-          disabled={disabled}
-          onAppend={(t) => setDraft((prev) => (prev.trim() ? `${prev.replace(/\s+$/, '')} ${t}` : t))}
-        />
-        <label htmlFor="soap-dictation-draft" className="sr-only">Keluhan pasien</label>
-        <Textarea
-          id="soap-dictation-draft"
-          value={draft}
-          disabled={disabled}
-          onChange={(e) => setDraft(e.target.value)}
-          rows={3}
-          placeholder="Mis. nyeri punggung bawah sejak 2 minggu, nyeri 6 dari 10, bertambah saat duduk lama, berkurang kalau istirahat. Tidak ada red flag."
-          className="resize-none rounded-app border-slate-200 bg-slate-50/80 text-base focus:bg-white"
-        />
-      </div>
-      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+      <p className="mt-0.5 text-xs text-slate-500">Bicara bebas, tanpa memilih diagnosa atau template dulu.</p>
+      <label htmlFor="soap-dictation-draft" className="sr-only">Keluhan pasien</label>
+      <Textarea
+        id="soap-dictation-draft"
+        value={draft}
+        disabled={disabled}
+        onChange={(e) => setDraft(e.target.value)}
+        rows={2}
+        placeholder="Mis. nyeri punggung bawah sejak 2 minggu, nyeri 6 dari 10, bertambah saat duduk lama. Tidak ada red flag."
+        className="mt-2 min-h-[72px] resize-none rounded-lg border-slate-200 bg-slate-50/80 text-sm focus:bg-white"
+      />
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <div className="[&>div]:mb-0">
+          <VoiceDictationButton
+            disabled={disabled}
+            onAppend={(t) => setDraft((prev) => (prev.trim() ? `${prev.replace(/\s+$/, '')} ${t}` : t))}
+          />
+        </div>
         <button
           type="button"
           onClick={apply}
           disabled={!ready || disabled}
-          className="inline-flex h-10 items-center gap-1.5 rounded-full bg-app-accent px-4 text-sm font-semibold text-white shadow-sm hover:bg-app-accent-hover disabled:opacity-50"
+          className="inline-flex h-10 items-center gap-1.5 rounded-full bg-app-accent px-3.5 text-sm font-semibold text-white hover:bg-app-accent-hover disabled:opacity-50"
         >
           <Check className="h-4 w-4" /> Susun ke Subjective
         </button>
-        {found && (
-          <span className="text-xs text-emerald-700" aria-live="polite">
-            Masuk ke Subjective{found.length ? `. Terbaca: ${found.join(', ')}` : ', tersimpan sebagai Keluhan Utama'}.
-          </span>
-        )}
       </div>
+      {found && (
+        <p className="mt-2 text-xs text-emerald-700" aria-live="polite">
+          Masuk ke Subjective{found.length ? `. Terbaca: ${found.join(', ')}` : ', tersimpan sebagai Keluhan Utama'}.
+        </p>
+      )}
     </div>
   );
 };
