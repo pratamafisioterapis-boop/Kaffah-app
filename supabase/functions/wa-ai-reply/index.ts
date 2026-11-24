@@ -1386,7 +1386,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
   if (!conv) return;
   const clinicId = conv.clinic_id as string;
   const { data: msg } = await admin.from("wa_inbox_messages")
-    .select("id, direction, msg_type, body, created_at, media_path, media_mime").eq("id", messageId).maybeSingle();
+    .select("id, direction, msg_type, body, created_at, media_path, media_mime, channel").eq("id", messageId).maybeSingle();
   if (!msg || msg.direction !== "in" || msg.msg_type === "reaction") return;
   msg.body = nk(msg.body);
 
@@ -1462,7 +1462,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
     const t = witaParts(new Date(msg.created_at));
     const lines = [
       `📩 Pesan pasien (${t.time} WITA)`,
-      `Dari: ${conv.contact_name || "-"} (+${conv.wa_id}), ${label}`,
+      `Dari: ${conv.contact_name || "-"} (+${conv.wa_id}), ${label}${msg.channel === "bablast" ? " · 📱 lewat nomor WA Web (Bablast)" : ""}`,
       "",
       msg.body && msg.body.trim() ? msg.body : `[${msg.msg_type}]`,
       ...(imageNote ? ["", "🖼️ Hasil baca gambar (untuk admin, TIDAK dikirim ke pasien):", imageNote] : []),
@@ -1489,6 +1489,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
       lines.push("", `📎 Akan kirim gambar: ${b.title} (${b.url})`);
     }
     if (ctx.handoff) lines.push("", `⚠️ AI akan menyerahkan ke admin: ${ctx.handoff.reason}`);
+    if (msg.channel === "bablast") lines.push("", "📱 Balas pasien ini dari Bablast/HP nomor WA Web, BUKAN dari nomor resmi.");
     lines.push("", "↩️ Balas pesan ini dengan jawaban yang benar untuk mengoreksi AI, atau \"ok\" bila sudah tepat.");
     const tgId = await sendTelegram(lines.join("\n"));
 
@@ -2473,7 +2474,11 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
   const { data: st } = await admin.from("wa_ai_settings").select("*").eq("clinic_id", clinicId).maybeSingle();
   if (!st?.enabled) return; // dimatikan selagi menunggu di antrean
   if (isIgnoredPhone(st, conv.wa_id)) return;
-  if (st.mode === "review") {
+  // Pesan lewat nomor WA Web (Bablast): riwayat balasan admin di HP tidak bisa dicek dan
+  // pengiriman otomatis memakai nomor resmi, jadi hanya draf ke Telegram (bukan balas otomatis).
+  const { data: chRow } = await admin.from("wa_inbox_messages").select("channel").eq("id", messageId).maybeSingle();
+  const viaBablast = chRow?.channel === "bablast";
+  if (st.mode === "review" || (viaBablast && st.mode === "live")) {
     // Setelah jeda: hanya pesan pasien terbaru yang dibuatkan draf (yang lebih lama sudah tercakup).
     const { data: latest } = await admin.from("wa_inbox_messages")
       .select("id").eq("conversation_id", conversationId).eq("direction", "in")
