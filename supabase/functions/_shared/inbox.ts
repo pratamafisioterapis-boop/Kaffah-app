@@ -198,6 +198,7 @@ export async function handleMessage(
     media_mime: mediaMime,
     status: "received",
     channel,
+    reply_to_wa_message_id: msg.context?.id ? String(msg.context.id) : null,
     created_at: ts,
   });
   if (error) {

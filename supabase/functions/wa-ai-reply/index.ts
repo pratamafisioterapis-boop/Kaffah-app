@@ -1155,9 +1155,25 @@ async function buildTranscript(
     const t = witaParts(at);
     return `[${t.date} ${t.time}] ${who}: ${text.slice(0, 600)}`;
   };
+  // Pesan yang dikutip pasien (fitur "balas" WhatsApp): cari isinya di inbox supaya AI tahu pesan mana yang dijawab.
+  const quotedIds = [...new Set(hist.map((m: any) => m.reply_to_wa_message_id).filter(Boolean))] as string[];
+  const quotedBodies = new Map<string, string>();
+  if (quotedIds.length) {
+    try {
+      const { data: q } = await admin.from("wa_inbox_messages").select("wa_message_id, body").in("wa_message_id", quotedIds);
+      for (const r of q || []) if (r.body) quotedBodies.set(r.wa_message_id, String(r.body));
+    } catch (e) {
+      console.error("[wa-ai-reply] pesan kutipan gagal dimuat", e);
+    }
+  }
+  const quoteNote = (m: any) => {
+    if (!m.reply_to_wa_message_id) return "";
+    const q = quotedBodies.get(m.reply_to_wa_message_id);
+    return q ? `(membalas pesan: "${q.replace(/\s+/g, " ").trim().slice(0, 400)}") ` : "(membalas sebuah pesan klinik sebelumnya) ";
+  };
   const rows = hist.slice().reverse().map((m: any) => ({
     t: Date.parse(m.created_at),
-    s: fmt(m.direction === "in" ? "Pasien" : "Klinik", new Date(m.created_at), m.body && m.body.trim() ? m.body : `[${m.msg_type}]`),
+    s: fmt(m.direction === "in" ? "Pasien" : "Klinik", new Date(m.created_at), `${quoteNote(m)}${m.body && m.body.trim() ? m.body : `[${m.msg_type}]`}`),
   }));
   // Balasan admin yang dikirim lewat dasbor/ponsel Watzap TIDAK masuk inbox, padahal berisi konteks
   // penting (mis. "terapis perempuan besok penuh"). Selalu gabungkan dari Watzap; template otomatis
@@ -1524,7 +1540,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
     } else {
       // Konteks sampai pesan ini saja, supaya draf sesuai dengan pesan yang sedang ditinjau.
       const { data: hist } = await admin.from("wa_inbox_messages")
-        .select("direction, body, msg_type, created_at").eq("conversation_id", conversationId)
+        .select("direction, body, msg_type, created_at, reply_to_wa_message_id").eq("conversation_id", conversationId)
         .lte("created_at", msg.created_at).order("created_at", { ascending: false }).limit(20);
       for (const h of hist || []) h.body = nk(h.body);
       const transcript = await buildTranscript(admin, clinicId, conv.wa_id, hist || [], msg.msg_type, Date.parse(msg.created_at));
@@ -2673,7 +2689,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
       reply = "";
     } else {
       const { data: hist } = await admin.from("wa_inbox_messages")
-        .select("direction, body, msg_type, created_at").eq("conversation_id", conversationId)
+        .select("direction, body, msg_type, created_at, reply_to_wa_message_id").eq("conversation_id", conversationId)
         .order("created_at", { ascending: false }).limit(20);
       for (const h of hist || []) h.body = nk(h.body);
       const transcript = await buildTranscript(admin, clinicId, conv.wa_id, hist || [], msg.msg_type, undefined, !viaBablast);
