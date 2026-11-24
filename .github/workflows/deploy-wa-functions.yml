@@ -33,5 +33,5 @@ jobs:
               wa-ai-reply|wa-watzap-webhook) ;;
               *) echo "Fungsi tidak diizinkan: $fn"; exit 1 ;;
             esac
-            supabase functions deploy "$fn" --no-verify-jwt --use-api --project-ref dqkejdamagvlhqvxaqej
+            supabase functions deploy "$fn" --no-verify-jwt --use-api --yes --project-ref dqkejdamagvlhqvxaqej
           done
