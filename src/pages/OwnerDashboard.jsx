@@ -34,6 +34,7 @@ const OwnerManagementPage = React.lazy(lazyRetry(() => import('@/components/owne
 import OnboardingChecklist from '@/components/owner/OnboardingChecklist';
 import TargetFillReminder from '@/components/owner/TargetFillReminder';
 import ReminderConfirmationWidget from '@/components/shared/ReminderConfirmationWidget';
+import AiChannelToggles from '@/components/owner/AiChannelToggles';
 
 
 
@@ -418,6 +419,8 @@ setTherapists(enrichedTherapists);
         <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
           <DateRangePicker align="end" value={rangeInput} onChange={setRangeInput} className="w-full sm:w-auto" />
         </div>
+
+        {isKaffah && ['owner', 'super_admin'].includes(userDetails?.role) && <AiChannelToggles />}
 
         {/* ── Tabs ── */}
         <Tabs defaultValue="operational" className="w-full space-y-5">
