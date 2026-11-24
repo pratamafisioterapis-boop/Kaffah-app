@@ -44,10 +44,10 @@ const QuickFollowUp = ({ subjective, objective, onChange, disabled = false, nrsR
 
   return (
     <section id="quick-followup" aria-label="Lanjutan kilat" className="border-b border-slate-100 bg-app-soft/30 px-4 py-4 sm:px-6">
-      <div className="flex items-center gap-2">
-        <Zap className="h-4 w-4 text-app-accent" aria-hidden="true" />
-        <h3 className="text-sm font-semibold text-slate-900">Lanjutan kilat</h3>
-        <span className="text-xs text-slate-500">S, O, dan Plan sudah disalin. Cukup isi perubahannya.</span>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+        <Zap className="h-4 w-4 shrink-0 text-app-accent" aria-hidden="true" />
+        <h3 className="whitespace-nowrap text-sm font-semibold text-slate-900">Lanjutan kilat</h3>
+        <span className="basis-full text-xs text-slate-500">S, O, dan Plan sudah disalin. Cukup isi perubahannya.</span>
       </div>
 
       <div className="mt-3 space-y-4">
