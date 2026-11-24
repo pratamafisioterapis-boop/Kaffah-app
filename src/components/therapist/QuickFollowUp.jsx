@@ -1,10 +1,24 @@
 import React, { useState } from 'react';
 import { Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { applyProgressNote, buildNoteLine, STATUS } from '@/components/therapist/SoapContinuation';
-import { ITEMS, STATES, applyProgressLine, buildProgressLine, previousVas } from '@/components/therapist/ObjectiveProgressUpdate';
+import { PROGRESS_NOTE_RE, applyProgressNote, buildNoteLine, STATUS } from '@/components/therapist/SoapContinuation';
+import { ITEMS, STATES, applyProgressLine, buildProgressLine, currentProgressVas, PROGRESS_LINE_RE } from '@/components/therapist/ObjectiveProgressUpdate';
 
 const vasTone = (n) => (n <= 3 ? 'bg-emerald-500 border-emerald-500 text-white' : n <= 6 ? 'bg-amber-500 border-amber-500 text-white' : 'bg-rose-500 border-rose-500 text-white');
+// Baca kembali pilihan dari teks (mis. setelah draf dipulihkan), supaya kartu tidak tampak kosong
+// dan ketukan berikutnya tidak menghapus isian yang sudah ada.
+const readOverall = (subjective) => {
+  const body = PROGRESS_NOTE_RE.exec(subjective || '')?.[0]?.replace(/^\n/, '').replace(/^Update Perkembangan:\s*/i, '') || '';
+  const status = STATUS.find((s) => body.startsWith(s.key))?.key || '';
+  return { overall: status, note: status ? body.slice(status.length).replace(/^\.\s*/, '') : body };
+};
+const readStates = (objective) => {
+  const line = PROGRESS_LINE_RE.exec(objective || '')?.[0]?.toLowerCase() || '';
+  const out = {};
+  ITEMS.forEach((it) => STATES.forEach((st) => { if (line.includes(it.text[st.key].toLowerCase())) out[it.key] = st.key; }));
+  return out;
+};
+
 const SHORT = { better: 'Membaik', same: 'Tetap', worse: 'Memburuk' };
 
 /**
@@ -12,12 +26,12 @@ const SHORT = { better: 'Membaik', same: 'Tetap', worse: 'Memburuk' };
  * (kondisi umum, NRS, parameter); baris "Update Perkembangan" di Subjective dan "Update Kondisi"
  * di Objective ditulis langsung, tanpa dialog dan tanpa tombol terapkan.
  */
-const QuickFollowUp = ({ subjective, objective, onChange, disabled = false, nrsRequired = false }) => {
-  const [prevVas] = useState(() => previousVas(objective));
-  const [overall, setOverall] = useState('');
-  const [note, setNote] = useState('');
-  const [vas, setVas] = useState(undefined);
-  const [states, setStates] = useState({});
+const QuickFollowUp = ({ subjective, objective, onChange, prevVas = null, disabled = false, nrsRequired = false }) => {
+  const [init] = useState(() => readOverall(subjective));
+  const [overall, setOverall] = useState(init.overall);
+  const [note, setNote] = useState(init.note);
+  const [vas, setVas] = useState(() => currentProgressVas(objective) ?? undefined);
+  const [states, setStates] = useState(() => readStates(objective));
 
   const emit = (next) => {
     const o = next.overall ?? overall;
@@ -44,10 +58,10 @@ const QuickFollowUp = ({ subjective, objective, onChange, disabled = false, nrsR
 
   return (
     <section id="quick-followup" aria-label="Lanjutan kilat" className="border-b border-slate-100 bg-app-soft/30 px-4 py-4 sm:px-6">
-      <div className="flex items-center gap-2">
-        <Zap className="h-4 w-4 text-app-accent" aria-hidden="true" />
-        <h3 className="text-sm font-semibold text-slate-900">Lanjutan kilat</h3>
-        <span className="text-xs text-slate-500">S, O, dan Plan sudah disalin. Cukup isi perubahannya.</span>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+        <Zap className="h-4 w-4 shrink-0 text-app-accent" aria-hidden="true" />
+        <h3 className="whitespace-nowrap text-sm font-semibold text-slate-900">Lanjutan kilat</h3>
+        <span className="basis-full text-xs text-slate-500">S, O, dan Plan sudah disalin. Cukup isi perubahannya.</span>
       </div>
 
       <div className="mt-3 space-y-4">
