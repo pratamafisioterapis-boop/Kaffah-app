@@ -44,3 +44,17 @@ Pengaturan dibaca saat aplikasi dimuat; muat ulang untuk melihat perubahan.
 Untuk `baru`: klasifikasi jalur A/B, isi rencana/perubahan, status `menunggu_persetujuan`, kirim notifikasi ke Telegram
 (`clinara-cs` action notify). Untuk `disetujui` jalur B: kerjakan di cabang baru, build, buka PR, isi `pr_url`, kirim Telegram.
 Jangan merge, jangan jalankan migrasi tanpa persetujuan, hanya klinik Praxis."
+
+## Jenis tiket dan aturan
+- **perubahan**: jalur A/B seperti biasa. **bug**: hanya kode Praxis yang boleh berubah; bila akarnya di kode bersama, buat
+  perilaku khusus Praxis (guard `PRAXIS_CLINIC_ID`), jangan ubah perilaku klinik lain.
+- **data** (ubah data yang sudah terisi): hanya bisa diajukan **owner** (admin ditolak di fungsi dan database). Dikerjakan routine lewat
+  `clinara_cs_data_update(ticket_id, tabel, ids[], set jsonb)` untuk tabel di `clinara_cs_data_tables`
+  (`appointments`, `daily_recaps`, `medical_records`), hanya baris klinik tiket, maksimal 200 baris, nilai lama dicatat di `clinara_cs_data_log`.
+  `/cs batal N` mengembalikan semua baris. Setelah selesai routine mengisi status `selesai`.
+- Admin boleh mengajukan jenis perubahan dan bug.
+
+## Bahasa untuk staf Praxis
+- Balasan pertama otomatis (trigger `trg_cs_auto_ack`, tanpa AI) menurut jenis tiket.
+- Pembaruan berikutnya ditulis routine dalam bahasa awam (tanpa istilah teknis) lewat `clinara_cs_messages` (sender 'cs'):
+  saat mulai diperiksa, saat penyebab ditemukan, dan saat selesai.
