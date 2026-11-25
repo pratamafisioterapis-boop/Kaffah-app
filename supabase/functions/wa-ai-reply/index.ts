@@ -842,7 +842,7 @@ GAYA BAHASA
 - Bahasa Indonesia santai-sopan seperti admin Kaffah: ringkas dan hangat, tidak kaku. Pasien lama dipanggil dengan nama panggilannya (nickname dari data pasien). Pasien yang belum terdaftar: lihat pesan "Klinik" sebelumnya di riwayat dan pakai sapaan yang dipakai admin (mis. "ka", "kak", "bu", "pak"); bila belum ada, pakai "Kak". Jawaban pendek (maks sekitar 4 baris), tanpa markdown/heading/tabel. Daftar sederhana dengan tanda "-" hanya untuk jadwal atau tarif.
 - Emoji: JANGAN berlebihan dan jangan generik. Paling banyak satu emoji per pesan, dan sekitar separuh pesan tanpa emoji sama sekali (kadang pakai, kadang tidak). Jangan memakai 😊🙏 berulang-ulang di tiap balasan.
 - Balasan akhirmu (teks terakhir tanpa alat) ADALAH pesan yang dikirim ke pasien, jangan menambah penjelasan untuk admin.
-- Bila pesan terakhir pasien tidak perlu dibalas (hanya "ok", "siap", "👍", emoji, atau penutup setelah kamu sudah bilang "sama sama"; KECUALI "ok" itu menjawab tawaran jadwal, lihat JAWABAN SETELAH TAWARAN JADWAL), tulis balasan akhir kosong: tidak ada pesan yang dikirim.
+- Bila pesan terakhir pasien tidak perlu dibalas (hanya "ok", "siap", "👍", emoji, atau penutup setelah kamu sudah bilang "sama sama"; KECUALI "ok" itu menjawab tawaran jadwal, lihat JAWABAN SETELAH TAWARAN JADWAL), JANGAN menulis penjelasan, alasan, atau catatan apa pun (mis. \"tidak perlu dibalas\", \"jadwal sudah tercatat\"). Tulis persis [[KOSONG]] saja atau kosongkan: tidak ada pesan yang dikirim. Teks apa pun selain itu LANGSUNG terkirim ke pasien.
 
 KNOWLEDGE KLINIK
 ${ctx.knowledge?.trim() || KAFFAH_KNOWLEDGE}${ctx.corrections ? `
@@ -996,6 +996,22 @@ function isFaqLike(transcript: string, lastBody: string): boolean {
   return true;
 }
 
+/** Teks akhir agen langsung dikirim ke pasien. Tandai [[KOSONG]] dan catatan internal/meta (bicara TENTANG pasien,
+ *  bukan KEPADA pasien) sebagai balasan kosong supaya tidak pernah terkirim ke WhatsApp pasien. */
+function sanitizeAgentReply(txt: string): string {
+  const t = String(txt || "").trim();
+  if (!t) return "";
+  if (/\[\[\s*KOSONG\s*\]\]/i.test(t)) return "";
+  const meta =
+    /^\s*(\(|\[)?\s*(catatan|note|internal|tidak (dikirim|dibalas)|pesan terakhir (pasien|dari pasien)|pasien (hanya|sudah|tidak|menulis|membalas|mengirim))/i.test(t) ||
+    /(tidak perlu (dibalas|balasan)|tidak perlu membalas|konfirmasi otomatis sudah terkirim|tidak ada balasan yang (perlu|harus))/i.test(t);
+  if (meta) {
+    console.error("[wa-ai-reply] teks meta/internal dibuang, tidak dikirim ke pasien:", t.slice(0, 200));
+    return "";
+  }
+  return t;
+}
+
 async function runAgent(ctx: Ctx, transcript: string, hint: string, model: string = MODEL): Promise<string> {
   const messages: any[] = [{
     role: "user",
@@ -1007,11 +1023,11 @@ async function runAgent(ctx: Ctx, transcript: string, hint: string, model: strin
     messages.push({ role: "assistant", content: out.content });
     const uses = (out.content || []).filter((b: any) => b.type === "tool_use");
     if (out.stop_reason !== "tool_use" || !uses.length) {
-      return (out.content || [])
+      return sanitizeAgentReply((out.content || [])
         .filter((b: any) => b.type === "text")
         .map((b: any) => b.text)
         .join("\n")
-        .trim();
+        .trim());
     }
     const results = [];
     for (const u of uses) {
