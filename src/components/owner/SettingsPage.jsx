@@ -47,6 +47,7 @@ import GoogleDriveSettings from '@/components/owner/GoogleDriveSettings';
 import NotificationPreferencesCard, { NOTIFICATION_CATALOG } from '@/components/shared/NotificationPreferencesCard';
 import GoogleSheetsSettings from '@/components/owner/GoogleSheetsSettings';
 import GoogleReviewSettings from '@/components/owner/GoogleReviewSettings';
+import FeedbackQuestionnaireSettings from '@/components/owner/FeedbackQuestionnaireSettings';
 import TherapistDriveUploadsManager from '@/components/owner/TherapistDriveUploadsManager';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useTherapistLeaveRequestEnabled } from '@/hooks/useTherapistLeaveRequests';
@@ -1266,8 +1267,9 @@ const SettingsPage = () => {
           <TabsContent value="google_sheets" className="space-y-6">
             <GoogleSheetsSettings />
           </TabsContent>
-          <TabsContent value="google_review">
+          <TabsContent value="google_review" className="space-y-6">
             <GoogleReviewSettings />
+            <FeedbackQuestionnaireSettings />
           </TabsContent>
           <TabsContent value="accounting_cats">
             <AccountingCategoryManager />
