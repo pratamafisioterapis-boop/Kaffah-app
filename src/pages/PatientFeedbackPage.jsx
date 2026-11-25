@@ -4,7 +4,7 @@ import { supabase, supabaseUrl, supabaseAnonKey } from '@/lib/customSupabaseClie
 import { Star, Loader2, AlertTriangle, CheckCircle2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { QUESTIONNAIRE_CLINIC_IDS } from '@/lib/clinicIds';
+import { QUESTIONNAIRE_CLINIC_IDS, KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { DEFAULT_PRAXIS_QUESTIONS, normalizeQuestions, ratingFromOption } from '@/lib/praxisQuestionnaire';
 
 
@@ -24,6 +24,7 @@ const PatientFeedbackPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [googleReviewUrl, setGoogleReviewUrl] = useState(null);
   const [isPraxis, setIsPraxis] = useState(false);
+  const [isKaffah, setIsKaffah] = useState(false);
   const [answers, setAnswers] = useState({});
   const [questions, setQuestions] = useState(DEFAULT_PRAXIS_QUESTIONS);
 
@@ -46,6 +47,7 @@ const PatientFeedbackPage = () => {
       const { data: cid } = await supabase.rpc('get_feedback_link_clinic_id', { p_token: token });
       if (cancelled) return;
       setIsPraxis(QUESTIONNAIRE_CLINIC_IDS.includes(cid));
+      setIsKaffah(cid === KAFFAH_CLINIC_ID);
       if (QUESTIONNAIRE_CLINIC_IDS.includes(cid)) {
         const { data: qs } = await supabase.rpc('get_feedback_questionnaire', { p_token: token });
         if (cancelled) return;
@@ -97,7 +99,8 @@ const PatientFeedbackPage = () => {
       setStatus('already');
       return;
     }
-    if (data.google_review_url) {
+    // Kaffah: hanya halaman terima kasih, tanpa lanjut ke Google Review.
+    if (data.google_review_url && !isKaffah) {
       window.location.href = data.google_review_url;
       return;
     }
@@ -211,7 +214,7 @@ const PatientFeedbackPage = () => {
                 disabled={!praxisComplete || submitting}
                 className="w-full bg-indigo-600 hover:bg-indigo-700"
               >
-                {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Kirim &amp; Lanjut ke Google Review
+                {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />} {isKaffah ? 'Kirim' : 'Kirim & Lanjut ke Google Review'}
               </Button>
             </div>
           )}
