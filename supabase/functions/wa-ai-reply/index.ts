@@ -996,6 +996,17 @@ function isFaqLike(transcript: string, lastBody: string): boolean {
   return true;
 }
 
+/** Percakapan home care (pasien minta terapis datang ke rumah) tidak dijawab AI: selalu diserahkan ke admin.
+ *  Dicek dari riwayat percakapan terbaru, bukan hanya pesan terakhir ("iya ini suami saya, bisakah hari ini"). */
+const HOMECARE_RE = /home\s?care|homecare|home\s?visit|(datang|dateng|kunjung\w*|visit|panggil\w*|ke)\s*(ke\s*)?rumah(?!\s*sakit)|\bkerumah(?!\s*sakit)|(terapi|fisio|pijat)\s+di\s+rumah|terapis\s+(yang\s+)?(datang|ke)/i;
+function isHomecareChat(transcript: string): boolean {
+  return transcript.split("\n").some((l) => HOMECARE_RE.test(l.replace(/^\[[^\]]*\]\s*(Pasien|Klinik):/, "")));
+}
+function homecareHandoff(ctx: Ctx) {
+  ctx.handoff = { reason: "Percakapan home care: diserahkan ke admin (AI tidak menjawab)", priority: "normal" };
+  ctx.actions.push({ type: "handoff", ...ctx.handoff });
+}
+
 /** Teks akhir agen langsung dikirim ke pasien. Tandai [[KOSONG]] dan catatan internal/meta (bicara TENTANG pasien,
  *  bukan KEPADA pasien) sebagai balasan kosong supaya tidak pernah terkirim ke WhatsApp pasien. */
 function sanitizeAgentReply(txt: string): string {
@@ -1558,12 +1569,18 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
       const hint = (known || []).length
         ? "Nomor ini tercatat sebagai pasien terdaftar (panggil lookup_patient untuk detail)."
         : "Nomor ini BELUM tercatat di database pasien (anggap pasien baru; tetap boleh panggil lookup_patient).";
-      const fast = await lightReply(transcript, String(msg.body || ""), msg.msg_type);
-      const agentModel = isFaqLike(transcript, String(msg.body || "")) ? FAST_MODEL : MODEL;
-      modelTag = fast.handled ? `${FAST_MODEL}, balasan baku` : agentModel;
-      reply = fast.handled
-        ? fast.reply
-        : await runAgent(ctx, transcript, hint + (await prepareContext(ctx, (known || []).length > 0, String(msg.body || ""))), agentModel);
+      if (isHomecareChat(transcript)) {
+        homecareHandoff(ctx);
+        reply = "";
+        modelTag = "aturan home care";
+      } else {
+        const fast = await lightReply(transcript, String(msg.body || ""), msg.msg_type);
+        const agentModel = isFaqLike(transcript, String(msg.body || "")) ? FAST_MODEL : MODEL;
+        modelTag = fast.handled ? `${FAST_MODEL}, balasan baku` : agentModel;
+        reply = fast.handled
+          ? fast.reply
+          : await runAgent(ctx, transcript, hint + (await prepareContext(ctx, (known || []).length > 0, String(msg.body || ""))), agentModel);
+      }
     }
     const bookingPlan = ctx.actions.find((a) => a.type === "create_booking");
     const reschedPlan = ctx.actions.find((a) => a.type === "reschedule_booking");
@@ -2816,8 +2833,13 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
         ? "Nomor ini tercatat sebagai pasien terdaftar (panggil lookup_patient untuk detail)."
         : "Nomor ini BELUM tercatat di database pasien (anggap pasien baru; tetap boleh panggil lookup_patient).");
 
-      const fast = await lightReply(transcript, String(msg.body || ""), msg.msg_type);
-      reply = fast.handled ? fast.reply : await runAgent(ctx, transcript, hint + (await prepareContext(ctx, !!known, String(msg.body || ""))), isFaqLike(transcript, String(msg.body || "")) ? FAST_MODEL : MODEL);
+      if (isHomecareChat(transcript)) {
+        homecareHandoff(ctx);
+        reply = "";
+      } else {
+        const fast = await lightReply(transcript, String(msg.body || ""), msg.msg_type);
+        reply = fast.handled ? fast.reply : await runAgent(ctx, transcript, hint + (await prepareContext(ctx, !!known, String(msg.body || ""))), isFaqLike(transcript, String(msg.body || "")) ? FAST_MODEL : MODEL);
+      }
     }
 
     // Serah-terima: diam, pasien tidak dibalas. Booking berhasil: konfirmasi dikirim sistem.
