@@ -4,6 +4,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import DictationButton from './DictationButton';
 import { STATUS_LABEL, STATUS_TONE, fmtWhen } from './csShared';
 
 // Percakapan satu tiket. `asCs` = tampilan Super Admin (membalas sebagai CS, langsung ke tabel).
@@ -74,6 +75,7 @@ const TicketThread = ({ ticket, asCs = false, onChanged }) => {
       {(!closed || asCs) && (
         <div className="flex items-end gap-2">
           <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} placeholder={asCs ? 'Balas sebagai CS…' : 'Tambahkan keterangan…'} className="min-h-0 flex-1 text-base" />
+          {!asCs && <DictationButton onText={(t) => setText((b) => (b.trim() ? `${b.trimEnd()} ${t}` : t))} disabled={sending} />}
           <Button onClick={send} disabled={sending || text.trim().length < 3} aria-label="Kirim">
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
