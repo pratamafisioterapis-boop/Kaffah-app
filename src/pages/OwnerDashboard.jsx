@@ -35,6 +35,7 @@ const OwnerManagementPage = React.lazy(lazyRetry(() => import('@/components/owne
 import OnboardingChecklist from '@/components/owner/OnboardingChecklist';
 import TargetFillReminder from '@/components/owner/TargetFillReminder';
 import ReminderConfirmationWidget from '@/components/shared/ReminderConfirmationWidget';
+import AiVsAdminBookingCard from '@/components/owner/AiVsAdminBookingCard';
 import AiChannelToggles from '@/components/owner/AiChannelToggles';
 
 
@@ -469,6 +470,10 @@ setTherapists(enrichedTherapists);
                 returningPatientsToday={returningPatientsToday}
                 isLoading={isLoading || isLoadingKPI}
               />
+
+              <div className="col-span-2 md:col-span-4 lg:col-span-6">
+                <AiVsAdminBookingCard />
+              </div>
 
               <TherapistStatusCards
                 className="col-span-2 md:col-span-4 lg:col-span-6"

@@ -21,7 +21,6 @@ import {
 } from '@/components/ui/table';
 import UnfilledMedicalRecords from '@/components/shared/UnfilledMedicalRecords';
 import MissingRecapsCard from '@/components/shared/MissingRecapsCard';
-import AiVsAdminBookingCard from '@/components/owner/AiVsAdminBookingCard';
 import DateRangePicker from '@/components/ui/date-range-picker';
 
 // --- Components ---
@@ -215,8 +214,6 @@ const OwnerOperationalMetrics = () => {
         <MetricCard title="Slot Occupancy" value={`${stats.occupancyRate}%`} subtitle="Tingkat Keterisian" icon={Clock} color="bg-purple-600" loading={loading} />
         <MetricCard title="Attendance Rate" value={`${stats.attendanceRate}%`} subtitle="Kehadiran Pasien" icon={UserCheck} color="bg-orange-600" loading={loading} />
       </div>
-
-      <AiVsAdminBookingCard />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
          <MissingRecapsCard 
