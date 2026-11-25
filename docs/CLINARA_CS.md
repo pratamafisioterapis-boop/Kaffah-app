@@ -2,7 +2,14 @@
 
 Staf Praxis (owner/admin) mengajukan permintaan perubahan lewat menu **Hubungi CS Clinara**. Owner Clinara menyetujui lewat Telegram.
 
-## Alur
+## Alur (versi routine, hemat kuota)
+Tiket masuk Telegram tanpa Claude. Hanya setelah owner membalas "ok", `clinara-cs` memanggil routine "Pekerja Cs Clinara"
+(pemicu API, id `trig_013s83KsoM6LDKMmqBXuLc9C`, konektor Supabase) dengan isi tiket. Routine mengerjakan jalur A/B,
+lalu trigger database `trg_cs_ticket_changed` melapor ke Telegram saat `pr_url` terisi atau tiket selesai.
+Secrets fungsi: `CS_ROUTINE_TOKEN` (wajib), opsional `CS_ROUTINE_URL`, `CS_ROUTINE_ID`, `CS_ROUTINE_BETA`.
+Bagian alur di bawah adalah rancangan awal (pekerja berkala) dan sudah digantikan.
+
+## Alur awal
 1. Staf membuat tiket -> fungsi `clinara-cs` menyimpan dan mengirim notifikasi Telegram.
 2. Pekerja (sesi Claude Code terjadwal, tanpa API Claude) membaca tiket berstatus `baru`, memilih jalur, lalu:
    - **Jalur A (pengaturan)**: isi `proposed_changes` (`[{"key":"kwitansi.footer_text","value":"..."}]`, key harus ada di
