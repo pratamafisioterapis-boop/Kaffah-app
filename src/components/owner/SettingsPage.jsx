@@ -6,7 +6,7 @@ import {
   Package, MessageCircle, Clock, Gift, CalendarCheck, UserCog,
   Check, ClipboardPaste, BookOpen, Image as ImageIcon,
   FileText, Upload, X, Tag, FolderTree, Building, HardDrive, FileSpreadsheet,
-  ChevronRight, Globe, LayoutTemplate, Bell, MapPin, Wand2
+  ChevronRight, Globe, LayoutTemplate, Bell, MapPin, Wand2, ClipboardList
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -48,6 +48,7 @@ import NotificationPreferencesCard, { NOTIFICATION_CATALOG } from '@/components/
 import GoogleSheetsSettings from '@/components/owner/GoogleSheetsSettings';
 import GoogleReviewSettings from '@/components/owner/GoogleReviewSettings';
 import FeedbackQuestionnaireSettings from '@/components/owner/FeedbackQuestionnaireSettings';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import TherapistDriveUploadsManager from '@/components/owner/TherapistDriveUploadsManager';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useTherapistLeaveRequestEnabled } from '@/hooks/useTherapistLeaveRequests';
@@ -1107,6 +1108,7 @@ const SETTINGS_TAB_GROUPS = [
       { value: 'google_drive', icon: HardDrive, label: 'Google Drive' },
       { value: 'google_sheets', icon: FileSpreadsheet, label: 'Backup Google Sheets' },
       { value: 'google_review', icon: MapPin, label: 'Google Review' },
+      { value: 'feedback_questionnaire', icon: ClipboardList, label: 'Kuesioner Feedback' },
     ],
   },
   {
@@ -1166,11 +1168,14 @@ const SettingsPage = () => {
   // Jam Buka Klinik hanya dipakai form izin terapis, jadi disembunyikan untuk klinik tanpa fitur itu.
   const { enabled: leaveEnabled, loaded: leaveLoaded } = useTherapistLeaveRequestEnabled();
   const { settings: soapFirstSettings, loaded: soapFirstLoaded } = useSoapFirstSettings();
+  const isKaffahClinic = userDetails?.clinic_id === KAFFAH_CLINIC_ID;
   const hiddenTabs = useMemo(() => {
-    const base = leaveLoaded && !leaveEnabled ? [...disabledFeatures, 'operating_hours'] : disabledFeatures;
+    const base0 = leaveLoaded && !leaveEnabled ? [...disabledFeatures, 'operating_hours'] : disabledFeatures;
+    // Tab Kuesioner Feedback terpisah hanya untuk Kaffah (klinik lain: tergabung di tab Google Review).
+    const base = isKaffahClinic ? base0 : [...base0, 'feedback_questionnaire'];
     // Tab SOAP & Harga hanya untuk klinik yang memakai alur SOAP sebelum pembayaran.
     return soapFirstLoaded && !soapFirstSettings ? [...base, 'soap_first'] : (soapFirstLoaded ? base : [...base, 'soap_first']);
-  }, [disabledFeatures, leaveLoaded, leaveEnabled, soapFirstLoaded, soapFirstSettings]);
+  }, [disabledFeatures, leaveLoaded, leaveEnabled, soapFirstLoaded, soapFirstSettings, isKaffahClinic]);
 
   const visibleTabGroups = useMemo(() => (
     SETTINGS_TAB_GROUPS
@@ -1269,6 +1274,9 @@ const SettingsPage = () => {
           </TabsContent>
           <TabsContent value="google_review" className="space-y-6">
             <GoogleReviewSettings />
+            {!isKaffahClinic && <FeedbackQuestionnaireSettings />}
+          </TabsContent>
+          <TabsContent value="feedback_questionnaire" className="space-y-6">
             <FeedbackQuestionnaireSettings />
           </TabsContent>
           <TabsContent value="accounting_cats">
