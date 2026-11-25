@@ -96,6 +96,14 @@
       "destination": "/clinara-icon-app.png"
     },
     {
+      "source": "/demo/soap",
+      "destination": "/demo/soap/index.html"
+    },
+    {
+      "source": "/demo/laporan",
+      "destination": "/demo/laporan/index.html"
+    },
+    {
       "source": "/assets/(.*)",
       "destination": "/api/asset-missing"
     },

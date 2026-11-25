@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>SOAP Tumbuh Kembang</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: kiri = form SOAP bertahap (S-O-A-P), kanan = pratinjau teks SOAP yang tersusun otomatis. Warna disiplin: biru PT, jingga OT, hijau ST. */
+:root{
+  --bg:#f3f6f9; --surface:#ffffff; --ink:#14263a; --muted:#5b6b7c; --line:#dde5ec; --soft:#eaf0f5;
+  --brand:#044687; --brand-ink:#ffffff;
+  --pt:#1d62c9; --pt-soft:#e3eefc;
+  --ot:#b5530f; --ot-soft:#fcebdc;
+  --st:#0b7d5e; --st-soft:#dcf4ea;
+  --warn:#9a6700; --warn-soft:#fff3d1;
+  --font:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d1620; --surface:#15222f; --ink:#e6eef6; --muted:#93a4b6; --line:#27394a; --soft:#1c2c3b;
+  --brand:#5aa8ee; --brand-ink:#08213a;
+  --pt:#6aa5f5; --pt-soft:#14304f; --ot:#f0a06a; --ot-soft:#3d2614; --st:#4ed0a2; --st-soft:#113a2e;
+  --warn:#f0c14b; --warn-soft:#3a2f10; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1620; --surface:#15222f; --ink:#e6eef6; --muted:#93a4b6; --line:#27394a; --soft:#1c2c3b;
+  --brand:#5aa8ee; --brand-ink:#08213a;
+  --pt:#6aa5f5; --pt-soft:#14304f; --ot:#f0a06a; --ot-soft:#3d2614; --st:#4ed0a2; --st-soft:#113a2e;
+  --warn:#f0c14b; --warn-soft:#3a2f10; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.5;
+  padding-block:16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1,h2,h3,p{margin:0}
+.demo{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:8px 12px;font-size:12.5px}
+.head{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center}
+.who{display:flex;flex-direction:column;gap:2px;min-width:0}
+.who h1{font-size:19px;font-weight:800;letter-spacing:-.01em;text-wrap:balance}
+.who span{color:var(--muted);font-size:12.5px}
+.facts{display:flex;flex-wrap:wrap;gap:6px 18px;margin-left:auto}
+.fact{display:flex;flex-direction:column;font-size:12px;color:var(--muted)}
+.fact b{color:var(--ink);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.disc{display:flex;gap:6px;flex-wrap:wrap}
+.disc button{font:inherit;font-weight:700;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 14px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;text-align:left;min-width:0}
+.disc button small{font-weight:500;color:var(--muted);font-size:11.5px}
+.disc button[aria-pressed="true"]{border-color:var(--c);background:var(--cs)}
+.disc button[aria-pressed="true"] span{color:var(--c)}
+.main{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:900px){.main{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.steps{display:flex;border-bottom:1px solid var(--line)}
+.steps button{flex:1;font:inherit;background:none;border:0;border-bottom:3px solid transparent;padding:11px 6px;cursor:pointer;color:var(--muted);font-weight:700;display:flex;flex-direction:column;align-items:center;gap:0;min-width:0}
+.steps button b{font-size:18px;line-height:1.1}
+.steps button small{font-size:11px;font-weight:500}
+.steps button[aria-selected="true"]{color:var(--c);border-bottom-color:var(--c);background:var(--cs)}
+.body{padding:16px;display:flex;flex-direction:column;gap:16px}
+.sec{display:flex;flex-direction:column;gap:10px;padding-bottom:16px;border-bottom:1px dashed var(--line)}
+.sec:last-child{border-bottom:0;padding-bottom:0}
+.sec-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.sec-h h3{font-size:14px;font-weight:800}
+.tool{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--c);background:var(--cs);padding:2px 8px;border-radius:99px}
+.hint{font-size:12px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fld label{font-size:12px;font-weight:600;color:var(--muted)}
+input,select,textarea{font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--c);outline-offset:1px}
+textarea{resize:vertical;min-height:84px;line-height:1.45}
+.unit{display:flex;align-items:center;gap:6px}
+.unit i{font-style:normal;color:var(--muted);font-size:12px;white-space:nowrap}
+.delta{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.delta.up{color:var(--st)} .delta.down{color:#b42318}
+:root[data-theme="dark"] .delta.down{color:#ff8a80}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .delta.down{color:#ff8a80}}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:12.5px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:99px;padding:5px 11px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--cs);border-color:var(--c);color:var(--c);font-weight:700}
+.interp{background:var(--soft);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;font-size:13px}
+.interp b{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{font:inherit;font-weight:700;font-size:13px;border-radius:9px;padding:9px 14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.btn.pri{background:var(--c);border-color:var(--c);color:#fff}
+:root[data-theme="dark"] .btn.pri{color:#08121c}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.pri{color:#08121c}}
+.nav{display:flex;justify-content:space-between;gap:8px}
+.prev{position:sticky;top:12px}
+@media (max-width:900px){.prev{position:static}}
+.prev-h{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.prev-h h2{font-size:14px;font-weight:800}
+.prev-b{padding:14px 16px;display:flex;flex-direction:column;gap:12px;font-size:13px;max-height:none}
+.pb{display:grid;grid-template-columns:26px minmax(0,1fr);gap:8px}
+.pb>b{width:26px;height:26px;border-radius:7px;background:var(--cs);color:var(--c);display:grid;place-items:center;font-size:13px}
+.pb div{white-space:pre-wrap;word-break:break-word;min-width:0}
+.pb .empty{color:var(--muted)}
+.foot{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+</style>
+<style>html{color-scheme:light}body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="demo">Contoh tampilan. Nama anak dan angka di bawah fiktif. Daftar alat ukur adalah yang umum dipakai di klinik tumbuh kembang. Daftar yang benar-benar dipakai tiap terapis perlu dicek dan diatur per klinik.</div>
+
+  <section class="head" aria-label="Identitas anak">
+    <div class="who">
+      <h1>Aisyah R. <span style="font-weight:500;color:var(--muted)">(contoh)</span></h1>
+      <span>RM-0412 · Dx medis: Cerebral palsy spastik diplegi, keterlambatan bicara</span>
+      <span>Sesi 8 dari paket 12 · 25 Nov 2026 · Orang tua: Ibu Rahma</span>
+    </div>
+    <div class="facts">
+      <div class="fact">Usia kronologis<b>4 th 10 bln</b></div>
+      <div class="fact">Lahir<b>32 mgg · 1.600 g</b></div>
+      <div class="fact">Usia koreksi<b>tidak dipakai (&gt; 24 bln)</b></div>
+    </div>
+  </section>
+
+  <div class="disc" id="disc" role="group" aria-label="Disiplin terapi"></div>
+
+  <div class="main">
+    <section class="card" id="form" style="--c:var(--pt);--cs:var(--pt-soft)"></section>
+    <aside class="card prev" id="prev" style="--c:var(--pt);--cs:var(--pt-soft)"></aside>
+  </div>
+
+  <div class="foot">
+    <span>Aplikasi hanya menyimpan skor dan hasil yang dimasukkan terapis. Butir soal tes berlisensi (Sensory Profile, PLS-5, Beery VMI, PEDI-CAT) tidak dimuat.</span>
+    <span>Kode ICF-CY pada Assessment adalah usulan awal. Terapis menyunting dan memutuskan.</span>
+  </div>
+</div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const LV=['Jauh lebih rendah','Lebih rendah','Sama seperti kebanyakan','Lebih tinggi','Jauh lebih tinggi'];
+const ADL=['Mandiri','Pengawasan','Bantuan minimal','Bantuan sedang','Bantuan maksimal'];
+const MAS=['0','1','1+','2','3','4'];
+
+const D={
+pt:{name:'Fisioterapi',who:'Ft. Rina, S.Ft',c:'--pt',cs:'--pt-soft',
+ chips:['Sering jinjit saat jalan','Mudah jatuh','Cepat lelah','Latihan rumah rutin','Tidak ada nyeri'],
+ subj:'Ibu melaporkan Aisyah mulai mau naik tangga 3 anak tangga dengan pegangan. Masih sering jinjit saat berlari. Latihan peregangan dilakukan 5 dari 7 hari.',
+ obj:[
+ {t:'Klasifikasi fungsi motorik',tool:'GMFCS',f:[
+  {id:'gmfcs',l:'Level GMFCS (usia 4-6 th)',type:'select',opts:['I','II','III','IV','V'],def:'II'}]},
+ {t:'Motorik kasar',tool:'GMFM-88',hint:'Skor % per dimensi. Total = rata-rata lima dimensi.',f:[
+  {id:'gA',l:'A. Berbaring & berguling',type:'num',min:0,max:100,def:98,prev:98,u:'%'},
+  {id:'gB',l:'B. Duduk',type:'num',min:0,max:100,def:92,prev:90,u:'%'},
+  {id:'gC',l:'C. Merangkak & berlutut',type:'num',min:0,max:100,def:81,prev:78,u:'%'},
+  {id:'gD',l:'D. Berdiri',type:'num',min:0,max:100,def:65,prev:61,u:'%'},
+  {id:'gE',l:'E. Berjalan, berlari, melompat',type:'num',min:0,max:100,def:48,prev:44,u:'%'}]},
+ {t:'Tonus otot',tool:'Modified Ashworth',f:[
+  {id:'masGa',l:'Gastrocnemius kanan',type:'select',opts:MAS,def:'1+'},
+  {id:'masGi',l:'Gastrocnemius kiri',type:'select',opts:MAS,def:'1'},
+  {id:'masHa',l:'Hamstring kanan',type:'select',opts:MAS,def:'1'},
+  {id:'masHi',l:'Hamstring kiri',type:'select',opts:MAS,def:'1'},
+  {id:'masAd',l:'Adduktor hip',type:'select',opts:MAS,def:'1'}]},
+ {t:'Lingkup gerak sendi',tool:'Goniometer',f:[
+  {id:'romDa',l:'Dorsifleksi ankle kanan (lutut lurus)',type:'num',min:-30,max:30,def:-5,prev:-10,u:'°'},
+  {id:'romDi',l:'Dorsifleksi ankle kiri (lutut lurus)',type:'num',min:-30,max:30,def:0,prev:-3,u:'°'},
+  {id:'romPa',l:'Sudut popliteal kanan',type:'num',min:0,max:90,def:50,prev:55,u:'°'},
+  {id:'romPi',l:'Sudut popliteal kiri',type:'num',min:0,max:90,def:45,prev:50,u:'°'}]},
+ {t:'Keseimbangan',tool:'Pediatric Balance Scale',f:[
+  {id:'pbs',l:'Skor total PBS',type:'num',min:0,max:56,def:38,prev:34,u:'/ 56'},
+  {id:'aid',l:'Alat bantu / ortosis',type:'select',opts:['Tanpa alat','AFO bilateral','AFO + walker','Walker saja'],def:'AFO bilateral'}]}
+ ]},
+ot:{name:'Terapi Okupasi',who:'Ot. Dina, S.Tr.OT',c:'--ot',cs:'--ot-soft',
+ chips:['Menghindari tekstur tertentu','Sulit duduk tenang','Mudah teralihkan','Suka bermain pasir/air','Mulai mau makan sendiri'],
+ subj:'Ibu melaporkan Aisyah sudah mau memegang sendok sendiri saat makan, tetapi masih tumpah. Tidak suka disisir dan menolak kaus berlabel. Di TK sulit duduk saat mewarnai.',
+ obj:[
+ {t:'Pemrosesan sensori',tool:'Sensory Profile 2',hint:'Pilih klasifikasi hasil skoring kuadran. Skor mentah tidak disimpan.',f:[
+  {id:'spSeek',l:'Pencarian (seeking)',type:'select',opts:LV,def:LV[3]},
+  {id:'spAvoid',l:'Penghindaran (avoiding)',type:'select',opts:LV,def:LV[3]},
+  {id:'spSens',l:'Sensitivitas (sensitivity)',type:'select',opts:LV,def:LV[4]},
+  {id:'spReg',l:'Registrasi (bystander)',type:'select',opts:LV,def:LV[2]}]},
+ {t:'Persepsi visual-motorik',tool:'Beery VMI',hint:'Skor standar: rata-rata 100, SD 15.',f:[
+  {id:'vmi',l:'Skor standar VMI',type:'num',min:45,max:155,def:78,prev:72},
+  {id:'grasp',l:'Genggaman pensil',type:'select',opts:['Palmar supinasi','Digital pronasi','Tripod statis','Tripod dinamis'],def:'Digital pronasi'}]},
+ {t:'Fungsi harian',tool:'PEDI-CAT',hint:'Skor standar normatif: rata-rata 50, SD 10.',f:[
+  {id:'pediDA',l:'Aktivitas harian (T-score)',type:'num',min:10,max:90,def:38,prev:35},
+  {id:'pediMob',l:'Mobilitas (T-score)',type:'num',min:10,max:90,def:36,prev:35}]},
+ {t:'Kemandirian ADL',tool:'Level bantuan',f:[
+  {id:'adlEat',l:'Makan dengan sendok',type:'select',opts:ADL,def:ADL[1]},
+  {id:'adlDress',l:'Memakai baju atas',type:'select',opts:ADL,def:ADL[2]},
+  {id:'adlToilet',l:'Toileting',type:'select',opts:ADL,def:ADL[3]}]},
+ {t:'Aktivitas bermakna menurut orang tua',tool:'COPM',hint:'Skala 1-10. Perubahan ≥ 2 poin dianggap bermakna secara klinis.',f:[
+  {id:'cpEatP',l:'"Makan sendiri" · performa',type:'num',min:1,max:10,def:5,prev:3},
+  {id:'cpEatS',l:'"Makan sendiri" · kepuasan',type:'num',min:1,max:10,def:5,prev:3},
+  {id:'cpDrP',l:'"Berpakaian" · performa',type:'num',min:1,max:10,def:3,prev:2},
+  {id:'cpDrS',l:'"Berpakaian" · kepuasan',type:'num',min:1,max:10,def:4,prev:2}]}
+ ]},
+st:{name:'Terapi Wicara',who:'Wc. Fitri, S.Tr.Wic',c:'--st',cs:'--st-soft',
+ chips:['Bicara sulit dimengerti orang asing','Baru gabung 2-3 kata','Mulai meminta dengan kata','Tersedak saat minum','Air liur menetes'],
+ subj:'Ibu melaporkan Aisyah sudah menyebut "mau susu" dan "ayah pergi". Orang di luar keluarga masih sulit memahami. Makan nasi lembek lancar, kadang tersedak saat minum cepat.',
+ obj:[
+ {t:'Bahasa',tool:'PLS-5',hint:'Skor standar: rata-rata 100, SD 15.',f:[
+  {id:'plsAC',l:'Pemahaman auditori (AC)',type:'num',min:50,max:150,def:86,prev:82},
+  {id:'plsEC',l:'Komunikasi ekspresif (EC)',type:'num',min:50,max:150,def:71,prev:66},
+  {id:'mlu',l:'MLU (kata per tuturan)',type:'num',min:1,max:6,step:.1,def:2.1,prev:1.7},
+  {id:'vocab',l:'Perkiraan kosakata ekspresif',type:'num',min:0,max:2000,def:320,prev:260}]},
+ {t:'Bunyi bicara',tool:'PCC & ICS',hint:'PCC = persentase konsonan benar dari sampel bicara spontan. ICS skala 1-5.',f:[
+  {id:'pcc',l:'PCC',type:'num',min:0,max:100,def:62,prev:55,u:'%'},
+  {id:'ics',l:'Intelligibility in Context Scale (rata-rata)',type:'num',min:1,max:5,step:.1,def:3.4,prev:3.0}]},
+ {t:'Oromotor & makan-menelan',tool:'FOIS',f:[
+  {id:'fois',l:'Level FOIS (1-7)',type:'num',min:1,max:7,def:6,prev:6},
+  {id:'lip',l:'Penutupan bibir',type:'select',opts:['Baik','Kadang terbuka','Sering terbuka'],def:'Kadang terbuka'},
+  {id:'drool',l:'Air liur menetes',type:'select',opts:['Tidak','Sesekali','Sering'],def:'Sesekali'},
+  {id:'tongue',l:'Lateralisasi lidah',type:'select',opts:['Baik','Terbatas','Tidak ada'],def:'Terbatas'}]},
+ {t:'Pragmatik',tool:'Observasi',f:[
+  {id:'eye',l:'Kontak mata',type:'select',opts:['Konsisten','Kadang','Jarang'],def:'Konsisten'},
+  {id:'turn',l:'Giliran bicara',type:'select',opts:['Konsisten','Dengan isyarat','Belum muncul'],def:'Dengan isyarat'},
+  {id:'joint',l:'Perhatian bersama',type:'select',opts:['Baik','Dengan isyarat','Terbatas'],def:'Baik'}]}
+ ]}
+};
+
+const val={}; Object.keys(D).forEach(k=>{D[k].obj.forEach(s=>s.f.forEach(f=>val[f.id]=f.def)); });
+const S={disc:'pt',step:0,chips:{pt:['Sering jinjit saat jalan','Latihan rumah rutin','Tidak ada nyeri'],ot:['Menghindari tekstur tertentu','Sulit duduk tenang','Mulai mau makan sendiri'],st:['Bicara sulit dimengerti orang asing','Mulai meminta dengan kata']},
+ subj:{pt:D.pt.subj,ot:D.ot.subj,st:D.st.subj},assess:{},aEdited:{},plan:{}};
+const PLAN={
+ pt:{goal:'1. Berjalan 50 m di permukaan rata tanpa alat bantu dengan tumit menapak dalam 3 bulan (sekarang 20 m dengan walker).\n2. Naik 5 anak tangga bergantian kaki dengan satu pegangan dalam 2 bulan.\n3. Skor PBS ≥ 46 dalam 3 bulan.',freq:'2x / minggu',home:'Peregangan gastrocnemius 3 x 30 detik, tiap kaki, 2x sehari. Berdiri satu kaki bergantian 10 detik sambil berpegangan, 5 kali.'},
+ ot:{goal:'1. Makan dengan sendok tanpa tumpah >50% suapan dalam 2 bulan.\n2. Memakai kaus tanpa bantuan fisik dalam 3 bulan.\n3. Toleransi duduk mewarnai 10 menit dengan satu pengingat.',freq:'2x / minggu',home:'Rutinitas sensori pagi: tekanan dalam dan permainan tekstur 10 menit. Latihan menyendok biji-bijian dari mangkuk ke mangkuk, 5 menit.'},
+ st:{goal:'1. Menyusun kalimat 3-4 kata (MLU ≥ 2,8) pada aktivitas bermain dalam 3 bulan.\n2. PCC ≥ 70% pada sampel bicara spontan dalam 3 bulan.\n3. Minum dari gelas tanpa tersedak 9 dari 10 kali.',freq:'1x / minggu',home:'Membaca buku bergambar 10 menit, minta anak menunjuk dan menyebut. Beri pilihan dua kata sebelum menolong ("susu atau air?").'}
+};
+Object.keys(PLAN).forEach(k=>S.plan[k]=Object.assign({},PLAN[k],{re:'Setiap 12 sesi'}));
+
+const n=id=>Number(val[id]);
+function cls(ss){return ss>=116?'di atas rata-rata':ss>=85?'rata-rata':ss>=70?'di bawah rata-rata, ringan':'jauh di bawah rata-rata'}
+function pccSev(p){return p>85?'ringan':p>65?'ringan-sedang':p>50?'sedang-berat':'berat'}
+const FOIS=['Tidak ada asupan lewat mulut','Tube dependen, sedikit oral','Tube dependen, oral konsisten','Oral penuh satu konsistensi','Oral penuh banyak konsistensi, perlu persiapan khusus','Oral penuh tanpa persiapan, dengan batasan makanan','Oral penuh tanpa batasan'];
+function gmfmTot(){return Math.round(['gA','gB','gC','gD','gE'].reduce((a,k)=>a+n(k),0)/5*10)/10}
+function masMax(){const o=MAS;return ['masGa','masGi','masHa','masHi','masAd'].map(k=>val[k]).sort((a,b)=>o.indexOf(b)-o.indexOf(a))[0]}
+function sig(d){return d>=2?' (bermakna secara klinis)':''}
+
+function interp(d){
+ if(d==='pt'){return [
+  `GMFCS level ${val.gmfcs}. GMFM-88 total ${gmfmTot().toFixed(1)}% (sebelumnya 74,2%).`,
+  `Spastisitas tertinggi: MAS ${masMax()}.`,
+  `PBS ${n('pbs')}/56, naik ${n('pbs')-34} poin dari sesi sebelumnya.`];}
+ if(d==='ot'){
+  const dP=n('cpEatP')-3,dS=n('cpEatS')-3;
+  return [
+  `Beery VMI ${n('vmi')}: ${cls(n('vmi'))}.`,
+  `PEDI-CAT aktivitas harian T=${n('pediDA')}: ${n('pediDA')<40?'di bawah rata-rata (> 1 SD)':'dalam rentang rata-rata'}.`,
+  `COPM "makan sendiri": performa ${dP>=0?'+':''}${dP}, kepuasan ${dS>=0?'+':''}${dS}${sig(dP)}.`,
+  `Sensitivitas sensori: ${val.spSens.toLowerCase()} dari kebanyakan anak.`];}
+ const gap=n('plsAC')-n('plsEC');
+ return [
+  `PLS-5 pemahaman ${n('plsAC')} (${cls(n('plsAC'))}), ekspresif ${n('plsEC')} (${cls(n('plsEC'))}).`,
+  gap>=10?`Kemampuan ekspresif tertinggal ${gap} poin dari pemahaman.`:`Selisih pemahaman dan ekspresif ${gap} poin.`,
+  `PCC ${n('pcc')}%: gangguan bunyi bicara ${pccSev(n('pcc'))}.`,
+  `FOIS level ${n('fois')}: ${FOIS[n('fois')-1]}.`];
+}
+function assessDraft(d){
+ if(d==='pt')return `Anak CP spastik diplegi GMFCS ${val.gmfcs} dengan kemajuan motorik kasar: GMFM-88 total ${gmfmTot().toFixed(1)}%, dimensi berdiri ${n('gD')}% dan berjalan ${n('gE')}%. Spastisitas plantar fleksor dan hamstring (MAS maks ${masMax()}) masih membatasi dorsifleksi ankle dan pola jalan. Keseimbangan membaik (PBS ${n('pbs')}/56).\n\nICF-CY (usulan): b735 fungsi tonus otot; d450 berjalan; d415 mempertahankan posisi tubuh.`;
+ if(d==='ot')return `Anak dengan hipersensitivitas sensori (sensitivitas ${val.spSens.toLowerCase()}) disertai kesulitan visual-motorik (VMI ${n('vmi')}, ${cls(n('vmi'))}). Kemandirian makan membaik (COPM performa ${n('cpEatP')}/10), berpakaian masih ${val.adlDress.toLowerCase()}. Faktor sensori memengaruhi partisipasi di sekolah.\n\nICF-CY (usulan): b156 fungsi persepsi; d550 makan; d540 berpakaian; d440 penggunaan tangan halus.`;
+ return `Keterlambatan bahasa ekspresif lebih berat daripada reseptif (PLS-5 EC ${n('plsEC')}, AC ${n('plsAC')}) dengan gangguan bunyi bicara ${pccSev(n('pcc'))} (PCC ${n('pcc')}%). MLU ${n('mlu').toFixed(1)}. Makan oral penuh (FOIS ${n('fois')}), dengan tersedak sesekali pada cairan. Penutupan bibir ${val.lip.toLowerCase()}.\n\nICF-CY (usulan): d330 berbicara; d310 menerima pesan lisan; b320 fungsi artikulasi; b510 fungsi asupan.`;
+}
+function objText(d){
+ return D[d].obj.map(s=>{
+  const rows=s.f.map(f=>{const v=val[f.id];const u=f.u&&f.u!=='%'&&f.u!=='°'?' '+f.u:(f.u||'');return `  ${f.l}: ${v}${u}`}).join('\n');
+  return `${s.t} (${s.tool})\n${rows}`}).join('\n');
+}
+function preview(d){
+ const p=S.plan[d];
+ if(!S.aEdited[d])S.assess[d]=assessDraft(d);
+ const s=(S.chips[d].length?S.chips[d].map(x=>'- '+x).join('\n')+'\n':'')+S.subj[d];
+ const pl=`Sasaran:\n${p.goal}\n\nFrekuensi: ${p.freq}. Evaluasi ulang: ${p.re}.\n\nProgram rumah:\n${p.home}`;
+ return {S:s,O:objText(d),A:S.assess[d],P:pl};
+}
+
+function renderDisc(){
+ $('#disc').innerHTML=Object.keys(D).map(k=>`<button type="button" aria-pressed="${S.disc===k}" data-d="${k}" style="--c:var(${D[k].c});--cs:var(${D[k].cs})"><span>${D[k].name}</span><small>${D[k].who}</small></button>`).join('');
+}
+function theme(d){['#form','#prev'].forEach(s=>{$(s).style.setProperty('--c',`var(${D[d].c})`);$(s).style.setProperty('--cs',`var(${D[d].cs})`)})}
+
+function fld(f){
+ const v=val[f.id];
+ let inp;
+ if(f.type==='select')inp=`<select id="${f.id}" data-f="${f.id}">${f.opts.map(o=>`<option${o===v?' selected':''}>${o}</option>`).join('')}</select>`;
+ else inp=`<div class="unit"><input id="${f.id}" data-f="${f.id}" type="number" inputmode="decimal" min="${f.min}" max="${f.max}" step="${f.step||1}" value="${v}">${f.u?`<i>${f.u}</i>`:''}</div>`;
+ const dl=f.prev!=null?`<span class="delta" data-dl="${f.id}"></span>`:'';
+ return `<div class="fld"><label for="${f.id}">${f.l}</label>${inp}${dl}</div>`;
+}
+function deltas(){
+ Object.values(D).forEach(x=>x.obj.forEach(s=>s.f.forEach(f=>{
+  if(f.prev==null)return;const el=document.querySelector(`[data-dl="${f.id}"]`);if(!el)return;
+  const d=Math.round((Number(val[f.id])-f.prev)*10)/10;
+  el.textContent=`sebelumnya ${f.prev}${d?`, ${d>0?'+':''}${d}`:', tetap'}`;
+  const good=/rom(Pa|Pi)/.test(f.id)?d<0:d>0;
+  el.className='delta '+(d===0?'':good?'up':'down');
+ })));
+}
+const LBL=['Subjective','Objective','Assessment','Plan'];
+function renderForm(){
+ const d=S.disc,x=D[d];theme(d);
+ let b='';
+ if(S.step===0){
+  b=`<div class="sec"><div class="sec-h"><h3>Keluhan dan perkembangan</h3><span class="tool">Pilih cepat</span></div>
+  <div class="chips">${x.chips.map(c=>`<button type="button" class="chip" data-chip="${c}" aria-pressed="${S.chips[d].includes(c)}">${c}</button>`).join('')}</div></div>
+  <div class="sec"><div class="sec-h"><h3>Laporan orang tua / pengasuh</h3><span class="hint">Boleh dikte suara</span></div>
+  <textarea id="subj" aria-label="Laporan orang tua">${S.subj[d]}</textarea></div>`;
+ } else if(S.step===1){
+  b=x.obj.map(s=>`<div class="sec"><div class="sec-h"><h3>${s.t}</h3><span class="tool">${s.tool}</span></div>${s.hint?`<p class="hint">${s.hint}</p>`:''}<div class="grid">${s.f.map(fld).join('')}</div></div>`).join('')
+   +`<div class="interp" id="interp"></div>`;
+ } else if(S.step===2){
+  b=`<div class="sec"><div class="sec-h"><h3>Assessment</h3><span class="hint">Draf otomatis dari S dan O. Terapis boleh menyunting.</span></div>
+  <textarea id="assess" style="min-height:190px" aria-label="Assessment">${S.assess[d]}</textarea>
+  <div class="btns"><button type="button" class="btn" id="regen">Susun ulang dari data S dan O</button></div></div>
+  <div class="interp" id="interp"></div>`;
+ } else {
+  const p=S.plan[d];
+  b=`<div class="sec"><div class="sec-h"><h3>Sasaran terapi (SMART)</h3></div><textarea id="goal" style="min-height:130px" aria-label="Sasaran">${p.goal}</textarea></div>
+  <div class="sec"><div class="grid"><div class="fld"><label for="freq">Frekuensi</label><select id="freq">${['1x / minggu','2x / minggu','3x / minggu'].map(o=>`<option${o===p.freq?' selected':''}>${o}</option>`).join('')}</select></div>
+  <div class="fld"><label for="re">Evaluasi ulang</label><select id="re">${['Setiap 8 sesi','Setiap 12 sesi','Setiap 3 bulan'].map(o=>`<option${o===p.re?' selected':''}>${o}</option>`).join('')}</select></div></div></div>
+  <div class="sec"><div class="sec-h"><h3>Program rumah untuk orang tua</h3><span class="hint">Tampil di portal Clinara</span></div><textarea id="home" aria-label="Program rumah">${p.home}</textarea></div>`;
+ }
+ $('#form').innerHTML=`<div class="steps" role="tablist">${LBL.map((l,i)=>`<button type="button" role="tab" aria-selected="${S.step===i}" data-s="${i}"><b>${l[0]}</b><small>${l}</small></button>`).join('')}</div>
+  <div class="body">${b}<div class="nav"><button type="button" class="btn" data-go="-1" ${S.step===0?'disabled style="opacity:.4"':''}>Sebelumnya</button>
+  ${S.step<3?`<button type="button" class="btn pri" data-go="1">Lanjut ke ${LBL[S.step+1]}</button>`:`<button type="button" class="btn pri" id="done">Selesai dan kunci SOAP</button>`}</div></div>`;
+ deltas();upd();
+}
+function upd(){
+ const d=S.disc,p=preview(d);
+ const it=$('#interp');if(it)it.innerHTML='<b>Interpretasi otomatis</b>'+interp(d).map(t=>`<span>${t}</span>`).join('');
+ const as=$('#assess');if(as&&!S.aEdited[d])as.value=S.assess[d];
+ $('#prev').innerHTML=`<div class="prev-h"><h2>Pratinjau catatan SOAP</h2><button type="button" class="btn" id="copy">Salin teks</button></div>
+ <div class="prev-b">${['S','O','A','P'].map(k=>`<div class="pb"><b>${k}</b><div>${esc(p[k])}</div></div>`).join('')}
+ <span class="hint" style="font-size:12px;color:var(--muted)">${D[d].who} · ${D[d].name} · 25 Nov 2026</span></div>`;
+}
+const esc=t=>String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+document.addEventListener('click',e=>{
+ const t=e.target.closest('button');if(!t)return;
+ if(t.dataset.d){S.disc=t.dataset.d;S.step=0;renderDisc();renderForm();}
+ else if(t.dataset.s){S.step=+t.dataset.s;renderForm();}
+ else if(t.dataset.go){S.step=Math.max(0,Math.min(3,S.step+ +t.dataset.go));renderForm();window.scrollTo({top:0});}
+ else if(t.dataset.chip){const a=S.chips[S.disc],i=a.indexOf(t.dataset.chip);i<0?a.push(t.dataset.chip):a.splice(i,1);t.setAttribute('aria-pressed',i<0);upd();}
+ else if(t.id==='regen'){S.aEdited[S.disc]=false;S.assess[S.disc]=assessDraft(S.disc);$('#assess').value=S.assess[S.disc];upd();}
+ else if(t.id==='done'){t.textContent='Contoh: tidak disimpan';t.disabled=true;}
+ else if(t.id==='copy'){const p=preview(S.disc);const tx=`S:\n${p.S}\n\nO:\n${p.O}\n\nA:\n${p.A}\n\nP:\n${p.P}`;
+  const ok=()=>{t.textContent='Tersalin'};try{navigator.clipboard.writeText(tx).then(ok,()=>{t.textContent='Gagal menyalin'})}catch(_){t.textContent='Gagal menyalin'}}
+});
+document.addEventListener('input',e=>{
+ const t=e.target;
+ if(t.dataset&&t.dataset.f){val[t.dataset.f]=t.value;deltas();upd();}
+ else if(t.id==='subj'){S.subj[S.disc]=t.value;upd();}
+ else if(t.id==='assess'){S.aEdited[S.disc]=true;S.assess[S.disc]=t.value;upd();}
+ else if(t.id==='goal'){S.plan[S.disc].goal=t.value;upd();}
+ else if(t.id==='home'){S.plan[S.disc].home=t.value;upd();}
+ else if(t.id==='freq'){S.plan[S.disc].freq=t.value;upd();}
+ else if(t.id==='re'){S.plan[S.disc].re=t.value;upd();}
+});
+renderDisc();renderForm();
+})();
+</script>
+</body>
+</html>
