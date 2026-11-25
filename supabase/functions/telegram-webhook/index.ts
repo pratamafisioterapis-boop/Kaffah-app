@@ -47,6 +47,7 @@ const HELP = [
   "/uji  uji regresi AI (soal tetap) dan bandingkan dengan uji sebelumnya",
   "/aturan  daftar arahan, /hapus N  hapus arahan",
   "/status  status AI",
+  "/kredit  sisa kredit Claude API; /kredit 25 mencatat saldo (USD) setelah top up; /kredit ambang 5",
   "",
   "Pengajuan override: reply notifikasinya dengan \"ok\" untuk menyetujui atau \"ga\" untuk menolak.",
   "",
@@ -209,6 +210,21 @@ async function handleUpdate(update: any) {
       }
       return;
     }
+  }
+
+  // Pantau kredit Claude API: /kredit (status), /kredit 25 (catat saldo USD), /kredit ambang 5
+  const kr = msg.text.trim().match(/^\/kredit(?:@\w+)?(?:\s+(ambang)?\s*\$?\s*([\d.,]+))?\s*$/i);
+  if (kr) {
+    const num = kr[2] ? Number(kr[2].replace(",", ".")) : undefined;
+    const payload = num === undefined ? { status: true } : kr[1] ? { set_threshold: num } : { set_balance: num };
+    const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/claude-credit-check`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-internal-secret": Deno.env.get("TELEGRAM_INTERNAL_SECRET") || "" },
+      body: JSON.stringify(payload),
+    });
+    const out = await res.json().catch(() => ({}));
+    await reply(out?.text || "Gagal mengecek kredit Claude.");
+    return;
   }
 
   // Koreksi draf AI WhatsApp (reply), aturan umum, dan perintah /skor /jeda /aturan /hapus /status
