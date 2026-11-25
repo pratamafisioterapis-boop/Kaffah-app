@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#044687">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="robots" content="noindex, nofollow">
 <title>SOAP Tumbuh Kembang</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,6 +36,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14p
   padding-block:16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
 h1,h2,h3,p{margin:0}
+.ds{display:none}
 .demo{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:8px 12px;font-size:12.5px}
 .head{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center}
 .who{display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -94,12 +98,43 @@ textarea{resize:vertical;min-height:84px;line-height:1.45}
 .pb div{white-space:pre-wrap;word-break:break-word;min-width:0}
 .pb .empty{color:var(--muted)}
 .foot{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+
+.bnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.bnav button{flex:1;font:inherit;background:none;border:0;border-top:3px solid transparent;margin-top:-1px;padding:8px 2px 9px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0;cursor:pointer}
+.bnav b{font-size:17px;line-height:1.15}.bnav small{font-size:10.5px;font-weight:600}
+.bnav button[aria-current="page"]{color:var(--c);border-top-color:var(--c)}
+/* Ponsel: layar penuh seperti aplikasi. Navigasi S-O-A-P-Catatan di bawah, pilihan disiplin menempel di atas. */
+@media (max-width:900px){
+  .dl{display:none}.ds{display:inline}
+  body{padding:0}
+  .wrap{gap:0;max-width:none}
+  .demo{border-radius:0;font-size:11.5px;padding:7px 14px;padding-top:calc(7px + env(safe-area-inset-top,0px))}
+  .head{border-radius:0;border-width:0 0 1px;padding:12px 16px}
+  .facts{margin-left:0;width:100%}
+  .disc{position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 12px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-bottom:1px solid var(--line)}
+  .disc button{align-items:center;text-align:center;padding:8px 4px}
+  .disc button small{font-size:10.5px}
+  .main{display:block}
+  .card{border-radius:0;border-width:0}
+  .steps{display:none}
+  .body{padding:16px 16px calc(88px + env(safe-area-inset-bottom,0px))}
+  #prev{display:none}
+  .show-prev #form{display:none}
+  .show-prev #prev{display:block}
+  .prev-b{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))}
+  .foot{padding:12px 16px calc(96px + env(safe-area-inset-bottom,0px))}
+  .bnav{display:flex}
+  input,select,textarea{font-size:16px}
+  .btn,.chip{min-height:42px}
+  .chip{padding:7px 13px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+}
 </style>
 <style>html{color-scheme:light}body{margin:0}[hidden]{display:none!important}</style>
 </head>
 <body>
 <div class="wrap" id="app">
-  <div class="demo">Contoh tampilan. Nama anak dan angka di bawah fiktif. Daftar alat ukur adalah yang umum dipakai di klinik tumbuh kembang. Daftar yang benar-benar dipakai tiap terapis perlu dicek dan diatur per klinik.</div>
+  <div class="demo"><span class="dl">Contoh tampilan. Nama anak dan angka di bawah fiktif. Daftar alat ukur adalah yang umum dipakai di klinik tumbuh kembang. Daftar yang benar-benar dipakai tiap terapis perlu dicek dan diatur per klinik.</span><span class="ds">Contoh dengan data fiktif. Alat ukur perlu disesuaikan terapis.</span></div>
 
   <section class="head" aria-label="Identitas anak">
     <div class="who">
@@ -126,6 +161,8 @@ textarea{resize:vertical;min-height:84px;line-height:1.45}
     <span>Kode ICF-CY pada Assessment adalah usulan awal. Terapis menyunting dan memutuskan.</span>
   </div>
 </div>
+
+<nav class="bnav" id="bnav" aria-label="Langkah SOAP" style="--c:var(--pt);--cs:var(--pt-soft)"></nav>
 
 <script>
 (function(){
@@ -269,7 +306,7 @@ function preview(d){
 function renderDisc(){
  $('#disc').innerHTML=Object.keys(D).map(k=>`<button type="button" aria-pressed="${S.disc===k}" data-d="${k}" style="--c:var(${D[k].c});--cs:var(${D[k].cs})"><span>${D[k].name}</span><small>${D[k].who}</small></button>`).join('');
 }
-function theme(d){['#form','#prev'].forEach(s=>{$(s).style.setProperty('--c',`var(${D[d].c})`);$(s).style.setProperty('--cs',`var(${D[d].cs})`)})}
+function theme(d){['#form','#prev','#bnav'].forEach(s=>{$(s).style.setProperty('--c',`var(${D[d].c})`);$(s).style.setProperty('--cs',`var(${D[d].cs})`)})}
 
 function fld(f){
  const v=val[f.id];
@@ -290,17 +327,17 @@ function deltas(){
 }
 const LBL=['Subjective','Objective','Assessment','Plan'];
 function renderForm(){
- const d=S.disc,x=D[d];theme(d);
+ const d=S.disc,x=D[d],st=Math.min(S.step,3);theme(d);
  let b='';
- if(S.step===0){
+ if(st===0){
   b=`<div class="sec"><div class="sec-h"><h3>Keluhan dan perkembangan</h3><span class="tool">Pilih cepat</span></div>
   <div class="chips">${x.chips.map(c=>`<button type="button" class="chip" data-chip="${c}" aria-pressed="${S.chips[d].includes(c)}">${c}</button>`).join('')}</div></div>
   <div class="sec"><div class="sec-h"><h3>Laporan orang tua / pengasuh</h3><span class="hint">Boleh dikte suara</span></div>
   <textarea id="subj" aria-label="Laporan orang tua">${S.subj[d]}</textarea></div>`;
- } else if(S.step===1){
+ } else if(st===1){
   b=x.obj.map(s=>`<div class="sec"><div class="sec-h"><h3>${s.t}</h3><span class="tool">${s.tool}</span></div>${s.hint?`<p class="hint">${s.hint}</p>`:''}<div class="grid">${s.f.map(fld).join('')}</div></div>`).join('')
    +`<div class="interp" id="interp"></div>`;
- } else if(S.step===2){
+ } else if(st===2){
   b=`<div class="sec"><div class="sec-h"><h3>Assessment</h3><span class="hint">Draf otomatis dari S dan O. Terapis boleh menyunting.</span></div>
   <textarea id="assess" style="min-height:190px" aria-label="Assessment">${S.assess[d]}</textarea>
   <div class="btns"><button type="button" class="btn" id="regen">Susun ulang dari data S dan O</button></div></div>
@@ -312,9 +349,11 @@ function renderForm(){
   <div class="fld"><label for="re">Evaluasi ulang</label><select id="re">${['Setiap 8 sesi','Setiap 12 sesi','Setiap 3 bulan'].map(o=>`<option${o===p.re?' selected':''}>${o}</option>`).join('')}</select></div></div></div>
   <div class="sec"><div class="sec-h"><h3>Program rumah untuk orang tua</h3><span class="hint">Tampil di portal Clinara</span></div><textarea id="home" aria-label="Program rumah">${p.home}</textarea></div>`;
  }
- $('#form').innerHTML=`<div class="steps" role="tablist">${LBL.map((l,i)=>`<button type="button" role="tab" aria-selected="${S.step===i}" data-s="${i}"><b>${l[0]}</b><small>${l}</small></button>`).join('')}</div>
-  <div class="body">${b}<div class="nav"><button type="button" class="btn" data-go="-1" ${S.step===0?'disabled style="opacity:.4"':''}>Sebelumnya</button>
-  ${S.step<3?`<button type="button" class="btn pri" data-go="1">Lanjut ke ${LBL[S.step+1]}</button>`:`<button type="button" class="btn pri" id="done">Selesai dan kunci SOAP</button>`}</div></div>`;
+ $('#form').innerHTML=`<div class="steps" role="tablist">${LBL.map((l,i)=>`<button type="button" role="tab" aria-selected="${st===i}" data-s="${i}"><b>${l[0]}</b><small>${l}</small></button>`).join('')}</div>
+  <div class="body">${b}<div class="nav"><button type="button" class="btn" data-go="-1" ${st===0?'disabled style="opacity:.4"':''}>Sebelumnya</button>
+  ${st<3?`<button type="button" class="btn pri" data-go="1">Lanjut ke ${LBL[st+1]}</button>`:`<button type="button" class="btn pri" id="done">Selesai dan kunci SOAP</button>`}</div></div>`;
+ $('#app').classList.toggle('show-prev',S.step===4);
+ $('#bnav').innerHTML=[['S','Subjective'],['O','Objective'],['A','Assessment'],['P','Plan'],['≡','Catatan']].map((x,i)=>`<button type="button" data-s="${i}" ${S.step===i?'aria-current="page"':''}><b>${x[0]}</b><small>${x[1]}</small></button>`).join('');
  deltas();upd();
 }
 function upd(){
@@ -330,7 +369,7 @@ const esc=t=>String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[
 document.addEventListener('click',e=>{
  const t=e.target.closest('button');if(!t)return;
  if(t.dataset.d){S.disc=t.dataset.d;S.step=0;renderDisc();renderForm();}
- else if(t.dataset.s){S.step=+t.dataset.s;renderForm();}
+ else if(t.dataset.s){S.step=+t.dataset.s;renderForm();window.scrollTo({top:0});}
  else if(t.dataset.go){S.step=Math.max(0,Math.min(3,S.step+ +t.dataset.go));renderForm();window.scrollTo({top:0});}
  else if(t.dataset.chip){const a=S.chips[S.disc],i=a.indexOf(t.dataset.chip);i<0?a.push(t.dataset.chip):a.splice(i,1);t.setAttribute('aria-pressed',i<0);upd();}
  else if(t.id==='regen'){S.aEdited[S.disc]=false;S.assess[S.disc]=assessDraft(S.disc);$('#assess').value=S.assess[S.disc];upd();}

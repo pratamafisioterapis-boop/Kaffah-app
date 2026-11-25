@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#044687">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="robots" content="noindex, nofollow">
 <title>Laporan Perkembangan Anak</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,6 +36,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14p
 h1,h2,h3,h4,p,ul{margin:0}
 ul{padding:0;list-style:none}
 .wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.ds{display:none}
 .demo{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:8px 12px;font-size:12.5px}
 .seg{display:flex;gap:4px;background:var(--soft);padding:4px;border-radius:12px;align-self:center;max-width:100%}
 .seg button{font:inherit;font-weight:700;font-size:13px;border:0;background:none;color:var(--muted);padding:8px 16px;border-radius:9px;cursor:pointer}
@@ -118,12 +122,36 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .gloss dd{display:inline;margin:0}
 .gloss div{margin-bottom:3px}
 .small{font-size:11px;color:var(--paper-muted)}
+
+.pdfbar{display:none}
+/* Ponsel: layar penuh seperti aplikasi. Header menempel di atas, tab di bawah. */
+@media (max-width:600px){
+  .dl{display:none}.ds{display:inline}
+  body{padding:0}
+  .wrap{gap:0;max-width:none}
+  .demo{border-radius:0;font-size:11.5px;padding:7px 14px;padding-top:calc(7px + env(safe-area-inset-top,0px))}
+  .seg{display:none}
+  .phone{max-width:none;border:0;border-radius:0;min-height:100dvh;overflow:visible}
+  .p-top{position:sticky;top:0;z-index:20;padding:14px 16px 12px}
+  .p-top h1{font-size:18px}
+  .p-body{padding:16px 16px calc(88px + env(safe-area-inset-bottom,0px));min-height:0}
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .tabs button{font-size:12.5px;padding:12px 4px 13px}
+  .btn{min-height:44px}
+  .notes textarea{font-size:16px}
+  .vid{min-height:36px}
+  .pdfbar{display:flex;position:sticky;top:0;z-index:20;align-items:center;justify-content:space-between;gap:8px;background:var(--brand);color:var(--brand-ink);padding:10px 14px}
+  .pdfbar button{font:inherit;font-weight:700;font-size:13px;color:inherit;background:none;border:0;padding:6px 4px;cursor:pointer}
+  .pdfbar span{font-size:12.5px;opacity:.85}
+  .paper{box-shadow:none;border-radius:0;max-width:none;padding:16px 16px 40px}
+  .lh .ttl{text-align:left}
+}
 </style>
 <style>html{color-scheme:light}body{margin:0}[hidden]{display:none!important}</style>
 </head>
 <body>
 <div class="wrap">
-  <div class="demo">Contoh tampilan. Nama anak, angka, dan tanda tangan fiktif. Isi laporan di aplikasi nyata berasal dari SOAP, sasaran, dan hasil tes yang dimasukkan terapis, lalu disetujui koordinator sebelum terbit.</div>
+  <div class="demo"><span class="dl">Contoh tampilan. Nama anak, angka, dan tanda tangan fiktif. Isi laporan di aplikasi nyata berasal dari SOAP, sasaran, dan hasil tes yang dimasukkan terapis, lalu disetujui koordinator sebelum terbit.</span><span class="ds">Contoh dengan data fiktif.</span></div>
   <div class="seg" role="group" aria-label="Pilih tampilan">
     <button type="button" id="vp" aria-pressed="true">Portal orang tua</button>
     <button type="button" id="vd" aria-pressed="false">Versi PDF</button>
@@ -195,12 +223,12 @@ const tot=Object.values(R.att).reduce((a,b)=>[a[0]+b[0],a[1]+b[1]],[0,0]);
 const style=d=>`style="--c:var(${C[d].c});--cs:var(${C[d].cs})"`;
 
 /* ---------- Portal ---------- */
-const TABS=['Ringkasan','Sasaran','Program rumah','Catatan'];let tab=0;const msgs=[{me:false,who:'Ft. Rina',t:'Bu Rahma, Aisyah hebat minggu ini. Jangan lupa peregangan malam ya.',d:'23 Nov, 16:10'},{me:true,who:'Anda',t:'Terima kasih Bu. Malam ini Aisyah menolak peregangan, boleh diganti permainan?',d:'23 Nov, 19:42'}];
+const TABS=['Ringkasan','Sasaran','Latihan','Catatan'];let tab=0;const msgs=[{me:false,who:'Ft. Rina',t:'Bu Rahma, Aisyah hebat minggu ini. Jangan lupa peregangan malam ya.',d:'23 Nov, 16:10'},{me:true,who:'Anda',t:'Terima kasih Bu. Malam ini Aisyah menolak peregangan, boleh diganti permainan?',d:'23 Nov, 19:42'}];
 function pTab(){
  if(tab===0)return `
  <span class="badge">Laporan periode ${R.period}</span>
  <p class="lead">${R.summary}</p>
- <div class="stat-row"><div class="stat"><b>${tot[0]}/${tot[1]}</b><span>sesi dihadiri</span></div><div class="stat"><b>${R.goals.filter(g=>pct(g)>=65).length}/${R.goals.length}</b><span>sasaran hampir tercapai</span></div><div class="stat"><b>${R.home.reduce((a,h)=>a+h.on,0)}</b><span>latihan rumah tercatat</span></div></div>
+ <div class="stat-row"><div class="stat"><b>${tot[0]}/${tot[1]}</b><span>sesi dihadiri</span></div><div class="stat"><b>${R.goals.filter(g=>pct(g)>=35).length}/${R.goals.length}</b><span>sasaran sudah berkembang</span></div><div class="stat"><b>${R.home.reduce((a,h)=>a+h.on,0)}</b><span>latihan rumah tercatat</span></div></div>
  <div class="h">Perjalanan Aisyah</div>
  ${R.trends.map(t=>`<div class="chart" ${style(t.d)}><div class="dh"><span class="dtag">${C[t.d].n}</span><b style="font-size:13.5px">${t.t}</b></div>${chart(t,false)}</div>`).join('')}
  <div class="h">Tim terapis</div>
@@ -223,7 +251,7 @@ function renderPortal(){
 /* ---------- PDF ---------- */
 function renderPdf(){
  const rows=R.goals.map(g=>{const p=pct(g);const col=`var(${C[g.d].c})`;return `<tr><td>${C[g.d].n}</td><td>${g.t}</td><td class="num">${fmt(g,g.from)}</td><td class="num"><b>${fmt(g,g.now)}</b></td><td class="num">${fmt(g,g.to)}</td><td class="num"><span class="pbar"><i style="width:${p}%;background:${col}"></i></span>${p}%</td></tr>`}).join('');
- $('#pdf').innerHTML=`<div class="paper">
+ $('#pdf').innerHTML=`<div class="pdfbar"><button type="button" data-view="portal">‹ Kembali ke portal</button><span>Versi PDF</span></div><div class="paper">
   <div class="lh"><div class="logo">Klinik Tumbuh Kembang<small>Fisioterapi · Terapi Okupasi · Terapi Wicara (nama contoh)</small></div><div class="ttl"><h1>Laporan Perkembangan Anak</h1><span>Periode ${R.period} · Terbit ${R.issued}</span></div></div>
   <div class="idg"><div>Nama anak<b>${R.child}</b></div><div>No. RM<b>${R.rm}</b></div><div>Tanggal lahir · usia<b>${R.dob} · ${R.age}</b></div><div>Orang tua<b>${R.parent}</b></div><div style="grid-column:1/-1">Diagnosis medis<b>${R.dx}</b></div><div>Kehadiran<b>${tot[0]} dari ${tot[1]} sesi</b></div><div>Koordinator kasus<b>Ft. Rina, S.Ft</b></div></div>
   <section><h2>Ringkasan untuk orang tua</h2><p>${R.summary}</p></section>
@@ -246,7 +274,7 @@ document.addEventListener('click',e=>{
  const t=e.target.closest('button');if(!t)return;
  if(t.id==='vp')view('portal');else if(t.id==='vd')view('pdf');
  else if(t.dataset.view)view(t.dataset.view);
- else if(t.dataset.tab){tab=+t.dataset.tab;renderPortal();}
+ else if(t.dataset.tab){tab=+t.dataset.tab;renderPortal();window.scrollTo({top:0});}
  else if(t.id==='send'){const v=$('#nt').value.trim();if(!v)return;msgs.push({me:true,who:'Anda',t:v.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])),d:'Baru saja'});renderPortal();}
  else if(t.classList.contains('vid')){t.textContent='Contoh: video tidak tersedia';}
 });
