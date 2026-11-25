@@ -219,7 +219,13 @@ Deno.serve(async (req: Request) => {
         body: JSON.stringify({
           model: "claude-sonnet-5",
           max_tokens: maxTokens,
-          system: buildSystemPrompt(typeof party_filter === "string" && party_filter.trim() ? party_filter.trim() : null, is_partial === true),
+          // Prompt sistem identik antar halaman (untuk filter partai yang sama), jadi di-cache:
+          // halaman berikutnya dalam 5 menit membaca prefiks dari cache (~0,1x harga input).
+          system: [{
+            type: "text",
+            text: buildSystemPrompt(typeof party_filter === "string" && party_filter.trim() ? party_filter.trim() : null, is_partial === true),
+            cache_control: { type: "ephemeral" },
+          }],
           messages: [
             {
               role: "user",
