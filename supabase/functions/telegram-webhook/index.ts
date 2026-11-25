@@ -39,6 +39,9 @@ const HELP = [
   "",
   "Boleh juga ditulis biasa, mis. \"jadwal kosong besok\".",
   "",
+  "/izin  ajukan izin owner: pilih tanggal lalu jam dengan tombol",
+  "/izin besok  langsung ke pilihan jam besok",
+  "",
   "Asisten AI WhatsApp:",
   "- Reply pesan draf AI dengan jawaban/arahan yang benar untuk mengoreksi (juga untuk pesan yang tidak dibalas AI), atau \"ok\" bila sudah tepat.",
   "- Tulis aturan umum langsung (tanpa reply), mis. \"jangan balas dulu, beri jeda minimal 2 menit\".",
@@ -127,8 +130,175 @@ async function tg(method: string, payload: unknown) {
 
 const reply = (text: string) => tg("sendMessage", { chat_id: CHAT_ID, text, disable_web_page_preview: true });
 
+// ---- Izin owner lewat tombol (/izin) ----
+type IzinSlot = { st: string; en: string; booked: boolean };
+const bitOn = (mask: number, i: number) => (mask >> i) & 1;
+const compact = (d: string) => d.replace(/-/g, "");
+const expand = (c: string) => `${c.slice(0, 4)}-${c.slice(4, 6)}-${c.slice(6, 8)}`;
+const dot = (t: string) => t.replace(":", ".");
+
+function sbClient() {
+  return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+}
+
+// Layar pilih tanggal.
+async function izinDatesView(): Promise<{ text: string; kb: any[][] } | string> {
+  const { data, error } = await sbClient().rpc("tg_izin_dates");
+  if (error || data === null) {
+    console.error("tg_izin_dates gagal:", error?.message);
+    return "⚠️ Jadwal belum bisa diambil sekarang. Coba lagi sebentar lagi.";
+  }
+  const list = data as { d: string; n: number; label: string }[];
+  if (list.length === 0) return "Tidak ada jadwal yang bisa dikosongkan.";
+  const kb: any[][] = [];
+  for (let i = 0; i < list.length; i += 2) {
+    kb.push(list.slice(i, i + 2).map((x) => ({ text: `${x.label} (${x.n})`, callback_data: `iz:d:${compact(x.d)}` })));
+  }
+  kb.push([{ text: "✖ Batal", callback_data: "iz:x" }]);
+  return { text: "🗓 IZIN\nPilih tanggal yang ingin dikosongkan:", kb };
+}
+
+// Layar pilih jam pada satu tanggal; mask = jam terpilih (bit ke-i = slot ke-i).
+async function izinSlotsView(dateIso: string, mask: number): Promise<{ text: string; kb: any[][] } | string> {
+  const { data, error } = await sbClient().rpc("tg_izin_slots", { p_date: dateIso });
+  if (error || data === null) {
+    console.error("tg_izin_slots gagal:", error?.message);
+    return "⚠️ Jadwal belum bisa diambil sekarang. Coba lagi sebentar lagi.";
+  }
+  const slots = (data.slots ?? []) as IzinSlot[];
+  if (slots.length === 0) return `Tidak ada jadwal tersisa pada ${data.label}.`;
+  const c = compact(dateIso);
+  const kb: any[][] = [];
+  for (let i = 0; i < slots.length; i += 2) {
+    kb.push(slots.slice(i, i + 2).map((s, j) => {
+      const idx = i + j;
+      const lbl = `${bitOn(mask, idx) ? "☑" : "☐"} ${dot(s.st)}-${dot(s.en)}${s.booked ? " 👤" : ""}`;
+      return { text: lbl, callback_data: `iz:t:${c}:${idx}:${mask}` };
+    }));
+  }
+  const full = (1 << slots.length) - 1;
+  const picked = slots.filter((_, i) => bitOn(mask, i)).length;
+  kb.push([
+    { text: mask === full ? "Kosongkan pilihan" : "Pilih semua", callback_data: `iz:a:${c}:${mask === full ? 0 : full}` },
+    ...(picked > 0 ? [{ text: `✅ Konfirmasi (${picked})`, callback_data: `iz:ok:${c}:${mask}` }] : []),
+  ]);
+  kb.push([{ text: "⬅️ Tanggal", callback_data: "iz:b" }, { text: "✖ Batal", callback_data: "iz:x" }]);
+  const hasBooked = slots.some((s) => s.booked);
+  return {
+    text: `🗓 IZIN - ${data.label}\nKetuk jam yang ingin dikosongkan, lalu Konfirmasi.` +
+      (hasBooked ? "\n👤 = sudah ada pasien" : ""),
+    kb,
+  };
+}
+
+async function showIzin(chatId: string | number, view: { text: string; kb: any[][] } | string, editMsgId?: number) {
+  const body: any = typeof view === "string"
+    ? { text: view, reply_markup: { inline_keyboard: [] } }
+    : { text: view.text, reply_markup: { inline_keyboard: view.kb } };
+  if (editMsgId) {
+    await tg("editMessageText", { chat_id: chatId, message_id: editMsgId, disable_web_page_preview: true, ...body });
+  } else {
+    await tg("sendMessage", { chat_id: chatId, disable_web_page_preview: true, ...body });
+  }
+}
+
+// Perintah /izin [tanggal]: tanpa tanggal tampil pilihan tanggal.
+async function startIzin(chatId: string | number, arg: string) {
+  if (arg.trim() === "") {
+    await showIzin(chatId, await izinDatesView());
+    return;
+  }
+  const today = todayWita();
+  const parsed = parseDate(arg, today);
+  if (typeof parsed === "string") {
+    await tg("sendMessage", { chat_id: chatId, text: parsed });
+    return;
+  }
+  if (parsed.getTime() < today.getTime()) {
+    await tg("sendMessage", { chat_id: chatId, text: "Tanggal itu sudah lewat." });
+    return;
+  }
+  await showIzin(chatId, await izinSlotsView(iso(parsed), 0));
+}
+
+async function handleIzinCallback(cb: any) {
+  const answer = (text?: string) => tg("answerCallbackQuery", { callback_query_id: cb.id, ...(text ? { text } : {}) });
+  const msg = cb.message;
+  const chatId = msg?.chat?.id;
+  if (String(cb.from?.id) !== CHAT_ID || chatId === undefined) {
+    await answer("Tidak diizinkan.");
+    return;
+  }
+  const parts = String(cb.data).split(":");
+  const act = parts[1];
+  const mid = msg.message_id;
+  if (act === "x") {
+    await answer("Dibatalkan");
+    await tg("editMessageText", { chat_id: chatId, message_id: mid, text: "Izin dibatalkan." , reply_markup: { inline_keyboard: [] } });
+    return;
+  }
+  if (act === "b") {
+    await answer();
+    await showIzin(chatId, await izinDatesView(), mid);
+    return;
+  }
+  const dateC = parts[2] ?? "";
+  if (!/^\d{8}$/.test(dateC)) {
+    await answer("Tombol tidak dikenali.");
+    return;
+  }
+  const dateIso = expand(dateC);
+  if (act === "d") {
+    await answer();
+    await showIzin(chatId, await izinSlotsView(dateIso, 0), mid);
+    return;
+  }
+  let mask = Number(parts[act === "t" ? 4 : 3]);
+  if (!Number.isInteger(mask) || mask < 0 || mask > 0xfffff) {
+    await answer("Tombol tidak dikenali.");
+    return;
+  }
+  if (act === "t") {
+    const idx = Number(parts[3]);
+    if (!Number.isInteger(idx) || idx < 0 || idx > 19) {
+      await answer("Tombol tidak dikenali.");
+      return;
+    }
+    mask ^= 1 << idx;
+  }
+  if (act === "t" || act === "a") {
+    await answer();
+    await showIzin(chatId, await izinSlotsView(dateIso, mask), mid);
+    return;
+  }
+  if (act === "ok") {
+    const sb = sbClient();
+    const { data: sd, error: se } = await sb.rpc("tg_izin_slots", { p_date: dateIso });
+    const slots = ((sd?.slots ?? []) as IzinSlot[]);
+    const starts = slots.filter((_, i) => bitOn(mask, i)).map((s) => s.st);
+    if (se || starts.length === 0) {
+      await answer("Pilih jam dulu.");
+      return;
+    }
+    const { data, error } = await sb.rpc("tg_izin_apply", { p_date: dateIso, p_starts: starts });
+    if (error || typeof data !== "string") {
+      console.error("tg_izin_apply gagal:", error?.message);
+      await answer("Gagal memproses. Coba lagi.");
+      return;
+    }
+    await answer(data.split("\n")[0]);
+    await tg("editMessageText", { chat_id: chatId, message_id: mid, text: data, reply_markup: { inline_keyboard: [] } });
+    return;
+  }
+  await answer("Tombol tidak dikenali.");
+}
+
 // Klik tombol Setujui/Tolak pada notifikasi pengajuan override.
 async function handleCallback(cb: any) {
+  if (String(cb.data ?? "").startsWith("iz:")) {
+    await handleIzinCallback(cb);
+    return;
+  }
   const answer = (text: string) => tg("answerCallbackQuery", { callback_query_id: cb.id, text });
   const msg = cb.message;
   if (String(cb.from?.id) !== CHAT_ID || String(msg?.chat?.id) !== CHAT_ID) {
@@ -163,6 +333,15 @@ async function handleUpdate(update: any) {
   }
   const msg = update?.message;
   if (!msg || typeof msg.text !== "string") return;
+  // /izin (atau teks "izin [tanggal]") dari owner, di chat pribadi maupun grup notifikasi.
+  if (String(msg.from?.id) === CHAT_ID && !msg.reply_to_message) {
+    const t = msg.text.trim().toLowerCase();
+    const im = t.match(/^\/izin(?:@\w+)?\s*(.*)$/) ?? t.match(/^(?:ajukan |mau )?izin((?: (?:hari ini|besok|lusa|senin|selasa|rabu|kamis|jumat|sabtu|minggu|\d{1,2}[\/.\-]\d{1,2}|\d{1,2} [a-z]+))?)$/);
+    if (im) {
+      await startIzin(msg.chat.id, im[1] ?? "");
+      return;
+    }
+  }
   // Pesan owner di grup (mis. grup revisi AI) diteruskan ke wa-ai-reply, yang memeriksa grupnya.
   if (String(msg.chat?.id) !== CHAT_ID && String(msg.from?.id) === CHAT_ID && ["group", "supergroup"].includes(String(msg.chat?.type))) {
     // Reply ke notifikasi "AI tidak membalas pesan ini" = jawaban owner: dirapikan dan disimpan oleh
@@ -278,6 +457,7 @@ async function handleAdmin(action: string) {
     const cmds = await tg("setMyCommands", {
       commands: [
         { command: "kosong", description: "Jadwal kosong (mis. /kosong besok)" },
+        { command: "izin", description: "Ajukan izin: pilih jadwal yang dikosongkan" },
         { command: "skor", description: "Skor ketepatan AI WhatsApp" },
         { command: "uji", description: "Uji regresi AI (soal tetap)" },
         { command: "jeda", description: "Atur jeda AI menjawab (mis. /jeda 2 menit)" },
