@@ -152,7 +152,9 @@ const SoapPatientPdfButton = ({ record, patient = null, label = 'PDF Pasien', si
     const file = new File([pdf.blob], pdf.fileName, { type: 'application/pdf' });
     try {
       if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'Laporan Terapi', text: message });
+        // Hanya file + teks pesan. Jangan menambah title/url: beberapa aplikasi (WhatsApp di Android)
+        // menempelkan nilai itu ke caption, sehingga alamat blob: ikut terkirim ke pasien.
+        await navigator.share({ files: [file], text: message });
         return;
       }
     } catch (err) {
