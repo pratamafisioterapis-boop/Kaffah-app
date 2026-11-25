@@ -35,7 +35,7 @@ const APP_DOMAIN_MARKETING_PATHS = ['/'];
 
 // Link publik untuk pasien (feedback, portal) milik klinik non-Kaffah yang belum punya domain sendiri
 // dibuat di APP_DOMAIN; jangan dilempar ke domain publik Kaffah.
-const APP_DOMAIN_PATIENT_PREFIXES = ['/feedback/', '/p/'];
+const APP_DOMAIN_PATIENT_PREFIXES = ['/feedback/', '/p/', '/i/'];
 
 export const staysOnAppDomain = (pathname) =>
   isAppOnlyPath(pathname) ||

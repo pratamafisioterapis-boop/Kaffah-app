@@ -27,7 +27,7 @@ import { isStaleChunkError, reloadForStaleChunk, hardRefresh, consumeSkipSplash 
 // found after sitting idle), which should drop the user back where they were
 // rather than replay the launch splash.
 const SKIPS_SPLASH_THIS_LOAD = consumeSkipSplash();
-import { PUBLIC_DOMAIN, APP_DOMAIN, isAppOnlyPath, staysOnAppDomain, isOnAppDomain, isOnPublicDomain, isTenantHost } from '@/lib/domainRouting';
+import { APP_DOMAIN, isAppOnlyPath, staysOnAppDomain, isOnAppDomain, isOnPublicDomain, isTenantHost } from '@/lib/domainRouting';
 // DashboardLayout (framer-motion + topbar) hanya dipakai setelah login: lazy supaya
 // pengunjung halaman publik tidak mengunduhnya di bundle awal.
 const DashboardLayout = React.lazy(lazyRetry(() => import('@/components/DashboardLayout'), 'DashboardLayout'));
@@ -90,7 +90,9 @@ const DomainGuard = () => {
     const { hostname, search, hash } = window.location;
 
     if (isOnAppDomain(hostname) && !staysOnAppDomain(location.pathname)) {
-      window.location.replace(`https://${PUBLIC_DOMAIN}${location.pathname}${search}${hash}`);
+      // Halaman marketing Kaffah tidak ada di domain aplikasi; jangan lempar pengunjung
+      // (mis. pasien klinik lain) ke kaffahphysio.id, cukup kembali ke beranda Clinara.
+      window.location.replace(`https://${APP_DOMAIN}/`);
     } else if (isOnPublicDomain(hostname) && isAppOnlyPath(location.pathname)) {
       window.location.replace(`https://${APP_DOMAIN}${location.pathname}${search}${hash}`);
     }
