@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Loader2, ClipboardList, ArrowUp, ArrowDown, Trash2, Plus, RotateCcw } from 'lucide-react';
-import { PRAXIS_CLINIC_ID } from '@/lib/clinicIds';
+import { QUESTIONNAIRE_CLINIC_IDS } from '@/lib/clinicIds';
 import { DEFAULT_PRAXIS_QUESTIONS, normalizeQuestions } from '@/lib/praxisQuestionnaire';
 
 const TYPE_LABELS = { choice: 'Pilihan', text: 'Teks singkat', textarea: 'Teks panjang' };
@@ -19,7 +19,7 @@ const FeedbackQuestionnaireSettings = () => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (clinicId !== PRAXIS_CLINIC_ID) return;
+    if (!QUESTIONNAIRE_CLINIC_IDS.includes(clinicId)) return;
     let cancelled = false;
     supabase.from('clinics').select('feedback_questionnaire').eq('id', clinicId).single().then(({ data }) => {
       if (!cancelled) setQuestions(normalizeQuestions(data?.feedback_questionnaire) || DEFAULT_PRAXIS_QUESTIONS);
@@ -27,7 +27,7 @@ const FeedbackQuestionnaireSettings = () => {
     return () => { cancelled = true; };
   }, [clinicId]);
 
-  if (clinicId !== PRAXIS_CLINIC_ID) return null;
+  if (!QUESTIONNAIRE_CLINIC_IDS.includes(clinicId)) return null;
   if (!questions) {
     return <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-app-accent" /></div>;
   }

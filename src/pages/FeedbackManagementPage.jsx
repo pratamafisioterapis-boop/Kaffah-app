@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Link2, Copy, Star } from 'lucide-react';
+import { Loader2, Link2, Copy, Star, Search, X } from 'lucide-react';
 import { formatDateIndonesian } from '@/lib/dateFormatHelpers';
 import { portalBaseUrl } from '@/lib/patientPortal';
 import PageHero from '@/components/shared/PageHero';
@@ -31,6 +31,8 @@ export const FeedbackManagementContent = () => {
 
   const [patientName, setPatientName] = useState('');
   const [generating, setGenerating] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [patientResults, setPatientResults] = useState([]);
 
   const [links, setLinks] = useState([]);
   const [responses, setResponses] = useState([]);
@@ -44,6 +46,25 @@ export const FeedbackManagementContent = () => {
     supabase.from('clinics').select('id, subdomain, custom_domain, custom_domain_status')
       .eq('id', clinicId).maybeSingle().then(({ data }) => setClinicDomain(data || null));
   }, [clinicId]);
+
+  // Cari pasien klinik (nama / no. HP / no. RM) untuk membuat link yang
+  // terhubung ke data pasien -- pasien tidak perlu mengetik identitas.
+  useEffect(() => {
+    const q = patientName.trim();
+    if (!clinicId || selectedPatient || q.length < 2) { setPatientResults([]); return undefined; }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const safe = q.replace(/[,()%]/g, ' ');
+      const { data } = await supabase
+        .from('patients')
+        .select('id, full_name, phone, medical_record_number')
+        .eq('clinic_id', clinicId)
+        .or(`full_name.ilike.%${safe}%,phone.ilike.%${safe}%,medical_record_number.ilike.%${safe}%`)
+        .limit(8);
+      if (!cancelled) setPatientResults(data || []);
+    }, 250);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [patientName, selectedPatient, clinicId]);
 
   const fetchData = useCallback(async () => {
     if (!clinicId) return;
@@ -65,7 +86,7 @@ export const FeedbackManagementContent = () => {
     const token = crypto.randomUUID().replace(/-/g, '');
     const { data, error } = await supabase
       .from('patient_feedback_links')
-      .insert([{ clinic_id: clinicId, token, patient_name: patientName.trim() || null }])
+      .insert([{ clinic_id: clinicId, token, patient_id: selectedPatient?.id || null, patient_name: (selectedPatient?.full_name || patientName).trim() || null }])
       .select()
       .single();
     setGenerating(false);
@@ -75,6 +96,7 @@ export const FeedbackManagementContent = () => {
     }
     setLinks((prev) => [data, ...prev]);
     setPatientName('');
+    setSelectedPatient(null);
     const url = buildFeedbackUrl(token, clinicDomain);
     try {
       await navigator.clipboard.writeText(url);
@@ -125,7 +147,7 @@ export const FeedbackManagementContent = () => {
       <div>
         <h2 className="text-xl font-bold text-slate-800">Feedback Pasien</h2>
         <p className="text-sm text-slate-500 mt-1">
-          Buat link unik untuk seorang pasien mengisi feedback. Rating 4-5 bintang otomatis diarahkan
+          Pilih pasien yang sudah terapi, lalu buat link unik untuk mengisi feedback — identitas pasien terbaca otomatis. Tanpa memilih pasien, link tetap bisa dibuat dengan nama yang diketik. Rating 4-5 bintang otomatis diarahkan
           ke halaman "Tulis Ulasan Google" klinik; rating rendah hanya tersimpan internal.
         </p>
       </div>
@@ -133,11 +155,46 @@ export const FeedbackManagementContent = () => {
       <div className="bg-white p-6 rounded-app border border-slate-200 space-y-3">
         <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Link2 className="w-4 h-4" /> Buat Link Feedback Baru</h3>
         <div className="flex gap-2">
-          <Input
-            placeholder="Nama pasien (opsional)"
-            value={patientName}
-            onChange={(e) => setPatientName(e.target.value)}
-          />
+          <div className="relative flex-1">
+            {selectedPatient ? (
+              <div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                <span className="truncate">
+                  {selectedPatient.full_name}
+                  {selectedPatient.phone ? <span className="text-slate-500"> · {selectedPatient.phone}</span> : null}
+                </span>
+                <button type="button" aria-label="Ganti pasien" onClick={() => { setSelectedPatient(null); setPatientName(''); }}>
+                  <X className="w-4 h-4 text-slate-500" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Input
+                  className="pl-9"
+                  placeholder="Cari pasien (nama / no. HP / no. RM)"
+                  value={patientName}
+                  onChange={(e) => setPatientName(e.target.value)}
+                />
+                {patientResults.length > 0 && (
+                  <div className="absolute z-10 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg max-h-64 overflow-auto">
+                    {patientResults.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50"
+                        onClick={() => { setSelectedPatient(p); setPatientResults([]); }}
+                      >
+                        <span className="font-medium">{p.full_name}</span>
+                        <span className="text-slate-500">
+                          {p.phone ? ` · ${p.phone}` : ''}{p.medical_record_number ? ` · RM ${p.medical_record_number}` : ''}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
           <Button onClick={handleGenerateLink} disabled={generating} className="bg-app-accent shrink-0">
             {generating && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Buat Link
           </Button>
