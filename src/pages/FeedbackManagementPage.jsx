@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Link2, Copy, Star, Search, X } from 'lucide-react';
+import { Loader2, Link2, Copy, Star, Search, X, MessageCircle } from 'lucide-react';
 import { formatDateIndonesian } from '@/lib/dateFormatHelpers';
-import { portalBaseUrl } from '@/lib/patientPortal';
+import { portalBaseUrl, toWhatsAppNumber, patientDisplayName } from '@/lib/patientPortal';
 import { QUESTIONNAIRE_CLINIC_IDS, KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import PageHero from '@/components/shared/PageHero';
 
@@ -20,6 +20,36 @@ import PageHero from '@/components/shared/PageHero';
 // -- confusing branding and a jarring flash for a one-off patient link.
 // Domain klinik sendiri (custom domain / subdomain), bukan domain Kaffah.
 const buildFeedbackUrl = (token, clinic) => `${portalBaseUrl(clinic)}/feedback/${token}`;
+
+
+// Sapaan menurut jam di zona waktu klinik (Kaffah = WITA, klinik lain = WIB), bukan jam perangkat staf.
+const greetingForClinic = (clinicId, now = new Date()) => {
+  const tz = clinicId === KAFFAH_CLINIC_ID ? 'Asia/Makassar' : 'Asia/Jakarta';
+  const hour = Number(new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hour12: false, timeZone: tz }).format(now)) % 24;
+  if (hour >= 4 && hour < 11) return 'pagi';
+  if (hour >= 11 && hour < 15) return 'siang';
+  if (hour >= 15 && hour < 18) return 'sore';
+  return 'malam';
+};
+
+// Pengiriman manual lewat wa.me (klinik tanpa template Meta). Teks bebas, jadi tidak ada biaya template.
+const buildFeedbackWhatsAppLink = ({ phone, name, url, clinicName, clinicId }) => {
+  const clinic = clinicName || 'klinik kami';
+  const text = [
+    `Selamat ${greetingForClinic(clinicId)} ${name} 🙏`,
+    '',
+    'Agar layanan kami terus lebih baik, mohon bantu isi kuesioner kepuasan singkat (± 2 menit) tentang terapi hari ini.',
+    '',
+    'Masukan Anda sangat berarti bagi kami.',
+    '',
+    `🔗 ${url}`,
+    '',
+    'Salam Sehat,',
+    `*${clinic}*`,
+  ].join('\n');
+  // api.whatsapp.com/send (bukan wa.me): wa.me mengalihkan ke alamat ini dan emoji bisa rusak di WhatsApp Desktop.
+  return `https://api.whatsapp.com/send?phone=${toWhatsAppNumber(phone)}&text=${encodeURIComponent(text)}`;
+};
 
 // Shared feedback-link management UI, embedded by the owner and admin
 // dashboard wrapper pages (same pattern as PackageRecapsContent). Lets
@@ -42,7 +72,7 @@ export const FeedbackManagementContent = () => {
   const clinicId = userDetails?.clinic_id;
   // Praxis & Kaffah: kuesioner lengkap -> langsung Google Review (semua rating).
   const isQuestionnaire = QUESTIONNAIRE_CLINIC_IDS.includes(clinicId);
-  const [patientPhones, setPatientPhones] = useState({});
+  const [patientInfo, setPatientInfo] = useState({});
   const [clinicDomain, setClinicDomain] = useState(null);
 
   useEffect(() => {
@@ -81,8 +111,8 @@ export const FeedbackManagementContent = () => {
     setResponses(responseData || []);
     const pids = [...new Set((linkData || []).map((l) => l.patient_id).filter(Boolean))];
     if (pids.length) {
-      const { data: pts } = await supabase.from('patients').select('id, phone').in('id', pids);
-      setPatientPhones(Object.fromEntries((pts || []).map((p) => [p.id, p.phone])));
+      const { data: pts } = await supabase.from('patients').select('id, phone, nickname, full_name').in('id', pids);
+      setPatientInfo(Object.fromEntries((pts || []).map((p) => [p.id, p])));
     }
     setLoading(false);
   }, [clinicId]);
@@ -227,6 +257,23 @@ export const FeedbackManagementContent = () => {
                 ) : (
                   <Badge variant="outline">Menunggu</Badge>
                 )}
+                {!link.responded_at && patientInfo[link.patient_id]?.phone && (
+                  <Button size="sm" variant="outline" asChild>
+                    <a
+                      href={buildFeedbackWhatsAppLink({
+                        phone: patientInfo[link.patient_id].phone,
+                        name: patientDisplayName(patientInfo[link.patient_id]) || link.patient_name || 'Kak',
+                        url: buildFeedbackUrl(link.token, clinicDomain),
+                        clinicName,
+                        clinicId,
+                      })}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 mr-1.5" /> Kirim WA
+                    </a>
+                  </Button>
+                )}
                 <Button size="sm" variant="outline" onClick={() => handleCopyLink(link.token)}>
                   <Copy className="w-3.5 h-3.5 mr-1.5" /> Salin
                 </Button>
@@ -251,8 +298,8 @@ export const FeedbackManagementContent = () => {
                   <p className="text-sm font-medium text-slate-800">
                     {response.patient_name || linksById[response.link_id]?.patient_name || 'Anonim'}
                   </p>
-                  {patientPhones[linksById[response.link_id]?.patient_id] && (
-                    <p className="text-xs text-slate-500">{patientPhones[linksById[response.link_id].patient_id]}</p>
+                  {patientInfo[linksById[response.link_id]?.patient_id]?.phone && (
+                    <p className="text-xs text-slate-500">{patientInfo[linksById[response.link_id].patient_id].phone}</p>
                   )}
                   <div className="flex items-center gap-0.5 mt-0.5">
                     {Array.from({ length: 5 }).map((_, i) => (
