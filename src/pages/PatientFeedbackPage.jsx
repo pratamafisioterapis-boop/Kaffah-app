@@ -4,7 +4,7 @@ import { supabase, supabaseUrl, supabaseAnonKey } from '@/lib/customSupabaseClie
 import { Star, Loader2, AlertTriangle, CheckCircle2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { PRAXIS_CLINIC_ID } from '@/lib/clinicIds';
+import { QUESTIONNAIRE_CLINIC_IDS } from '@/lib/clinicIds';
 import { DEFAULT_PRAXIS_QUESTIONS, normalizeQuestions, ratingFromOption } from '@/lib/praxisQuestionnaire';
 
 
@@ -45,8 +45,8 @@ const PatientFeedbackPage = () => {
       setClinicName(data.clinic_name || '');
       const { data: cid } = await supabase.rpc('get_feedback_link_clinic_id', { p_token: token });
       if (cancelled) return;
-      setIsPraxis(cid === PRAXIS_CLINIC_ID);
-      if (cid === PRAXIS_CLINIC_ID) {
+      setIsPraxis(QUESTIONNAIRE_CLINIC_IDS.includes(cid));
+      if (QUESTIONNAIRE_CLINIC_IDS.includes(cid)) {
         const { data: qs } = await supabase.rpc('get_feedback_questionnaire', { p_token: token });
         if (cancelled) return;
         setQuestions(normalizeQuestions(qs) || DEFAULT_PRAXIS_QUESTIONS);
@@ -90,7 +90,7 @@ const PatientFeedbackPage = () => {
       .map((q) => `${q.label.replace('{clinic}', name)}: ${answers[q.id].trim()}`);
     setSubmitting(true);
     const { data, error } = await supabase
-      .rpc('submit_praxis_feedback', { p_token: token, p_rating: overallRating, p_comment: lines.join('\n') })
+      .rpc('submit_questionnaire_feedback', { p_token: token, p_rating: overallRating, p_comment: lines.join('\n') })
       .maybeSingle();
     setSubmitting(false);
     if (error || !data?.success) {
