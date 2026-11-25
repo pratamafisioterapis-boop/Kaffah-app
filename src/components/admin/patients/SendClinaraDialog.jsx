@@ -51,7 +51,7 @@ const SendClinaraDialog = ({ patient, onClose, onSent }) => {
 
   useEffect(() => {
     if (!patient || !userDetails?.clinic_id) return;
-    supabase.from('clinics').select('subdomain, custom_domain, custom_domain_status')
+    supabase.from('clinics').select('id, subdomain, custom_domain, custom_domain_status')
       .eq('id', userDetails.clinic_id).maybeSingle().then(({ data }) => setClinicDomain(data || null));
   }, [patient, userDetails?.clinic_id]);
 

@@ -41,7 +41,7 @@ export const FeedbackManagementContent = () => {
 
   useEffect(() => {
     if (!clinicId) return;
-    supabase.from('clinics').select('subdomain, custom_domain, custom_domain_status')
+    supabase.from('clinics').select('id, subdomain, custom_domain, custom_domain_status')
       .eq('id', clinicId).maybeSingle().then(({ data }) => setClinicDomain(data || null));
   }, [clinicId]);
 

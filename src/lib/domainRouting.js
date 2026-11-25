@@ -33,8 +33,14 @@ export const isAppOnlyPath = (pathname) =>
 // public domain's own "/" (the Kaffah clinic landing page) is untouched.
 const APP_DOMAIN_MARKETING_PATHS = ['/'];
 
+// Link publik untuk pasien (feedback, portal) milik klinik non-Kaffah yang belum punya domain sendiri
+// dibuat di APP_DOMAIN; jangan dilempar ke domain publik Kaffah.
+const APP_DOMAIN_PATIENT_PREFIXES = ['/feedback/', '/p/'];
+
 export const staysOnAppDomain = (pathname) =>
-  isAppOnlyPath(pathname) || APP_DOMAIN_MARKETING_PATHS.includes(pathname);
+  isAppOnlyPath(pathname) ||
+  APP_DOMAIN_MARKETING_PATHS.includes(pathname) ||
+  APP_DOMAIN_PATIENT_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
 export const isOnAppDomain = (hostname = window.location.hostname) =>
   matchesHost(hostname, APP_DOMAIN);
