@@ -4,7 +4,7 @@
 // prop — importing from here instead of hand-copying the list keeps them
 // from drifting out of sync and losing menu items over time.
 
-import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
+import { KAFFAH_CLINIC_ID, PRAXIS_CLINIC_ID } from '@/lib/clinicIds';
 
 export const OWNER_NAV_ITEMS = [
   { label: 'Dashboard', path: '/owner/dashboard', icon: 'Home' },
@@ -48,6 +48,7 @@ export const OWNER_NAV_ITEMS = [
     ],
   },
   { label: 'Modal Awal', path: '/owner/modal-awal', icon: 'Wallet' },
+  { label: 'Hubungi CS Clinara', path: '/owner/cs-clinara', icon: 'MessageSquare', clinicOnly: PRAXIS_CLINIC_ID },
   { label: 'Setup', path: '/owner/settings', icon: 'Settings' },
 ];
 
@@ -88,5 +89,6 @@ export const ADMIN_NAV_ITEMS = [
       { label: 'Cash Dipegang', path: '/admin/cash-holding', icon: 'Wallet', clinicOnly: KAFFAH_CLINIC_ID },
     ],
   },
+  { label: 'Hubungi CS Clinara', path: '/admin/cs-clinara', icon: 'MessageSquare', clinicOnly: PRAXIS_CLINIC_ID },
   { label: 'Setup Akun', path: '/admin/settings', icon: 'Settings' },
 ];

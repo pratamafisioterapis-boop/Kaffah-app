@@ -47,6 +47,7 @@ const HELP = [
   "/uji  uji regresi AI (soal tetap) dan bandingkan dengan uji sebelumnya",
   "/aturan  daftar arahan, /hapus N  hapus arahan",
   "/status  status AI",
+  "/cs  tiket CS Praxis (/cs ok N, /cs tolak N, /cs batal N, /cs selesai N)",
   "",
   "Pengajuan override: reply notifikasinya dengan \"ok\" untuk menyetujui atau \"ga\" untuk menolak.",
   "",
@@ -214,6 +215,20 @@ async function handleUpdate(update: any) {
   // Koreksi draf AI WhatsApp (reply), aturan umum, dan perintah /skor /jeda /aturan /hapus /status
   // ditangani wa-ai-reply. Teks bebas yang bukan perintah jadwal juga dianggap arahan untuk AI.
   const body = msg.text.trim();
+  // Tiket CS Clinara (Praxis): /cs ... atau reply "ok"/"ga" pada notifikasi tiket.
+  if (msg.reply_to_message || /^\/cs(?:@\w+)?\b/i.test(body)) {
+    try {
+      const r = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/clinara-cs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
+        body: JSON.stringify({ telegram_update: update }),
+      });
+      const out = await r.json().catch(() => ({}));
+      if (out?.handled) return;
+    } catch (e) {
+      console.error("clinara-cs gagal:", (e as Error)?.message || e);
+    }
+  }
   const forAi = msg.reply_to_message ||
     /^\/(?:skor|uji|jeda|aturan|hapus|status)(?:@\w+)?\b/i.test(body) ||
     (detect(body) === null && !body.startsWith("/"));
@@ -283,6 +298,7 @@ async function handleAdmin(action: string) {
         { command: "jeda", description: "Atur jeda AI menjawab (mis. /jeda 2 menit)" },
         { command: "aturan", description: "Daftar arahan owner untuk AI" },
         { command: "status", description: "Status AI WhatsApp" },
+        { command: "cs", description: "Tiket CS Clinara Praxis" },
         { command: "bantuan", description: "Daftar perintah" },
       ],
     });

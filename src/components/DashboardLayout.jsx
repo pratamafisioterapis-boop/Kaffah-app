@@ -22,6 +22,7 @@ import { isLightLoadModeEnabled, LIGHT_LOAD_ALLOWED_PATHS } from '@/lib/lightLoa
 import DashboardTopbar from '@/components/DashboardTopbar';
 import TherapistShell from '@/components/therapist/TherapistShell';
 import { preloadHeroImages } from '@/lib/preloadHeroImages';
+import { useClinicSetting } from '@/lib/clinicSettings';
 
 // Icon Mapping
 const iconMap = {
@@ -97,6 +98,7 @@ const DashboardLayout = ({ children, navItems = [], role, userName: userNameProp
   const navActive = activeTheme.navActive;
   // Data klinik terakhir disimpan di perangkat agar menu langsung tampil saat
   // refresh, tanpa menunggu dua fetch berurutan (user lalu klinik).
+  const hiddenMenuPaths = useClinicSetting('menu.hidden', null);
   const [cachedClinic] = useState(readClinicInfoCache);
   const [clinicInfo, setClinicInfo] = useState(cachedClinic?.data ?? null);
   // Nav items must stay hidden until we know this clinic's disabled-feature
@@ -236,7 +238,9 @@ const isPWA =
     let processed = processNavItems(navItems);
     // Menu khusus satu klinik (clinicOnly = id klinik) disembunyikan di klinik lain.
     // Menu yang butuh fitur Clinara pasien hanya tampil di klinik yang diaktifkan Super Admin.
+    const hiddenPaths = Array.isArray(hiddenMenuPaths) ? hiddenMenuPaths : [];
     const clinicAllowed = (it) =>
+      !(it.path && hiddenPaths.includes(it.path)) &&
       (!it.clinicOnly || it.clinicOnly === userDetails?.clinic_id) &&
       (!it.requiresPortal || clinicInfo?.patient_portal_enabled === true);
     processed = processed
@@ -258,7 +262,7 @@ const isPWA =
         return isNavItemDisabled(item.label, role, disabledFeatures) ? null : item;
       })
       .filter(Boolean);
-  }, [navItems, role, clinicInfo, clinicFeaturesLoaded, userDetails?.clinic_id]);
+  }, [navItems, role, clinicInfo, clinicFeaturesLoaded, userDetails?.clinic_id, hiddenMenuPaths]);
 
   const displayedNavItems = useMemo(() => {
     if (role !== 'owner' || !menuSearchQuery.trim()) return finalNavItems;
