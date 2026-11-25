@@ -58,7 +58,7 @@ const WhatsAppMessagePreview = ({ template, placeholders, patient, clinicName })
            {getClinicInitials(clinicName)}
         </div>
         <div className="text-white">
-          <p className="font-bold text-sm leading-none">{clinicName || 'Kaffah Care'}</p>
+          <p className="font-bold text-sm leading-none">{clinicName || 'Klinik'}</p>
           <p className="text-xs opacity-80">Online</p>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/customSupabaseClient';
 import { APP_DOMAIN, PUBLIC_DOMAIN } from '@/lib/domainRouting';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 
 // Portal pasien Clinara. Sisi staf memakai sesi login biasa; sisi pasien tidak
 // login dan memanggil fungsi portal_* dengan token sesi dari portal_verify.
@@ -9,13 +10,15 @@ import { APP_DOMAIN, PUBLIC_DOMAIN } from '@/lib/domainRouting';
 
 // Tautan pasien dibuat di domain klinik sendiri (bukan clinara.id): pasien yang membuka tautan di HP
 // yang punya aplikasi Clinara terpasang akan melihat splash Clinara. Urutan: custom domain terverifikasi,
-// subdomain klinik (xxx.clinara.id), lalu domain publik utama (Kaffah). Di dev/preview memakai origin.
+// subdomain klinik (xxx.clinara.id). Domain publik Kaffah HANYA untuk klinik Kaffah; klinik lain tanpa
+// domain sendiri memakai domain aplikasi (clinara.id), tidak pernah kaffahphysio.id. Di dev/preview memakai origin.
 export const portalBaseUrl = (clinic) => {
   const { hostname, origin } = window.location;
   if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.vercel.app')) return origin;
   if (clinic?.custom_domain && clinic.custom_domain_status === 'verified') return `https://${clinic.custom_domain}`;
   if (clinic?.subdomain) return `https://${clinic.subdomain}.${APP_DOMAIN}`;
-  return `https://${PUBLIC_DOMAIN}`;
+  if (clinic?.id === KAFFAH_CLINIC_ID) return `https://${PUBLIC_DOMAIN}`;
+  return `https://${APP_DOMAIN}`;
 };
 
 export const buildPortalUrl = (token, clinic) => `${portalBaseUrl(clinic)}/p/${token}`;

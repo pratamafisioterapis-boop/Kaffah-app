@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Link2, Copy, Star } from 'lucide-react';
 import { formatDateIndonesian } from '@/lib/dateFormatHelpers';
-import { PUBLIC_DOMAIN } from '@/lib/domainRouting';
+import { portalBaseUrl } from '@/lib/patientPortal';
 import PageHero from '@/components/shared/PageHero';
 
 // Always build the shareable link on the clinic's own public domain, never
@@ -17,7 +17,8 @@ import PageHero from '@/components/shared/PageHero';
 // already has the app installed as a PWA gets the SaaS platform's own
 // native splash screen (Clinara logo on white) before anything else loads
 // -- confusing branding and a jarring flash for a one-off patient link.
-const buildFeedbackUrl = (token) => `https://${PUBLIC_DOMAIN}/feedback/${token}`;
+// Domain klinik sendiri (custom domain / subdomain), bukan domain Kaffah.
+const buildFeedbackUrl = (token, clinic) => `${portalBaseUrl(clinic)}/feedback/${token}`;
 
 // Shared feedback-link management UI, embedded by the owner and admin
 // dashboard wrapper pages (same pattern as PackageRecapsContent). Lets
@@ -36,6 +37,13 @@ export const FeedbackManagementContent = () => {
   const [loading, setLoading] = useState(true);
 
   const clinicId = userDetails?.clinic_id;
+  const [clinicDomain, setClinicDomain] = useState(null);
+
+  useEffect(() => {
+    if (!clinicId) return;
+    supabase.from('clinics').select('id, subdomain, custom_domain, custom_domain_status')
+      .eq('id', clinicId).maybeSingle().then(({ data }) => setClinicDomain(data || null));
+  }, [clinicId]);
 
   const fetchData = useCallback(async () => {
     if (!clinicId) return;
@@ -67,7 +75,7 @@ export const FeedbackManagementContent = () => {
     }
     setLinks((prev) => [data, ...prev]);
     setPatientName('');
-    const url = buildFeedbackUrl(token);
+    const url = buildFeedbackUrl(token, clinicDomain);
     try {
       await navigator.clipboard.writeText(url);
       toast({ title: 'Link feedback dibuat & disalin', description: url });
@@ -77,7 +85,7 @@ export const FeedbackManagementContent = () => {
   };
 
   const handleCopyLink = async (token) => {
-    const url = buildFeedbackUrl(token);
+    const url = buildFeedbackUrl(token, clinicDomain);
     try {
       await navigator.clipboard.writeText(url);
       toast({ title: 'Link disalin', description: url });

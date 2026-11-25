@@ -296,7 +296,7 @@ const SAMPLE_DATA = {
     sisa_sesi: '2',
     tanggal_habis: '20 Januari 2024',
     jam_terapi: '14:00', // Legacy support
-    lokasi: 'Klinik Kaffah Care',
+    lokasi: 'Klinik Anda',
     umur_baru: '30', // Backward compatibility sample
     usia: '30',
     masa_berlaku: '15 Januari – 15 Februari',

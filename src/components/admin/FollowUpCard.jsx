@@ -25,6 +25,7 @@ import {
   getTherapyReminderPreview,
   isTherapyReminder
 } from '@/lib/reminderTemplate';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const FollowUpCard = ({
   item,
@@ -35,11 +36,12 @@ const FollowUpCard = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { clinicName } = useAuth();
 
   // Reminder terapi dikirim memakai template WABA, jadi pratinjaunya juga isi template.
   const isTemplateReminder = isTherapyReminder(item);
   const displayMessage = isTemplateReminder
-    ? getTherapyReminderPreview(item)
+    ? getTherapyReminderPreview(item, clinicName)
     : interpolateTemplate(item.message_content, item);
 
   const handleCopyMessage = async () => {

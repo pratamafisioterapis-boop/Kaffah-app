@@ -27,6 +27,7 @@ import { isStaleChunkError, reloadForStaleChunk, hardRefresh, consumeSkipSplash 
 // found after sitting idle), which should drop the user back where they were
 // rather than replay the launch splash.
 const SKIPS_SPLASH_THIS_LOAD = consumeSkipSplash();
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { PUBLIC_DOMAIN, APP_DOMAIN, isAppOnlyPath, staysOnAppDomain, isOnAppDomain, isOnPublicDomain, isTenantHost } from '@/lib/domainRouting';
 // DashboardLayout (framer-motion + topbar) hanya dipakai setelah login: lazy supaya
 // pengunjung halaman publik tidak mengunduhnya di bundle awal.
@@ -84,17 +85,27 @@ const PemilihDpcApp = React.lazy(lazyRetry(() => import('@/pages/dpc/PemilihDpcA
 // apart. Runs on first load and on every client-side route change.
 const DomainGuard = () => {
   const location = useLocation();
+  const { userDetails, loading: authLoading } = useAuth();
+  const isKaffahUser = userDetails?.clinic_id === KAFFAH_CLINIC_ID;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const { hostname, search, hash } = window.location;
 
     if (isOnAppDomain(hostname) && !staysOnAppDomain(location.pathname)) {
-      window.location.replace(`https://${PUBLIC_DOMAIN}${location.pathname}${search}${hash}`);
+      // Halaman marketing Kaffah (/booking, /pricing, dst.) hanya boleh ke kaffahphysio.id
+      // untuk pengguna klinik Kaffah. Selain itu (klinik lain / belum login) kembali ke
+      // beranda Clinara, tidak pernah ke domain Kaffah.
+      if (authLoading) return;
+      if (isKaffahUser) {
+        window.location.replace(`https://${PUBLIC_DOMAIN}${location.pathname}${search}${hash}`);
+      } else {
+        window.location.replace(`https://${APP_DOMAIN}/`);
+      }
     } else if (isOnPublicDomain(hostname) && isAppOnlyPath(location.pathname)) {
       window.location.replace(`https://${APP_DOMAIN}${location.pathname}${search}${hash}`);
     }
-  }, [location.pathname]);
+  }, [location.pathname, authLoading, isKaffahUser]);
 
   return null;
 };

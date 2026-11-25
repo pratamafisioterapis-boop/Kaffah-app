@@ -12,6 +12,7 @@ import {
   interpolateTemplate
 } from '@/lib/api';
 import { getTherapyReminderPreview, isTherapyReminder } from '@/lib/reminderTemplate';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import FollowUpMessagePreview from './FollowUpMessagePreview';
@@ -27,6 +28,7 @@ const FollowUpCategory = ({ category }) => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+  const { clinicName } = useAuth();
 
   useEffect(() => {
     fetchData();
@@ -75,7 +77,7 @@ const FollowUpCategory = ({ category }) => {
     // Reminder terapi dikirim sebagai template WABA (dengan tombol), jadi yang
     // dipratinjau adalah isi template, bukan teks lama di message_content.
     const msg = isTherapyReminder(item)
-      ? getTherapyReminderPreview(item)
+      ? getTherapyReminderPreview(item, clinicName)
       : interpolateTemplate(item.message_content, item);
     setPreviewMessage(msg);
     setIsPreviewOpen(true);

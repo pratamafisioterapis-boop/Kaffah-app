@@ -29,6 +29,7 @@ import { confirmAction } from '@/lib/confirmAction';
 
 
 const FollowUpManagement = () => {
+  const { clinicName } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -434,7 +435,7 @@ console.log({
               </div>
               
               <div className="bg-slate-50/50 p-3 rounded-app-sm text-sm text-slate-600 mb-4 border border-slate-100 font-normal leading-relaxed flex-grow">
-                  {isTherapyReminder(item) ? getTherapyReminderPreview(item) : item.message_content}
+                  {isTherapyReminder(item) ? getTherapyReminderPreview(item, clinicName) : item.message_content}
               </div>
               
               <div className="flex items-center gap-4 text-xs text-slate-500 mb-4 pl-2 border-t border-slate-50 pt-3">
