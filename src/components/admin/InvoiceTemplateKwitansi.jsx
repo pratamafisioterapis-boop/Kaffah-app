@@ -1,6 +1,7 @@
 import React, { forwardRef } from 'react';
 import { terbilangRupiah } from '@/lib/terbilang';
 import { PRAXIS_CLINIC_ID } from '@/lib/clinicIds';
+import { useClinicSetting } from '@/lib/clinicSettings';
 
 export const KWITANSI_CATEGORIES = [
   { value: 'consultation', label: 'Consultation' },
@@ -66,6 +67,7 @@ export const getKwitansiItems = (data) => {
 };
 
 const InvoiceTemplateKwitansi = forwardRef(({ data }, ref) => {
+  const footerText = useClinicSetting('kwitansi.footer_text', '');
   const clinic = data?.clinic || {};
   const items = getKwitansiItems(data);
   const lineTotal = (it) => it.qty * it.price - it.discount;
@@ -249,7 +251,7 @@ const InvoiceTemplateKwitansi = forwardRef(({ data }, ref) => {
       </div>
 
       <div style={{ position: 'absolute', left: '44px', right: '44px', bottom: '30px', borderTop: `1px solid ${LINE}`, paddingTop: '8px', fontSize: '9px', color: MUTED }}>
-        <p style={{ margin: 0 }}>Invoice ini merupakan bukti pembayaran yang sah</p>
+        <p style={{ margin: 0 }}>{footerText || 'Invoice ini merupakan bukti pembayaran yang sah'}</p>
         <p style={{ margin: 0 }}>Printed on: {printedStr}{cashier ? ` by ${cashier}` : ''}</p>
       </div>
     </div>

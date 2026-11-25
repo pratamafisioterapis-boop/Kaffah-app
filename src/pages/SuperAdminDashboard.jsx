@@ -7,6 +7,7 @@ const SuperAdminClinics = React.lazy(() => import('@/pages/SuperAdminClinics'));
 const SuperAdminClinicViewer = React.lazy(() => import('@/pages/SuperAdminClinicViewer'));
 const SuperAdminRegistrationLinks = React.lazy(() => import('@/pages/SuperAdminRegistrationLinks'));
 const SuperAdminUsers = React.lazy(() => import('@/pages/SuperAdminUsers'));
+const SuperAdminCsTickets = React.lazy(() => import('@/pages/SuperAdminCsTickets'));
 const SuperAdminSubscriptions = React.lazy(() => import('@/pages/SuperAdminSubscriptions'));
 const JournalKnowledgeBaseManager = React.lazy(() => import('@/components/owner/JournalKnowledgeBaseManager'));
 const ExerciseVideoManager = React.lazy(() => import('@/components/superadmin/ExerciseVideoManager'));
@@ -22,6 +23,7 @@ const SuperAdminDashboard = () => (
       <Route path="/clinic-viewer" element={<SuperAdminClinicViewer />} />
       <Route path="/users" element={<SuperAdminUsers />} />
       <Route path="/subscriptions" element={<SuperAdminSubscriptions />} />
+      <Route path="/cs-tickets" element={<SuperAdminCsTickets />} />
       <Route
         path="/exercise-videos"
         element={

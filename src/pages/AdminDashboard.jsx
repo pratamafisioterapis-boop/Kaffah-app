@@ -22,6 +22,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 // Import Pages/Components
 const DailyRecap = React.lazy(lazyRetry(() => import('@/components/admin/DailyRecap'), 'DailyRecap'));
 const FollowUpManagementPage = React.lazy(lazyRetry(() => import('@/components/admin/FollowUpManagementPage'), 'FollowUpManagementPage'));
+const ClinaraCsPage = React.lazy(lazyRetry(() => import('@/components/clinara-cs/ClinaraCsPage'), 'ClinaraCsPage'));
 const WaitingListPage = React.lazy(lazyRetry(() => import('@/components/admin/WaitingListPage'), 'WaitingListPage'));
 const AdminAccountingDashboard = React.lazy(lazyRetry(() => import('@/components/admin/AdminAccountingDashboard'), 'AdminAccountingDashboard'));
 import AdminDashboardMetrics from '@/components/admin/AdminDashboardMetrics'; 
@@ -708,6 +709,7 @@ return (
         <Route path="/package-recaps" element={<OwnerPackageRecap />} />
         <Route path="/follow-up-management" element={<FollowUpManagementPage />} />
         <Route path="/waiting-list" element={<WaitingListPage />} />
+        <Route path="/cs-clinara" element={<ClinaraCsPage />} />
         
         {/* Task 2: Add new route */}
         <Route path="/clinical-documents" element={<ClinicalDocuments />} />
