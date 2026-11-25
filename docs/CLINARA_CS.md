@@ -58,3 +58,8 @@ Jangan merge, jangan jalankan migrasi tanpa persetujuan, hanya klinik Praxis."
 - Balasan pertama otomatis (trigger `trg_cs_auto_ack`, tanpa AI) menurut jenis tiket.
 - Pembaruan berikutnya ditulis routine dalam bahasa awam (tanpa istilah teknis) lewat `clinara_cs_messages` (sender 'cs'):
   saat mulai diperiksa, saat penyebab ditemukan, dan saat selesai.
+
+## Dikte suara
+Tombol **Dikte** di form tiket dan di balasan tiket memakai Web Speech API bawaan browser (bahasa `id-ID`, gratis, tanpa AI berbayar).
+Tombol tersembunyi di browser yang tidak mendukung (mis. Firefox). Teks hasil dikte masuk ke kolom isian dan masih bisa disunting sebelum dikirim.
+Catatan privasi: pengenalan suara di Chrome/Safari diproses oleh layanan browser, bukan oleh Clinara.

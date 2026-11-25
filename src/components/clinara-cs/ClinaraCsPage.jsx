@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import PageHero from '@/components/shared/PageHero';
 import TicketThread from './TicketThread';
+import DictationButton from './DictationButton';
 import { STATUS_LABEL, STATUS_TONE, fmtWhen } from './csShared';
 
 // Halaman staf Praxis: ajukan permintaan perubahan aplikasi dan pantau statusnya.
@@ -103,6 +104,10 @@ const ClinaraCsPage = () => {
               ))}
             </div>
             <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Judul singkat (mis. Ubah teks kwitansi)" maxLength={200} className="text-base" />
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-gray-500">Bisa diketik, atau ucapkan lewat tombol Dikte.</span>
+              <DictationButton onText={(t) => setBody((b) => (b.trim() ? `${b.trimEnd()} ${t}` : t))} />
+            </div>
             <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6} placeholder={KINDS.find((k) => k.value === kind)?.hint} className="text-base" />
           </div>
           <DialogFooter>
