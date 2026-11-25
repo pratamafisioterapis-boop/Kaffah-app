@@ -13,6 +13,13 @@ import ClinicalDocumentPreviewModal from './ClinicalDocumentPreviewModal';
 import ResumeMedisTemplate from './ResumeMedisTemplate';
 import { getPatientAdmissionNumber } from '@/lib/admission';
 
+// 'YYYY-MM-DD' (tanggal sesi) bila ada, selain itu tanggal input SOAP.
+const getSessionDay = (r, recapDates) => recapDates[r.daily_recap_id] || format(new Date(r.created_at), 'yyyy-MM-dd');
+const makeByVisit = (recapDates) => (a, b) => {
+  const d = getSessionDay(a, recapDates).localeCompare(getSessionDay(b, recapDates));
+  return d !== 0 ? d : new Date(a.created_at) - new Date(b.created_at);
+};
+
 const isBlank = (v) => !v || v === '-';
 
 // Join users!created_by sering kosong (RLS) dan pembuat SOAP belum tentu punya
@@ -79,16 +86,8 @@ const ResumeMedisCpptDialog = ({ isOpen, onClose, group, clinic }) => {
     return () => { cancelled = true; };
   }, [isOpen, group]);
 
-  // 'YYYY-MM-DD' (tanggal sesi) bila ada, selain itu tanggal input SOAP.
-  const sessionDay = (r) => recapDates[r.daily_recap_id] || format(new Date(r.created_at), 'yyyy-MM-dd');
-  const byVisit = (a, b) => {
-    const d = sessionDay(a).localeCompare(sessionDay(b));
-    return d !== 0 ? d : new Date(a.created_at) - new Date(b.created_at);
-  };
-
   const records = useMemo(
-    () => [...(group?.records || [])].sort((a, b) => byVisit(b, a)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    () => [...(group?.records || [])].sort((a, b) => makeByVisit(recapDates)(b, a)),
     [group, recapDates]
   );
 
@@ -126,7 +125,7 @@ const ResumeMedisCpptDialog = ({ isOpen, onClose, group, clinic }) => {
     return records
       .filter((r) => selectedIds.includes(r.id))
       // Urut dari kunjungan terlama ke terbaru supaya PDF terbaca kronologis.
-      .sort(byVisit)
+      .sort(makeByVisit(recapDates))
       .map((soap) => {
         const isLatest = soap.id === records[0]?.id;
         const th = therapistByRecord[soap.id];
@@ -163,7 +162,7 @@ const ResumeMedisCpptDialog = ({ isOpen, onClose, group, clinic }) => {
             birth_date: pt.birth_date || null,
             gender: normalizeGender(pt.gender),
             admission_number: admissionNumber || base.admission_number || '',
-            document_date: (isLatest && !lastDoc && !recapDates[soap.daily_recap_id]) ? new Date().toISOString().slice(0, 10) : sessionDay(soap),
+            document_date: (isLatest && !lastDoc && !recapDates[soap.daily_recap_id]) ? new Date().toISOString().slice(0, 10) : getSessionDay(soap, recapDates),
           },
         };
       });
