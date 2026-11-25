@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Link2, Copy, Star, Search, X } from 'lucide-react';
 import { formatDateIndonesian } from '@/lib/dateFormatHelpers';
 import { portalBaseUrl } from '@/lib/patientPortal';
+import { QUESTIONNAIRE_CLINIC_IDS, KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import PageHero from '@/components/shared/PageHero';
 
 // Always build the shareable link on the clinic's own public domain, never
@@ -39,6 +40,9 @@ export const FeedbackManagementContent = () => {
   const [loading, setLoading] = useState(true);
 
   const clinicId = userDetails?.clinic_id;
+  // Praxis & Kaffah: kuesioner lengkap -> langsung Google Review (semua rating).
+  const isQuestionnaire = QUESTIONNAIRE_CLINIC_IDS.includes(clinicId);
+  const [patientPhones, setPatientPhones] = useState({});
   const [clinicDomain, setClinicDomain] = useState(null);
 
   useEffect(() => {
@@ -75,6 +79,11 @@ export const FeedbackManagementContent = () => {
     ]);
     setLinks(linkData || []);
     setResponses(responseData || []);
+    const pids = [...new Set((linkData || []).map((l) => l.patient_id).filter(Boolean))];
+    if (pids.length) {
+      const { data: pts } = await supabase.from('patients').select('id, phone').in('id', pids);
+      setPatientPhones(Object.fromEntries((pts || []).map((p) => [p.id, p.phone])));
+    }
     setLoading(false);
   }, [clinicId]);
 
@@ -147,8 +156,9 @@ export const FeedbackManagementContent = () => {
       <div>
         <h2 className="text-xl font-bold text-slate-800">Feedback Pasien</h2>
         <p className="text-sm text-slate-500 mt-1">
-          Pilih pasien yang sudah terapi, lalu buat link unik untuk mengisi feedback — identitas pasien terbaca otomatis. Tanpa memilih pasien, link tetap bisa dibuat dengan nama yang diketik. Rating 4-5 bintang otomatis diarahkan
-          ke halaman "Tulis Ulasan Google" klinik; rating rendah hanya tersimpan internal.
+          {isQuestionnaire
+            ? 'Pilih pasien yang sudah terapi, lalu buat link unik. Pasien mengisi kuesioner tanpa mengetik nama/no. HP (identitas terbaca otomatis dari data pasien), lalu langsung diarahkan ke halaman "Tulis Ulasan Google" klinik. Pertanyaan bisa diubah di Setup > ' + (clinicId === KAFFAH_CLINIC_ID ? 'Kuesioner Feedback' : 'Google Review') + '.'
+            : 'Buat link unik untuk seorang pasien mengisi feedback. Rating 4-5 bintang otomatis diarahkan ke halaman "Tulis Ulasan Google" klinik; rating rendah hanya tersimpan internal.'}
         </p>
       </div>
 
@@ -241,6 +251,9 @@ export const FeedbackManagementContent = () => {
                   <p className="text-sm font-medium text-slate-800">
                     {response.patient_name || linksById[response.link_id]?.patient_name || 'Anonim'}
                   </p>
+                  {patientPhones[linksById[response.link_id]?.patient_id] && (
+                    <p className="text-xs text-slate-500">{patientPhones[linksById[response.link_id].patient_id]}</p>
+                  )}
                   <div className="flex items-center gap-0.5 mt-0.5">
                     {Array.from({ length: 5 }).map((_, i) => (
                       <Star
@@ -249,7 +262,7 @@ export const FeedbackManagementContent = () => {
                       />
                     ))}
                   </div>
-                  {response.rating >= 4 && (
+                  {(isQuestionnaire || response.rating >= 4) && (
                     response.google_review_clicked_at ? (
                       <Badge className="bg-app-accent/15 text-app-accent-hover hover:bg-app-accent/15 mt-1">Diarahkan ke Google</Badge>
                     ) : (
@@ -262,7 +275,7 @@ export const FeedbackManagementContent = () => {
                   <Switch checked={response.is_approved} onCheckedChange={() => handleToggleApprove(response)} />
                 </div>
               </div>
-              {response.comment && <p className="text-sm text-slate-600">{response.comment}</p>}
+              {response.comment && <p className="text-sm text-slate-600 whitespace-pre-line break-words">{response.comment}</p>}
               <p className="text-xs text-slate-500">{formatDateIndonesian(response.created_at)}</p>
             </div>
           ))}
