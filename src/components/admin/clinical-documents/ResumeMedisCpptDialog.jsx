@@ -59,9 +59,37 @@ const ResumeMedisCpptDialog = ({ isOpen, onClose, group, clinic }) => {
   const [selectedIds, setSelectedIds] = useState([]);
   const [previewing, setPreviewing] = useState(false);
 
+  // Tanggal sesi (daily_recaps.recap_date) tiap catatan, sama seperti di Daily Recaps.
+  // created_at hanya waktu SOAP diinput, bisa beda hari dengan sesinya.
+  const [recapDates, setRecapDates] = useState({});
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const recapIds = [...new Set((group?.records || []).map((r) => r.daily_recap_id).filter(Boolean))];
+    if (!recapIds.length) { setRecapDates({}); return undefined; }
+    let cancelled = false;
+    (async () => {
+      const map = {};
+      for (let i = 0; i < recapIds.length; i += 100) {
+        const { data } = await supabase.from('daily_recaps').select('id, recap_date').in('id', recapIds.slice(i, i + 100));
+        (data || []).forEach((d) => { if (d.recap_date) map[d.id] = d.recap_date; });
+      }
+      if (!cancelled) setRecapDates(map);
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen, group]);
+
+  // 'YYYY-MM-DD' (tanggal sesi) bila ada, selain itu tanggal input SOAP.
+  const sessionDay = (r) => recapDates[r.daily_recap_id] || format(new Date(r.created_at), 'yyyy-MM-dd');
+  const byVisit = (a, b) => {
+    const d = sessionDay(a).localeCompare(sessionDay(b));
+    return d !== 0 ? d : new Date(a.created_at) - new Date(b.created_at);
+  };
+
   const records = useMemo(
-    () => [...(group?.records || [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)),
-    [group]
+    () => [...(group?.records || [])].sort((a, b) => byVisit(b, a)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [group, recapDates]
   );
 
   useEffect(() => {
@@ -98,7 +126,7 @@ const ResumeMedisCpptDialog = ({ isOpen, onClose, group, clinic }) => {
     return records
       .filter((r) => selectedIds.includes(r.id))
       // Urut dari kunjungan terlama ke terbaru supaya PDF terbaca kronologis.
-      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+      .sort(byVisit)
       .map((soap) => {
         const isLatest = soap.id === records[0]?.id;
         const th = therapistByRecord[soap.id];
@@ -135,11 +163,11 @@ const ResumeMedisCpptDialog = ({ isOpen, onClose, group, clinic }) => {
             birth_date: pt.birth_date || null,
             gender: normalizeGender(pt.gender),
             admission_number: admissionNumber || base.admission_number || '',
-            document_date: (isLatest && !lastDoc ? new Date() : new Date(soap.created_at)).toISOString().slice(0, 10),
+            document_date: (isLatest && !lastDoc && !recapDates[soap.daily_recap_id]) ? new Date().toISOString().slice(0, 10) : sessionDay(soap),
           },
         };
       });
-  }, [previewing, ctx, records, selectedIds]);
+  }, [previewing, ctx, records, selectedIds, recapDates]);
 
   const slug = (ctx?.patient?.full_name || group?.patient?.full_name || 'Pasien').trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
   const fileName = docs.length > 1 ? `Resume_Medis_${slug}_${docs.length}_Catatan` : `Resume_Medis_${slug}`;
@@ -215,7 +243,9 @@ const ResumeMedisCpptDialog = ({ isOpen, onClose, group, clinic }) => {
                 <Checkbox className="mt-0.5" checked={selectedIds.includes(r.id)} onCheckedChange={() => toggle(r.id)} />
                 <div className="min-w-0 text-sm">
                   <p className="font-semibold text-slate-900">
-                    {format(new Date(r.created_at), 'EEEE, dd MMM yyyy · HH:mm', { locale: idLocale })}
+                    {recapDates[r.daily_recap_id]
+                      ? format(new Date(`${recapDates[r.daily_recap_id]}T00:00:00`), 'EEEE, dd MMM yyyy', { locale: idLocale })
+                      : format(new Date(r.created_at), 'EEEE, dd MMM yyyy · HH:mm', { locale: idLocale })}
                   </p>
                   <p className="text-xs text-slate-500">Oleh: {r.therapist?.full_name || 'Terapis'}</p>
                   {(r.assessment || r.subjective) && (
