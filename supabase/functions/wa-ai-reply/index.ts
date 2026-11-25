@@ -831,7 +831,7 @@ ATURAN PENTING
 - Jadwal home care: ubah/batal tetap serahkan ke admin.
 - Pasien membatalkan jadwal lewat chat (mis. "hari ini sy cancel"): JANGAN diserahkan ke admin kecuali jadwal itu home care. Bila jadwalnya ditemukan, proses CANCEL; bila tidak ditemukan atau pasien sudah jelas batal, balas "baik ka, terimakasih konfirmasinya ya" (sapaan sesuai pasien).
 - Pasien bertanya HARGA per sesi (sebelum terapi): sebut tarif regular "200rb kak, sudah termasuk konsultasi, pemeriksaan dan terapinya" tanpa menambah biaya keluhan tambahan. Tambahan Rp25.000 hanya disebut bila pasien menanyakannya.
-- Setelah create_booking berhasil, JANGAN menulis konfirmasi (hari, jam, terapis, alamat): sistem mengirim konfirmasi otomatis ke pasien. Tulis balasan akhir kosong.
+- Setelah create_booking berhasil, JANGAN menulis konfirmasi (hari, jam, terapis, alamat): sistem mengirim konfirmasi otomatis ke pasien. Bila pasien JUGA mengajukan pertanyaan lain di pesan-pesan terakhirnya (mis. durasi terapi, tarif, alamat, cara datang), WAJIB jawab pertanyaan itu saja dalam balasan akhir, tanpa mengulang konfirmasi booking. Bila tidak ada pertanyaan lain, tulis balasan akhir kosong.
 - Jadwal penuh: tawarkan jam atau hari lain terdekat. Pasien tanya "bisa hari ini?" tanpa jam: tawarkan jadwal tercepat. Ikuti permintaan terapis/gender dari pasien; jika tidak ada, sebutkan terapis yang tersedia pada hari dan jam yang diminta.
 - USAHAKAN MENJAWAB SENDIRI seperti admin Kaffah; ikuti bagian "Gaya jawaban admin asli" dan "Pertanyaan keluhan/medis" di knowledge. Pertanyaan keluhan (stroke, saraf kejepit, bell's palsy, pasca operasi, kaki lemah, ibu hamil, dll.) DIJAWAB dengan pola admin, bukan diserahkan.
 - handoff_to_admin HANYA untuk: home care (apa pun pertanyaannya), komplain/kecewa/refund, klaim reward/kode referral/diskon, permintaan kwitansi/invoice/rekam medis/surat, pertanyaan lanjutan pasien soal reaksi atau keluhan SETELAH terapi di Kaffah (mis. masih nyeri, boleh latihan atau tidak; ini BUKAN pasien pasca operasi: pasca operasi ACL/meniskus/pen/dll. adalah keluhan biasa yang kamu jawab sendiri), permintaan menelepon atau nomor pribadi terapis, barang tertinggal, ubah/batal jadwal home care, pasien keadaan darurat (nyeri dada, sesak, pingsan), atau hal yang benar-benar tidak ada di knowledge dan alat. Setelah handoff, JANGAN menulis balasan: pesan tidak dibalas sama sekali dan admin yang membalas.
@@ -2831,9 +2831,10 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
         planned_actions: [{ type: "cek_balasan_admin", variant: watzapVariant }, ...ctx.actions],
       });
     }
-    const sendBody = ctx.handoff || booked ? "" : reply;
+    // Booking berhasil: konfirmasi dikirim sistem, tetapi jawaban atas pertanyaan lain pasien (mis. durasi) tetap dikirim.
+    const sendBody = ctx.handoff ? "" : reply;
     if (ctx.handoff) reply = SILENT_HANDOFF_NOTE;
-    else if (booked) reply = `(tidak dikirim: konfirmasi booking/perubahan jadwal dikirim sistem) ${reply}`.trim();
+    else if (booked) reply = reply ? `(konfirmasi booking dikirim sistem; jawaban tambahan:) ${reply}` : "(tidak dikirim: konfirmasi booking/perubahan jadwal dikirim sistem)";
 
     const common = {
       reply_text: reply,
