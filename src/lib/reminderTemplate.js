@@ -1,4 +1,5 @@
 import { parseISO } from 'date-fns';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 
 // Isi template WABA "reminder_terapi_konfirmasi" (disetujui Meta). Teks ini hanya
 // untuk PRATINJAU di halaman Follow Up; yang dikirim ke pasien adalah template
@@ -60,7 +61,10 @@ export const getTherapyReminderTime = (item) => {
   return item?.message_content?.match(/pukul\s+(\d{1,2}[:.]\d{2})/i)?.[1]?.replace('.', ':') || '';
 };
 
-export const isTherapyReminder = (item) => item?.follow_up_type === 'therapy_reminder';
+// Template WABA (tombol Hadir/Reschedule/Cancel) hanya dipakai Kaffah. Klinik lain
+// (mis. Praxis) mengirim teks pesannya sendiri lewat wa.me, jadi memakai message_content.
+export const isTherapyReminder = (item) =>
+  item?.follow_up_type === 'therapy_reminder' && item?.clinic_id === KAFFAH_CLINIC_ID;
 
 // Pratinjau isi template untuk satu baris antrean reminder terapi.
 // clinicName = nama klinik yang sedang login (tiap klinik punya template WABA sendiri).
