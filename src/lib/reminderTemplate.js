@@ -10,14 +10,14 @@ export const THERAPY_REMINDER_BUTTONS = ['Hadir', 'Reschedule', 'Cancel'];
 const TEMPLATE_BODY = [
   'Selamat Pagi {{full_name}}',
   '',
-  'Kami dari Kaffah Physiotherapy ingin mengingatkan bahwa sesi fisioterapi Anda akan berlangsung hari ini pukul {{jam}}.',
+  'Kami dari {{klinik}} ingin mengingatkan bahwa sesi fisioterapi Anda akan berlangsung hari ini pukul {{jam}}.',
   '',
   'Datang tepat waktu sangat membantu kami memberikan terapi dengan hasil yang maksimal 🙏',
   '⏰ Apabila keterlambatan lebih dari 15 menit, sesi terapi tetap berjalan namun waktunya akan menyesuaikan.',
   '',
   'Semoga perjalanannya lancar.',
   'Salam sehat,',
-  'Kaffah Physiotherapy',
+  '{{klinik}}',
   '',
   'Mohon konfirmasi dengan memilih salah satu tombol di bawah ini.'
 ].join('\n');
@@ -63,7 +63,9 @@ export const getTherapyReminderTime = (item) => {
 export const isTherapyReminder = (item) => item?.follow_up_type === 'therapy_reminder';
 
 // Pratinjau isi template untuk satu baris antrean reminder terapi.
-export const getTherapyReminderPreview = (item) =>
+// clinicName = nama klinik yang sedang login (tiap klinik punya template WABA sendiri).
+export const getTherapyReminderPreview = (item, clinicName) =>
   TEMPLATE_BODY
+    .replaceAll('{{klinik}}', clean(clinicName) || 'klinik kami')
     .replace('{{full_name}}', getTherapyReminderName(item))
     .replace('{{jam}}', getTherapyReminderTime(item) || '-');
