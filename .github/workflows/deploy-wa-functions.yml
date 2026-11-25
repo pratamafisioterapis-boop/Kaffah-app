@@ -30,7 +30,7 @@ jobs:
           set -euo pipefail
           for fn in $FUNCTIONS; do
             case "$fn" in
-              wa-ai-reply|wa-watzap-webhook) ;;
+              wa-ai-reply|wa-watzap-webhook|telegram-webhook) ;;
               *) echo "Fungsi tidak diizinkan: $fn"; exit 1 ;;
             esac
             supabase functions deploy "$fn" --no-verify-jwt --use-api --yes --project-ref dqkejdamagvlhqvxaqej
