@@ -259,7 +259,15 @@ const PatientFeedbackPage = () => {
           {status === 'submitted' && (
             <div className="py-4 flex flex-col items-center gap-4 text-center">
               <CheckCircle2 className="w-10 h-10 text-green-500" />
-              <p className="text-sm text-slate-600">Terima kasih atas feedback Anda!</p>
+              {isKaffah ? (
+                <div className="space-y-2 text-sm text-slate-600">
+                  <p>Terima kasih atas feedback Anda dan telah mempercayakan pemulihan di <strong>{clinicName || 'Kaffah Physiotherapy'}</strong>.</p>
+                  <p>Semoga lekas membaik dan sehat selalu 🙏</p>
+                  <p className="font-semibold text-slate-700">Salam Sehat,<br />{clinicName || 'Kaffah Physiotherapy'}</p>
+                </div>
+              ) : (
+                <p className="text-sm text-slate-600">Terima kasih atas feedback Anda!</p>
+              )}
               {googleReviewUrl && (
                 <>
                   <p className="text-sm text-slate-500">
