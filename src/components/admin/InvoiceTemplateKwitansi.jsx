@@ -87,7 +87,11 @@ const InvoiceTemplateKwitansi = forwardRef(({ data }, ref) => {
   const invoiceNo = data?.receipt_number || data?.invoice_number || '-';
   const cashier = data?.admin_signer_name || clinic.invoice_admin_name || '';
   const signatureUrl = data?.admin_signer_signature_url || clinic.invoice_admin_signature_url || '';
-  const printed = new Date();
+  // Praxis: tanggal cetak mengikuti tanggal daily recap (bukan hari ini).
+  const recapDay = clinic?.id === PRAXIS_CLINIC_ID && data?.recap_date
+    ? new Date(`${String(data.recap_date).slice(0, 10)}T00:00:00`)
+    : null;
+  const printed = recapDay && !Number.isNaN(recapDay.getTime()) ? recapDay : new Date();
   const printedStr = `${pad(printed.getDate())}-${MONTHS[printed.getMonth()]}-${printed.getFullYear()}`;
 
   const splits = Array.isArray(data?.payment_splits) && data.payment_splits.length > 0
