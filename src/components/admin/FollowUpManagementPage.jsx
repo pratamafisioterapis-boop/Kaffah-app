@@ -4,10 +4,8 @@ import {
   markFollowUpAsSent,
   markFollowUpAsCompleted,
   deleteFollowUp,
-  interpolateTemplate,
-  getWaApiSettings
+  interpolateTemplate
 } from '@/lib/api';
-import { supabase } from '@/lib/customSupabaseClient';
 import FollowUpCard from '@/components/admin/FollowUpCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
@@ -44,8 +42,6 @@ const FollowUpManagementPage = () => {
   const [queueItems, setQueueItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('booking_appointment');
-  // Klinik yang belum setup Watzap (mis. Praxis) mengirim manual lewat wa.me.
-  const [watzapReady, setWatzapReady] = useState(false);
 
   const { clinicName, userDetails } = useAuth();
   // Praxis tidak memakai tab Reward Referral.
@@ -75,53 +71,13 @@ const FollowUpManagementPage = () => {
     fetchQueue();
   }, [fetchQueue]);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await getWaApiSettings();
-        setWatzapReady(Boolean(data?.enabled && data?.api_key));
-      } catch {
-        setWatzapReady(false);
-      }
-    })();
-  }, []);
-
   // ===============================
   // Handlers
   // ===============================
 
-  // "Follow Up Rutin" tidak lagi dikirim otomatis oleh cron — admin memilih
-  // sendiri pesan mana yang dikirim, lalu mengirimnya langsung via Watzap.
-  const handleSendFollowUpRutin = async (item) => {
-    const { data, error } = await supabase.rpc('send_follow_up_whatsapp', {
-      p_queue_id: item.id
-    });
-
-    if (error || !data?.success) {
-      toast({
-        variant: 'destructive',
-        title: 'Gagal Mengirim',
-        description: error?.message || data?.message || 'Terjadi kesalahan saat mengirim pesan'
-      });
-      return;
-    }
-
-    toast({
-      title: 'Terkirim',
-      description: 'Pesan berhasil dikirim via WhatsApp'
-    });
-
-    await fetchQueue();
-  };
-
   const handleSendWA = async (item) => {
 
-    // Hanya klinik dengan Watzap aktif yang memakai kirim otomatis; selain itu
-    // semua tipe (termasuk Follow Up Rutin) dikirim manual via WhatsApp.
-    if (item.follow_up_type === 'follow_up' && watzapReady) {
-      await handleSendFollowUpRutin(item);
-      return;
-    }
+    // Follow Up Rutin selalu dikirim manual lewat wa.me (tidak lewat Watzap).
 
     if (!item.phone_number) return;
 
