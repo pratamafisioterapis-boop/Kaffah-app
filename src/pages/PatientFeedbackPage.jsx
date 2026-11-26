@@ -108,8 +108,9 @@ const PatientFeedbackPage = () => {
       setStatus('already');
       return;
     }
-    // Kaffah: hanya halaman terima kasih, tanpa lanjut ke Google Review.
-    if (data.google_review_url && !isKaffah) {
+    // Kaffah: hanya jawaban yang puas (rating penentu >= 4: "Sangat puas"/"Puas") yang langsung diarahkan ke
+    // Google Review; selain itu cukup halaman terima kasih. Klinik lain (Praxis): selalu diarahkan bila link tersedia.
+    if (data.google_review_url && (!isKaffah || overallRating >= 4)) {
       window.location.href = data.google_review_url;
       return;
     }
@@ -172,6 +173,7 @@ const PatientFeedbackPage = () => {
             setAnswers={setAnswers}
             onSubmit={handlePraxisSubmit}
             submitting={submitting}
+            googleNote={isKaffah ? 'Setelah mengirim, Anda mungkin diarahkan ke halaman ulasan Google Kaffah Physiotherapy untuk berbagi pengalaman (boleh dilewati).' : undefined}
           />
         ) : (
           <QuestionnaireMessage clinicId={clinicId} clinicName={clinicName} kind={status} />
