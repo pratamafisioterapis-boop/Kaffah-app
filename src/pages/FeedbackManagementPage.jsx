@@ -237,9 +237,9 @@ export const FeedbackManagementContent = () => {
         </p>
       </div>
 
-      <div className="bg-white p-6 rounded-app border border-slate-200 space-y-3">
+      <div className="bg-white p-4 sm:p-6 rounded-app border border-slate-200 space-y-3">
         <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Link2 className="w-4 h-4" /> Buat Link Feedback Baru</h3>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             {selectedPatient ? (
               <div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
@@ -280,23 +280,23 @@ export const FeedbackManagementContent = () => {
               </>
             )}
           </div>
-          <Button onClick={handleGenerateLink} disabled={generating} className="bg-app-accent shrink-0">
+          <Button onClick={handleGenerateLink} disabled={generating} className="bg-app-accent sm:shrink-0 w-full sm:w-auto">
             {generating && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Buat Link
           </Button>
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-app border border-slate-200 space-y-3">
+      <div className="bg-white p-4 sm:p-6 rounded-app border border-slate-200 space-y-3">
         <h3 className="font-semibold text-slate-800">Link Terbaru</h3>
         {links.length === 0 && <p className="text-sm text-slate-500">Belum ada link feedback dibuat.</p>}
         <div className="divide-y divide-slate-100">
           {links.slice(0, 15).map((link) => (
-            <div key={link.id} className="py-3 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-slate-800 break-words sm:truncate">{link.patient_name || 'Tanpa nama'}</p>
+            <div key={link.id} className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-slate-800 break-words">{link.patient_name || 'Tanpa nama'}</p>
                 <p className="text-xs text-slate-500">{formatDateIndonesian(link.created_at)}</p>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
                 {link.responded_at ? (
                   <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Sudah diisi</Badge>
                 ) : (
