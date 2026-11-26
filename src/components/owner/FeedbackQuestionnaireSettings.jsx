@@ -7,7 +7,7 @@ import { Loader2, ClipboardList, ArrowUp, ArrowDown, Trash2, Plus, RotateCcw } f
 import { QUESTIONNAIRE_CLINIC_IDS } from '@/lib/clinicIds';
 import { DEFAULT_PRAXIS_QUESTIONS, normalizeQuestions } from '@/lib/praxisQuestionnaire';
 
-const TYPE_LABELS = { choice: 'Pilihan', text: 'Teks singkat', textarea: 'Teks panjang' };
+const TYPE_LABELS = { choice: 'Pilihan', text: 'Teks singkat', textarea: 'Teks panjang', therapist: 'Pilih nama terapis' };
 
 // Editor kuesioner feedback pasien (khusus Praxis): owner mengubah, menambah,
 // menghapus, dan mengurutkan pertanyaan. Disimpan di clinics.feedback_questionnaire.

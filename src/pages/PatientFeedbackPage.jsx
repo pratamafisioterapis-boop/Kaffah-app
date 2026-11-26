@@ -4,8 +4,9 @@ import { supabase, supabaseUrl, supabaseAnonKey } from '@/lib/customSupabaseClie
 import { Star, Loader2, AlertTriangle, CheckCircle2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { QUESTIONNAIRE_CLINIC_IDS } from '@/lib/clinicIds';
+import { QUESTIONNAIRE_CLINIC_IDS, KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { DEFAULT_PRAXIS_QUESTIONS, normalizeQuestions, ratingFromOption } from '@/lib/praxisQuestionnaire';
+import QuestionnaireForm, { QuestionnaireShell, QuestionnaireMessage } from '@/components/feedback/QuestionnaireForm';
 
 
 // Public, no-login page opened from a shareable link (e.g.
@@ -24,6 +25,9 @@ const PatientFeedbackPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [googleReviewUrl, setGoogleReviewUrl] = useState(null);
   const [isPraxis, setIsPraxis] = useState(false);
+  const [isKaffah, setIsKaffah] = useState(false);
+  const [clinicId, setClinicId] = useState(null);
+  const [staffNames, setStaffNames] = useState([]);
   const [answers, setAnswers] = useState({});
   const [questions, setQuestions] = useState(DEFAULT_PRAXIS_QUESTIONS);
 
@@ -46,10 +50,15 @@ const PatientFeedbackPage = () => {
       const { data: cid } = await supabase.rpc('get_feedback_link_clinic_id', { p_token: token });
       if (cancelled) return;
       setIsPraxis(QUESTIONNAIRE_CLINIC_IDS.includes(cid));
+      setIsKaffah(cid === KAFFAH_CLINIC_ID);
+      setClinicId(cid);
       if (QUESTIONNAIRE_CLINIC_IDS.includes(cid)) {
         const { data: qs } = await supabase.rpc('get_feedback_questionnaire', { p_token: token });
         if (cancelled) return;
         setQuestions(normalizeQuestions(qs) || DEFAULT_PRAXIS_QUESTIONS);
+        const { data: staff } = await supabase.rpc('get_feedback_staff', { p_token: token });
+        if (cancelled) return;
+        setStaffNames(Array.isArray(staff) ? staff : []);
       }
       setStatus(data.already_responded ? 'already' : 'form');
     };
@@ -97,7 +106,8 @@ const PatientFeedbackPage = () => {
       setStatus('already');
       return;
     }
-    if (data.google_review_url) {
+    // Kaffah: hanya halaman terima kasih, tanpa lanjut ke Google Review.
+    if (data.google_review_url && !isKaffah) {
       window.location.href = data.google_review_url;
       return;
     }
@@ -127,6 +137,28 @@ const PatientFeedbackPage = () => {
       // best-effort click tracking; never block navigation to Google
     }
   };
+
+  // Kuesioner (Kaffah & Praxis): tampilan sendiri, tanpa nama pasien.
+  if (isPraxis && ['form', 'already', 'submitted'].includes(status)) {
+    return (
+      <QuestionnaireShell clinicId={clinicId}>
+        {status === 'form' ? (
+          <QuestionnaireForm
+            clinicId={clinicId}
+            clinicName={clinicName}
+            questions={questions}
+            staffNames={staffNames}
+            answers={answers}
+            setAnswers={setAnswers}
+            onSubmit={handlePraxisSubmit}
+            submitting={submitting}
+          />
+        ) : (
+          <QuestionnaireMessage clinicId={clinicId} clinicName={clinicName} kind={status} />
+        )}
+      </QuestionnaireShell>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-4">
@@ -158,61 +190,6 @@ const PatientFeedbackPage = () => {
             <div className="py-6 flex flex-col items-center gap-3 text-center">
               <CheckCircle2 className="w-8 h-8 text-green-500" />
               <p className="text-sm text-slate-600">Terima kasih, feedback untuk link ini sudah pernah dikirim sebelumnya.</p>
-            </div>
-          )}
-
-          {status === 'form' && isPraxis && (
-            <div className="space-y-5">
-              <p className="text-sm text-slate-600 text-center">
-                Kami ingin mendengar pendapat atau masukan Anda agar kami dapat menyempurnakan pengalaman Anda!
-              </p>
-              {questions.map((q) => (
-                <fieldset key={q.id} className="space-y-2">
-                  <legend className="text-sm font-medium text-slate-800">
-                    {q.label.replace('{clinic}', clinicName || 'Praxis')}
-                    {q.required && <span className="text-red-500"> *</span>}
-                  </legend>
-                  {q.type === 'choice' && (
-                    <div className="flex flex-wrap gap-2">
-                      {q.options.map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setAnswers((a) => ({ ...a, [q.id]: opt }))}
-                          className={`px-3 py-1.5 rounded-full border text-sm transition-colors ${
-                            answers[q.id] === opt
-                              ? 'bg-indigo-600 border-indigo-600 text-white'
-                              : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-300'
-                          }`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {q.type === 'text' && (
-                    <input
-                      value={answers[q.id] || ''}
-                      onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
-                      className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
-                    />
-                  )}
-                  {q.type === 'textarea' && (
-                    <Textarea
-                      value={answers[q.id] || ''}
-                      onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
-                      rows={3}
-                    />
-                  )}
-                </fieldset>
-              ))}
-              <Button
-                onClick={handlePraxisSubmit}
-                disabled={!praxisComplete || submitting}
-                className="w-full bg-indigo-600 hover:bg-indigo-700"
-              >
-                {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Kirim &amp; Lanjut ke Google Review
-              </Button>
             </div>
           )}
 
