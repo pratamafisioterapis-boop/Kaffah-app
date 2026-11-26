@@ -942,7 +942,9 @@ function isThanksOnly(body: string): boolean {
 }
 
 /** Balasan baku "sama sama {sapaan}": sapaan dari pesan pasien, lalu dari pesan klinik terakhir, default "kak". */
-function thanksReply(lastBody: string, transcript: string): string {
+function thanksReply(lastBody: string, transcript: string, callName = ""): string {
+  // Pasien terdaftar (satu pasien pada nomor ini): panggil nickname, bukan "ka"/"kak".
+  if (callName) return `sama sama ${callName}`;
   const pick = /\b(ibu|bu|bapak|pak|mas|mbak|mba|kak|ka)\b/i;
   const norm = (w: string) => ({ ibu: "bu", bapak: "pak", mba: "mbak" } as Record<string, string>)[w.toLowerCase()] ?? w.toLowerCase();
   const fromPatient = String(lastBody || "").match(pick);
@@ -955,8 +957,22 @@ function thanksReply(lastBody: string, transcript: string): string {
   return "sama sama kak";
 }
 
+/** Nama panggilan pasien terdaftar untuk nomor ini. Hanya bila TEPAT SATU pasien pada nomor (satu nomor banyak
+ *  pasien = ambigu, kembali ke sapaan dari riwayat). Kosong bila nomor belum terdaftar. */
+async function patientCallName(admin: any, clinicId: string, waId: string): Promise<string> {
+  try {
+    const variants = phoneVariants(waId);
+    if (!variants.length) return "";
+    const { data } = await admin.from("patients").select("full_name, nickname")
+      .eq("clinic_id", clinicId).in("phone", variants).limit(3);
+    if (!data || data.length !== 1) return "";
+    const nick = String(data[0].nickname || "").trim();
+    return nick || String(data[0].full_name || "").trim().split(/\s+/)[0] || "";
+  } catch { return ""; }
+}
+
 /** Coba balas pesan penutup dengan model murah tanpa alat. handled=false -> lanjut ke agen penuh. */
-async function lightReply(transcript: string, lastBody: string, msgType: string): Promise<{ handled: boolean; reply: string }> {
+async function lightReply(transcript: string, lastBody: string, msgType: string, callName = ""): Promise<{ handled: boolean; reply: string }> {
   const isHadirButton = msgType === "button" && /^hadir$/i.test(lastBody.trim());
   if (msgType === "button" && !isHadirButton) return { handled: false, reply: "" }; // Reschedule/Cancel: agen penuh
   if (!isHadirButton && !isClosingText(lastBody)) return { handled: false, reply: "" };
@@ -969,10 +985,11 @@ async function lightReply(transcript: string, lastBody: string, msgType: string)
   // membalas "sama sama" di pesan terakhirnya, tidak dibalas lagi supaya tidak berulang.
   if (msgType === "text" && isThanksOnly(lastBody)) {
     if (/sama[ -]?sama/i.test(lastClinicMsg)) return { handled: true, reply: "" };
-    return { handled: true, reply: thanksReply(lastBody, transcript) };
+    return { handled: true, reply: thanksReply(lastBody, transcript, callName) };
   }
   try {
-    const txt = (await claudeText(LIGHT_SYSTEM, transcript.slice(-2500), 120, FAST_MODEL)).trim();
+    const nameHint = callName ? `Pasien ini terdaftar, panggil dengan nickname: ${callName} (JANGAN pakai "ka"/"kak").\n` : "";
+    const txt = (await claudeText(LIGHT_SYSTEM, nameHint + transcript.slice(-2500), 120, FAST_MODEL)).trim();
     if (!txt || txt.includes("[[AGEN]]")) return { handled: false, reply: "" };
     if (txt.includes("[[KOSONG]]")) return { handled: true, reply: "" };
     return { handled: true, reply: txt.slice(0, 300) };
@@ -1513,7 +1530,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
         reply = "";
         modelTag = "aturan home care";
       } else {
-        const fast = await lightReply(transcript, String(msg.body || ""), msg.msg_type);
+        const fast = await lightReply(transcript, String(msg.body || ""), msg.msg_type, await patientCallName(admin, clinicId, conv.wa_id));
         const agentModel = isFaqLike(transcript, String(msg.body || "")) ? FAST_MODEL : MODEL;
         modelTag = fast.handled ? `${FAST_MODEL}, balasan baku` : agentModel;
         reply = fast.handled
@@ -2120,7 +2137,7 @@ async function runEvalCase(admin: Admin, clinicId: string, knowledge: string | n
   const lastLine = evalTranscript.split("\n").pop() || "";
   const lastBody = lastLine.replace(/^\[[^\]]*\]\s*Pasien:\s*/, "");
   const fast = /Pasien:/.test(lastLine)
-    ? await lightReply(evalTranscript, lastBody, /^hadir$/i.test(lastBody.trim()) ? "button" : "text")
+    ? await lightReply(evalTranscript, lastBody, /^hadir$/i.test(lastBody.trim()) ? "button" : "text", await patientCallName(admin, clinicId, conv.wa_id))
     : { handled: false, reply: "" };
   const reply = fast.handled ? fast.reply : await runAgent(ctx, evalTranscript, hint + (await prepareContext(ctx, !!known, lastBody)), isFaqLike(evalTranscript, lastBody) ? FAST_MODEL : MODEL);
   const acts = ctx.actions.filter((a) => ACTION_TYPES.includes(a.type));
@@ -2775,7 +2792,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
         homecareHandoff(ctx);
         reply = "";
       } else {
-        const fast = await lightReply(transcript, String(msg.body || ""), msg.msg_type);
+        const fast = await lightReply(transcript, String(msg.body || ""), msg.msg_type, await patientCallName(admin, clinicId, conv.wa_id));
         reply = fast.handled ? fast.reply : await runAgent(ctx, transcript, hint + (await prepareContext(ctx, !!known, String(msg.body || ""))), isFaqLike(transcript, String(msg.body || "")) ? FAST_MODEL : MODEL);
       }
     }
