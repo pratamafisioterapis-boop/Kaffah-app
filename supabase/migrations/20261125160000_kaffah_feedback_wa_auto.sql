@@ -6,7 +6,8 @@
 --   * Maks. 1 kuesioner per pasien per 20 jam (kwitansi ganda di hari yang sama tidak menggandakan pesan).
 --   * Kwitansi harus berstatus 'terkirim'; bila 'gagal' kuesioner dilewati.
 --   * Jendela 24 jam terbuka (pesan masuk pasien < 23 jam) -> teks bebas berisi link (gratis).
---     Jendela tertutup -> template Meta 'kaffah_kuesioner_pasca_terapi' (tombol URL kaffahphysio.id/feedback/<token>).
+--     Jendela tertutup -> template Meta 'kaffah_kuesioner_pasca_terapi_v2' (tombol URL kaffahphysio.id/feedback/{{1}}; token dikirim lewat
+--     parameter 'url_suffix', terbukti lewat uji 26 Nov 2026).
 --   * Sapaan memakai WITA (Asia/Makassar). Nama = nickname pasien, cadangan nama lengkap.
 --
 -- Keandalan: antrean di database + cron tiap menit (tidak bergantung browser). Penolakan eksplisit Watzap dicoba ulang
@@ -162,7 +163,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  c_template constant text := 'kaffah_kuesioner_pasca_terapi';
+  c_template constant text := 'kaffah_kuesioner_pasca_terapi_v2';
   c_domain   constant text := 'https://kaffahphysio.id';
   q record;
   v_inv text;
@@ -286,7 +287,7 @@ BEGIN
         'parameter', jsonb_build_array(jsonb_build_object(
           'waktu', v_waktu,
           'nama_panggilan', v_nick,
-          'token', v_token
+          'url_suffix', v_token
         ))
       ),
       timeout_milliseconds := 30000
