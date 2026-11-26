@@ -35,30 +35,32 @@ const PatientFeedbackPage = () => {
     let cancelled = false;
 
     const fetchLink = async () => {
-      const { data, error } = await supabase
-        .rpc('get_feedback_link_info', { p_token: token })
-        .maybeSingle();
+      // Semua permintaan memakai token yang sama, jadi dijalankan bersamaan (bukan berurutan) agar
+      // halaman cepat tampil. get_feedback_questionnaire/get_feedback_staff hanya dipakai bila klinik berkuesioner.
+      const [infoRes, cidRes, qsRes, staffRes] = await Promise.all([
+        supabase.rpc('get_feedback_link_info', { p_token: token }).maybeSingle(),
+        supabase.rpc('get_feedback_link_clinic_id', { p_token: token }),
+        supabase.rpc('get_feedback_questionnaire', { p_token: token }),
+        supabase.rpc('get_feedback_staff', { p_token: token }),
+      ]);
 
       if (cancelled) return;
 
+      const { data, error } = infoRes;
       if (error || !data) {
         setStatus('invalid');
         return;
       }
 
+      const cid = cidRes.data;
+      const isQuestionnaire = QUESTIONNAIRE_CLINIC_IDS.includes(cid);
       setClinicName(data.clinic_name || '');
-      const { data: cid } = await supabase.rpc('get_feedback_link_clinic_id', { p_token: token });
-      if (cancelled) return;
-      setIsPraxis(QUESTIONNAIRE_CLINIC_IDS.includes(cid));
+      setIsPraxis(isQuestionnaire);
       setIsKaffah(cid === KAFFAH_CLINIC_ID);
       setClinicId(cid);
-      if (QUESTIONNAIRE_CLINIC_IDS.includes(cid)) {
-        const { data: qs } = await supabase.rpc('get_feedback_questionnaire', { p_token: token });
-        if (cancelled) return;
-        setQuestions(normalizeQuestions(qs) || DEFAULT_PRAXIS_QUESTIONS);
-        const { data: staff } = await supabase.rpc('get_feedback_staff', { p_token: token });
-        if (cancelled) return;
-        setStaffNames(Array.isArray(staff) ? staff : []);
+      if (isQuestionnaire) {
+        setQuestions(normalizeQuestions(qsRes.data) || DEFAULT_PRAXIS_QUESTIONS);
+        setStaffNames(Array.isArray(staffRes.data) ? staffRes.data : []);
       }
       setStatus(data.already_responded ? 'already' : 'form');
     };
@@ -137,6 +139,24 @@ const PatientFeedbackPage = () => {
       // best-effort click tracking; never block navigation to Google
     }
   };
+
+  // Sebelum klinik diketahui, tampilkan layar netral (bukan kartu bertema bintang lama) agar tidak berkedip
+  // dari desain lama ke desain baru.
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" aria-label="Memuat" />
+      </div>
+    );
+  }
+  if (status === 'invalid') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-slate-50 px-8 text-center">
+        <AlertTriangle className="w-8 h-8 text-red-500" />
+        <p className="text-sm text-slate-600">Link feedback tidak ditemukan atau sudah tidak berlaku.</p>
+      </div>
+    );
+  }
 
   // Kuesioner (Kaffah & Praxis): tampilan sendiri, tanpa nama pasien.
   if (isPraxis && ['form', 'already', 'submitted'].includes(status)) {
