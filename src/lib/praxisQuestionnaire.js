@@ -1,6 +1,7 @@
 // Kuesioner feedback Praxis. Default di bawah dipakai bila owner belum
 // mengustomisasi (clinics.feedback_questionnaire kosong).
-// Tipe: 'choice' (pilih satu) | 'text' (satu baris) | 'textarea' (teks panjang).
+// Tipe: 'choice' (pilih satu) | 'text' (satu baris) | 'textarea' (teks panjang) |
+// 'therapist' (pilih nama terapis aktif klinik; daftar diambil dari get_feedback_staff).
 // Tepat satu pertanyaan 'choice' bertanda isRating=true; urutan opsinya
 // (terbaik -> terburuk) dipetakan ke rating 5 -> 1.
 export const SCALE_PUAS = ['Sangat Puas', 'Puas', 'Cukup Puas', 'Tidak Puas', 'Sangat Tidak Puas'];
@@ -16,7 +17,7 @@ export const DEFAULT_PRAXIS_QUESTIONS = [
   { id: 'facility', type: 'choice', required: true, label: 'Fasilitas pendukung (toilet, AC, parkir)', options: SCALE_PUAS },
   { id: 'overall', type: 'choice', required: true, isRating: true, label: 'Kepuasan pelayanan di {clinic} secara menyeluruh', options: SCALE_PUAS },
   { id: 'return', type: 'choice', required: true, label: 'Saya bersedia kembali berobat ke klinik ini di masa depan', options: ['Ya', 'Tidak', 'Ragu-ragu'] },
-  { id: 'staff', type: 'text', required: false, label: 'Nama petugas kami yang telah memberikan pelayanan terbaik (Dokter/Fisioterapis/Perawat/dan lainnya)' },
+  { id: 'staff', type: 'therapist', required: false, label: 'Nama petugas kami yang telah memberikan pelayanan terbaik (Dokter/Fisioterapis/Perawat/dan lainnya)' },
   { id: 'suggestion', type: 'textarea', required: false, label: 'Saran & Masukan sangat berharga untuk perbaikan pelayanan' },
 ];
 
@@ -35,7 +36,7 @@ export const normalizeQuestions = (raw) => {
     .filter((q) => q && typeof q.label === 'string' && q.label.trim())
     .map((q, i) => ({
       id: String(q.id || `q${i + 1}`),
-      type: ['choice', 'text', 'textarea'].includes(q.type) ? q.type : 'text',
+      type: ['choice', 'text', 'textarea', 'therapist'].includes(q.type) ? q.type : 'text',
       required: !!q.required,
       isRating: !!q.isRating,
       label: q.label.trim(),
