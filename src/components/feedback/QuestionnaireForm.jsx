@@ -123,14 +123,24 @@ const QuestionnaireForm = ({
 
       <div style={{ padding: '26px 16px 40px', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{
-          background: t.brand, borderRadius: 22, padding: '26px 22px 24px', display: 'flex', flexDirection: 'column', gap: 12, color: '#fff',
+          background: t.brand, borderRadius: 22, padding: '30px 22px 28px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+          gap: 12, color: '#fff', textAlign: 'center',
         }}
         >
           {clinicId === KAFFAH_CLINIC_ID && (
-            <img src="/kaffah-logo.png" alt={name} style={{ height: 44, width: 'auto', alignSelf: 'flex-start', objectFit: 'contain' }} />
+            // Logo persegi berlatar putih (sudah memuat nama klinik): ditaruh di lingkaran putih seperti halaman kwitansi.
+            <div style={{
+              width: 132, height: 132, borderRadius: '50%', background: '#fff', display: 'grid', placeItems: 'center', overflow: 'hidden',
+              boxShadow: '0 0 0 8px rgba(255,255,255,0.12)', marginBottom: 8,
+            }}
+            >
+              <img src="/kaffah-logo.png" alt={name} style={{ width: '66%', height: 'auto', display: 'block' }} />
+            </div>
           )}
-          <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.16em', color: t.accent, textTransform: 'uppercase' }}>{name}</div>
-          <h1 style={{ margin: 0, fontFamily: SERIF, fontSize: 32, lineHeight: 1.1, fontWeight: 600, letterSpacing: '-0.015em', color: '#fff' }}>
+          {clinicId !== KAFFAH_CLINIC_ID && (
+            <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.16em', color: t.accent, textTransform: 'uppercase' }}>{name}</div>
+          )}
+          <h1 style={{ margin: 0, fontFamily: SERIF, fontSize: 30, lineHeight: 1.12, fontWeight: 600, letterSpacing: '-0.015em', color: '#fff' }}>
             Bagaimana terapi Anda hari ini?
           </h1>
           <p style={{ margin: 0, fontSize: 16, lineHeight: 1.55, color: t.lead }}>
