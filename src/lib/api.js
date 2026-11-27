@@ -8975,7 +8975,9 @@ export const getTherapistAttendanceRate = async (therapistId, startDate, endDate
 
     (timeOffs || []).forEach(t => {
       if (t.start_time) return;
-      const isLibur = (t.reason || '').trim().startsWith('Libur');
+      const reasonText = (t.reason || '').trim();
+      // Tukar jadwal Minggu = hari libur (gantinya ada shift tambahan), bukan izin.
+      const isLibur = reasonText.startsWith('Libur') || reasonText.startsWith('Tukar jadwal Minggu');
       eachDayOfInterval({ start: parseISO(t.start_date), end: parseISO(t.end_date) }).forEach(d => {
         const key = format(d, 'yyyy-MM-dd');
         if (periodDaySet.has(key)) {
