@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
     Search, Package, Clock, CheckCircle, 
-    AlertTriangle, Loader2, Filter, ChevronLeft, ChevronRight, Plus, Receipt
+    AlertTriangle, Loader2, Filter, ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight, Plus, Receipt
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,29 @@ import { isRenewalEnabled, getRenewalTerms } from '@/lib/packageRenewalTerms';
 import RenewPackageDialog from '@/components/admin/RenewPackageDialog';
 import PackagePaymentReceiptModal from '@/components/admin/PackagePaymentReceiptModal';
 
+const SortableTh = ({ label, sortKey, sort, onSort }) => {
+    const active = sort.key === sortKey;
+    const Icon = !active ? ArrowUpDown : sort.dir === 'asc' ? ArrowUp : ArrowDown;
+    return (
+        <th
+            className="px-4 py-3 text-center"
+            aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+        >
+            <button
+                type="button"
+                onClick={() => onSort(sortKey)}
+                className={cn(
+                    "inline-flex items-center gap-1.5 font-semibold hover:text-slate-900 transition-colors",
+                    active && "text-slate-900"
+                )}
+            >
+                {label}
+                <Icon className={cn("h-3.5 w-3.5", !active && "opacity-40")} />
+            </button>
+        </th>
+    );
+};
+
 // Shared Logic Component
 export const PackageRecapsContent = () => {
     const { toast } = useToast();
@@ -41,6 +64,14 @@ export const PackageRecapsContent = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all'); // all, aktif, pending, expired, selesai
+
+    // Sorting (null = urutan default)
+    const [sort, setSort] = useState({ key: null, dir: 'asc' });
+    const toggleSort = (key) => setSort((prev) => {
+        if (prev.key !== key) return { key, dir: 'asc' };
+        if (prev.dir === 'asc') return { key, dir: 'desc' };
+        return { key: null, dir: 'asc' };
+    });
 
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -59,7 +90,7 @@ export const PackageRecapsContent = () => {
     useEffect(() => {
         // Reset to first page whenever filters change
         setCurrentPage(1);
-    }, [searchTerm, statusFilter, itemsPerPage]);
+    }, [searchTerm, statusFilter, itemsPerPage, sort]);
 
     const fetchPackages = async () => {
         setIsLoading(true);
@@ -209,8 +240,32 @@ export const PackageRecapsContent = () => {
              return dateB - dateA; // Newest first
         });
 
+        if (sort.key) {
+            const ts = (v) => (v ? new Date(v).getTime() : NaN);
+            const getVal = (p) => {
+                switch (sort.key) {
+                    case 'name': return (p.patients?.full_name || '').toLowerCase();
+                    case 'package': return (p.package_name || '').toLowerCase();
+                    case 'start': return ts(p.start_date);
+                    case 'end': return ts(p.extended_until || p.end_date);
+                    default: return '';
+                }
+            };
+            const mult = sort.dir === 'asc' ? 1 : -1;
+            result.sort((a, b) => {
+                const va = getVal(a), vb = getVal(b);
+                const missA = va === '' || Number.isNaN(va);
+                const missB = vb === '' || Number.isNaN(vb);
+                if (missA && missB) return 0;
+                if (missA) return 1; // data kosong selalu di bawah
+                if (missB) return -1;
+                if (typeof va === 'string') return va.localeCompare(vb, 'id', { numeric: true, sensitivity: 'base' }) * mult;
+                return (va - vb) * mult;
+            });
+        }
+
         return result;
-    }, [packages, searchTerm, statusFilter]);
+    }, [packages, searchTerm, statusFilter, sort]);
 
     // Pagination Logic
     const totalPages = Math.max(1, Math.ceil(filteredAndSortedPackages.length / itemsPerPage));
@@ -491,12 +546,12 @@ export const PackageRecapsContent = () => {
                     <table className="w-full text-sm text-left">
                         <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
                             <tr>
-                                <th className="px-4 py-3 text-center">Nama Pasien</th>
-                                <th className="px-4 py-3 text-center">Jenis Paket</th>
+                                <SortableTh label="Nama Pasien" sortKey="name" sort={sort} onSort={toggleSort} />
+                                <SortableTh label="Jenis Paket" sortKey="package" sort={sort} onSort={toggleSort} />
                                 <th className="px-4 py-3 text-center">Sesi Terpakai</th>
                                 <th className="px-4 py-3 text-center">Sisa Sesi</th>
-                                <th className="px-4 py-3 text-center">Tgl Beli</th>
-                                <th className="px-4 py-3 text-center">Tgl Selesai</th>
+                                <SortableTh label="Tgl Beli" sortKey="start" sort={sort} onSort={toggleSort} />
+                                <SortableTh label="Tgl Selesai" sortKey="end" sort={sort} onSort={toggleSort} />
                                 <th className="px-4 py-3 text-center">Sisa Hari</th>
                                 <th className="px-4 py-3 text-center">Status</th>
                                 {renewalOn && <th className="px-4 py-3 text-center">Aksi</th>}
