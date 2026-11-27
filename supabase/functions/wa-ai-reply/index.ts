@@ -285,6 +285,18 @@ async function rawSlotsForDate(ctx: Ctx, date: string): Promise<Slot[]> {
   return (data || []) as Slot[];
 }
 
+/** Slot hari ini yang sebenarnya KOSONG tetapi tidak ditawarkan karena kurang dari buffer (30 menit) sebelum mulai. */
+function tooSoonSlots(raw: Slot[], date: string, now: Date): Slot[] {
+  const open = new Set(openFutureSlots(raw, date, now).map((s) => `${s.therapist_id}|${s.slot_start}`));
+  const n = witaParts(now);
+  if (date !== n.date) return [];
+  return raw.filter((s) => {
+    if (s.status !== "aktif" || open.has(`${s.therapist_id}|${s.slot_start}`)) return false;
+    const [h, m] = s.slot_start.split(":").map(Number);
+    return h * 60 + m >= n.minutes; // belum lewat, hanya terlalu mepet
+  });
+}
+
 async function slotsForDate(ctx: Ctx, date: string): Promise<Slot[]> {
   return openFutureSlots(await rawSlotsForDate(ctx, date), date, ctx.now);
 }
@@ -457,9 +469,18 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
       }
       const days: any[] = [];
       const unavailable: { date: string; therapist: string; reason: string }[] = [];
+      const tooSoon: { date: string; therapist: string; time: string }[] = [];
       for (const date of dates) {
         const raw = await rawSlotsForDate(ctx, date);
         const open = openFutureSlots(raw, date, ctx.now);
+        for (const s of tooSoonSlots(raw, date, ctx.now)) {
+          const t = therapists.get(s.therapist_id);
+          if (!t) continue;
+          if (input.therapist_id && s.therapist_id !== input.therapist_id) continue;
+          if (gender && t.gender !== gender) continue;
+          if (nameQ && !String(t.name).toLowerCase().includes(nameQ)) continue;
+          tooSoon.push({ date, therapist: String(t.name || ""), time: s.slot_start.slice(0, 5) });
+        }
         // Hari tertentu diminta: laporkan terapis yang TIDAK punya slot beserta alasannya (libur/cuti vs penuh),
         // supaya pasien tidak dijawab "penuh" padahal terapisnya sedang libur/izin/sakit/cuti.
         if (input.date) {
@@ -505,9 +526,12 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
       const unavailNote = unavailable.length
         ? "therapists_unavailable: alasan terapis tanpa slot pada tanggal itu. reason 'libur' = terapis sedang libur/off/izin/sakit/cuti atau tidak praktik hari itu (JANGAN bilang penuh; bilang jadwalnya tidak tersedia, tanpa menyebut alasan); 'penuh' = semua slot sudah terisi; 'libur_sebagian' = sebagian jam cuti dan sisanya terisi; 'terkunci' = belum bisa dibooking (tawarkan terapis/jam lain)."
         : undefined;
+      const soonNote = tooSoon.length
+        ? { slots_terlalu_mepet: tooSoon, soon_note: "slots_terlalu_mepet: slot hari ini yang masih KOSONG tetapi kurang dari 30 menit lagi, jadi tidak bisa kamu booking. JANGAN bilang terisi/penuh/diambil pasien lain. Bila pasien memilih jam ini, panggil handoff_to_admin (admin yang menjadwalkan), jangan membalas ke pasien." }
+        : {};
       return days.length
-        ? { days, ...(unavailable.length ? { therapists_unavailable: unavailable, note: unavailNote } : {}) }
-        : { days: [], note: "Tidak ada slot kosong untuk kriteria ini.", ...(unavailable.length ? { therapists_unavailable: unavailable, reason_note: unavailNote } : {}) };
+        ? { days, ...soonNote, ...(unavailable.length ? { therapists_unavailable: unavailable, note: unavailNote } : {}) }
+        : { days: [], note: "Tidak ada slot kosong untuk kriteria ini.", ...soonNote, ...(unavailable.length ? { therapists_unavailable: unavailable, reason_note: unavailNote } : {}) };
     }
 
     case "calculate_price": {
@@ -527,6 +551,9 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
       }
       const slot = ctx.offeredSlots.get(key);
       if (!slot) {
+        const soon = tooSoonSlots(await rawSlotsForDate(ctx, input.date), input.date, ctx.now)
+          .some((r) => r.therapist_id === input.therapist_id && r.slot_start.slice(0, 5) === time);
+        if (soon) return { ok: false, error: "slot ini masih KOSONG tetapi kurang dari 30 menit lagi sehingga tidak bisa kamu booking. JANGAN bilang terisi/penuh. Panggil handoff_to_admin (admin yang menjadwalkan)." };
         return { ok: false, error: "slot ini belum ditampilkan lewat get_available_slots; ambil jadwal dulu" };
       }
 
@@ -839,6 +866,7 @@ ATURAN PENTING
 - Jadwal home care: ubah/batal tetap serahkan ke admin.
 - Pasien membatalkan jadwal lewat chat (mis. "hari ini sy cancel"): JANGAN diserahkan ke admin kecuali jadwal itu home care. Bila jadwalnya ditemukan, proses CANCEL; bila tidak ditemukan atau pasien sudah jelas batal, balas "baik ka, terimakasih konfirmasinya ya" (sapaan sesuai pasien).
 - Pasien bertanya HARGA per sesi (sebelum terapi): sebut tarif regular "200rb kak, sudah termasuk konsultasi, pemeriksaan dan terapinya" tanpa menambah biaya keluhan tambahan. Tambahan Rp25.000 hanya disebut bila pasien menanyakannya.
+- JAM HARI INI KURANG DARI 30 MENIT LAGI: slot yang masih kosong tetapi tinggal kurang dari 30 menit tidak muncul di daftar (lihat slots_terlalu_mepet). Itu BUKAN terisi: JANGAN menulis \"baru saja terisi/penuh/diambil pasien lain\". Bila pasien memilih jam seperti itu, panggil handoff_to_admin supaya admin yang menjadwalkan.
 - SLOT HILANG DARI DAFTAR = BISA MILIK PASIEN SENDIRI: bila jam/terapis yang dibahas tidak lagi muncul di get_available_slots, CEK dulu JADWAL TERBOOKING pasien (get_my_appointments) dan riwayat chat: bila slot itu sudah dibooking untuk pasien ini (konfirmasi booking/template sudah terkirim, atau ada di jadwal terbookingnya), itu BUKAN terisi orang lain. JANGAN menulis \"baru saja terisi\", \"penuh\", atau menawarkan terapis/jam lain; JANGAN minta maaf atau menulis \"info kami keliru\". Cukup jawab pertanyaan pasien (mis. terapis perempuan = Fisio itu) atau konfirmasi singkat bahwa jadwalnya sudah tercatat. Setelah create_booking berhasil, hasil create_booking berikutnya yang menyebut slot terisi bisa diabaikan (itu bookingmu sendiri).
 - Setelah create_booking berhasil, JANGAN menulis konfirmasi (hari, jam, terapis, alamat): sistem mengirim konfirmasi otomatis ke pasien. Bila pasien JUGA mengajukan pertanyaan lain di pesan-pesan terakhirnya (mis. durasi terapi, tarif, alamat, cara datang), WAJIB jawab pertanyaan itu saja dalam balasan akhir, tanpa mengulang konfirmasi booking. Bila tidak ada pertanyaan lain, tulis balasan akhir kosong.
 - Jadwal penuh: tawarkan jam atau hari lain terdekat. Pasien tanya "bisa hari ini?" tanpa jam: tawarkan jadwal tercepat. Ikuti permintaan terapis/gender dari pasien; jika tidak ada, sebutkan terapis yang tersedia pada hari dan jam yang diminta.
@@ -2707,6 +2735,29 @@ async function staffRepliedSince(admin: Admin, clinicId: string, conversationId:
   });
 }
 
+/**
+ * Apakah admin (bukan AI) membuat jadwal untuk nomor ini SESUDAH pesan pasien yang sedang dijawab? Admin sering
+ * membooking di aplikasi selagi AI menyusun jawaban; AI lalu melihat slot "hilang" dan salah mengira terisi pasien lain
+ * ("baru saja terisi"). Bila ya, balasan AI harus dibuang.
+ */
+async function adminBookedSince(admin: Admin, clinicId: string, waId: string, sinceIso: string): Promise<boolean> {
+  const tail = normalizePhone(waId).slice(-9);
+  const { data: appts, error } = await admin.from("appointments")
+    .select("guest_phone, patient_id, action_by_role")
+    .eq("clinic_id", clinicId).gt("created_at", sinceIso)
+    .or("action_by_role.is.null,action_by_role.neq.ai").limit(200);
+  if (error) throw new Error(`cek booking admin gagal: ${error.message}`);
+  const rows = appts || [];
+  if (rows.some((a: any) => String(a.guest_phone || "").replace(/\D/g, "").endsWith(tail))) return true;
+  const pids = rows.map((a: any) => a.patient_id).filter(Boolean);
+  if (!pids.length) return false;
+  const variants = phoneVariants(waId);
+  if (!variants.length) return false;
+  const { count } = await admin.from("patients").select("id", { count: "exact", head: true })
+    .eq("clinic_id", clinicId).in("id", pids).in("phone", variants);
+  return !!count;
+}
+
 async function handleInbound(admin: Admin, conversationId: string, messageId: string) {
   const { data: conv } = await admin.from("wa_inbox_conversations")
     .select("*").eq("id", conversationId).maybeSingle();
@@ -2847,6 +2898,13 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
       }
     }
 
+    // Klaim "slot baru saja terisi / penuh" yang bukan hasil booking AI sendiri sering keliru: admin kerap sedang
+    // membooking slot itu untuk pasien yang sama. Jangan kirim klaim itu; serahkan ke admin.
+    if (!booked && !ctx.handoff && reply && /baru saja (terisi|diambil)|baru terisi/i.test(reply)) {
+      ctx.handoff = { reason: "AI hendak menyatakan slot baru saja terisi; cek dulu apakah admin sedang membooking slot itu", priority: "normal" };
+      ctx.actions.push({ type: "handoff", ...ctx.handoff, draft: reply.slice(0, 300) });
+      reply = "";
+    }
     // Serah-terima: diam, pasien tidak dibalas. Booking berhasil: konfirmasi dikirim sistem.
     const booked = ctx.actions.some((a) => a.type === "create_booking" || a.type === "reschedule_booking");
     // Pengaman: booking sudah berhasil tetapi teks AI mengaku slot terisi/penuh/info keliru (mis. akibat create_booking
@@ -2901,11 +2959,13 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
         const staffFirst = !viaBablast
           ? await staffRepliedSince(admin, clinicId, conversationId, conv.wa_id, msg.created_at)
           : false;
-        if ((newestIn && newestIn.id !== messageId) || staffFirst) {
+        // Admin membooking nomor ini selagi AI menyusun jawaban: info slot AI sudah usang (slot itu justru milik pasien ini).
+        const bookedByAdmin = ctx.bookingIds.length ? false : await adminBookedSince(admin, clinicId, conv.wa_id, msg.created_at);
+        if ((newestIn && newestIn.id !== messageId) || staffFirst || bookedByAdmin) {
           return await finish({
             ...common,
             outcome: "skipped",
-            skip_reason: staffFirst ? "admin_membalas_saat_ai_menyusun" : "ada_pesan_lebih_baru",
+            skip_reason: staffFirst ? "admin_membalas_saat_ai_menyusun" : bookedByAdmin ? "admin_membooking_saat_ai_menyusun" : "ada_pesan_lebih_baru",
           });
         }
       } catch (e) {
