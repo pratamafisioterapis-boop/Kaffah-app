@@ -449,7 +449,12 @@ useEffect(() => {
           if (onSuccess) onSuccess();
           onClose();
         } catch (err) {
-          toast({ variant: "destructive", title: "Gagal reschedule" });
+          console.error('Gagal reschedule:', err);
+          toast({
+            variant: "destructive",
+            title: "Gagal reschedule",
+            description: err?.message || err?.details || "Terjadi kesalahan saat menyimpan jadwal."
+          });
         }
       }}
     >
