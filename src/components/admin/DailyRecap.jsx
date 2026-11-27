@@ -1111,7 +1111,10 @@ const getPremiumPastelBadge = (text) => {
             <colgroup>
               {(isPraxis
                 ? [8, 11, 10, 10, 8, 13, 10, 9, 8, 6, 7]
-                : [9, 11, 10, 12, 9, 7, 10, 8, 9, 7, 8]
+                : portalButtonEnabled
+                  // Kaffah: tanpa kolom Layanan, lebar dialihkan ke Diagnosa/Nama/Terapis
+                  ? [10, 13, 15, 10, 8, 11, 9, 9, 7, 8]
+                  : [9, 11, 10, 12, 9, 7, 10, 8, 9, 7, 8]
               ).map((w, i) => <col key={i} style={{ width: `${w}%` }} />)}
             </colgroup>
             <thead className="bg-slate-100 text-slate-900 font-semibold border-b border-slate-300">
@@ -1122,7 +1125,7 @@ const getPremiumPastelBadge = (text) => {
 
 <th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-xs xl:text-xs leading-tight">Diagnosa</th>
 
-<th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-xs xl:text-xs leading-tight">Layanan</th>
+{!portalButtonEnabled && <th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-xs xl:text-xs leading-tight">Layanan</th>}
 
 <th className="px-1 xl:px-2 py-3 text-center text-slate-700 font-semibold text-xs xl:text-xs leading-tight">Tipe</th>
 
@@ -1140,8 +1143,8 @@ const getPremiumPastelBadge = (text) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
-              {loadingRecaps ? <tr><td colSpan={10} className="p-8 text-center"><Loader2 className="animate-spin mx-auto w-6 h-6"/></td></tr> : 
-               recaps.length === 0 ? <tr><td colSpan={10} className="p-8 text-center text-slate-500">
+              {loadingRecaps ? <tr><td colSpan={portalButtonEnabled ? 10 : 11} className="p-8 text-center"><Loader2 className="animate-spin mx-auto w-6 h-6"/></td></tr> : 
+               recaps.length === 0 ? <tr><td colSpan={portalButtonEnabled ? 10 : 11} className="p-8 text-center text-slate-500">
                  <div className="flex flex-col items-center justify-center py-6">
                    <Search className="w-8 h-8 text-slate-300 mb-2" />
                    <p>Tidak ada data rekap harian.</p>
@@ -1173,7 +1176,7 @@ const getPremiumPastelBadge = (text) => {
 </td>
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center">{renderPatientName(recap)}</td>
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center whitespace-normal text-slate-600">{renderDiagnoses(recap.diagnosis)}</td>
-                     <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center text-slate-600">{serviceLabel}</td>
+                     {!portalButtonEnabled && <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center text-slate-600">{serviceLabel}</td>}
                      <td className="px-1 py-3 xl:px-2 2xl:px-3 text-center">
                         <div className="max-w-full" onClick={(e) => e.stopPropagation()}>
                           <Badge className={cn("!inline-block max-w-full text-sm font-medium px-1 xl:px-2 py-0.5 rounded-md border-0 transition-none whitespace-normal break-words [overflow-wrap:anywhere] text-center leading-tight", getPremiumPastelBadge(patientTypeLabel))}>
