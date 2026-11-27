@@ -30,7 +30,7 @@ import { useAppointmentState } from '@/contexts/AppointmentStateContext';
 import { supabase } from '@/lib/customSupabaseClient';
 import InvoiceModal from '@/components/admin/InvoiceModal';
 import AlkesSalesDialog from '@/components/admin/AlkesSalesDialog';
-import { sortRecapsByStatus } from '@/lib/dailyRecapHelpers';
+import { sortRecapsByStatus, sortRecapsKaffah } from '@/lib/dailyRecapHelpers';
 import DatePicker from '@/components/DatePicker';
 import DailyRecapModal from '@/components/shared/DailyRecapModal';
 import DailyRecapDetailModal from '@/components/shared/DailyRecapDetailModal';
@@ -408,7 +408,8 @@ end_time: r.end_time,
       : r.amount
   )
 }));
-        setRecaps(sortConfig.key ? formatted : sortRecapsByStatus(formatted));
+        const defaultSort = userDetails?.clinic_id === KAFFAH_CLINIC_ID ? sortRecapsKaffah : sortRecapsByStatus;
+        setRecaps(sortConfig.key ? formatted : defaultSort(formatted));
         setTotalRecords(count || 0);
         setTotalPages(Math.ceil((count || 0) / limit) || 1);
       }
@@ -418,7 +419,7 @@ end_time: r.end_time,
     } finally { 
       if (isMounted.current) setLoadingRecaps(false); 
     }
-  }, [queryDateRange, currentPage, limit, debouncedSearch, sortConfig, toast, selectedTherapist, selectedPaymentMethod]);
+  }, [queryDateRange, currentPage, limit, debouncedSearch, sortConfig, toast, selectedTherapist, selectedPaymentMethod, userDetails?.clinic_id]);
 
   const loadPortalSent = useCallback(async (recapList) => {
     const ids = [...new Set((recapList || []).map((r) => getPortalPatient(r)?.id).filter(Boolean))];
