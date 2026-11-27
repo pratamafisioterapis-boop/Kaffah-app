@@ -2251,7 +2251,7 @@ setFormData({
                                     </div>
                                     <div className="space-y-1">
                                         <Label className="text-xs">Jenis Diskon</Label>
-                                        <SearchableSelect disabled={discountBlockedByPackage || !!formData.referral_reward_id || !!formData.birthday_reward_year || !!formData.welcome_reward_used} options={discountTypeOptions.filter(o => !o.is_referral_reward && !(sfSettings && /^(birthday reward|referral welcome reward)$/i.test((o.label || '').trim())))} value={formData.discount_label} onChange={v => {
+                                        <SearchableSelect disabled={discountBlockedByPackage || !!formData.referral_reward_id || !!formData.birthday_reward_year || !!formData.welcome_reward_used} options={discountTypeOptions.filter(o => !o.is_referral_reward && !(sfSettings && /^(birthday reward|referral welcome reward|student reward)$/i.test((o.label || '').trim())))} value={formData.discount_label} onChange={v => {
                                             // Dihapus (tombol X): reset seluruh diskon
                                             if (!v) {
                                                 setFormData(prev => ({ ...prev, discount_label: '', discount_type: 'none', discount_value: 0 }));
