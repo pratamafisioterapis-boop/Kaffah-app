@@ -146,7 +146,7 @@ export const validateDailyRecapForm = (data) => {
 // -> sedang berlangsung -> belum mulai (akan datang) -> selesai & invoice beres.
 const recapPriority = (r) => {
     if (r.end_time) {
-        const invoiceNotNeeded = parseFloat(r.amount || 0) === 0;
+        const invoiceNotNeeded = parseFloat(r.amount || 0) + parseFloat(r.goods_amount || 0) === 0;
         const invoiceDone = r.invoice_wa_status && !['gagal', 'perlu_manual', 'mengirim'].includes(r.invoice_wa_status);
         return invoiceNotNeeded || invoiceDone ? 3 : 0;
     }
@@ -179,6 +179,13 @@ export const sortRecapsKaffah = (recaps) => {
         })
         .map(({ r }) => r);
 };
+
+export const packageSessionLabel = (r) =>
+    r?.session_number
+        ? (r.session_number === r.package_total_sessions
+            ? `Sesi terakhir (${r.session_number}/${r.package_total_sessions})`
+            : `Sesi ${r.session_number}/${r.package_total_sessions}`)
+        : null;
 
 export const sortRecapsByStatus = (recaps) => {
     const startOf = (r) => (r.start_time ? new Date(r.start_time).getTime() : Infinity);

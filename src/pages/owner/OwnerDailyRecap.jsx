@@ -1,6 +1,6 @@
 import { sanitizeSearchTerm } from '@/lib/safeFilter';
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { sortRecapsByStatus, sortRecapsKaffah } from '@/lib/dailyRecapHelpers';
+import { sortRecapsByStatus, sortRecapsKaffah, packageSessionLabel } from '@/lib/dailyRecapHelpers';
 import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { motion } from 'framer-motion';
 import { 
@@ -11,7 +11,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { 
   setDailyRecapStartTime,
   setDailyRecapEndTime,
-  getAllRecapOptions
+  getAllRecapOptions,
+  attachPackageSessionNumbers
 } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { 
@@ -239,6 +240,7 @@ const OwnerDailyRecap = () => {
       if (error) throw error;
 
       if (isMounted.current) {
+          await attachPackageSessionNumbers(data);
           const formatted = data.map(r => ({
               ...r,
               date: r.recap_date,
@@ -488,6 +490,7 @@ const OwnerDailyRecap = () => {
                     <div>
                       <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Paket</p>
                       <p className="font-medium text-app-accent">{packageLabel}</p>
+                      {packageSessionLabel(recap) && <p className="text-xs font-medium text-violet-700">{packageSessionLabel(recap)}</p>}
                     </div>
                     <div>
                       <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Terapis</p>
@@ -595,7 +598,7 @@ const OwnerDailyRecap = () => {
                         <td className="px-4 py-3 text-center">
                           <Badge variant="outline" className="text-xs font-normal">{patientTypeLabel}</Badge>
                         </td>
-                        <td className="px-4 py-3 text-center font-medium text-app-accent">{packageLabel}</td>
+                        <td className="px-4 py-3 text-center font-medium text-app-accent">{packageLabel}{packageSessionLabel(recap) && <div className="mt-0.5 text-xs font-medium text-violet-700">{packageSessionLabel(recap)}</div>}</td>
                         
                         <td className="px-4 py-3 text-center">
                             {recap.display_therapist_name}

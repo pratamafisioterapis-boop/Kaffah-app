@@ -51,7 +51,11 @@ const getTone = (status) =>
  * di dalam tombol, tanpa teks agar hemat tempat).
  */
 export default function InvoiceStatusButton({ recap, onClick, className }) {
-  const disabled = parseFloat(recap?.amount || 0) === 0;
+  const total = parseFloat(recap?.amount || 0) + parseFloat(recap?.goods_amount || 0);
+  const disabled = total === 0;
+  // Sesi paket yang sudah dibayar (bukan sesi pertama / nominal 0) dan tanpa
+  // pembelian barang tidak perlu invoice sama sekali.
+  if (disabled && recap?.package_tracking_id) return null;
   const tone = getTone(recap?.invoice_wa_status);
   const { Icon, warn } = tone;
   const showWarn = !!warn && !disabled;
