@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, User, UserCircle, Activity, CreditCard, Clock, AlertCircle, Edit, Trash2, AlertTriangle, Loader2, FileText, ChevronDown } from 'lucide-react';
+import { Calendar, User, UserCircle, Activity, CreditCard, Clock, AlertCircle, Edit, Trash2, AlertTriangle, Loader2, FileText, ChevronDown, UserPlus } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { formatDateIndonesian, formatTime } from '@/lib/dateFormatHelpers';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { fetchRecapVitals, fetchPendingVitalsEdit, formatVitalsLine } from '@/lib/recapVitals';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import RecapVitalsDialog from './RecapVitalsDialog';
+import PatientModal from './PatientModal';
 import RecapSoapPreviewDialog from './RecapSoapPreviewDialog';
 import SoapOverrideDialog from './SoapOverrideDialog';
 import { useSoapFirstSettings, useRecapQuote } from '@/hooks/useSoapFirst';
@@ -64,6 +65,26 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
     const [pendingVitalsEdit, setPendingVitalsEdit] = useState(null);
     const [vitalsDialogOpen, setVitalsDialogOpen] = useState(false);
     const [soapPreviewOpen, setSoapPreviewOpen] = useState(false);
+    const [patientModalOpen, setPatientModalOpen] = useState(false);
+    // Recap guest = belum tertaut ke database pasien. Tombol Database Pasien hanya untuk kasus ini.
+    const isGuestRecap = !!recap && !recap.is_virtual && !recap.patient_id && !!(recap.guest_name || '').trim();
+    const canRegisterPatient = isGuestRecap && ['owner', 'super_admin', 'admin'].includes(userDetails?.role);
+
+    // Setelah pasien dibuat: tautkan recap guest ini ke pasien baru lalu muat ulang daftar.
+    // Tidak boleh melempar error: pasien sudah tersimpan, jangan tampil "Gagal Menyimpan".
+    const handlePatientRegistered = async (created) => {
+        try {
+            if (!created?.id) throw new Error('Data pasien baru tidak diterima');
+            const { error } = await supabase.rpc('link_guest_recap_to_patient', { p_recap_id: recap.id, p_patient_id: created.id });
+            if (error) throw error;
+            toast({ title: 'Tertaut', description: `Recap ditautkan ke ${created.full_name}.` });
+        } catch (err) {
+            console.error('link guest recap failed:', err);
+            toast({ variant: 'destructive', title: 'Pasien tersimpan, tautan recap gagal', description: err?.message || 'Buka Edit Data lalu pilih pasien secara manual.' });
+        }
+        if (onDelete) onDelete(); // memuat ulang daftar recap di halaman induk
+        onClose();
+    };
     const showSoapButton = userDetails?.clinic_id === KAFFAH_CLINIC_ID && !recap?.is_virtual;
 
     // Pengajuan perubahan ke owner (nominal, diskon, dst) untuk klinik SOAP-first.
@@ -227,7 +248,14 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
         try {
             const { error } = await supabase.from('daily_recaps').delete().eq('id', recap.id);
             if (error) throw error;
-            
+
+            // Recap guest yang pasiennya didaftarkan lewat tombol Database Pasien: pasien itu ikut
+            // dihapus karena tidak jadi terapi (dilewati bila sudah punya data lain).
+            if (recap.patient_id) {
+                const { error: pErr } = await supabase.rpc('delete_patient_of_deleted_guest_recap', { p_recap_id: recap.id });
+                if (pErr) console.error('delete linked patient failed:', pErr);
+            }
+
             toast({ title: "Berhasil", description: "Data recap berhasil dihapus." });
             setShowDeleteConfirm(false);
             if (onDelete) onDelete(); 
@@ -506,6 +534,11 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                                 </DropdownMenuContent>
                         </DropdownMenu>
                     )}
+                    {canRegisterPatient && (
+                        <Button variant="outline" onClick={() => setPatientModalOpen(true)} className={cn(footerBtn, 'order-3 border-sky-300 bg-white text-sky-700 hover:bg-sky-50 sm:order-4')}>
+                            <UserPlus className="mr-2 h-4 w-4" /> Database Pasien
+                        </Button>
+                    )}
                     {onEdit && (
                         <Button onClick={() => { onEdit(recap); onClose(); }} className={cn(footerBtn, 'order-3 bg-app-accent text-white hover:bg-app-accent-hover sm:order-5')}>
                             <Edit className="mr-2 h-4 w-4" /> Edit Data
@@ -532,6 +565,15 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                 recapId={recap?.id}
                 patientName={recap?.actual_patients?.full_name || recap?.patients?.full_name || recap?.guest_name}
             />
+            {canRegisterPatient && (
+                <PatientModal
+                    isOpen={patientModalOpen}
+                    onClose={() => setPatientModalOpen(false)}
+                    mode="add"
+                    prefill={{ full_name: recap?.guest_name, phone: recap?.guest_phone }}
+                    onSuccess={handlePatientRegistered}
+                />
+            )}
             <RecapVitalsDialog
                 open={vitalsDialogOpen}
                 onOpenChange={setVitalsDialogOpen}
