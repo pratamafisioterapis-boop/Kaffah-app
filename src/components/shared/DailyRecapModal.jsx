@@ -1423,6 +1423,8 @@ setFormData({
     const sfBaseAmount = quote?.active && quote.total != null ? Number(quote.total) : null;
     const sfFinalAmount = (() => {
         if (!sfEdit) return null;
+        // Sesi lanjutan paket memakai kuota: nominal terapi tetap Rp 0 (bukan harga daftar).
+        if (isPackageSessionLocked || formData.payment_method === 'Package') return 0;
         if (quote?.invoice_locked) return Number(initialData?.amount ?? formData.amount ?? 0);
         if (formData.special_type === 'free') return 0;
         if (sfBaseAmount == null) return null;

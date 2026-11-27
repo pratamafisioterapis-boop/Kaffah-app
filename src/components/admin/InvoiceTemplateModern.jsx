@@ -75,8 +75,11 @@ const InvoiceTemplateModern = forwardRef(({ data }, ref) => {
   };
 
   // Split payment (mis. QRIS + Cash): nominal per metode tampil di chip yang terpilih.
-  const payment = (data?.payment_method || '').toLowerCase();
-  const paymentSplits = Array.isArray(data?.payment_splits) ? data.payment_splits : [];
+  // Sesi paket (terapi Rp 0) yang hanya beli barang: metode bayar = metode barang.
+  const therapyIsPackage = !!data?.package_tracking_id && !(Number(data?.amount_original || data?.amount) > 0);
+  const useGoodsMethod = therapyIsPackage && !!data?.goods_payment_method;
+  const payment = ((useGoodsMethod ? data.goods_payment_method : data?.payment_method) || '').toLowerCase();
+  const paymentSplits = useGoodsMethod ? [] : (Array.isArray(data?.payment_splits) ? data.payment_splits : []);
   const splitAmountByMethod = {};
   paymentSplits.forEach((s) => {
     const key = (s.payment_method || '').toLowerCase();
