@@ -1044,11 +1044,24 @@ async function lightReply(transcript: string, lastBody: string, msgType: string,
     if (/sama[ -]?sama/i.test(lastClinicMsg)) return { handled: true, reply: "" };
     return { handled: true, reply: thanksReply(lastBody, transcript, callName, conflict?.title || "") };
   }
+  // Konfirmasi atas template pengingat jadwal ("Hadir", "Oke mba", "siap"): balasan baku tanpa model, supaya tidak
+  // pernah terkirim terpotong (pernah terkirim "Terima k" ke pasien).
+  const lastClinicEntry = transcript.split(/\n(?=\[\d{4}-\d{2}-\d{2} )/).filter((e) => /^\[[^\]]*\] Klinik/.test(e)).pop() || "";
+  if (/^\[[^\]]*\] Klinik \(template otomatis\)/.test(lastClinicEntry) && /konfirmasi dengan memilih/i.test(lastClinicEntry) && !isThanksOnly(lastBody)) {
+    const g = lastClinicEntry.match(/Selamat\s+\p{L}+\s+((?:Ibu|Bapak|Bu|Pak|Kak|Ka|Mas|Mbak|Mba)(?:\s+\p{Lu}[\p{L}]+)?)/u);
+    if (g) return { handled: true, reply: `Terima kasih atas konfirmasinya ya ${g[1]} 🙏` };
+  }
   try {
     const nameHint = callName ? `Pasien ini terdaftar, panggil dengan nickname: ${callName} (JANGAN pakai "ka"/"kak").\n` : "";
-    const txt = (await claudeText(LIGHT_SYSTEM, nameHint + transcript.slice(-2500), 120, FAST_MODEL)).trim();
+    const { text, stop } = await claudeTextMeta(LIGHT_SYSTEM, nameHint + transcript.slice(-2500), 120, FAST_MODEL);
+    const txt = text.trim();
     if (!txt || txt.includes("[[AGEN]]")) return { handled: false, reply: "" };
     if (txt.includes("[[KOSONG]]")) return { handled: true, reply: "" };
+    // Balasan terpotong/tidak utuh (berhenti bukan karena selesai, atau terlalu pendek): jangan kirim, serahkan ke agen penuh.
+    if (stop !== "end_turn" || txt.length < 12) {
+      console.error("[wa-ai-reply] balasan ringan tidak utuh, pakai agen penuh:", JSON.stringify({ txt, stop }));
+      return { handled: false, reply: "" };
+    }
     return { handled: true, reply: txt.slice(0, 300) };
   } catch (e) {
     console.error("[wa-ai-reply] balasan baku gagal, pakai agen penuh", e);
@@ -2125,6 +2138,10 @@ function renderEvalText(text: string, now: Date): string {
 }
 
 async function claudeText(system: string, user: string, maxTokens: number, model: string = FAST_MODEL): Promise<string> {
+  return (await claudeTextMeta(system, user, maxTokens, model)).text;
+}
+
+async function claudeTextMeta(system: string, user: string, maxTokens: number, model: string = FAST_MODEL): Promise<{ text: string; stop: string }> {
   const key = Deno.env.get("ANTHROPIC_API_KEY");
   if (!key) throw new Error("ANTHROPIC_API_KEY belum diset");
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -2136,7 +2153,10 @@ async function claudeText(system: string, user: string, maxTokens: number, model
   const data = await res.json();
   if (!res.ok) throw new Error(`Anthropic ${res.status}: ${data?.error?.message || "unknown"}`);
   recordUsage(model, data.usage);
-  return (data.content || []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("").trim();
+  return {
+    text: (data.content || []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("").trim(),
+    stop: String(data.stop_reason || ""),
+  };
 }
 
 /** Riwayat percakapan (8 pesan terakhir sampai pesan pasien) sebagai teks soal. */
