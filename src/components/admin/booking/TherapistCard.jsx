@@ -413,9 +413,26 @@ const TherapistCard = ({
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-slate-500 break-words sm:truncate">
+                        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-slate-500">
+                          <span className="break-words sm:truncate">
                             {app.duration_minutes} min • {app.status}
-                          </p>
+                          </span>
+                          {app.is_homecare && !isCancelled && (
+                            app.homecare_time_type === 'dalam' ? (
+                              <span className="shrink-0 font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-700 border border-sky-200">
+                                Dalam jam kerja
+                              </span>
+                            ) : app.homecare_time_type === 'luar' ? (
+                              <span className="shrink-0 font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                                Luar jam kerja
+                              </span>
+                            ) : (
+                              <span className="shrink-0 font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                                Jam kerja belum diisi
+                              </span>
+                            )
+                          )}
+                        </div>
                        </div>
                     </div>
                   );
