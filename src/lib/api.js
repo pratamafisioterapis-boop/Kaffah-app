@@ -8959,7 +8959,7 @@ export const getTherapistAttendanceRate = async (therapistId, startDate, endDate
   return safeQuery(async () => {
     const { data: timeOffs, error: timeOffError } = await supabase
       .from('therapist_time_off')
-      .select('start_date, end_date, reason, start_time')
+      .select('start_date, end_date, reason, start_time, leave_type')
       .eq('therapist_id', therapistId)
       .lte('start_date', endDate)
       .gte('end_date', startDate);
@@ -8976,8 +8976,12 @@ export const getTherapistAttendanceRate = async (therapistId, startDate, endDate
     (timeOffs || []).forEach(t => {
       if (t.start_time) return;
       const reasonText = (t.reason || '').trim();
-      // Tukar jadwal Minggu = hari libur (gantinya ada shift tambahan), bukan izin.
-      const isLibur = reasonText.startsWith('Libur') || reasonText.startsWith('Tukar jadwal Minggu');
+      // Patokan utama: jenis catatan (leave_type 'weekly_off' = libur). Teks keterangan
+      // hanya cadangan untuk data lama / jenis 'other'. Tukar jadwal Minggu = libur
+      // (gantinya ada shift tambahan), bukan izin.
+      const isLibur = t.leave_type === 'weekly_off'
+        || reasonText.startsWith('Libur')
+        || reasonText.startsWith('Tukar jadwal Minggu');
       eachDayOfInterval({ start: parseISO(t.start_date), end: parseISO(t.end_date) }).forEach(d => {
         const key = format(d, 'yyyy-MM-dd');
         if (periodDaySet.has(key)) {
