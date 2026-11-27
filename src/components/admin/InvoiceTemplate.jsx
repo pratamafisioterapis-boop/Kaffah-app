@@ -21,12 +21,13 @@ const InvoiceTemplate = forwardRef(({ data }, ref) => {
 const { lines: goodsLines, total: goodsTotal } = getGoodsLines(data);
 const goodsOnly = !!data?.package_tracking_id && !(Number(data?.amount_original || data?.amount) > 0) && goodsLines.length > 0;
 const therapistName = data?.therapist_name ?? '-';
-  const payment = (data?.payment_method || '').toLowerCase();
+  const useGoodsMethod = !!data?.package_tracking_id && !(Number(data?.amount_original || data?.amount) > 0) && !!data?.goods_payment_method;
+  const payment = ((useGoodsMethod ? data.goods_payment_method : data?.payment_method) || '').toLowerCase();
 
   // Split payment (mis. QRIS + Cash untuk 1 tagihan): tampilkan nominal per
   // metode di sebelah kotak yang dicentang. Recap tanpa split tetap pakai
   // satu payment_method seperti sebelumnya (tanpa nominal tambahan).
-  const paymentSplits = Array.isArray(data?.payment_splits) ? data.payment_splits : [];
+  const paymentSplits = useGoodsMethod ? [] : (Array.isArray(data?.payment_splits) ? data.payment_splits : []);
   const splitAmountByMethod = {};
   paymentSplits.forEach(s => {
     const key = (s.payment_method || '').toLowerCase();
