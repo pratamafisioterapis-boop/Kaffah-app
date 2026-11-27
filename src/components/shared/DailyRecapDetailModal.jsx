@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, User, UserCircle, Activity, CreditCard, Clock, AlertCircle, Edit, Trash2, AlertTriangle, Loader2, FileText, ChevronDown, UserPlus } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { formatDateIndonesian, formatTime } from '@/lib/dateFormatHelpers';
-import { cn } from '@/lib/utils';
+import { cn, buildRecapOptionsMap, resolveRecapServiceLabel } from '@/lib/utils';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { fetchRecapVitals, fetchPendingVitalsEdit, formatVitalsLine } from '@/lib/recapVitals';
@@ -178,12 +178,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
         setIsLoadingOptions(true);
         try {
             const { data, error } = await getAllRecapOptions();
-            const mapping = {};
-            if (data && !error) {
-                data.forEach(opt => {
-                    mapping[opt.id] = opt.label;
-                });
-            }
+            const mapping = (data && !error) ? buildRecapOptionsMap(data) : {};
 
             // Diagnosa yang sudah tersimpan bisa merujuk opsi nonaktif / di luar
             // daftar aktif, jadi ambil langsung berdasarkan ID-nya.
@@ -220,7 +215,7 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
         || (!!ownerName && ownerName === recap.actual_patients?.full_name);
 
     // Resolve labels from IDs using optionsMap
-    const serviceLabel = optionsMap[recap.service_type] || recap.service_type || '-';
+    const serviceLabel = resolveRecapServiceLabel(recap, optionsMap);
     const patientTypeLabel = optionsMap[recap.patient_type] || recap.patient_type || '-';
     const packageLabel = recap.package_type || '-';
 
