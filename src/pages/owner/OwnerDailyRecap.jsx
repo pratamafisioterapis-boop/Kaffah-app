@@ -73,6 +73,7 @@ const OwnerDailyRecap = () => {
   const { toast } = useToast();
   const isMounted = useRef(true);
   const { userDetails } = useAuth();
+  const isKaffah = userDetails?.clinic_id === KAFFAH_CLINIC_ID;
   const { lastSyncTime } = useAppointmentState(); 
   
   // Data States
@@ -476,10 +477,12 @@ const OwnerDailyRecap = () => {
                   <div className="flex flex-wrap gap-1">{renderDiagnoses(recap.diagnosis)}</div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs">
+                    {!isKaffah && (
                     <div>
                       <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Layanan</p>
                       <Badge variant="outline" className="font-normal text-xs">{serviceLabel}</Badge>
                     </div>
+                    )}
                     <div>
                       <p className="text-slate-500 uppercase tracking-wide text-xs mb-0.5">Tipe Pasien</p>
                       <Badge variant="outline" className="text-xs font-normal">{patientTypeLabel}</Badge>
@@ -553,7 +556,7 @@ const OwnerDailyRecap = () => {
                 <th className="px-4 py-3 text-center">Tanggal</th>
                 <th className="px-4 py-3 text-center">Nama Pasien</th>
                 <th className="px-4 py-3 text-center">Diagnosa</th>
-                <th className="px-4 py-3 text-center">Layanan</th>
+                {!isKaffah && <th className="px-4 py-3 text-center">Layanan</th>}
                 <th className="px-4 py-3 text-center">Tipe Pasien</th>
                 <th className="px-4 py-3 text-center">Paket</th>
                 <th className="px-4 py-3 text-center">Terapis</th>
@@ -564,7 +567,7 @@ const OwnerDailyRecap = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {loadingRecaps ? ( <tr><td colSpan={11} className="p-8 text-center"><Loader2 className="mx-auto animate-spin text-app-accent-bright" /></td></tr> ) : recaps.length === 0 ? ( <tr><td colSpan={11} className="p-8 text-center text-slate-500">
+              {loadingRecaps ? ( <tr><td colSpan={isKaffah ? 10 : 11} className="p-8 text-center"><Loader2 className="mx-auto animate-spin text-app-accent-bright" /></td></tr> ) : recaps.length === 0 ? ( <tr><td colSpan={isKaffah ? 10 : 11} className="p-8 text-center text-slate-500">
                   <div className="flex flex-col items-center justify-center py-6">
                        <Search className="w-8 h-8 text-slate-300 mb-2" />
                        <p>Tidak ada data rekap harian.</p>
@@ -590,8 +593,8 @@ const OwnerDailyRecap = () => {
                             {renderPatientName(recap)}
                         </td>
 
-                        <td className="px-4 py-3 text-center max-w-[200px] whitespace-normal">{renderDiagnoses(recap.diagnosis)}</td>
-                        <td className="px-4 py-3 text-center"><Badge variant="outline" className="font-normal text-xs">{serviceLabel}</Badge></td>
+                        <td className={cn("px-4 py-3 text-center whitespace-normal", isKaffah ? "max-w-[280px] min-w-[180px]" : "max-w-[200px]")}>{renderDiagnoses(recap.diagnosis)}</td>
+                        {!isKaffah && <td className="px-4 py-3 text-center"><Badge variant="outline" className="font-normal text-xs">{serviceLabel}</Badge></td>}
                         <td className="px-4 py-3 text-center">
                           <Badge variant="outline" className="text-xs font-normal">{patientTypeLabel}</Badge>
                         </td>
