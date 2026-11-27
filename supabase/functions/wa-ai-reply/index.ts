@@ -2918,6 +2918,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
       }
     }
 
+    const booked = ctx.actions.some((a) => a.type === "create_booking" || a.type === "reschedule_booking");
     // Klaim "slot baru saja terisi / penuh" yang bukan hasil booking AI sendiri sering keliru: admin kerap sedang
     // membooking slot itu untuk pasien yang sama. Jangan kirim klaim itu; serahkan ke admin.
     if (!booked && !ctx.handoff && reply && /baru saja (terisi|diambil)|baru terisi/i.test(reply)) {
@@ -2926,7 +2927,6 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
       reply = "";
     }
     // Serah-terima: diam, pasien tidak dibalas. Booking berhasil: konfirmasi dikirim sistem.
-    const booked = ctx.actions.some((a) => a.type === "create_booking" || a.type === "reschedule_booking");
     // Pengaman: booking sudah berhasil tetapi teks AI mengaku slot terisi/penuh/info keliru (mis. akibat create_booking
     // ganda yang ditolak karena slot sudah milik pasien sendiri). Teks itu salah dan membingungkan pasien: dibuang.
     if (booked && reply && /baru saja terisi|sudah terisi|sudah penuh|jadwal.*penuh|info kami.*keliru|kesalahan dari sistem/i.test(reply)) {
