@@ -21,6 +21,21 @@ export const DEFAULT_PRAXIS_QUESTIONS = [
   { id: 'suggestion', type: 'textarea', required: false, label: 'Saran & Masukan sangat berharga untuk perbaikan pelayanan' },
 ];
 
+// Kuesioner khusus kunjungan HOMECARE (terapi di rumah pasien): tanpa pendaftaran, ruang tunggu, dan fasilitas klinik.
+export const DEFAULT_HOMECARE_QUESTIONS = [
+  { id: 'book', type: 'choice', required: true, label: 'Kemudahan proses pemesanan / reservasi kunjungan homecare', options: SCALE_PUAS },
+  { id: 'ontime', type: 'choice', required: true, label: 'Ketepatan waktu kedatangan terapis sesuai jadwal', options: ['Tepat waktu', 'Terlambat < 15 menit', 'Terlambat > 15 menit'] },
+  { id: 'explain', type: 'choice', required: true, label: 'Terapis menjelaskan kondisi dan rencana terapi dengan jelas', options: ['Ya', 'Tidak'] },
+  { id: 'listen', type: 'choice', required: true, label: 'Fisioterapis mendengarkan keluhan dengan baik', options: SCALE_PUAS },
+  { id: 'care', type: 'choice', required: true, label: 'Pelayanan dan tindakan oleh fisioterapis', options: SCALE_PUAS },
+  { id: 'attitude', type: 'choice', required: true, label: 'Sikap dan keramahan terapis selama di rumah Anda', options: SCALE_PUAS },
+  { id: 'equipment', type: 'choice', required: true, label: 'Kelengkapan dan kebersihan peralatan yang dibawa terapis', options: SCALE_PUAS },
+  { id: 'overall', type: 'choice', required: true, isRating: true, label: 'Kepuasan layanan {clinic} Homecare secara menyeluruh', options: SCALE_PUAS },
+  { id: 'return', type: 'choice', required: true, label: 'Saya bersedia memakai layanan homecare ini lagi', options: ['Ya', 'Tidak', 'Ragu-ragu'] },
+  { id: 'staff', type: 'therapist', required: false, label: 'Nama terapis yang memberikan pelayanan terbaik' },
+  { id: 'suggestion', type: 'textarea', required: true, label: 'Saran & Masukan sangat berharga untuk perbaikan pelayanan' },
+];
+
 // Opsi ke-i dari n (0 = terbaik) -> rating 5..1.
 export const ratingFromOption = (options, value) => {
   const idx = options.indexOf(value);

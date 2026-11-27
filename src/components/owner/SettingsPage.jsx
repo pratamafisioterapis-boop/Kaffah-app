@@ -1278,6 +1278,7 @@ const SettingsPage = () => {
           </TabsContent>
           <TabsContent value="feedback_questionnaire" className="space-y-6">
             <FeedbackQuestionnaireSettings />
+            <FeedbackQuestionnaireSettings homecare />
           </TabsContent>
           <TabsContent value="accounting_cats">
             <AccountingCategoryManager />

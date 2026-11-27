@@ -5,13 +5,15 @@ import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Loader2, ClipboardList, ArrowUp, ArrowDown, Trash2, Plus, RotateCcw } from 'lucide-react';
 import { QUESTIONNAIRE_CLINIC_IDS } from '@/lib/clinicIds';
-import { DEFAULT_PRAXIS_QUESTIONS, normalizeQuestions } from '@/lib/praxisQuestionnaire';
+import { DEFAULT_PRAXIS_QUESTIONS, DEFAULT_HOMECARE_QUESTIONS, normalizeQuestions } from '@/lib/praxisQuestionnaire';
 
 const TYPE_LABELS = { choice: 'Pilihan', text: 'Teks singkat', textarea: 'Teks panjang', therapist: 'Pilih nama terapis' };
 
 // Editor kuesioner feedback pasien (khusus Praxis): owner mengubah, menambah,
 // menghapus, dan mengurutkan pertanyaan. Disimpan di clinics.feedback_questionnaire.
-const FeedbackQuestionnaireSettings = () => {
+const FeedbackQuestionnaireSettings = ({ homecare = false }) => {
+  const column = homecare ? 'feedback_questionnaire_homecare' : 'feedback_questionnaire';
+  const defaults = homecare ? DEFAULT_HOMECARE_QUESTIONS : DEFAULT_PRAXIS_QUESTIONS;
   const { userDetails } = useAuth();
   const { toast } = useToast();
   const clinicId = userDetails?.clinic_id;
@@ -21,11 +23,11 @@ const FeedbackQuestionnaireSettings = () => {
   useEffect(() => {
     if (!QUESTIONNAIRE_CLINIC_IDS.includes(clinicId)) return;
     let cancelled = false;
-    supabase.from('clinics').select('feedback_questionnaire').eq('id', clinicId).single().then(({ data }) => {
-      if (!cancelled) setQuestions(normalizeQuestions(data?.feedback_questionnaire) || DEFAULT_PRAXIS_QUESTIONS);
+    supabase.from('clinics').select(column).eq('id', clinicId).single().then(({ data }) => {
+      if (!cancelled) setQuestions(normalizeQuestions(data?.[column]) || defaults);
     });
     return () => { cancelled = true; };
-  }, [clinicId]);
+  }, [clinicId, column, defaults]);
 
   if (!QUESTIONNAIRE_CLINIC_IDS.includes(clinicId)) return null;
   if (!questions) {
@@ -61,7 +63,7 @@ const FeedbackQuestionnaireSettings = () => {
       return;
     }
     setSaving(true);
-    const { error } = await supabase.from('clinics').update({ feedback_questionnaire: cleaned }).eq('id', clinicId);
+    const { error } = await supabase.from('clinics').update({ [column]: cleaned }).eq('id', clinicId);
     setSaving(false);
     if (error) toast({ variant: 'destructive', title: 'Gagal menyimpan kuesioner', description: error.message });
     else toast({ title: 'Kuesioner tersimpan' });
@@ -69,9 +71,9 @@ const FeedbackQuestionnaireSettings = () => {
 
   return (
     <div className="bg-white p-6 rounded-app border border-slate-200 space-y-4 max-w-2xl">
-      <h3 className="font-semibold text-slate-800 flex items-center gap-2"><ClipboardList className="w-4 h-4" /> Kuesioner Feedback Pasien</h3>
+      <h3 className="font-semibold text-slate-800 flex items-center gap-2"><ClipboardList className="w-4 h-4" /> {homecare ? 'Kuesioner Feedback Pasien Homecare' : 'Kuesioner Feedback Pasien'}</h3>
       <p className="text-sm text-slate-500">
-        Pertanyaan yang tampil di link feedback pasien sebelum diarahkan ke Google Review. Gunakan <code>{'{clinic}'}</code> untuk nama klinik.
+        {homecare ? 'Khusus pasien yang terapi di rumah (kunjungan homecare). ' : ''}Pertanyaan yang tampil di link feedback pasien sebelum diarahkan ke Google Review. Gunakan <code>{'{clinic}'}</code> untuk nama klinik.
         Opsi pilihan diurutkan dari yang terbaik ke terburuk; pertanyaan penentu rating memetakannya ke bintang 5 → 1.
       </p>
 
@@ -105,7 +107,7 @@ const FeedbackQuestionnaireSettings = () => {
             </label>
             {q.type === 'choice' && (
               <label className="flex items-center gap-1.5">
-                <input type="radio" name="rating-q" checked={!!q.isRating} onChange={() => setRating(i)} /> Penentu rating bintang
+                <input type="radio" name={`rating-q-${column}`} checked={!!q.isRating} onChange={() => setRating(i)} /> Penentu rating bintang
               </label>
             )}
           </div>
@@ -123,7 +125,7 @@ const FeedbackQuestionnaireSettings = () => {
 
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="outline" onClick={add}><Plus className="w-4 h-4 mr-1" /> Tambah Pertanyaan</Button>
-        <Button type="button" variant="outline" onClick={() => setQuestions(DEFAULT_PRAXIS_QUESTIONS)}><RotateCcw className="w-4 h-4 mr-1" /> Kembalikan Default</Button>
+        <Button type="button" variant="outline" onClick={() => setQuestions(defaults)}><RotateCcw className="w-4 h-4 mr-1" /> Kembalikan Default</Button>
         <Button type="button" onClick={handleSave} disabled={saving} className="ml-auto">
           {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan
         </Button>

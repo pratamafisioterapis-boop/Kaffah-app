@@ -5,7 +5,7 @@ import { Star, Loader2, AlertTriangle, CheckCircle2, ExternalLink } from 'lucide
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { QUESTIONNAIRE_CLINIC_IDS, KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
-import { DEFAULT_PRAXIS_QUESTIONS, normalizeQuestions, ratingFromOption } from '@/lib/praxisQuestionnaire';
+import { DEFAULT_PRAXIS_QUESTIONS, DEFAULT_HOMECARE_QUESTIONS, normalizeQuestions, ratingFromOption } from '@/lib/praxisQuestionnaire';
 import QuestionnaireForm, { QuestionnaireShell, QuestionnaireMessage } from '@/components/feedback/QuestionnaireForm';
 
 
@@ -30,6 +30,7 @@ const PatientFeedbackPage = () => {
   const [staffNames, setStaffNames] = useState([]);
   const [answers, setAnswers] = useState({});
   const [questions, setQuestions] = useState(DEFAULT_PRAXIS_QUESTIONS);
+  const [isHomecare, setIsHomecare] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,11 +38,12 @@ const PatientFeedbackPage = () => {
     const fetchLink = async () => {
       // Semua permintaan memakai token yang sama, jadi dijalankan bersamaan (bukan berurutan) agar
       // halaman cepat tampil. get_feedback_questionnaire/get_feedback_staff hanya dipakai bila klinik berkuesioner.
-      const [infoRes, cidRes, qsRes, staffRes] = await Promise.all([
+      const [infoRes, cidRes, qsRes, staffRes, hcRes] = await Promise.all([
         supabase.rpc('get_feedback_link_info', { p_token: token }).maybeSingle(),
         supabase.rpc('get_feedback_link_clinic_id', { p_token: token }),
         supabase.rpc('get_feedback_questionnaire', { p_token: token }),
         supabase.rpc('get_feedback_staff', { p_token: token }),
+        supabase.rpc('get_feedback_link_is_homecare', { p_token: token }),
       ]);
 
       if (cancelled) return;
@@ -59,7 +61,9 @@ const PatientFeedbackPage = () => {
       setIsKaffah(cid === KAFFAH_CLINIC_ID);
       setClinicId(cid);
       if (isQuestionnaire) {
-        setQuestions(normalizeQuestions(qsRes.data) || DEFAULT_PRAXIS_QUESTIONS);
+        const homecare = hcRes.data === true;
+        setIsHomecare(homecare);
+        setQuestions(normalizeQuestions(qsRes.data) || (homecare ? DEFAULT_HOMECARE_QUESTIONS : DEFAULT_PRAXIS_QUESTIONS));
         setStaffNames(Array.isArray(staffRes.data) ? staffRes.data : []);
       }
       setStatus(data.already_responded ? 'already' : 'form');
@@ -173,6 +177,7 @@ const PatientFeedbackPage = () => {
             setAnswers={setAnswers}
             onSubmit={handlePraxisSubmit}
             submitting={submitting}
+            isHomecare={isHomecare}
             googleNote={isKaffah ? 'Setelah mengirim, Anda mungkin diarahkan ke halaman ulasan Google Kaffah Physiotherapy untuk berbagi pengalaman (boleh dilewati).' : undefined}
           />
         ) : (
