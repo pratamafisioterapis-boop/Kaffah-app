@@ -385,7 +385,7 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                 address: formData.address,
                 occupation: formData.occupation.trim() || null,
                 religion: formData.religion || null,
-                additional_info_option_id: formData.additional_info_option_id || null,
+                additional_info_option_id: (formData.additional_info_option_id && formData.additional_info_option_id !== 'none') ? formData.additional_info_option_id : null,
                 status: formData.status,
                 nickname_custom: true,
                 referred_by_patient_id: formData.referred_by_patient_id || null
