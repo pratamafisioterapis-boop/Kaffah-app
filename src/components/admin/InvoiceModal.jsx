@@ -106,6 +106,8 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       ? { ...data.therapist, signature_url: processedSignatureUrl || data.therapist.signature_url }
       : data?.therapist,
   };
+  // Prop `data` (baris daftar) membawa id opsi mentah; pakai label hasil terjemahan dari detailData.
+  if (detailData?.goods_payment_method) templateData.goods_payment_method = detailData.goods_payment_method;
   // Template kwitansi memakai nomor invoice yang sama dengan yang disimpan saat
   // download/kirim, supaya tampil sebelum record tersimpan.
   const canOneOffName = (templateData.clinic?.id || detailData?.clinic?.id) === KAFFAH_CLINIC_ID;
