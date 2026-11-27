@@ -54,6 +54,7 @@ type Ctx = {
   actions: any[];
   handoff: { reason: string; priority: string } | null;
   bookingIds: string[];
+  bookedSlots?: Map<string, string>; // kunci therapist|date|HH:MM -> appointment_id yang sudah dibuat di putaran ini
   allowedPatientIds: Set<string>;
   patientsLoaded: boolean;
   offeredSlots: Map<string, Slot & { date: string }>; // kunci: therapist|date|HH:MM
@@ -518,6 +519,12 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
       if (ctx.bookingIds.length >= MAX_BOOKINGS_PER_RUN) return { ok: false, error: "batas booking per percakapan tercapai" };
       const time = String(input.time || "").slice(0, 5);
       const key = `${input.therapist_id}|${input.date}|${time}`;
+      // Slot yang sudah dibooking di putaran ini (mis. create_booking dipanggil dua kali): jangan dianggap "terisi"
+      // oleh orang lain. Booking pertama sudah berhasil dan konfirmasinya dikirim sistem.
+      const already = ctx.bookedSlots?.get(key);
+      if (already) {
+        return { ok: true, already_booked: true, appointment_id: already, note: "Jadwal ini SUDAH berhasil dibuat sebelumnya untuk pasien ini. Jangan menulis bahwa slot terisi/penuh/keliru." };
+      }
       const slot = ctx.offeredSlots.get(key);
       if (!slot) {
         return { ok: false, error: "slot ini belum ditampilkan lewat get_available_slots; ambil jadwal dulu" };
@@ -588,6 +595,7 @@ async function runTool(ctx: Ctx, name: string, input: any): Promise<unknown> {
       if (error) return { ok: false, error: `gagal booking: ${error.message}` };
 
       ctx.bookingIds.push(id as string);
+      (ctx.bookedSlots ??= new Map()).set(key, id as string);
       ctx.actions.push({ type: "create_booking", appointment_id: id, ...plan });
       await ctx.admin.from("appointments").update({ booking_source: "ai_whatsapp" }).eq("id", id);
       // Konfirmasi WA (template) memakai jalur yang sama dengan booking dari admin.
@@ -831,6 +839,7 @@ ATURAN PENTING
 - Jadwal home care: ubah/batal tetap serahkan ke admin.
 - Pasien membatalkan jadwal lewat chat (mis. "hari ini sy cancel"): JANGAN diserahkan ke admin kecuali jadwal itu home care. Bila jadwalnya ditemukan, proses CANCEL; bila tidak ditemukan atau pasien sudah jelas batal, balas "baik ka, terimakasih konfirmasinya ya" (sapaan sesuai pasien).
 - Pasien bertanya HARGA per sesi (sebelum terapi): sebut tarif regular "200rb kak, sudah termasuk konsultasi, pemeriksaan dan terapinya" tanpa menambah biaya keluhan tambahan. Tambahan Rp25.000 hanya disebut bila pasien menanyakannya.
+- SLOT HILANG DARI DAFTAR = BISA MILIK PASIEN SENDIRI: bila jam/terapis yang dibahas tidak lagi muncul di get_available_slots, CEK dulu JADWAL TERBOOKING pasien (get_my_appointments) dan riwayat chat: bila slot itu sudah dibooking untuk pasien ini (konfirmasi booking/template sudah terkirim, atau ada di jadwal terbookingnya), itu BUKAN terisi orang lain. JANGAN menulis \"baru saja terisi\", \"penuh\", atau menawarkan terapis/jam lain; JANGAN minta maaf atau menulis \"info kami keliru\". Cukup jawab pertanyaan pasien (mis. terapis perempuan = Fisio itu) atau konfirmasi singkat bahwa jadwalnya sudah tercatat. Setelah create_booking berhasil, hasil create_booking berikutnya yang menyebut slot terisi bisa diabaikan (itu bookingmu sendiri).
 - Setelah create_booking berhasil, JANGAN menulis konfirmasi (hari, jam, terapis, alamat): sistem mengirim konfirmasi otomatis ke pasien. Bila pasien JUGA mengajukan pertanyaan lain di pesan-pesan terakhirnya (mis. durasi terapi, tarif, alamat, cara datang), WAJIB jawab pertanyaan itu saja dalam balasan akhir, tanpa mengulang konfirmasi booking. Bila tidak ada pertanyaan lain, tulis balasan akhir kosong.
 - Jadwal penuh: tawarkan jam atau hari lain terdekat. Pasien tanya "bisa hari ini?" tanpa jam: tawarkan jadwal tercepat. Ikuti permintaan terapis/gender dari pasien; jika tidak ada, sebutkan terapis yang tersedia pada hari dan jam yang diminta.
 - USAHAKAN MENJAWAB SENDIRI seperti admin Kaffah; ikuti bagian "Gaya jawaban admin asli" dan "Pertanyaan keluhan/medis" di knowledge. Pertanyaan keluhan (stroke, saraf kejepit, bell's palsy, pasca operasi, kaki lemah, ibu hamil, dll.) DIJAWAB dengan pola admin, bukan diserahkan.
@@ -2677,6 +2686,27 @@ async function processItem(admin: Admin, q: QueueRow) {
   }
 }
 
+/**
+ * Apakah staf (manusia) sudah membalas pasien SESUDAH pesan pasien ini? Dipanggil tepat sebelum AI mengirim,
+ * karena penyusunan balasan AI bisa memakan puluhan detik dan staf bisa membalas di sela itu
+ * (cek awal hanya terjadi sebelum AI mulai berpikir). Template otomatis (konfirmasi booking dari sistem) tidak dihitung.
+ * Melempar galat bila tidak bisa dipastikan; pemanggil tidak boleh mengirim dalam kasus itu.
+ */
+async function staffRepliedSince(admin: Admin, clinicId: string, conversationId: string, waId: string, sinceIso: string): Promise<boolean> {
+  const since = Date.parse(sinceIso);
+  const { count } = await admin.from("wa_inbox_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("conversation_id", conversationId).eq("direction", "out").neq("status", "failed")
+    .not("sent_by", "is", null).gt("created_at", sinceIso);
+  if (count) return true;
+  const { items } = await watzapHistory(admin, clinicId, waId);
+  return items.some((i: any) => {
+    if (i.is_from_me !== true || i.type === "template" || !String(i.message || "").trim()) return false;
+    const t = Date.parse(`${String(i.timestamp).replace(" ", "T")}+07:00`);
+    return Number.isFinite(t) && t > since;
+  });
+}
+
 async function handleInbound(admin: Admin, conversationId: string, messageId: string) {
   const { data: conv } = await admin.from("wa_inbox_conversations")
     .select("*").eq("id", conversationId).maybeSingle();
@@ -2819,6 +2849,12 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
 
     // Serah-terima: diam, pasien tidak dibalas. Booking berhasil: konfirmasi dikirim sistem.
     const booked = ctx.actions.some((a) => a.type === "create_booking" || a.type === "reschedule_booking");
+    // Pengaman: booking sudah berhasil tetapi teks AI mengaku slot terisi/penuh/info keliru (mis. akibat create_booking
+    // ganda yang ditolak karena slot sudah milik pasien sendiri). Teks itu salah dan membingungkan pasien: dibuang.
+    if (booked && reply && /baru saja terisi|sudah terisi|sudah penuh|jadwal.*penuh|info kami.*keliru|kesalahan dari sistem/i.test(reply)) {
+      console.error("[wa-ai-reply] balasan 'slot terisi' dibuang karena booking sudah berhasil:", reply.slice(0, 200));
+      reply = "";
+    }
     const brochures = ctx.handoff ? [] : ctx.actions.filter((a) => a.type === "send_brochure");
     // Balasan kosong tanpa booking/serah-terima = pesan yang memang tidak perlu dibalas (mis. "ok", "siap").
     if (!reply && !booked && !ctx.handoff && !brochures.length) {
@@ -2856,6 +2892,26 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
     if (sendBody || brochures.length) {
       // Jeda singkat sebelum mengirim agar tidak terkesan instan seperti bot.
       await new Promise((r) => setTimeout(r, (3 + Math.random() * 6) * 1000));
+      // Cek ulang tepat sebelum kirim: staf bisa membalas (atau pasien menulis lagi) selagi AI menyusun jawaban.
+      // Bila begitu, balasan AI dibuang supaya tidak dobel / bertabrakan dengan balasan staf.
+      try {
+        const { data: newestIn } = await admin.from("wa_inbox_messages")
+          .select("id").eq("conversation_id", conversationId).eq("direction", "in")
+          .order("created_at", { ascending: false }).limit(1).maybeSingle();
+        const staffFirst = !viaBablast
+          ? await staffRepliedSince(admin, clinicId, conversationId, conv.wa_id, msg.created_at)
+          : false;
+        if ((newestIn && newestIn.id !== messageId) || staffFirst) {
+          return await finish({
+            ...common,
+            outcome: "skipped",
+            skip_reason: staffFirst ? "admin_membalas_saat_ai_menyusun" : "ada_pesan_lebih_baru",
+          });
+        }
+      } catch (e) {
+        // Tidak bisa memastikan: jangan mengirim apa pun (gagal dengan aman).
+        return await finish({ ...common, outcome: "skipped", skip_reason: "tidak_bisa_cek_balasan_admin", error_message: String((e as Error).message || e).slice(0, 300) });
+      }
       for (const b of brochures) {
         try {
           await sendImage(admin, clinicId, conv, b.url, b.title, channel);
