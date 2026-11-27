@@ -111,11 +111,28 @@ export function phoneVariants(waId: string): string[] {
   return [...new Set([`62${local}`, `0${local}`, local, `+62${local}`])];
 }
 
-/** Nama pasien baru ditulis dengan awalan "Ka " di guest name. */
+/** Sapaan yang dikenali di depan nama (huruf kecil) -> bentuk baku di guest name. */
+const TITLE_MAP: Record<string, string> = {
+  ka: "Ka", kak: "Ka", ibu: "Ibu", bu: "Ibu", bapak: "Bapak", pak: "Bapak",
+  mas: "Mas", mbak: "Mbak", mba: "Mbak", mb: "Mbak", om: "Om", tante: "Tante",
+};
+
+/**
+ * Nama pasien baru di guest name. Sapaan yang disebut pasien ("bu sulastri", "Pak Budi", "mas Rendra") DIPERTAHANKAN
+ * (dibakukan: bu -> Ibu, pak -> Bapak, kak -> Ka); awalan "Ka " hanya ditambahkan bila nama tanpa sapaan.
+ */
 export function withKaPrefix(name: string): string {
-  const n = (name || "").replace(/\s+/g, " ").trim();
+  let n = (name || "").replace(/\s+/g, " ").trim();
   if (!n) return "";
-  return /^ka\s/i.test(n) ? n.replace(/^ka\s/i, "Ka ") : `Ka ${n}`;
+  // Pasien sering mengetik huruf kecil semua ("bu sulastri"): kapitalkan awal tiap kata hanya bila semuanya huruf kecil.
+  if (n === n.toLowerCase()) n = n.replace(/(^|\s)(\p{L})/gu, (_x, sp, ch) => sp + ch.toUpperCase());
+  const m = n.match(/^(\p{L}+)\.?\s+(.+)$/u);
+  const title = m ? TITLE_MAP[m[1].toLowerCase()] : undefined;
+  if (m && title) {
+    const rest = m[2].replace(/^(?:ka|kak|ibu|bu|bapak|pak|mas|mbak|mba)\s+/i, "").trim() || m[2];
+    return `${title} ${rest}`;
+  }
+  return `Ka ${n}`;
 }
 
 /** Tanggal "YYYY-MM-DD" + jam "HH:MM[:SS]" WITA → ISO dengan offset +08:00. */
