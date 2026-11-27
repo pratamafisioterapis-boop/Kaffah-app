@@ -30,7 +30,7 @@ import { useAppointmentState } from '@/contexts/AppointmentStateContext';
 import { supabase } from '@/lib/customSupabaseClient';
 import InvoiceModal from '@/components/admin/InvoiceModal';
 import AlkesSalesDialog from '@/components/admin/AlkesSalesDialog';
-import { sortRecapsByStatus, sortRecapsKaffah } from '@/lib/dailyRecapHelpers';
+import { sortRecapsByStatus, sortRecapsKaffah, packageSessionLabel } from '@/lib/dailyRecapHelpers';
 import DatePicker from '@/components/DatePicker';
 import DailyRecapModal from '@/components/shared/DailyRecapModal';
 import DailyRecapDetailModal from '@/components/shared/DailyRecapDetailModal';
@@ -1186,6 +1186,7 @@ const getPremiumPastelBadge = (text) => {
                      </td>
                      <td className={cn("px-1 py-3 xl:px-2 2xl:px-3 text-center text-app-accent font-semibold", isPraxis && "whitespace-normal [overflow-wrap:normal]")}>
                        {packageLabel}
+                       {packageSessionLabel(recap) && <div className="mt-0.5 text-xs font-medium text-violet-700">{packageSessionLabel(recap)}</div>}
                        {recap.bypass_package_id && (
                          <Badge title={recap.bypass_reason || ''} className="block mt-1 text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 whitespace-normal leading-tight">Di luar paket</Badge>
                        )}
