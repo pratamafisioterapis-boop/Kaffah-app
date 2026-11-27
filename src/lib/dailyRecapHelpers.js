@@ -153,6 +153,33 @@ const recapPriority = (r) => {
     return r.start_time ? 1 : 2;
 };
 
+// Urutan khusus Kaffah: sedang berlangsung (jam slot appointment, paling awal di atas)
+// -> belum mulai (jam slot, paling awal di atas) -> selesai (terbaru di atas, terlama
+// di paling bawah, mis. appointment pagi ada di dasar tabel).
+const slotTime = (r) => {
+    const raw = r.appointment?.appointment_date || r.start_time || r.created_at;
+    const t = raw ? new Date(raw).getTime() : NaN;
+    return Number.isNaN(t) ? null : t;
+};
+
+export const sortRecapsKaffah = (recaps) => {
+    const group = (r) => (r.end_time ? 2 : r.start_time ? 0 : 1);
+    return recaps
+        .map((r, i) => ({ r, i }))
+        .sort((a, b) => {
+            const ga = group(a.r);
+            const gb = group(b.r);
+            if (ga !== gb) return ga - gb;
+            const ta = slotTime(a.r);
+            const tb = slotTime(b.r);
+            if (ta !== null && tb !== null && ta !== tb) {
+                return ga === 2 ? tb - ta : ta - tb;
+            }
+            return a.i - b.i;
+        })
+        .map(({ r }) => r);
+};
+
 export const sortRecapsByStatus = (recaps) => {
     const startOf = (r) => (r.start_time ? new Date(r.start_time).getTime() : Infinity);
     return recaps
