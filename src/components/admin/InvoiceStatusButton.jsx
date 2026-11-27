@@ -22,12 +22,15 @@ const TONES = {
     icon: 'text-orange-500',
     title:
       'Tidak dikirim otomatis: pasien belum membalas WA klinik dalam 24 jam, sehingga PDF tidak akan sampai. Kirim manual lewat link.',
+    warn: 'Kirim manual',
   },
   failed: {
-    label: 'Gagal dikirim',
+    label: 'Gagal dikirim, kirim WA manual',
     Icon: X,
     icon: 'text-red-600',
-    title: 'Gagal dikirim',
+    title:
+      'Kwitansi GAGAL sampai ke pasien (ditolak WhatsApp/Meta). Buka Invoice lalu kirim manual lewat WhatsApp.',
+    warn: 'Kirim manual',
   },
   pending: {
     label: 'Belum dikirim',
@@ -50,7 +53,8 @@ const getTone = (status) =>
 export default function InvoiceStatusButton({ recap, onClick, className }) {
   const disabled = parseFloat(recap?.amount || 0) === 0;
   const tone = getTone(recap?.invoice_wa_status);
-  const { Icon } = tone;
+  const { Icon, warn } = tone;
+  const showWarn = !!warn && !disabled;
 
   return (
     <button
@@ -59,10 +63,11 @@ export default function InvoiceStatusButton({ recap, onClick, className }) {
       onClick={onClick}
       className={cn(
         'inline-flex h-7 w-full min-w-[84px] items-center justify-center gap-1.5 rounded-md border border-blue-200 bg-white px-2 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400 disabled:hover:bg-white xl:h-9 xl:px-3 xl:text-sm',
+        showWarn && 'border-red-300 text-red-600 hover:bg-red-50 focus-visible:ring-red-400',
         className
       )}
     >
-      Invoice
+      {showWarn ? warn : 'Invoice'}
       {!disabled && (
         <span title={tone.title} className="inline-flex">
           <Icon className={cn('h-3.5 w-3.5 shrink-0', tone.icon)} strokeWidth={3} aria-hidden="true" />
