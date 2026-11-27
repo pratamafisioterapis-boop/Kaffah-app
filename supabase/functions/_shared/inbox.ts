@@ -161,6 +161,15 @@ export async function handleMessage(
   const conv = await ensureConversation(admin, clinicId, waId, profile);
   if (!conv) return;
 
+  // Pasien mengedit pesan teksnya: WhatsApp mengirim event "edit" berisi teks baru. Perlakukan sebagai pesan teks
+  // baru (isi hasil edit) supaya terbaca di inbox dan DIJAWAB AI. Tanpa ini event edit tersimpan sebagai
+  // "[pesan edit tidak didukung]", terhitung sebagai pesan lebih baru sehingga pesan aslinya dilewati AI, dan
+  // event edit sendiri tidak pernah diproses: pasien tidak dibalas.
+  const editedText = msg.type === "edit" ? msg.edit?.message?.text?.body : undefined;
+  if (typeof editedText === "string" && editedText.trim()) {
+    msg = { ...msg, type: "text", text: { body: editedText } };
+  }
+
   const { body, mediaId, mime } = describe(msg);
   const ts = msg.timestamp
     ? new Date(Number(msg.timestamp) * 1000).toISOString()
