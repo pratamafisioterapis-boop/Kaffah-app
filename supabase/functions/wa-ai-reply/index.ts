@@ -942,11 +942,13 @@ function isThanksOnly(body: string): boolean {
 }
 
 /** Balasan baku "sama sama {sapaan}": sapaan dari pesan pasien, lalu dari pesan klinik terakhir, default "kak". */
-function thanksReply(lastBody: string, transcript: string, callName = ""): string {
-  // Pasien terdaftar (satu pasien pada nomor ini): panggil nickname, bukan "ka"/"kak".
-  if (callName) return `sama sama ${callName}`;
+function thanksReply(lastBody: string, transcript: string, callName = "", contextTitle = ""): string {
   const pick = /\b(ibu|bu|bapak|pak|mas|mbak|mba|kak|ka)\b/i;
   const norm = (w: string) => ({ ibu: "bu", bapak: "pak", mba: "mbak" } as Record<string, string>)[w.toLowerCase()] ?? w.toLowerCase();
+  // Konteks pesan menyebut orang lain pada nomor yang sama (mis. "Jadwal Ka Catur Wulandari"): sapa sesuai orang itu.
+  if (contextTitle) return `sama sama ${norm(contextTitle)}`;
+  // Pasien terdaftar (satu pasien pada nomor ini): panggil nickname, bukan "ka"/"kak".
+  if (callName) return `sama sama ${callName}`;
   const fromPatient = String(lastBody || "").match(pick);
   if (fromPatient) return `sama sama ${norm(fromPatient[1])}`;
   const clinic = transcript.split("\n").filter((l) => /\] Klinik/.test(l)).reverse();
@@ -971,8 +973,26 @@ async function patientCallName(admin: any, clinicId: string, waId: string): Prom
   } catch { return ""; }
 }
 
+/** Satu nomor sering dipakai beberapa orang (pasien terdaftar + booking tamu, anak/orang tua, dll.). Bila pesan
+ *  yang sedang dijawab (kutipan pasien, atau pesan klinik terakhir) menyebut orang lain dengan sapaan ("Ka Catur
+ *  Wulandari"), nickname pasien terdaftar pada nomor itu BUKAN yang dimaksud. Mengembalikan sapaan orang itu. */
+function contextPersonConflict(transcript: string, callName: string): { title: string; name: string } | null {
+  if (!callName) return null;
+  const lines = transcript.split("\n");
+  const lastPatient = [...lines].reverse().find((l) => /\] Pasien:/.test(l)) || "";
+  const quoted = lastPatient.match(/\(membalas pesan: "([^"]*)"\)/)?.[1] || "";
+  const lastClinic = [...lines].reverse().find((l) => /\] Klinik/.test(l)) || "";
+  const m = (quoted || lastClinic).match(/\b(Ka|Kak|Ibu|Bu|Bapak|Pak|Mba|Mbak|Mas)\s+([A-Z][\p{L}]{2,})/u);
+  if (!m) return null;
+  const mentioned = m[2].toLowerCase();
+  if (callName.toLowerCase().split(/\s+/).some((w) => w === mentioned)) return null; // orang yang sama dengan pasien terdaftar
+  return { title: m[1], name: m[2] };
+}
+
 /** Coba balas pesan penutup dengan model murah tanpa alat. handled=false -> lanjut ke agen penuh. */
 async function lightReply(transcript: string, lastBody: string, msgType: string, callName = ""): Promise<{ handled: boolean; reply: string }> {
+  const conflict = contextPersonConflict(transcript, callName);
+  if (conflict) callName = ""; // jangan paksa nickname pasien terdaftar bila konteksnya orang lain
   const isHadirButton = msgType === "button" && /^hadir$/i.test(lastBody.trim());
   if (msgType === "button" && !isHadirButton) return { handled: false, reply: "" }; // Reschedule/Cancel: agen penuh
   if (!isHadirButton && !isClosingText(lastBody)) return { handled: false, reply: "" };
@@ -985,7 +1005,7 @@ async function lightReply(transcript: string, lastBody: string, msgType: string,
   // membalas "sama sama" di pesan terakhirnya, tidak dibalas lagi supaya tidak berulang.
   if (msgType === "text" && isThanksOnly(lastBody)) {
     if (/sama[ -]?sama/i.test(lastClinicMsg)) return { handled: true, reply: "" };
-    return { handled: true, reply: thanksReply(lastBody, transcript, callName) };
+    return { handled: true, reply: thanksReply(lastBody, transcript, callName, conflict?.title || "") };
   }
   try {
     const nameHint = callName ? `Pasien ini terdaftar, panggil dengan nickname: ${callName} (JANGAN pakai "ka"/"kak").\n` : "";
