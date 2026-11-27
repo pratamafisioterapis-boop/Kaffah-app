@@ -10,7 +10,7 @@ import { Loader2, Link2, Copy, Star, Search, X, MessageCircle, Download } from '
 import { formatDateIndonesian } from '@/lib/dateFormatHelpers';
 import { portalBaseUrl, toWhatsAppNumber, patientDisplayName } from '@/lib/patientPortal';
 import { QUESTIONNAIRE_CLINIC_IDS, KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
-import { DEFAULT_PRAXIS_QUESTIONS, normalizeQuestions } from '@/lib/praxisQuestionnaire';
+import { DEFAULT_PRAXIS_QUESTIONS, DEFAULT_HOMECARE_QUESTIONS, normalizeQuestions } from '@/lib/praxisQuestionnaire';
 import { parseAnswers, buildResponsesCsv, downloadTextFile } from '@/lib/feedbackAnswers';
 import PageHero from '@/components/shared/PageHero';
 
@@ -77,13 +77,16 @@ export const FeedbackManagementContent = () => {
   const [patientInfo, setPatientInfo] = useState({});
   const [clinicDomain, setClinicDomain] = useState(null);
   const [questions, setQuestions] = useState(DEFAULT_PRAXIS_QUESTIONS);
+  const [homecareQuestions, setHomecareQuestions] = useState(DEFAULT_HOMECARE_QUESTIONS);
+  const [newIsHomecare, setNewIsHomecare] = useState(false);
 
   useEffect(() => {
     if (!clinicId) return;
-    supabase.from('clinics').select('id, subdomain, custom_domain, custom_domain_status, feedback_questionnaire')
+    supabase.from('clinics').select('id, subdomain, custom_domain, custom_domain_status, feedback_questionnaire, feedback_questionnaire_homecare')
       .eq('id', clinicId).maybeSingle().then(({ data }) => {
         setClinicDomain(data || null);
         setQuestions(normalizeQuestions(data?.feedback_questionnaire) || DEFAULT_PRAXIS_QUESTIONS);
+        setHomecareQuestions(normalizeQuestions(data?.feedback_questionnaire_homecare) || DEFAULT_HOMECARE_QUESTIONS);
       });
   }, [clinicId]);
 
@@ -131,7 +134,7 @@ export const FeedbackManagementContent = () => {
     const token = crypto.randomUUID().replace(/-/g, '');
     const { data, error } = await supabase
       .from('patient_feedback_links')
-      .insert([{ clinic_id: clinicId, token, patient_id: selectedPatient?.id || null, patient_name: (selectedPatient?.full_name || patientName).trim() || null }])
+      .insert([{ clinic_id: clinicId, token, patient_id: selectedPatient?.id || null, patient_name: (selectedPatient?.full_name || patientName).trim() || null, is_homecare: newIsHomecare }])
       .select()
       .single();
     setGenerating(false);
@@ -142,6 +145,7 @@ export const FeedbackManagementContent = () => {
     setLinks((prev) => [data, ...prev]);
     setPatientName('');
     setSelectedPatient(null);
+    setNewIsHomecare(false);
     const url = buildFeedbackUrl(token, clinicDomain);
     try {
       await navigator.clipboard.writeText(url);
@@ -179,7 +183,7 @@ export const FeedbackManagementContent = () => {
   const responseRows = useMemo(() => responses.map((r) => {
     const link = linksById[r.link_id];
     const pt = patientInfo[link?.patient_id];
-    const parsed = isQuestionnaire ? parseAnswers(r.comment, questions, clinicName) : { items: [], matched: false };
+    const parsed = isQuestionnaire ? parseAnswers(r.comment, link?.is_homecare ? homecareQuestions : questions, clinicName) : { items: [], matched: false };
     return {
       response: r,
       name: r.patient_name || link?.patient_name || pt?.full_name || 'Anonim',
@@ -190,7 +194,7 @@ export const FeedbackManagementContent = () => {
       parsed,
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [responses, links, patientInfo, questions, clinicName, isQuestionnaire]);
+  }), [responses, links, patientInfo, questions, homecareQuestions, clinicName, isQuestionnaire]);
 
   const avgRating = responses.length
     ? (responses.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / responses.length).toFixed(1)
@@ -208,7 +212,7 @@ export const FeedbackManagementContent = () => {
         answers: Object.fromEntries(row.parsed.items.map((i) => [i.id, i.answer])),
         raw: row.response.comment || '',
       })),
-      questions,
+      [...questions, ...homecareQuestions.filter((h) => !questions.some((q) => q.id === h.id))],
       clinicName,
     );
     downloadTextFile(`feedback-pasien-${new Date().toISOString().slice(0, 10)}.csv`, csv);
@@ -280,6 +284,9 @@ export const FeedbackManagementContent = () => {
               </>
             )}
           </div>
+          <label className="flex items-center gap-2 text-sm text-slate-700 sm:shrink-0">
+            <Switch checked={newIsHomecare} onCheckedChange={setNewIsHomecare} /> Homecare
+          </label>
           <Button onClick={handleGenerateLink} disabled={generating} className="bg-app-accent sm:shrink-0 w-full sm:w-auto">
             {generating && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Buat Link
           </Button>
@@ -294,7 +301,7 @@ export const FeedbackManagementContent = () => {
             <div key={link.id} className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-slate-800 break-words">{link.patient_name || 'Tanpa nama'}</p>
-                <p className="text-xs text-slate-500">{formatDateIndonesian(link.created_at)}</p>
+                <p className="text-xs text-slate-500">{formatDateIndonesian(link.created_at)}{link.is_homecare ? ' · Homecare' : ''}</p>
               </div>
               <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
                 {link.responded_at ? (

@@ -75,7 +75,7 @@ const fieldStyle = (t) => ({
 });
 
 const QuestionnaireForm = ({
-  clinicId, clinicName, questions, staffNames, answers, setAnswers, onSubmit, submitting, googleNote,
+  clinicId, clinicName, questions, staffNames, answers, setAnswers, onSubmit, submitting, googleNote, isHomecare,
 }) => {
   useFeedbackFonts();
   const t = themeFor(clinicId);
@@ -141,7 +141,7 @@ const QuestionnaireForm = ({
             <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.16em', color: t.accent, textTransform: 'uppercase' }}>{name}</div>
           )}
           <h1 style={{ margin: 0, fontFamily: SERIF, fontSize: 30, lineHeight: 1.12, fontWeight: 600, letterSpacing: '-0.015em', color: '#fff' }}>
-            Bagaimana terapi Anda hari ini?
+            {isHomecare ? 'Bagaimana terapi di rumah Anda hari ini?' : 'Bagaimana terapi Anda hari ini?'}
           </h1>
           <p style={{ margin: 0, fontSize: 16, lineHeight: 1.55, color: t.lead }}>
             {questions.length} pertanyaan singkat, sekitar 2 menit. Jawaban Anda menjadi dasar kami memperbaiki layanan.
