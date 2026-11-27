@@ -145,7 +145,7 @@ const PatientEditModal = ({ isOpen, onClose, onSuccess, patient }) => {
                 phone: normalizePhone(formData.phone),
                 nik: formData.nik || null,
                 address: formData.address || null,
-                additional_info_option_id: formData.additional_info_option_id === 'none' ? null : formData.additional_info_option_id,
+                additional_info_option_id: (!formData.additional_info_option_id || formData.additional_info_option_id === 'none') ? null : formData.additional_info_option_id,
                 status: formData.status,
                 updated_at: new Date().toISOString()
             };

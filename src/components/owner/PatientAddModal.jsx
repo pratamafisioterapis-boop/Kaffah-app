@@ -236,7 +236,7 @@ const PatientAddModal = ({ isOpen, onClose, onSuccess }) => {
                 occupation: formData.occupation.trim() || null,
                 religion: formData.religion || null,
                 ktp_photo_path: ktpPath,
-                additional_info_option_id: formData.additional_info_option_id === 'none' ? null : formData.additional_info_option_id,
+                additional_info_option_id: (!formData.additional_info_option_id || formData.additional_info_option_id === 'none') ? null : formData.additional_info_option_id,
                 status: formData.status,
                 created_at: new Date().toISOString()
             };
