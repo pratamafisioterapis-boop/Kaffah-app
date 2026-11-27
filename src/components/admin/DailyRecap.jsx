@@ -15,7 +15,7 @@ import {
   setDailyRecapEndTime,
   getAllRecapOptions
 } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { cn, buildRecapOptionsMap, resolveRecapServiceLabel } from '@/lib/utils';
 import { 
   formatDateIndonesian, 
   formatTime, 
@@ -263,10 +263,7 @@ useEffect(() => {
     const fetchOptions = async () => {
       const { data, error } = await getAllRecapOptions();
       if (data && !error) {
-        const mapping = {};
-        data.forEach(opt => {
-          mapping[opt.id] = opt.label;
-        });
+        const mapping = buildRecapOptionsMap(data);
         setOptionsMap(mapping);
       }
     };
@@ -994,7 +991,7 @@ const getPremiumPastelBadge = (text) => {
                 <p>Tidak ada data rekap harian.</p>
               </div>
             ) : recaps.map((recap, idx) => {
-              const serviceLabel = optionsMap[recap.service_type] || recap.service_type || '-';
+              const serviceLabel = resolveRecapServiceLabel(recap, optionsMap);
               const patientTypeLabel = optionsMap[recap.patient_type] || recap.patient_type || '-';
               const packageLabel = recap.package_type || '-';
               const mainName = recap.actual_patients?.full_name || recap.patients?.full_name || recap.guest_name || 'Nama tidak tersedia';
@@ -1151,7 +1148,7 @@ const getPremiumPastelBadge = (text) => {
                  </div>
                </td></tr> :
                recaps.map((recap, idx) => {
-                 const serviceLabel = optionsMap[recap.service_type] || recap.service_type || '-';
+                 const serviceLabel = resolveRecapServiceLabel(recap, optionsMap);
                  const patientTypeLabel = optionsMap[recap.patient_type] || recap.patient_type || '-';
                  const packageLabel = recap.package_type || '-';
                  

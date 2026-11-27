@@ -1706,7 +1706,7 @@ export const getAllRecapOptions = async () => {
 
   const { data, error } = await supabase
     .from('operational_options')
-    .select('id, label')
+    .select('id, label, parent_id')
     .eq('clinic_id', userRow?.clinic_id)
     .eq('is_active', true);
 

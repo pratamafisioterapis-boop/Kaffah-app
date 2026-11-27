@@ -795,3 +795,37 @@ export function debounce(func, wait) {
     timeout = setTimeout(later, wait);
   };
 }
+
+// Peta opsi rekap (id -> label) + petunjuk parent diagnosa, dipakai untuk menurunkan
+// layanan saat daily_recaps.service_type kosong (mis. diagnosa diisi terapis lewat SOAP).
+export function buildRecapOptionsMap(options = []) {
+  const map = {};
+  const parentByLabel = {};
+  options.forEach((opt) => {
+    map[opt.id] = opt.label;
+    if (opt.parent_id) {
+      map[`parent:${opt.id}`] = opt.parent_id;
+      const key = String(opt.label || '').trim().toLowerCase();
+      if (key && !parentByLabel[key]) parentByLabel[key] = opt.parent_id;
+    }
+  });
+  options.forEach((opt) => {
+    const key = String(opt.label || '').trim().toLowerCase();
+    if (!opt.parent_id && parentByLabel[key]) map[`parent:${opt.id}`] = parentByLabel[key];
+  });
+  return map;
+}
+
+export function resolveRecapServiceLabel(recap, optionsMap = {}) {
+  if (recap?.service_type) return optionsMap[recap.service_type] || recap.service_type;
+  let raw = recap?.diagnosis;
+  if (typeof raw === 'string') {
+    try { raw = JSON.parse(raw); } catch { raw = [raw]; }
+  }
+  const ids = Array.isArray(raw) ? raw.flat() : [];
+  for (const id of ids) {
+    const parent = optionsMap[`parent:${id}`];
+    if (parent && optionsMap[parent]) return optionsMap[parent];
+  }
+  return '-';
+}
