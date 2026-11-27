@@ -39,7 +39,7 @@ import { id } from 'date-fns/locale';
 const RELIGION_OPTIONS = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Lainnya'];
 const MAX_KTP_SIZE = 5 * 1024 * 1024;
 
-const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess }) => {
+const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess, prefill = null }) => {
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
     const [fetchingRM, setFetchingRM] = useState(false);
@@ -193,12 +193,12 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
                 // Initialize for add
                 setFormData({
                     medical_record_number: 'Loading...',
-                    full_name: '',
+                    full_name: prefill?.full_name || '',
                     nickname: '',
                     birth_date_display: '',
                     birth_date_iso: '',
                     gender: '',
-                    phone: '',
+                    phone: prefill?.phone || '',
                     nik: '',
                     address: '',
                     occupation: '',
@@ -358,6 +358,7 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
 
         setLoading(true);
         let uploadedPath = null;
+        let createdPatient = null;
         try {
             // Upload KTP baru (bucket privat, folder per klinik)
             if (ktpFile) {
@@ -399,8 +400,9 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
             }
 
             if (mode === 'add') {
-                const { error } = await createPatient(payload);
+                const { data: created, error } = await createPatient(payload);
                 if (error) throw error;
+                createdPatient = created;
                 toast({ title: "Berhasil", description: "Data pasien baru berhasil disimpan." });
             } else {
                 const { error } = await updatePatient(patient.id, payload);
@@ -411,7 +413,7 @@ const PatientModal = ({ isOpen, onClose, patient = null, mode = 'add', onSuccess
             if (originalKtpPath && originalKtpPath !== finalKtpPath) {
                 await supabase.storage.from('patient-ktp').remove([originalKtpPath]);
             }
-            onSuccess();
+            await onSuccess(createdPatient);
             onClose();
         } catch (error) {
             console.error("Save error:", error);

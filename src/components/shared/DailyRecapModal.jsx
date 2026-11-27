@@ -1455,6 +1455,8 @@ setFormData({
     const splitTotal = paymentSplits.reduce((sum, row) => sum + (parseFloat(row.amount) || 0), 0);
     const splitRemaining = effectiveAmount - splitTotal;
 
+    const packageRequired = !!formData.payment_method || effectiveAmount > 0 || paymentSplits.some(r => parseFloat(r.amount) > 0);
+
     const handleSubmit = async () => {
         const newErrors = {};
 
@@ -1467,7 +1469,9 @@ setFormData({
         if (!formData.therapist_id) {
             newErrors.therapist_id = "Terapis wajib diisi";
         }
-        if (!formData.package_type_id) {
+        // Jenis paket baru wajib saat pembayaran dicatat. Pasien yang masih dalam proses terapi
+        // (belum bayar) boleh disimpan tanpa paket agar recap tetap tertaut ke database pasien.
+        if (packageRequired && !formData.package_type_id) {
             newErrors.package_type = "Jenis paket wajib diisi";
         }
         if (needsDiscountRefCode && !(formData.discount_referral_code || '').trim()) {
@@ -1886,7 +1890,7 @@ setFormData({
     const fPackageType = (
         <>
                                 <div className="space-y-1">
-                                    <Label>Jenis Paket <span className="text-red-500">*</span></Label>
+                                    <Label>Jenis Paket {packageRequired ? <span className="text-red-500">*</span> : <span className="text-slate-400 font-normal">(isi saat pasien membayar)</span>}</Label>
                                     <SearchableSelect
                                         key={(formData.package_type_id || '') + packageOptions.length}
                                         options={packageOptions}
