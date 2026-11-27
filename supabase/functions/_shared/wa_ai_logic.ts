@@ -136,22 +136,23 @@ export function withKaPrefix(name: string): string {
 }
 
 /**
- * Nama terapis di balasan AI selalu "Fisio Adi / Fisio Annisa / Fisio Dila / Fisio Alma" (konsisten, bukan "ka Nisa",
+ * Nama terapis di balasan AI selalu "Fisio Adi / Fisio Annisa / Fisio Dila / Fisio Alma / Fisio Prasetyo" (konsisten, bukan "ka Nisa",
  * "mas Adi", "Ns Dila", dst.). Hanya menyentuh sebutan terapis di kalimat balasan: (a) "Fisio/Ns/Ners/Nurse/Terapis/
  * Fisioterapis/Ftr" + nama, (b) "dengan/sama/oleh/bersama/jadwal/terapis" + (sapaan)? + nama. Sapaan pasien ("Baik Ka Adi")
  * tidak disentuh karena bisa jadi nama pasien. Format daftar jadwal ("*Adi Pratama,S.Fis.,Ftr*") tidak ikut berubah.
- * Prasetyo ("mas Pras") tidak diubah.
  */
-const THERAPIST_ALIAS: Record<string, string> = { adi: "Adi", annisa: "Annisa", nisa: "Annisa", dila: "Dila", alma: "Alma" };
-const NOT_SURNAME = String.raw`(?!\s*(?:Pratama|Septiyani|Ramadhanty|Ramadhanti|Abiyyu)\b)`;
-const ALIAS_RE = String.raw`(adi|annisa|nisa|dila|alma)\b${NOT_SURNAME}`;
+const THERAPIST_ALIAS: Record<string, string> = {
+  adi: "Adi", annisa: "Annisa", nisa: "Annisa", dila: "Dila", alma: "Alma", prasetyo: "Prasetyo", pras: "Prasetyo", abiyyu: "Prasetyo",
+};
+const NOT_SURNAME = String.raw`(?!\s*(?:Pratama|Septiyani|Ramadhanty|Ramadhanti|Abiyyu|D\s?N)\b)`;
+const ALIAS_RE = String.raw`(adi|annisa|nisa|dila|alma|prasetyo|pras|abiyyu)\b${NOT_SURNAME}`;
 export function normalizeTherapistNames(text: string): string {
   if (!text) return text;
   const fix = (a: string) => `Fisio ${THERAPIST_ALIAS[a.toLowerCase()]}`;
   return text
     .replace(new RegExp(String.raw`\b(?:fisioterapis|fisio|ners|nurse|terapis|ns|ftr)\.?\s+${ALIAS_RE}`, "gi"), (_m, a) => fix(a))
     .replace(
-      new RegExp(String.raw`\b(dengan|sama|oleh|bersama|jadwal|terapis)\s+(?:(?:ka|kak|mba|mbak|mas|bu|ibu|pak|bapak)\s+)?${ALIAS_RE}`, "gi"),
+      new RegExp(String.raw`\b(dengan|sama|oleh|bersama|jadwal|terapis|atau|dan)\s+(?:(?:ka|kak|mba|mbak|mas|bu|ibu|pak|bapak)\s+)?${ALIAS_RE}`, "gi"),
       (_m, prep, a) => `${prep} ${fix(a)}`,
     );
 }
