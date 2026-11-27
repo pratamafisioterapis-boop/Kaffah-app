@@ -141,7 +141,7 @@ const TOOLS = [
         date: { type: "string", description: "YYYY-MM-DD" },
         time: { type: "string", description: "HH:MM" },
         patient_id: { type: "string", description: "Dari lookup_patient (pasien terdaftar)" },
-        guest_name: { type: "string", description: "Nama lengkap pasien baru" },
+        guest_name: { type: "string", description: "Nama lengkap pasien baru, ditulis PERSIS seperti yang diberikan pasien, TERMASUK sapaan bila disebut (mis. pasien menulis \"bu sulastri\" -> \"Bu Sulastri\"; \"Pak Budi\"; \"mas Rendra\"). JANGAN membuang atau mengganti sapaan, dan JANGAN menambah \"Ka\" sendiri: sistem menambah \"Ka\" hanya bila pasien tidak menyebut sapaan." },
         complaint: {
           type: "string",
           description:
