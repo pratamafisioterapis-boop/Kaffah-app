@@ -19,6 +19,7 @@ const InvoiceTemplate = forwardRef(({ data }, ref) => {
     }).format(value || 0);
   };
 const { lines: goodsLines, total: goodsTotal } = getGoodsLines(data);
+const goodsOnly = !!data?.package_tracking_id && !(Number(data?.amount_original || data?.amount) > 0) && goodsLines.length > 0;
 const therapistName = data?.therapist_name ?? '-';
   const payment = (data?.payment_method || '').toLowerCase();
 
@@ -220,7 +221,7 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
           </thead>
 
           <tbody>
-            <tr>
+            {!goodsOnly && (<tr>
               <td style={tdCenter}>
   {
     data?.tiered_line ? data.tiered_line.code :
@@ -237,7 +238,7 @@ const checked = (val) => (paymentSplits.length > 0 ? val in splitAmountByMethod 
   {data?.tiered_line ? data.tiered_line.session : (data?.package_type || data?.service_type || '-')}
 </td>
               <td style={tdCenter}>{formatCurrency(data?.amount_original || data?.amount)}</td>
-            </tr>
+            </tr>)}
 
             {goodsLines.map((g, i) => (
               <tr key={`goods-${i}`}>

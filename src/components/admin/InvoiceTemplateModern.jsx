@@ -84,6 +84,9 @@ const InvoiceTemplateModern = forwardRef(({ data }, ref) => {
   });
   const isSelected = (key) => (paymentSplits.length > 0 ? key in splitAmountByMethod : payment === key);
 
+  // Sesi paket tanpa tagihan + beli barang: invoice hanya untuk barangnya.
+  const goodsOnly = !!data?.package_tracking_id && !(Number(data?.amount_original || data?.amount) > 0) && goodsLines.length > 0;
+
   const paidNow = (Number(data?.amount) || 0) + goodsTotal;
   const rateValue = data?.amount_original || data?.amount;
   const subtotalValue = (Number(rateValue) || 0) + goodsTotal;
@@ -182,14 +185,14 @@ const InvoiceTemplateModern = forwardRef(({ data }, ref) => {
           </tr>
         </thead>
         <tbody>
-          <tr>
+          {!goodsOnly && (<tr>
             <td style={{ fontSize: '13px', padding: '16px 0', borderBottom: `1px solid ${C.line}`, color: C.body }}>{line.code}</td>
             <td style={{ fontSize: '13.5px', fontWeight: 500, padding: '16px 0', borderBottom: `1px solid ${C.line}` }}>{line.description}</td>
             <td style={{ fontSize: '13px', padding: '16px 0', borderBottom: `1px solid ${C.line}`, color: C.body }}>{line.session}</td>
             <td style={{ fontSize: '13.5px', fontWeight: 500, padding: '16px 0', borderBottom: `1px solid ${C.line}`, textAlign: 'right' }}>
               {formatCurrency(rateValue)}
             </td>
-          </tr>
+          </tr>)}
           {goodsLines.map((g, i) => (
             <tr key={`goods-${i}`}>
               <td style={{ fontSize: '13px', padding: '16px 0', borderBottom: `1px solid ${C.line}`, color: C.body }}>BRG</td>
