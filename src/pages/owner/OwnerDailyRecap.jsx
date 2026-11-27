@@ -1,6 +1,7 @@
 import { sanitizeSearchTerm } from '@/lib/safeFilter';
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { sortRecapsByStatus } from '@/lib/dailyRecapHelpers';
+import { sortRecapsByStatus, sortRecapsKaffah } from '@/lib/dailyRecapHelpers';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { motion } from 'framer-motion';
 import { 
   Calendar, Search, Loader2, Plus, RefreshCcw, X, Play, Square, AlertTriangle, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, BarChart3, CreditCard, ChevronDown
@@ -70,6 +71,7 @@ const OwnerDailyRecap = () => {
 
   const { toast } = useToast();
   const isMounted = useRef(true);
+  const { userDetails } = useAuth();
   const { lastSyncTime } = useAppointmentState(); 
   
   // Data States
@@ -202,7 +204,8 @@ const OwnerDailyRecap = () => {
                 *,
                 patients:patients!daily_recap_patient_id_fkey(id, full_name, medical_record_number, phone),
                 actual_patients:patients!daily_recap_actual_patient_id_fkey(id, full_name, medical_record_number, phone),
-                therapist:physiotherapists!daily_recaps_therapist_id_fkey(id, name)
+                therapist:physiotherapists!daily_recaps_therapist_id_fkey(id, name),
+                appointment:appointments!appointment_id(appointment_date)
             `, { count: 'exact' })
             .gte('recap_date', queryDateRange.start)
             .lte('recap_date', queryDateRange.end);
@@ -243,7 +246,8 @@ const OwnerDailyRecap = () => {
           package_type: r.package_type
 }));
           
-          setRecaps(sortConfig.key ? (formatted || []) : sortRecapsByStatus(formatted || []));
+          const defaultSort = userDetails?.clinic_id === KAFFAH_CLINIC_ID ? sortRecapsKaffah : sortRecapsByStatus;
+          setRecaps(sortConfig.key ? (formatted || []) : defaultSort(formatted || []));
           setTotalRecords(count || 0);
           setTotalPages(Math.ceil((count || 0) / limit) || 1);
       }
@@ -253,7 +257,7 @@ const OwnerDailyRecap = () => {
     } finally { 
         if (isMounted.current) setLoadingRecaps(false); 
     }
-  }, [queryDateRange, currentPage, limit, debouncedSearch, sortConfig, selectedPaymentMethod]);
+  }, [queryDateRange, currentPage, limit, debouncedSearch, sortConfig, selectedPaymentMethod, userDetails?.clinic_id]);
 
   const fetchTotalAmount = useCallback(async () => {
     if (!queryDateRange.start || !queryDateRange.end) return;
