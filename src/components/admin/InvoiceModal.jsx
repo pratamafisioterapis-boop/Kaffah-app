@@ -332,6 +332,12 @@ const InvoiceModal = ({ isOpen, onClose, data, onSent }) => {
       pdfGeneratedAt = rec?.generated_at || null;
     }
 
+    // Metode bayar barang tersimpan sebagai id opsi; ubah ke label (mis. "Cash") agar bisa dicentang di kwitansi.
+    if (recap.goods_payment_method && /^[0-9a-f-]{36}$/i.test(recap.goods_payment_method)) {
+      const { data: gm } = await supabase.from('operational_options').select('label').eq('id', recap.goods_payment_method).maybeSingle();
+      if (gm?.label) recap.goods_payment_method = gm.label;
+    }
+
     setDetailData({
       ...recap,
       pdf_generated_at: pdfGeneratedAt,
