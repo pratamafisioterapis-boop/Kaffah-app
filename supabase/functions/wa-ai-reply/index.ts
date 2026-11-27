@@ -2707,6 +2707,29 @@ async function staffRepliedSince(admin: Admin, clinicId: string, conversationId:
   });
 }
 
+/**
+ * Apakah admin (bukan AI) membuat jadwal untuk nomor ini SESUDAH pesan pasien yang sedang dijawab? Admin sering
+ * membooking di aplikasi selagi AI menyusun jawaban; AI lalu melihat slot "hilang" dan salah mengira terisi pasien lain
+ * ("baru saja terisi"). Bila ya, balasan AI harus dibuang.
+ */
+async function adminBookedSince(admin: Admin, clinicId: string, waId: string, sinceIso: string): Promise<boolean> {
+  const tail = normalizePhone(waId).slice(-9);
+  const { data: appts, error } = await admin.from("appointments")
+    .select("guest_phone, patient_id, action_by_role")
+    .eq("clinic_id", clinicId).gt("created_at", sinceIso)
+    .or("action_by_role.is.null,action_by_role.neq.ai").limit(200);
+  if (error) throw new Error(`cek booking admin gagal: ${error.message}`);
+  const rows = appts || [];
+  if (rows.some((a: any) => String(a.guest_phone || "").replace(/\D/g, "").endsWith(tail))) return true;
+  const pids = rows.map((a: any) => a.patient_id).filter(Boolean);
+  if (!pids.length) return false;
+  const variants = phoneVariants(waId);
+  if (!variants.length) return false;
+  const { count } = await admin.from("patients").select("id", { count: "exact", head: true })
+    .eq("clinic_id", clinicId).in("id", pids).in("phone", variants);
+  return !!count;
+}
+
 async function handleInbound(admin: Admin, conversationId: string, messageId: string) {
   const { data: conv } = await admin.from("wa_inbox_conversations")
     .select("*").eq("id", conversationId).maybeSingle();
@@ -2847,6 +2870,13 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
       }
     }
 
+    // Klaim "slot baru saja terisi / penuh" yang bukan hasil booking AI sendiri sering keliru: admin kerap sedang
+    // membooking slot itu untuk pasien yang sama. Jangan kirim klaim itu; serahkan ke admin.
+    if (!booked && !ctx.handoff && reply && /baru saja (terisi|diambil)|baru terisi/i.test(reply)) {
+      ctx.handoff = { reason: "AI hendak menyatakan slot baru saja terisi; cek dulu apakah admin sedang membooking slot itu", priority: "normal" };
+      ctx.actions.push({ type: "handoff", ...ctx.handoff, draft: reply.slice(0, 300) });
+      reply = "";
+    }
     // Serah-terima: diam, pasien tidak dibalas. Booking berhasil: konfirmasi dikirim sistem.
     const booked = ctx.actions.some((a) => a.type === "create_booking" || a.type === "reschedule_booking");
     // Pengaman: booking sudah berhasil tetapi teks AI mengaku slot terisi/penuh/info keliru (mis. akibat create_booking
@@ -2901,11 +2931,13 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
         const staffFirst = !viaBablast
           ? await staffRepliedSince(admin, clinicId, conversationId, conv.wa_id, msg.created_at)
           : false;
-        if ((newestIn && newestIn.id !== messageId) || staffFirst) {
+        // Admin membooking nomor ini selagi AI menyusun jawaban: info slot AI sudah usang (slot itu justru milik pasien ini).
+        const bookedByAdmin = ctx.bookingIds.length ? false : await adminBookedSince(admin, clinicId, conv.wa_id, msg.created_at);
+        if ((newestIn && newestIn.id !== messageId) || staffFirst || bookedByAdmin) {
           return await finish({
             ...common,
             outcome: "skipped",
-            skip_reason: staffFirst ? "admin_membalas_saat_ai_menyusun" : "ada_pesan_lebih_baru",
+            skip_reason: staffFirst ? "admin_membalas_saat_ai_menyusun" : bookedByAdmin ? "admin_membooking_saat_ai_menyusun" : "ada_pesan_lebih_baru",
           });
         }
       } catch (e) {
