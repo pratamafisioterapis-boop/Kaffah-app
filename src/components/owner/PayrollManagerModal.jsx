@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, Plus, Trash2, Eye, Download, Wallet, Receipt, CalendarClock, CheckCircle2, AlertTriangle, ClipboardCheck, ChevronDown, ChevronUp, ListChecks } from 'lucide-react';
+import { Loader2, Plus, Trash2, Eye, Download, Wallet, Receipt, CalendarClock, CheckCircle2, AlertTriangle, ClipboardCheck, ChevronDown, ChevronUp, ListChecks, Lock, Unlock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -65,6 +65,26 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
   const [incentiveBreakdown, setIncentiveBreakdown] = useState([]);
   const [showIncentiveDetail, setShowIncentiveDetail] = useState(false);
   const [leavePayoutInfo, setLeavePayoutInfo] = useState(null);
+  // Tarif komisi custom (% dari profit). '' = pakai tarif default klinik.
+  const [customRate, setCustomRate] = useState('');
+  const customRateRef = useRef('');
+
+  // Hitung ulang komisi saat tarif custom diubah, tanpa fetch ulang data.
+  const handleRateChange = (value) => {
+    setCustomRate(value);
+    customRateRef.current = value;
+    setCommissionBreakdown((prev) => {
+      if (!prev) return prev;
+      const parsed = parseFloat(value);
+      const ratePercent = value !== '' && Number.isFinite(parsed) && parsed >= 0 ? parsed : prev.defaultRatePercent;
+      const { profit, marginPercent, commission } = calculateRemunerationCommission({
+        ...prev.inputs,
+        ratePercent,
+      });
+      setForm((f) => ({ ...f, custom_commission: commission }));
+      return { ...prev, profit, marginPercent, ratePercent };
+    });
+  };
 
   // Uang cuti tahunan saat ini khusus klinik Kaffah Physiotherapy.
   const isKaffahClinic = (therapist?.clinic_id || clinic?.id) === KAFFAH_CLINIC_ID;
@@ -78,6 +98,8 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
       setIncentiveBreakdown([]);
       setShowIncentiveDetail(false);
       setLeavePayoutInfo(null);
+      setCustomRate('');
+      customRateRef.current = '';
       fetchRecords();
       fetchClinic();
     }
@@ -217,24 +239,32 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
       const revenue = calculateFullSalary(therapistRecaps);
       const { data: remunerationReport } = await getRemunerationReport(therapist.id, startDateStr, endDateStr);
       const overallScore = remunerationReport?.overallScore || 0;
-      const ratePercent = parseFloat(clinic?.remuneration_commission_rate_percent) || 2;
+      const defaultRatePercent = parseFloat(clinic?.remuneration_commission_rate_percent) || 2;
+      const customParsed = parseFloat(customRateRef.current);
+      const ratePercent = customRateRef.current !== '' && Number.isFinite(customParsed) && customParsed >= 0
+        ? customParsed
+        : defaultRatePercent;
 
       // Komisi hanya cair kalau remunerasi aktif secara global UNTUK terapis
       // ini DAN target pasien periode ini tercapai (remunerationReport.isActive) —
       // sebelumnya field isActive ini tidak dipakai sama sekali di sini,
       // jadi komisi tetap muncul walau target pasien periode berjalan belum tercapai.
-      const { profit, marginPercent, commission } = calculateRemunerationCommission({
+      const commissionInputs = {
         revenue,
         baseSalary: parseFloat(therapist.base_salary) || 0,
         transportAllowance,
         incentiveAmount,
         overallScore,
         remunerationEnabled: therapist.remuneration_enabled !== false && remunerationReport?.isActive === true,
+      };
+      const { profit, marginPercent, commission } = calculateRemunerationCommission({
+        ...commissionInputs,
         ratePercent,
       });
 
       setCommissionBreakdown({
-        revenue, profit, marginPercent, overallScore, ratePercent,
+        revenue, profit, marginPercent, overallScore, ratePercent, defaultRatePercent,
+        inputs: commissionInputs,
         isActive: remunerationReport?.isActive === true,
       });
 
@@ -541,16 +571,52 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
                 <span>Skor performa remunerasi</span>
                 <span className="font-medium text-slate-700">{commissionBreakdown.overallScore}%</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span>Tarif komisi</span>
-                <span className="font-medium text-slate-700">{commissionBreakdown.ratePercent}% dari profit</span>
+              <div className="flex items-center justify-between gap-2">
+                <span>
+                  Tarif komisi
+                  {customRate !== '' && (
+                    <button
+                      type="button"
+                      onClick={() => handleRateChange('')}
+                      className="ml-2 text-emerald-600 hover:text-emerald-700 underline"
+                    >
+                      Reset ke default ({commissionBreakdown.defaultRatePercent}%)
+                    </button>
+                  )}
+                </span>
+                <span className="flex items-center gap-1.5 font-medium text-slate-700">
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={customRate !== '' ? customRate : commissionBreakdown.ratePercent}
+                    onChange={(e) => handleRateChange(e.target.value)}
+                    className="h-7 w-20 px-2 text-right text-xs"
+                    aria-label="Tarif komisi (% dari profit)"
+                  />
+                  % dari profit
+                </span>
               </div>
-              {!commissionBreakdown.isActive && (
-                <div className="flex items-center justify-between pt-0.5">
-                  <span className="text-amber-600">Status remunerasi periode ini</span>
-                  <span className="font-medium text-amber-600">Nonaktif (target pasien belum tercapai)</span>
-                </div>
-              )}
+              <div
+                className={`flex items-start gap-2 rounded-app-sm border px-2.5 py-2 mt-1.5 ${
+                  commissionBreakdown.isActive
+                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                    : 'border-amber-200 bg-amber-50 text-amber-700'
+                }`}
+              >
+                {commissionBreakdown.isActive
+                  ? <Unlock className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  : <Lock className="w-3.5 h-3.5 shrink-0 mt-0.5" />}
+                <span>
+                  <strong>
+                    {commissionBreakdown.isActive ? 'Remunerasi TERBUKA (Unlocked)' : 'Remunerasi TERKUNCI (Locked)'}
+                  </strong>
+                  {' — '}
+                  {commissionBreakdown.isActive
+                    ? 'target pasien periode ini tercapai, komisi dihitung.'
+                    : 'target pasien periode ini belum tercapai, komisi Rp 0.'}
+                </span>
+              </div>
             </div>
           )}
 
