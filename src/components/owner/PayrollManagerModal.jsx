@@ -82,7 +82,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
         ratePercent,
       });
       setForm((f) => ({ ...f, custom_commission: commission }));
-      return { ...prev, profit, marginPercent, ratePercent };
+      return { ...prev, profit, marginPercent, ratePercent, commission };
     });
   };
 
@@ -263,7 +263,7 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
       });
 
       setCommissionBreakdown({
-        revenue, profit, marginPercent, overallScore, ratePercent, defaultRatePercent,
+        revenue, profit, marginPercent, overallScore, ratePercent, defaultRatePercent, commission,
         inputs: commissionInputs,
         isActive: remunerationReport?.isActive === true,
       });
@@ -562,9 +562,22 @@ const PayrollManagerModal = ({ open, onClose, therapist }) => {
                 <span className="font-medium text-slate-700">{formatCurrency(commissionBreakdown.revenue)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span>Profit (omzet − take home pay)</span>
+                <span>Profit sebelum komisi (dasar hitung komisi)</span>
                 <span className={`font-medium ${commissionBreakdown.profit < 0 ? 'text-red-500' : 'text-slate-700'}`}>
                   {formatCurrency(commissionBreakdown.profit)} ({commissionBreakdown.marginPercent.toFixed(0)}%)
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Komisi remunerasi</span>
+                <span className="font-medium text-slate-700">− {formatCurrency(commissionBreakdown.commission)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Profit setelah komisi</span>
+                <span className={`font-medium ${commissionBreakdown.profit - commissionBreakdown.commission < 0 ? 'text-red-500' : 'text-slate-700'}`}>
+                  {formatCurrency(commissionBreakdown.profit - commissionBreakdown.commission)} (
+                  {(commissionBreakdown.revenue > 0
+                    ? ((commissionBreakdown.profit - commissionBreakdown.commission) / commissionBreakdown.revenue) * 100
+                    : 0).toFixed(0)}%)
                 </span>
               </div>
               <div className="flex items-center justify-between">
