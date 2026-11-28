@@ -2,10 +2,10 @@ import { format, isSameDay } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { calculateDayNameIndonesia } from './whatsappService';
 
-// Batas maksimal jam yang ditampilkan ke pasien.
-// Kalau jam kosong sebenarnya lebih banyak dari ini, kita cuma tampilkan
-// sebagian yang disebar (pagi/siang/sore) supaya tidak kelihatan sepi.
-const MAX_SHOWN_SLOTS = 4;
+// Semua jam kosong ditampilkan apa adanya. Hanya kalau jumlahnya sangat banyak
+// (lebih dari batas ini), kita tampilkan sebagian yang disebar (pagi/siang/sore)
+// supaya pesan tidak terlalu panjang.
+const MAX_SHOWN_SLOTS = 8;
 
 // Jangan tawarkan jam kosong yang sudah/hampir lewat — hanya berlaku kalau
 // `date` yang diminta adalah hari ini.
