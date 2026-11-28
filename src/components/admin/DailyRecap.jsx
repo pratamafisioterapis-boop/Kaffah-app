@@ -135,7 +135,14 @@ const DailyRecap = ({ hideControls = false, showPaymentFilter = false }) => {
   }, [userDetails?.clinic_id]);
 
   const [recaps, setRecaps] = useState([]);
-  const [activeFilter, setActiveFilter] = useState(null);
+  const [activeFilter, setActiveFilter] = useState(() => {
+    // Default ke "Hari Ini" bila tidak ada rentang multi-hari tersimpan.
+    try {
+      const saved = JSON.parse(localStorage.getItem("admin_daily_recap_date_range") || 'null');
+      if (saved?.startDate && saved?.endDate && saved.startDate !== saved.endDate) return null;
+    } catch (e) { }
+    return 'today';
+  });
   const [todayOffset, setTodayOffset] = useState(0);
   const [selectedTherapist, setSelectedTherapist] = useState('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
@@ -185,7 +192,9 @@ const DailyRecap = ({ hideControls = false, showPaymentFilter = false }) => {
       const saved = localStorage.getItem("admin_daily_recap_date_range");
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.startDate && parsed.endDate) {
+        // Rentang satu hari (mis. "Hari Ini" kemarin) tidak dipulihkan, supaya
+        // saat dibuka di hari berikutnya tampilan tidak tertinggal di tanggal lama.
+        if (parsed.startDate && parsed.endDate && parsed.startDate !== parsed.endDate) {
           return {
             start: parsed.startDate,
             end: parsed.endDate
