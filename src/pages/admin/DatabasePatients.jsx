@@ -7,8 +7,12 @@ import PatientPreviewModal from '@/components/shared/PatientPreviewModal';
 import PatientModal from '@/components/shared/PatientModal';
 import ImportPatientExcelModal from '@/components/shared/ImportPatientExcelModal';
 import PageHero from '@/components/shared/PageHero';
+import GoogleReviewBulkMark from '@/components/admin/GoogleReviewBulkMark';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 
 const AdminDatabasePatients = () => {
+    const { userDetails } = useAuth();
 
     const {
         patients, loading, pagination, filters,
@@ -50,6 +54,7 @@ const AdminDatabasePatients = () => {
 
             {/* Toolbar */}
             <div className="flex flex-nowrap items-center justify-end gap-2 !mt-5 sm:!mt-6">
+              {userDetails?.clinic_id === KAFFAH_CLINIC_ID && <GoogleReviewBulkMark />}
               <Button
                 onClick={() => setIsImportOpen(true)}
                 variant="outline"
