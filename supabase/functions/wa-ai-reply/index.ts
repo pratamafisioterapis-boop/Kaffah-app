@@ -1052,8 +1052,37 @@ function isConditionFollowUp(clinicEntry: string): boolean {
   return /bagaimana (kondisi|perkembangan|keadaan)/i.test(clinicEntry) && /fisioterapi|kunjungan terakhir|kaffah/i.test(clinicEntry);
 }
 
+/** Pasien pada nomor ini sudah mengisi review (ditandai admin) atau link sudah dikirim dalam 90 hari terakhir? */
+async function reviewAlreadyHandled(admin: any, clinicId: string, waId: string): Promise<boolean> {
+  try {
+    const variants = phoneVariants(waId);
+    if (!variants.length) return false;
+    const { data } = await admin.from("patients").select("google_review_status, google_review_link_sent_at")
+      .eq("clinic_id", clinicId).in("phone", variants).not("google_review_status", "is", null).limit(10);
+    const since = Date.now() - 90 * 24 * 3600e3;
+    return (data || []).some((p: any) => p.google_review_status === "reviewed" ||
+      (p.google_review_link_sent_at && Date.parse(p.google_review_link_sent_at) > since));
+  } catch (e) {
+    console.error("[wa-ai-reply] status review pasien gagal dibaca, tidak mengirim link", e);
+    return true; // tidak bisa memastikan: jangan kirim link (aman)
+  }
+}
+
+/** Tandai link review terkirim pada pasien terdaftar di nomor ini (yang belum 'reviewed'). */
+async function markReviewLinkSent(admin: any, clinicId: string, waId: string) {
+  try {
+    const variants = phoneVariants(waId);
+    if (!variants.length) return;
+    await admin.from("patients").update({ google_review_status: "link_sent", google_review_link_sent_at: new Date().toISOString() })
+      .eq("clinic_id", clinicId).in("phone", variants)
+      .or("google_review_status.is.null,google_review_status.eq.link_sent");
+  } catch (e) {
+    console.error("[wa-ai-reply] gagal menandai link review terkirim", e);
+  }
+}
+
 /** Kaffah: balasan POSITIF pasien atas follow-up kondisi -> kirim ajakan review Google. null = bukan kasus ini. */
-async function reviewRequestReply(clinicId: string, transcript: string, lastBody: string, msgType: string, callName = ""): Promise<string | null> {
+async function reviewRequestReply(clinicId: string, transcript: string, lastBody: string, msgType: string, callName = "", admin: any = null, waId = ""): Promise<string | null> {
   if (clinicId !== KAFFAH_CLINIC_ID || msgType !== "text") return null;
   const entries = transcript.split(/\n(?=\[\d{4}-\d{2}-\d{2} )/);
   // Jangan kirim dua kali: link review sudah pernah dikirim pada percakapan ini.
@@ -1063,6 +1092,7 @@ async function reviewRequestReply(clinicId: string, transcript: string, lastBody
   // Pasien sudah membalas lagi setelah follow-up sebelumnya (mis. sudah ngobrol panjang): hanya balasan langsung pertama.
   const afterFollowUp = entries.slice(entries.lastIndexOf(lastClinic) + 1).filter((e) => /\] Pasien:/.test(e));
   if (afterFollowUp.length > 2) return null;
+  if (admin && waId && await reviewAlreadyHandled(admin, clinicId, waId)) return null;
   try {
     const { text } = await claudeTextMeta(REVIEW_CLASSIFY_SYSTEM, `${transcript.slice(-1800)}\n\nBalasan terakhir pasien: ${lastBody.slice(0, 400)}`, 20, FAST_MODEL);
     return text.includes("[[POSITIF]]") ? kaffahReviewText(callName) : null;
@@ -1073,10 +1103,10 @@ async function reviewRequestReply(clinicId: string, transcript: string, lastBody
 }
 
 /** Coba balas pesan penutup dengan model murah tanpa alat. handled=false -> lanjut ke agen penuh. */
-async function lightReply(transcript: string, lastBody: string, msgType: string, callName = "", clinicId = ""): Promise<{ handled: boolean; reply: string }> {
+async function lightReply(transcript: string, lastBody: string, msgType: string, callName = "", clinicId = "", admin: any = null, waId = ""): Promise<{ handled: boolean; reply: string }> {
   const conflict = contextPersonConflict(transcript, callName);
   if (conflict) callName = ""; // jangan paksa nickname pasien terdaftar bila konteksnya orang lain
-  const review = await reviewRequestReply(clinicId, transcript, lastBody, msgType, callName);
+  const review = await reviewRequestReply(clinicId, transcript, lastBody, msgType, callName, admin, waId);
   if (review) return { handled: true, reply: review };
   const isHadirButton = msgType === "button" && /^hadir$/i.test(lastBody.trim());
   if (msgType === "button" && !isHadirButton) return { handled: false, reply: "" }; // Reschedule/Cancel: agen penuh
@@ -1648,7 +1678,7 @@ async function reviewToTelegram(admin: Admin, conversationId: string, messageId:
         reply = "";
         modelTag = "aturan home care";
       } else {
-        const fast = await lightReply(transcript, String(msg.body || ""), msg.msg_type, await patientCallName(admin, clinicId, conv.wa_id), clinicId);
+        const fast = await lightReply(transcript, String(msg.body || ""), msg.msg_type, await patientCallName(admin, clinicId, conv.wa_id), clinicId, admin, conv.wa_id);
         const agentModel = isFaqLike(transcript, String(msg.body || "")) ? FAST_MODEL : MODEL;
         modelTag = fast.handled ? `${FAST_MODEL}, balasan baku` : agentModel;
         reply = fast.handled
@@ -2262,7 +2292,7 @@ async function runEvalCase(admin: Admin, clinicId: string, knowledge: string | n
   const lastLine = evalTranscript.split("\n").pop() || "";
   const lastBody = lastLine.replace(/^\[[^\]]*\]\s*Pasien:\s*/, "");
   const fast = /Pasien:/.test(lastLine)
-    ? await lightReply(evalTranscript, lastBody, /^hadir$/i.test(lastBody.trim()) ? "button" : "text", await patientCallName(admin, clinicId, conv.wa_id), clinicId)
+    ? await lightReply(evalTranscript, lastBody, /^hadir$/i.test(lastBody.trim()) ? "button" : "text", await patientCallName(admin, clinicId, conv.wa_id), clinicId, admin, conv.wa_id)
     : { handled: false, reply: "" };
   const reply = fast.handled ? fast.reply : await runAgent(ctx, evalTranscript, hint + (await prepareContext(ctx, !!known, lastBody)), isFaqLike(evalTranscript, lastBody) ? FAST_MODEL : MODEL);
   const acts = ctx.actions.filter((a) => ACTION_TYPES.includes(a.type));
@@ -2961,7 +2991,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
         homecareHandoff(ctx);
         reply = "";
       } else {
-        const fast = await lightReply(transcript, String(msg.body || ""), msg.msg_type, await patientCallName(admin, clinicId, conv.wa_id), clinicId);
+        const fast = await lightReply(transcript, String(msg.body || ""), msg.msg_type, await patientCallName(admin, clinicId, conv.wa_id), clinicId, admin, conv.wa_id);
         reply = fast.handled ? fast.reply : await runAgent(ctx, transcript, hint + (await prepareContext(ctx, !!known, String(msg.body || ""))), isFaqLike(transcript, String(msg.body || "")) ? FAST_MODEL : MODEL);
       }
     }
@@ -3048,6 +3078,7 @@ async function handleInbound(admin: Admin, conversationId: string, messageId: st
         }
       }
       if (sendBody) await sendText(admin, clinicId, conv, sendBody, channel);
+      if (sendBody && clinicId === KAFFAH_CLINIC_ID && sendBody.includes(KAFFAH_REVIEW_URL)) await markReviewLinkSent(admin, clinicId, conv.wa_id);
     }
     if (!ctx.handoff && conv.ai_handoff) {
       await admin.from("wa_inbox_conversations").update({ ai_handoff: false }).eq("id", conversationId);

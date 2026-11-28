@@ -24,6 +24,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PatientList from '@/components/admin/patients/PatientList';
 import PatientImportCSV from '@/components/admin/PatientImportCSV';
+import GoogleReviewBulkMark from '@/components/admin/GoogleReviewBulkMark';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const PatientManagement = () => {
@@ -40,7 +42,7 @@ const PatientManagement = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [patientToDelete, setPatientToDelete] = useState(null);
 
-  const { user, loading: authLoading } = useAuth();
+  const { user, userDetails, loading: authLoading } = useAuth();
 
   useEffect(() => {
     if (user?.id) {
@@ -191,10 +193,13 @@ const PatientManagement = () => {
             </TabsList>
             
             {activeTab === "list" && (
-               <Button onClick={handleAddNewClick} className="bg-app-accent hover:bg-app-accent-hover">
-                 <Plus className="w-4 h-4 mr-2" />
-                 Tambah Pasien Manual
-               </Button>
+               <div className="flex flex-wrap gap-2">
+                 {userDetails?.clinic_id === KAFFAH_CLINIC_ID && <GoogleReviewBulkMark />}
+                 <Button onClick={handleAddNewClick} className="bg-app-accent hover:bg-app-accent-hover">
+                   <Plus className="w-4 h-4 mr-2" />
+                   Tambah Pasien Manual
+                 </Button>
+               </div>
             )}
           </div>
 

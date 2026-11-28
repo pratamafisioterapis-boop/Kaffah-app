@@ -25,7 +25,8 @@ import { Loader2, PackageX, CalendarClock, AlertCircle, Trash2, CheckCircle, XCi
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { PRAXIS_CLINIC_ID } from '@/lib/clinicIds';
+import { PRAXIS_CLINIC_ID, KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
+import GoogleReviewStatus from '@/components/admin/GoogleReviewStatus';
 
 const RELIGION_OPTIONS = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Lainnya'];
 const MAX_KTP_SIZE = 5 * 1024 * 1024;
@@ -555,6 +556,13 @@ const PatientDialog = ({ open, onOpenChange, onSubmit, initialData, onDelete }) 
                         />
                       </div>
                     </div>
+
+                    {/* Status Google Review (Kaffah, pasien yang sudah tersimpan) */}
+                    {initialData?.id && userDetails?.clinic_id === KAFFAH_CLINIC_ID && (
+                      <div className="md:col-span-2">
+                        <GoogleReviewStatus patientId={initialData.id} />
+                      </div>
+                    )}
 
                     {/* Medical Record Number */}
                     <div className="space-y-1">
