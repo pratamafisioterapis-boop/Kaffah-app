@@ -12,6 +12,7 @@ import AvailableSlotsWidget from './AvailableSlotsWidget';
 import TherapistMetrics from './TherapistMetrics';
 import TherapistPerformanceWidget from './TherapistPerformanceWidget';
 import MonthlyReportWidget from './MonthlyReportWidget';
+import PreviousPeriodTipsWidget from './PreviousPeriodTipsWidget';
 import TherapistTodayPatientHistory from './TherapistTodayPatientHistory';
 import TherapistPatientTypeDistribution from './TherapistPatientTypeDistribution';
 import { Loader2, RefreshCcw } from 'lucide-react';
@@ -127,6 +128,7 @@ const TherapistDashboardWidget = ({ initialProfile = null, today = null }) => {
           <TherapistWeeklyBars therapist={therapistProfile} />
         </div>
       </div>
+      <PreviousPeriodTipsWidget therapist={therapistProfile} />
       <TherapistPerformanceWidget therapist={therapistProfile} userId={user.id} />
       <MonthlyReportWidget therapistId={therapistProfile.id} therapistUserId={therapistProfile.user_id} />
       <TherapistMetrics therapist={therapistProfile} userId={user.id} />
