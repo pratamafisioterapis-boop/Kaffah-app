@@ -1032,11 +1032,15 @@ function contextPersonConflict(transcript: string, callName: string): { title: s
 
 const KAFFAH_CLINIC_ID = "bfdc3fd8-a052-4753-a5b7-229930b3237a";
 const KAFFAH_REVIEW_URL = "https://g.co/kgs/kfaVhzG";
-const KAFFAH_REVIEW_TEXT = `Alhamdulillah senang mendengar perkembangan membaik. Boleh tolong bantu review klinik kami ka. Biar semakin byk yang bisa merasakan manfaatnya. Review kk sangat berarti buat kami. Makasih ka
+/** {sapaan}: nickname pasien terdaftar; bila tidak ada, "ka" seperti yang biasa ditulis admin. */
+function kaffahReviewText(sapaan: string): string {
+  const k = sapaan.trim() || "ka";
+  return `Alhamdulillah senang mendengar perkembangan membaik. Boleh tolong bantu review klinik kami ${k}. Biar semakin byk yang bisa merasakan manfaatnya. Review ${k} sangat berarti buat kami. Makasih ${k}
 
 ${KAFFAH_REVIEW_URL}
 
-Berikut untuk link google kami ka`;
+Berikut untuk link google kami ${k}`;
+}
 
 const REVIEW_CLASSIFY_SYSTEM = `Klinik fisioterapi menanyakan kondisi pasien setelah terapi (follow-up). Tugasmu menilai BALASAN TERAKHIR pasien.
 - Tulis persis [[POSITIF]] bila pasien menyatakan kondisinya sudah membaik/sembuh/enakan/tidak ada keluhan lagi (mis. "Alhamdulillah sudah membaik", "sudah enakan kak", "sudah sembuh", "baik kak, terima kasih").
@@ -1049,7 +1053,7 @@ function isConditionFollowUp(clinicEntry: string): boolean {
 }
 
 /** Kaffah: balasan POSITIF pasien atas follow-up kondisi -> kirim ajakan review Google. null = bukan kasus ini. */
-async function reviewRequestReply(clinicId: string, transcript: string, lastBody: string, msgType: string): Promise<string | null> {
+async function reviewRequestReply(clinicId: string, transcript: string, lastBody: string, msgType: string, callName = ""): Promise<string | null> {
   if (clinicId !== KAFFAH_CLINIC_ID || msgType !== "text") return null;
   const entries = transcript.split(/\n(?=\[\d{4}-\d{2}-\d{2} )/);
   // Jangan kirim dua kali: link review sudah pernah dikirim pada percakapan ini.
@@ -1061,7 +1065,7 @@ async function reviewRequestReply(clinicId: string, transcript: string, lastBody
   if (afterFollowUp.length > 2) return null;
   try {
     const { text } = await claudeTextMeta(REVIEW_CLASSIFY_SYSTEM, `${transcript.slice(-1800)}\n\nBalasan terakhir pasien: ${lastBody.slice(0, 400)}`, 20, FAST_MODEL);
-    return text.includes("[[POSITIF]]") ? KAFFAH_REVIEW_TEXT : null;
+    return text.includes("[[POSITIF]]") ? kaffahReviewText(callName) : null;
   } catch (e) {
     console.error("[wa-ai-reply] klasifikasi balasan follow-up gagal, pakai alur biasa", e);
     return null;
@@ -1070,10 +1074,10 @@ async function reviewRequestReply(clinicId: string, transcript: string, lastBody
 
 /** Coba balas pesan penutup dengan model murah tanpa alat. handled=false -> lanjut ke agen penuh. */
 async function lightReply(transcript: string, lastBody: string, msgType: string, callName = "", clinicId = ""): Promise<{ handled: boolean; reply: string }> {
-  const review = await reviewRequestReply(clinicId, transcript, lastBody, msgType);
-  if (review) return { handled: true, reply: review };
   const conflict = contextPersonConflict(transcript, callName);
   if (conflict) callName = ""; // jangan paksa nickname pasien terdaftar bila konteksnya orang lain
+  const review = await reviewRequestReply(clinicId, transcript, lastBody, msgType, callName);
+  if (review) return { handled: true, reply: review };
   const isHadirButton = msgType === "button" && /^hadir$/i.test(lastBody.trim());
   if (msgType === "button" && !isHadirButton) return { handled: false, reply: "" }; // Reschedule/Cancel: agen penuh
   if (!isHadirButton && !isClosingText(lastBody)) return { handled: false, reply: "" };
