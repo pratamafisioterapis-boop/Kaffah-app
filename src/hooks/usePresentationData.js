@@ -60,7 +60,7 @@ export const usePresentationData = (dateRange) => {
         // dengan RevenueOverview.jsx) tanpa perlu query terpisah.
         // diagnosis dipakai untuk distribusi diagnosa pasien.
         supabase.from('daily_recaps')
-          .select('recap_date, amount, status, therapist_name, payment_method, package_tracking_id, diagnosis, package_tracking(nominal, total_sessions)')
+          .select('recap_date, amount, status, therapist_name, payment_method, package_tracking_id, diagnosis, package_tracking!fk_daily_recaps_package_tracking(nominal, total_sessions)')
           .eq('clinic_id', clinicId)
           .gte('recap_date', startDate).lte('recap_date', endDate),
         supabase.from('appointments').select('appointment_date, status').eq('clinic_id', clinicId)

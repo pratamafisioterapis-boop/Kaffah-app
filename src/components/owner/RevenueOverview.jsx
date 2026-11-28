@@ -118,7 +118,7 @@ const RevenueOverview = ({ dateRange }) => {
           .lte('revenue_date', dateRange.endDate)
           .is('package_tracking_id', null),
         supabase.from('daily_recaps')
-          .select('therapist_name, patient_type, payment_method, package_tracking_id, amount, tips_amount, goods_amount, goods_payment_method, payment_splits:daily_recap_payment_splits(payment_method, amount), package_tracking!inner(nominal, total_sessions)')
+          .select('therapist_name, patient_type, payment_method, package_tracking_id, amount, tips_amount, goods_amount, goods_payment_method, payment_splits:daily_recap_payment_splits(payment_method, amount), package_tracking!fk_daily_recaps_package_tracking!inner(nominal, total_sessions)')
           .eq('clinic_id', clinicId)
           .gte('recap_date', dateRange.startDate)
           .lte('recap_date', dateRange.endDate)
