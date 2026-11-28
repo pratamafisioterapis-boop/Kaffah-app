@@ -153,7 +153,7 @@ const recapPriority = (r) => {
     return r.start_time ? 1 : 2;
 };
 
-// Urutan khusus Kaffah: sedang berlangsung (jam slot appointment, paling awal di atas)
+// Urutan khusus Kaffah: selesai tapi invoice belum terkirim (paling atas) -> sedang berlangsung (jam slot appointment, paling awal di atas)
 // -> belum mulai (jam slot, paling awal di atas) -> selesai (terbaru di atas, terlama
 // di paling bawah, mis. appointment pagi ada di dasar tabel).
 const slotTime = (r) => {
@@ -163,7 +163,11 @@ const slotTime = (r) => {
 };
 
 export const sortRecapsKaffah = (recaps) => {
-    const group = (r) => (r.end_time ? 2 : r.start_time ? 0 : 1);
+    // Selesai tapi invoice belum terkirim selalu paling atas, berapa pun jam slotnya.
+    const group = (r) => {
+        if (r.end_time) return recapPriority(r) === 0 ? 0 : 3;
+        return r.start_time ? 1 : 2;
+    };
     return recaps
         .map((r, i) => ({ r, i }))
         .sort((a, b) => {
@@ -173,7 +177,7 @@ export const sortRecapsKaffah = (recaps) => {
             const ta = slotTime(a.r);
             const tb = slotTime(b.r);
             if (ta !== null && tb !== null && ta !== tb) {
-                return ga === 2 ? tb - ta : ta - tb;
+                return ga === 0 || ga === 3 ? tb - ta : ta - tb;
             }
             return a.i - b.i;
         })
