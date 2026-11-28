@@ -439,6 +439,31 @@ const DailyRecapDetailModal = ({ isOpen, onClose, recap, onEdit, onDelete }) => 
                                 }
                             />
 
+                            {Number(recap.goods_amount) > 0 && (
+                                <>
+                                    <DetailItem
+                                        label="Nominal Barang"
+                                        value={formatCurrency(recap.goods_amount)}
+                                        valueClassName="font-bold text-lg text-slate-900"
+                                    />
+                                    <DetailItem
+                                        label="Metode Bayar Barang"
+                                        value={
+                                            recap.goods_payment_method
+                                                ? (optionsMap[recap.goods_payment_method] || recap.goods_payment_method)
+                                                : (recap.payment_method || '-')
+                                        }
+                                    />
+                                </>
+                            )}
+
+                            {Number(recap.tips_amount) > 0 && (
+                                <DetailItem
+                                    label="Tips Terapis"
+                                    value={formatCurrency(recap.tips_amount)}
+                                />
+                            )}
+
                             {recap.discount_value > 0 && (
                                 <div className="flex flex-col space-y-1">
                                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Diskon</span>
