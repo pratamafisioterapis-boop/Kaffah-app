@@ -67,7 +67,7 @@ const OwnerFinanceDashboardWidget = ({ dateRange, onAddExpense, onAddIncome }) =
           .lte('revenue_date', endDate)
           .is('package_tracking_id', null),
         supabase.from('daily_recaps')
-          .select('recap_date, therapist_name, patient_type, package_tracking_id, package_tracking!inner(nominal, total_sessions)')
+          .select('recap_date, therapist_name, patient_type, package_tracking_id, package_tracking!fk_daily_recaps_package_tracking!inner(nominal, total_sessions)')
           .eq('clinic_id', clinicId)
           .gte('recap_date', startDate)
           .lte('recap_date', endDate)
