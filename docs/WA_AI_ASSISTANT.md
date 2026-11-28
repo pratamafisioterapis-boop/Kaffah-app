@@ -137,3 +137,7 @@ Admin lalu mengabari pasien dari halaman Waiting List ("Kabari via WA").
 
 ### Lampiran dilewati
 `wa-watzap-webhook` hanya memberi tahu AI untuk pesan `text` dan `button`. Gambar, dokumen, voice note, stiker, lokasi, dll. tidak dibaca dan tidak dibalas AI (tidak ada draf Telegram); admin yang menangani. Pesan tetap tersimpan di inbox.
+
+## Follow-up kondisi -> ajakan review Google (khusus Kaffah)
+
+Bila pesan klinik terakhir adalah follow-up kondisi pasca terapi dari admin (mis. "Bagaimana kondisi Anda saat ini setelah menjalani sesi fisioterapi...") dan pasien membalas positif ("Alhamdulillah sudah membaik"), AI membalas dengan teks ajakan review + link Google klinik (`https://g.co/kgs/kfaVhzG`), persis seperti yang biasa dikirim admin. Penilaian positif/tidak memakai model cepat; balasan negatif, pertanyaan, atau minta jadwal tetap lewat alur biasa. Link hanya dikirim sekali per percakapan. Hanya aktif untuk klinik Kaffah (`KAFFAH_CLINIC_ID` di `wa-ai-reply/index.ts`).
