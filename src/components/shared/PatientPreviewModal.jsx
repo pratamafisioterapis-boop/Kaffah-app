@@ -4,6 +4,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { UserCircle, Phone, Info, Edit } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
+import GoogleReviewStatus from '@/components/admin/GoogleReviewStatus';
 
 const DetailItem = ({ label, value, valueClassName = "" }) => (
     <div className="flex flex-col space-y-1">
@@ -25,6 +28,7 @@ const Section = ({ icon: Icon, title, children }) => (
 );
 
 const PatientPreviewModal = ({ isOpen, onClose, patient, onEdit }) => {
+    const { userDetails } = useAuth();
     if (!patient) return null;
 
     return (
@@ -76,6 +80,12 @@ const PatientPreviewModal = ({ isOpen, onClose, patient, onEdit }) => {
                         </Section>
                     </div>
                 </div>
+
+                {patient.id && userDetails?.clinic_id === KAFFAH_CLINIC_ID && (
+                    <div className="px-6 pb-4">
+                        <GoogleReviewStatus key={patient.id} patientId={patient.id} />
+                    </div>
+                )}
 
                 <div className="px-6 py-4 border-t border-slate-200/60 flex justify-end gap-2 bg-white rounded-b-app-lg">
                     <Button variant="outline" onClick={onClose}>Tutup</Button>

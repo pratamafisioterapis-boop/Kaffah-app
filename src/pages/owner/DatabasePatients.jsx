@@ -7,8 +7,12 @@ import PatientPreviewModal from '@/components/shared/PatientPreviewModal';
 import PatientModal from '@/components/shared/PatientModal';
 import ImportPatientExcelModal from '@/components/shared/ImportPatientExcelModal';
 import PageHero from '@/components/shared/PageHero';
+import GoogleReviewBulkMark from '@/components/admin/GoogleReviewBulkMark';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { KAFFAH_CLINIC_ID } from '@/lib/clinicIds';
 
 const DatabasePatients = () => {
+    const { userDetails } = useAuth();
     const {
         patients, loading, pagination, filters,
         setPagination, handleFilterChange, refresh: handleRefresh
@@ -57,6 +61,7 @@ const DatabasePatients = () => {
                 <RefreshCw className="w-4 h-4 shrink-0" strokeWidth={2.1} />
                 <span className="whitespace-nowrap"><span className="sm:hidden">Refresh</span><span className="hidden sm:inline">Refresh Data</span></span>
               </Button>
+              {userDetails?.clinic_id === KAFFAH_CLINIC_ID && <GoogleReviewBulkMark />}
               <Button
                 onClick={() => setIsImportOpen(true)}
                 variant="outline"
