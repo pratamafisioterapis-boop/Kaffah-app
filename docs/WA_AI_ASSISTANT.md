@@ -141,3 +141,7 @@ Admin lalu mengabari pasien dari halaman Waiting List ("Kabari via WA").
 ## Follow-up kondisi -> ajakan review Google (khusus Kaffah)
 
 Bila pesan klinik terakhir adalah follow-up kondisi pasca terapi dari admin (mis. "Bagaimana kondisi Anda saat ini setelah menjalani sesi fisioterapi...") dan pasien membalas positif ("Alhamdulillah sudah membaik"), AI membalas dengan teks ajakan review + link Google klinik (`https://g.co/kgs/kfaVhzG`), seperti yang biasa dikirim admin, dengan sapaan sesuai nickname pasien terdaftar (default "ka" bila nomor belum terdaftar/ambigu). Penilaian positif/tidak memakai model cepat; balasan negatif, pertanyaan, atau minta jadwal tetap lewat alur biasa. Link hanya dikirim sekali per percakapan. Hanya aktif untuk klinik Kaffah (`KAFFAH_CLINIC_ID` di `wa-ai-reply/index.ts`).
+
+### Status Google Review per pasien
+
+Kolom `patients.google_review_status` (`link_sent` / `reviewed`). AI menandai `link_sent` setelah mengirim link; admin menandai `reviewed` lewat dialog pasien ("Google Review") atau massal lewat tombol "Tandai Sudah Review Google" di daftar pasien (tempel nomor HP / nama; untuk pasien lama). AI tidak mengirim link bila ada pasien di nomor itu berstatus `reviewed`, atau `link_sent` dalam 90 hari terakhir. Klik link di halaman feedback bukan bukti review, jadi tidak dipakai.
